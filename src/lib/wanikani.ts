@@ -385,12 +385,21 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
       srs_stage: number;
       unlocked_at: string | null;
       started_at: string | null;
+      passed_at: string | null;
+      burned_at: string | null;
+      resurrected_at: string | null;
       available_at: string | null;
     },
   );
 
-  const lastActivityAt = allAssignments.data
-    .map((row) => toDate(row.data_updated_at))
+  const lastActivityAt = allAssignmentData
+    .flatMap((assignment) => [
+      assignment.started_at,
+      assignment.passed_at,
+      assignment.burned_at,
+      assignment.resurrected_at,
+    ])
+    .map((value) => toDate(value))
     .filter((value): value is Date => value !== null)
     .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
 
