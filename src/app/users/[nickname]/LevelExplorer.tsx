@@ -148,6 +148,7 @@ export default function LevelExplorer({
   const stickyMergeStorageKey = `wr:explorer:${accountId}:sticky-merge`;
   const srsFilterStorageKey = `wr:explorer:${accountId}:srs-filter`;
   const typeFilterStorageKey = `wr:explorer:${accountId}:type-filter`;
+  const showLockedStorageKey = `wr:explorer:${accountId}:show-locked`;
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
   const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
@@ -162,6 +163,7 @@ export default function LevelExplorer({
     kanji: true,
     vocabulary: true,
   });
+  const [showLockedItems, setShowLockedItems] = useState(false);
   const [stickyMerge, setStickyMerge] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
@@ -254,6 +256,17 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      const raw = window.localStorage.getItem(showLockedStorageKey);
+      if (raw === "1") {
+        setShowLockedItems(true);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [showLockedStorageKey]);
+
+  useEffect(() => {
+    try {
       window.localStorage.setItem(srsFilterStorageKey, srsFilter);
     } catch {
       // Ignore storage errors in restricted browsing modes.
@@ -267,6 +280,14 @@ export default function LevelExplorer({
       // Ignore storage errors in restricted browsing modes.
     }
   }, [typeFilter, typeFilterStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(showLockedStorageKey, showLockedItems ? "1" : "0");
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [showLockedItems, showLockedStorageKey]);
 
   useEffect(() => {
     try {
@@ -324,6 +345,13 @@ export default function LevelExplorer({
         ...visibleTypes,
         [nextType]: true,
       });
+    }
+  }
+
+  function setSrsFilterAndSyncLocked(nextStatus: SrsFilter) {
+    setSrsFilter(nextStatus);
+    if (nextStatus === "locked") {
+      setShowLockedItems(true);
     }
   }
 
@@ -422,6 +450,7 @@ export default function LevelExplorer({
       .filter((item) => {
         const srsPass = srsFilter === "all" ? true : item.status === srsFilter;
         const typePass = typeFilter === "all" ? true : item.subjectType === typeFilter;
+        const lockedPass = showLockedItems ? true : item.status !== "locked";
         const visibilityPass =
           item.subjectType === "radical"
             ? visibleTypes.radical
@@ -431,7 +460,7 @@ export default function LevelExplorer({
                 ? visibleTypes.vocabulary
                 : true;
 
-        return srsPass && typePass && visibilityPass;
+        return srsPass && typePass && lockedPass && visibilityPass;
       })
       .sort((a, b) => {
         const aOrder = a.subjectType ? typeOrder[a.subjectType] : 99;
@@ -447,7 +476,7 @@ export default function LevelExplorer({
 
         return a.subjectId - b.subjectId;
       });
-  }, [combinedSnapshot.items, srsFilter, typeFilter, visibleTypes]);
+  }, [combinedSnapshot.items, srsFilter, typeFilter, showLockedItems, visibleTypes]);
 
   const selectedItem =
     filteredItems.find((item) => item.subjectId === selectedSubjectId) ?? filteredItems[0] ?? null;
@@ -670,7 +699,7 @@ export default function LevelExplorer({
                   <button
                     key={status}
                     type="button"
-                    onClick={() => setSrsFilter(status)}
+                    onClick={() => setSrsFilterAndSyncLocked(status)}
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
                       disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)
@@ -737,6 +766,22 @@ export default function LevelExplorer({
           >
             Expand all
           </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowLockedItems((prev) => !prev)}
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
+              showLockedItems
+                ? "border-slate-500 bg-slate-600 text-white"
+                : "border-line bg-white text-slate-700"
+            }`}
+          >
+            {showLockedItems ? "Hide Locked" : "Show Locked"}
+          </button>
+          <p className="text-xs font-semibold text-slate-500">
+            Locked items are hidden by default.
+          </p>
         </div>
       </div>
 
