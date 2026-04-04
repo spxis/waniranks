@@ -1,24 +1,87 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fffbeb;
-  --foreground: #1c1917;
+  --background: #f4f8ff;
+  --foreground: #081024;
+  --surface: #ffffff;
+  --surface-muted: #edf4ff;
+  --line: #c9dcff;
+  --accent: #0f6fff;
+  --accent-2: #00a4ff;
+  --hot: #ff5f3d;
+  --highlight: #c4ff3d;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-hot: var(--hot);
+  --color-highlight: var(--highlight);
   --font-sans: var(--font-body-sans);
+  --font-display: var(--font-display-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body-sans), sans-serif;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(15, 111, 255, 0.17) 0%, transparent 38%),
+    radial-gradient(circle at 90% 18%, rgba(0, 164, 255, 0.14) 0%, transparent 35%),
+    radial-gradient(circle at 38% 88%, rgba(196, 255, 61, 0.14) 0%, transparent 30%),
+    linear-gradient(180deg, #f7faff 0%, #eef4ff 100%);
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-display-serif), serif;
+  font-family: var(--font-display-sans), sans-serif;
+}
+
+.noise-overlay {
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.5) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 16px 16px;
+  opacity: 0.2;
+}
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-enter {
+  animation: enter-up 500ms ease-out both;
+}
+
+.animate-enter-delay-1 {
+  animation-delay: 90ms;
+}
+
+.animate-enter-delay-2 {
+  animation-delay: 180ms;
+}
+
+.animate-enter-delay-3 {
+  animation-delay: 270ms;
 }

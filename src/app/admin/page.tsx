@@ -77,21 +77,26 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 px-4 py-10">
-      <main className="mx-auto w-full max-w-2xl space-y-5">
-        <Link href="/" className="text-sm font-semibold text-amber-800 hover:text-amber-950">
-          Back to public leaderboard
+    <div className="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+      <div className="noise-overlay pointer-events-none absolute inset-0" />
+      <main className="relative mx-auto w-full max-w-3xl space-y-5">
+        <Link
+          href="/"
+          className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+        >
+          Back to leaderboard
         </Link>
 
-        <section className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-black tracking-tight text-amber-950">Admin controls</h1>
-          <p className="mt-2 text-sm text-amber-900/80">
-            Keep this page private. Add/update family tokens and manually refresh everyone.
+        <section className="animate-enter rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] backdrop-blur sm:p-8">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Control room</p>
+          <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">Admin Panel</h1>
+          <p className="mt-3 text-sm text-slate-700 sm:text-base">
+            Manage family accounts, rotate tokens, and push fresh stats to the leaderboard.
           </p>
 
-          <form onSubmit={addAccount} className="mt-6 space-y-4">
+          <form onSubmit={addAccount} className="mt-7 space-y-4">
             <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-amber-800">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
                 Admin API key
               </span>
               <input
@@ -99,13 +104,13 @@ export default function AdminPage() {
                 required
                 value={adminKey}
                 onChange={(event) => setAdminKey(event.target.value)}
-                className="w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm outline-none ring-amber-500 focus:ring"
-                placeholder="Set this in Vercel env as ADMIN_API_KEY"
+                className="w-full rounded-2xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+                placeholder="Paste admin key"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-amber-800">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
                 Family nickname
               </span>
               <input
@@ -115,13 +120,13 @@ export default function AdminPage() {
                 maxLength={32}
                 value={nickname}
                 onChange={(event) => setNickname(event.target.value)}
-                className="w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm outline-none ring-amber-500 focus:ring"
-                placeholder="e.g. Mom"
+                className="w-full rounded-2xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+                placeholder="e.g. John"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-amber-800">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
                 WaniKani API token
               </span>
               <input
@@ -129,16 +134,16 @@ export default function AdminPage() {
                 required
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
-                className="w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm outline-none ring-amber-500 focus:ring"
-                placeholder="Paste token"
+                className="w-full rounded-2xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+                placeholder="Paste personal token"
               />
             </label>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="grid gap-3 pt-1 sm:grid-cols-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex h-10 items-center justify-center rounded-full bg-amber-600 px-4 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-60"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-5 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Save account
               </button>
@@ -146,19 +151,19 @@ export default function AdminPage() {
                 type="button"
                 disabled={loading}
                 onClick={refreshAll}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-amber-300 bg-amber-100 px-4 text-sm font-bold text-amber-900 transition hover:bg-amber-200 disabled:opacity-60"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Refresh everyone now
+                Refresh all stats
               </button>
             </div>
           </form>
 
           {status.message ? (
             <p
-              className={`mt-4 rounded-xl px-3 py-2 text-sm ${
+              className={`mt-5 rounded-2xl px-4 py-3 text-sm font-semibold ${
                 status.type === "error"
-                  ? "bg-red-100 text-red-800"
-                  : "bg-emerald-100 text-emerald-800"
+                  ? "border border-red-200 bg-red-50 text-red-800"
+                  : "border border-emerald-200 bg-emerald-50 text-emerald-800"
               }`}
             >
               {status.message}

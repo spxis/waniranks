@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Fraunces, Noto_Sans_JP } from "next/font/google";
+import { Archivo_Black, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const bodySans = Noto_Sans_JP({
+const bodySans = Space_Grotesk({
   variable: "--font-body-sans",
   subsets: ["latin"],
 });
 
-const displaySerif = Fraunces({
-  variable: "--font-display-serif",
+const displaySans = Archivo_Black({
+  variable: "--font-display-sans",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bodySans.variable} ${displaySerif.variable} h-full antialiased`}
+      className={`${bodySans.variable} ${displaySans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
