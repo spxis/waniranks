@@ -1,8 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+WaniRanks is a family WaniKani leaderboard app.
+
+- Public page: everyone can view rankings.
+- Admin page: only you can add/update account tokens.
+
+Tokens are encrypted at rest before being stored in the database.
 
 ## Getting Started
 
-First, run the development server:
+1. Create env vars.
+
+```bash
+cp .env.example .env
+```
+
+2. Push the Prisma schema.
+
+```bash
+pnpm db:push
+```
+
+3. Run the development server.
 
 ```bash
 pnpm dev
@@ -10,21 +27,29 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
+Use [http://localhost:3000/admin](http://localhost:3000/admin) to add family accounts with your admin key.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment (Free)
 
-## Learn More
+Deploy on Vercel Hobby and use Neon Postgres Free.
 
-To learn more about Next.js, take a look at the following resources:
+Required Vercel environment variables:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `DATABASE_URL`
+- `TOKEN_ENCRYPTION_KEY`
+- `ADMIN_API_KEY`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Generate encryption key with:
 
-## Deploy on Vercel
+```bash
+openssl rand -base64 32
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For production, switch Prisma datasource to PostgreSQL and set `DATABASE_URL` to your Neon connection string.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+- `pnpm dev`: start app locally
+- `pnpm lint`: run ESLint
+- `pnpm db:push`: sync Prisma schema to the DB
+- `pnpm db:studio`: open Prisma Studio
