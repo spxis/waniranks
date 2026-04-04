@@ -32,6 +32,7 @@ model Account {
   levelKanjiLocked Int    @default(0)
   estimatedHoursRemaining Int?
   levelKanjiItems Json?
+  itemSpread      Json?
   lastActivityAt  DateTime?
   isSyncing       Boolean  @default(false)
   syncLockUntil   DateTime?

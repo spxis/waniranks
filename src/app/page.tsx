@@ -21,7 +21,9 @@ type LeaderboardRow = {
   enlightenedCount: number;
   levelKanjiTotal: number;
   levelKanjiLearned: number;
+  levelKanjiGuruPlus: number;
   levelKanjiLocked: number;
+  itemSpread: unknown;
   lastActivityAt: Date | null;
   score: number;
   lastSyncedAt: Date;
@@ -56,7 +58,9 @@ export default async function Home() {
         enlightenedCount: true,
         levelKanjiTotal: true,
         levelKanjiLearned: true,
+        levelKanjiGuruPlus: true,
         levelKanjiLocked: true,
+        itemSpread: true,
         lastActivityAt: true,
         score: true,
         lastSyncedAt: true,

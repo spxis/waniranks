@@ -113,6 +113,7 @@ export async function refreshAccountById(accountId: string, force: boolean): Pro
         estimatedHoursRemaining: stats.estimatedHoursRemaining,
         lastActivityAt: stats.lastActivityAt,
         levelKanjiItems: stats.levelKanjiItems,
+        itemSpread: stats.itemSpread,
         score: stats.score,
         lastSyncedAt: syncedAt,
         nextSyncAllowedAt: nowPlus(SUCCESS_COOLDOWN_MS),

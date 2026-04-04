@@ -17,7 +17,64 @@ type LevelKanjiItem = {
   srsStage: number;
   status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
   availableAt: string | null;
+  subjectType?: "kanji" | "radical" | "vocabulary";
 };
+
+type ItemSpreadRow = {
+  radical: number;
+  kanji: number;
+  vocabulary: number;
+  total: number;
+};
+
+type ItemSpread = {
+  apprentice: ItemSpreadRow;
+  guru: ItemSpreadRow;
+  master: ItemSpreadRow;
+  enlightened: ItemSpreadRow;
+  burned: ItemSpreadRow;
+  totals: ItemSpreadRow;
+};
+
+const EMPTY_ITEM_SPREAD: ItemSpread = {
+  apprentice: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  guru: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  master: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  enlightened: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  burned: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  totals: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+};
+
+function isItemSpread(value: unknown): value is ItemSpread {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  const keys: Array<keyof ItemSpread> = [
+    "apprentice",
+    "guru",
+    "master",
+    "enlightened",
+    "burned",
+    "totals",
+  ];
+
+  return keys.every((key) => {
+    const row = record[key];
+    if (!row || typeof row !== "object") {
+      return false;
+    }
+
+    const typedRow = row as Record<string, unknown>;
+    return (
+      typeof typedRow.radical === "number" &&
+      typeof typedRow.kanji === "number" &&
+      typeof typedRow.vocabulary === "number" &&
+      typeof typedRow.total === "number"
+    );
+  });
+}
 
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
@@ -70,6 +127,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       levelKanjiLocked: true,
       estimatedHoursRemaining: true,
       levelKanjiItems: true,
+      itemSpread: true,
       lastSyncedAt: true,
     },
   });
@@ -79,6 +137,30 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   }
 
   const levelKanjiItems = (account.levelKanjiItems ?? []) as LevelKanjiItem[];
+  const itemSpread = isItemSpread(account.itemSpread) ? account.itemSpread : EMPTY_ITEM_SPREAD;
+
+  const currentLevelItems = levelKanjiItems.filter(
+    (item) => item.subjectType === "radical" || item.subjectType === "kanji" || item.subjectType === "vocabulary",
+  );
+
+  function typeProgress(type: "radical" | "kanji" | "vocabulary") {
+    const items = currentLevelItems.filter((item) => item.subjectType === type);
+    const guruOrHigher = items.filter((item) => item.srsStage >= 5).length;
+
+    return {
+      guruOrHigher,
+      total: items.length,
+      percent: items.length === 0 ? 0 : Math.round((guruOrHigher / items.length) * 100),
+    };
+  }
+
+  const levelRadicalProgress = typeProgress("radical");
+  const levelKanjiProgress = typeProgress("kanji");
+  const levelVocabularyProgress = typeProgress("vocabulary");
+
+  const kanjiGuruGoal = Math.ceil(account.levelKanjiTotal * 0.9);
+  const remainingToLevelUp = Math.max(0, kanjiGuruGoal - account.levelKanjiGuruPlus);
+  const passedLevelUpGate = account.levelKanjiGuruPlus >= kanjiGuruGoal;
 
   return (
     <div className="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
@@ -147,6 +229,88 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
             <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-sm font-semibold text-vocabulary">
               Vocabulary: {formatNumber(account.vocabularyCount)}
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.08)] sm:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-3xl font-black text-foreground">Item Spread</h2>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+              <span className="subject-pill subject-pill--radical">Radicals</span>
+              <span className="subject-pill subject-pill--kanji">Kanji</span>
+              <span className="subject-pill subject-pill--vocabulary">Vocabulary</span>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {([
+              ["Apprentice", itemSpread.apprentice],
+              ["Guru", itemSpread.guru],
+              ["Master", itemSpread.master],
+              ["Enlightened", itemSpread.enlightened],
+              ["Burned", itemSpread.burned],
+            ] as const).map(([label, row]) => (
+              <div
+                key={label}
+                className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.9fr_0.9fr] items-center gap-2 rounded-xl border border-line bg-surface-muted px-3 py-2"
+              >
+                <p className="text-xl font-semibold text-slate-800">{label}</p>
+                <span className="subject-pill subject-pill--radical justify-center">{formatNumber(row.radical)}</span>
+                <span className="subject-pill subject-pill--kanji justify-center">{formatNumber(row.kanji)}</span>
+                <span className="subject-pill subject-pill--vocabulary justify-center">{formatNumber(row.vocabulary)}</span>
+                <span className="rounded-full border border-line bg-white px-3 py-1 text-center text-2xl font-black text-foreground">
+                  {formatNumber(row.total)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.08)] sm:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-3xl font-black text-foreground">Level Progress</h2>
+            <p className="text-2xl font-semibold text-slate-700">Level {account.wkLevel}</p>
+          </div>
+          <p className="mt-3 text-lg text-slate-700">Number of items Guru&apos;d in this level.</p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {([
+              ["Radicals", "radical", levelRadicalProgress],
+              ["Kanji", "kanji", levelKanjiProgress],
+              ["Vocabulary", "vocabulary", levelVocabularyProgress],
+            ] as const).map(([label, type, progress]) => (
+              <article key={label} className="overflow-hidden rounded-2xl border border-line bg-white">
+                <div className="flex items-center gap-2 px-4 py-3">
+                  <span className={`subject-pill subject-pill--${type}`}>{label}</span>
+                </div>
+                <div className="h-2 bg-slate-200">
+                  <div
+                    className={`h-full ${
+                      type === "radical"
+                        ? "bg-radical"
+                        : type === "kanji"
+                          ? "bg-kanji"
+                          : "bg-vocabulary"
+                    }`}
+                    style={{ width: `${progress.percent}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700">
+                  <p className="text-4xl font-black text-foreground">
+                    {formatNumber(progress.guruOrHigher)}/{formatNumber(progress.total)}
+                  </p>
+                  <a href="#explorer" className="text-lg font-bold text-slate-700 hover:text-accent">
+                    See all
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-line bg-surface-muted px-4 py-4 text-lg text-slate-800">
+            {passedLevelUpGate
+              ? "You have passed this level gate, but there are still items you have not Guru'd yet."
+              : `Guru ${formatNumber(remainingToLevelUp)} more kanji to level up.`}
           </div>
         </section>
 

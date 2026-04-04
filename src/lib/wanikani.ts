@@ -56,6 +56,14 @@ type LeaderboardStats = {
     status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
     availableAt: string | null;
   }>;
+  itemSpread: {
+    apprentice: { radical: number; kanji: number; vocabulary: number; total: number };
+    guru: { radical: number; kanji: number; vocabulary: number; total: number };
+    master: { radical: number; kanji: number; vocabulary: number; total: number };
+    enlightened: { radical: number; kanji: number; vocabulary: number; total: number };
+    burned: { radical: number; kanji: number; vocabulary: number; total: number };
+    totals: { radical: number; kanji: number; vocabulary: number; total: number };
+  };
   score: number;
 };
 
@@ -178,6 +186,18 @@ function toDate(value: unknown): Date | null {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeAssignmentType(input: string): "radical" | "kanji" | "vocabulary" | null {
+  if (input === "radical" || input === "kanji") {
+    return input;
+  }
+
+  if (input === "vocabulary" || input === "kana_vocabulary") {
+    return "vocabulary";
+  }
+
+  return null;
 }
 
 export async function getLevelKanjiSnapshot(
@@ -414,10 +434,31 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
   let guruCount = 0;
   let masterCount = 0;
   let enlightenedCount = 0;
+  const itemSpread = {
+    apprentice: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+    guru: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+    master: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+    enlightened: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+    burned: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+    totals: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  };
 
   for (const assignment of allAssignmentData) {
     if (!assignment.unlocked_at || assignment.srs_stage <= 0) {
       continue;
+    }
+
+    const type = normalizeAssignmentType(assignment.subject_type);
+    if (!type) {
+      continue;
+    }
+
+    const status = srsLabel(assignment.srs_stage, false);
+    if (status !== "locked") {
+      itemSpread[status][type] += 1;
+      itemSpread[status].total += 1;
+      itemSpread.totals[type] += 1;
+      itemSpread.totals.total += 1;
     }
 
     if (assignment.srs_stage <= 4) {
@@ -461,6 +502,7 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
     estimatedHoursRemaining,
     lastActivityAt,
     levelKanjiItems,
+    itemSpread,
     score,
   };
 }

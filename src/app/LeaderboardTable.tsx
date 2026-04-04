@@ -20,7 +20,9 @@ type LeaderboardRow = {
   enlightenedCount: number;
   levelKanjiTotal: number;
   levelKanjiLearned: number;
+  levelKanjiGuruPlus: number;
   levelKanjiLocked: number;
+  itemSpread: unknown;
   lastActivityAt: string | null;
   score: number;
   lastSyncedAt: string;
@@ -29,6 +31,62 @@ type LeaderboardRow = {
 type Props = {
   rows: LeaderboardRow[];
 };
+
+type ItemSpreadRow = {
+  radical: number;
+  kanji: number;
+  vocabulary: number;
+  total: number;
+};
+
+type ItemSpread = {
+  apprentice: ItemSpreadRow;
+  guru: ItemSpreadRow;
+  master: ItemSpreadRow;
+  enlightened: ItemSpreadRow;
+  burned: ItemSpreadRow;
+  totals: ItemSpreadRow;
+};
+
+const EMPTY_ITEM_SPREAD: ItemSpread = {
+  apprentice: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  guru: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  master: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  enlightened: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  burned: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+  totals: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+};
+
+function isItemSpread(value: unknown): value is ItemSpread {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  const keys: Array<keyof ItemSpread> = [
+    "apprentice",
+    "guru",
+    "master",
+    "enlightened",
+    "burned",
+    "totals",
+  ];
+
+  return keys.every((key) => {
+    const row = record[key];
+    if (!row || typeof row !== "object") {
+      return false;
+    }
+
+    const typedRow = row as Record<string, unknown>;
+    return (
+      typeof typedRow.radical === "number" &&
+      typeof typedRow.kanji === "number" &&
+      typeof typedRow.vocabulary === "number" &&
+      typeof typedRow.total === "number"
+    );
+  });
+}
 
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
@@ -138,6 +196,13 @@ export default function LeaderboardTable({ rows }: Props) {
                 {expanded.has(row.id) ? (
                   <tr className="bg-surface-muted/40">
                     <td colSpan={9} className="px-4 py-4">
+                      {(() => {
+                        const spread = isItemSpread(row.itemSpread) ? row.itemSpread : EMPTY_ITEM_SPREAD;
+                        const kanjiGoal = Math.ceil(row.levelKanjiTotal * 0.9);
+                        const remainingToLevelUp = Math.max(0, kanjiGoal - row.levelKanjiGuruPlus);
+
+                        return (
+                      <div className="space-y-3">
                       <div className="grid gap-3 lg:grid-cols-[1.1fr_2fr_1.5fr]">
                         <div className="rounded-2xl border border-accent/25 bg-white p-4">
                           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
@@ -193,6 +258,58 @@ export default function LeaderboardTable({ rows }: Props) {
                           </div>
                         </div>
                       </div>
+
+                      <div className="grid gap-3 lg:grid-cols-[1.8fr_1.2fr]">
+                        <div className="rounded-2xl border border-line bg-white p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Item Spread</p>
+                            <div className="flex flex-wrap gap-1 text-[10px]">
+                              <span className="subject-pill subject-pill--radical">R</span>
+                              <span className="subject-pill subject-pill--kanji">K</span>
+                              <span className="subject-pill subject-pill--vocabulary">V</span>
+                            </div>
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {([
+                              ["Apprentice", spread.apprentice],
+                              ["Guru", spread.guru],
+                              ["Master", spread.master],
+                              ["Enlightened", spread.enlightened],
+                              ["Burned", spread.burned],
+                            ] as const).map(([label, data]) => (
+                              <div key={label} className="grid grid-cols-[1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] items-center gap-2 rounded-lg border border-line bg-surface-muted px-2 py-1 text-xs font-semibold text-slate-700">
+                                <p>{label}</p>
+                                <p className="text-radical">{formatNumber(data.radical)}</p>
+                                <p className="text-kanji">{formatNumber(data.kanji)}</p>
+                                <p className="text-vocabulary">{formatNumber(data.vocabulary)}</p>
+                                <p className="text-right text-base font-black text-foreground">{formatNumber(data.total)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-line bg-white p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level Progress</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-700">Level {row.wkLevel}</p>
+                          <div className="mt-3 h-2 rounded-full bg-slate-200">
+                            <div
+                              className="h-2 rounded-full bg-kanji"
+                              style={{ width: `${row.levelKanjiTotal === 0 ? 0 : Math.min(100, Math.round((row.levelKanjiGuruPlus / row.levelKanjiTotal) * 100))}%` }}
+                            />
+                          </div>
+                          <p className="mt-2 text-sm font-semibold text-slate-700">
+                            Guru+ Kanji: {formatNumber(row.levelKanjiGuruPlus)}/{formatNumber(row.levelKanjiTotal)}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {row.levelKanjiGuruPlus >= kanjiGoal
+                              ? "Level-up gate passed; cleanup remains."
+                              : `Need ${formatNumber(remainingToLevelUp)} more Guru+ kanji to level up.`}
+                          </p>
+                        </div>
+                      </div>
+                      </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ) : null}
