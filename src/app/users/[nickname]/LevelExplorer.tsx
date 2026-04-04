@@ -257,6 +257,48 @@ export default function LevelExplorer({
       : "border-line bg-white text-slate-700 hover:bg-surface-muted";
   }
 
+  function typeBadgeClass(type: TypeFilter, active: boolean, disabled: boolean): string {
+    if (disabled) {
+      return disabledBadgeClass();
+    }
+
+    if (type === "radical") {
+      return active
+        ? "border-radical bg-radical text-white"
+        : "border-radical/50 bg-radical/10 text-radical hover:bg-radical/20";
+    }
+
+    if (type === "kanji") {
+      return active
+        ? "border-kanji bg-kanji text-white"
+        : "border-kanji/50 bg-kanji/10 text-kanji hover:bg-kanji/20";
+    }
+
+    if (type === "vocabulary") {
+      return active
+        ? "border-vocabulary bg-vocabulary text-white"
+        : "border-vocabulary/50 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20";
+    }
+
+    return badgeClass(active);
+  }
+
+  function subjectTypePillClass(type: LevelItem["subjectType"]): string {
+    if (type === "radical") {
+      return "subject-pill subject-pill--radical";
+    }
+
+    if (type === "kanji") {
+      return "subject-pill subject-pill--kanji";
+    }
+
+    if (type === "vocabulary") {
+      return "subject-pill subject-pill--vocabulary";
+    }
+
+    return "subject-pill";
+  }
+
   function disabledBadgeClass(): string {
     return "cursor-not-allowed border-line bg-slate-100 text-slate-400";
   }
@@ -372,9 +414,11 @@ export default function LevelExplorer({
                 type="button"
                 onClick={() => setTypeFilter(type)}
                 disabled={disabled}
-                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
-                  disabled ? disabledBadgeClass() : badgeClass(typeFilter === type)
-                }`}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${typeBadgeClass(
+                  type,
+                  typeFilter === type,
+                  disabled,
+                )}`}
               >
                 {type} ({formatNumber(count)})
               </button>
@@ -408,7 +452,9 @@ export default function LevelExplorer({
                 onClick={() => setSelectedSubjectId(item.subjectId)}
               >
                 <td className="px-5 py-3 text-2xl font-black text-foreground">{item.characters}</td>
-                <td className="px-5 py-3 text-xs font-bold uppercase text-slate-500">{item.subjectType}</td>
+                <td className="px-5 py-3">
+                  <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
+                </td>
                 <td className="px-5 py-3 text-slate-700">{item.meanings.join(", ")}</td>
                 <td className="px-5 py-3 text-slate-700">{(item.readings ?? []).join(", ") || "-"}</td>
                 <td className="px-5 py-3">
@@ -446,7 +492,7 @@ export default function LevelExplorer({
                       key={`${selectedItem.subjectId}-${item.subjectId}`}
                       type="button"
                       onClick={() => jumpToKanji(item.subjectId)}
-                      className="rounded-full border border-accent/50 bg-white px-3 py-1 text-sm font-black text-accent hover:bg-surface-muted"
+                      className="subject-pill subject-pill--kanji px-3 py-1 text-sm font-black"
                     >
                       {item.char}
                     </button>

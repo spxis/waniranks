@@ -141,10 +141,10 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
             <Link href={`?srs=burned#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               Burned: {formatNumber(account.burnedCount)}
             </Link>
-            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-sm font-semibold text-radical">
               Radicals: {formatNumber(account.radicalCount)}
             </div>
-            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-sm font-semibold text-vocabulary">
               Vocabulary: {formatNumber(account.vocabularyCount)}
             </div>
           </div>

@@ -112,8 +112,12 @@ export default function LeaderboardTable({ rows }: Props) {
                   </td>
                   <td className="px-4 py-3 text-lg font-black text-accent">{row.wkLevel}</td>
                   <td className="px-4 py-3 font-semibold">{formatNumber(row.reviewCount)}</td>
-                  <td className="px-4 py-3 font-semibold">{formatNumber(row.radicalCount)}</td>
-                  <td className="px-4 py-3 font-semibold">{formatNumber(row.vocabularyCount)}</td>
+                  <td className="px-4 py-3">
+                    <span className="subject-pill subject-pill--radical">{formatNumber(row.radicalCount)}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="subject-pill subject-pill--vocabulary">{formatNumber(row.vocabularyCount)}</span>
+                  </td>
                   <td className="px-4 py-3 text-lg font-black text-hot">{formatNumber(row.score)}</td>
                   <td className="px-4 py-3 text-xs uppercase tracking-[0.08em] text-slate-500">
                     <p>{row.lastActivityAt ? formatDate(row.lastActivityAt) : "-"}</p>
@@ -134,34 +138,60 @@ export default function LeaderboardTable({ rows }: Props) {
                 {expanded.has(row.id) ? (
                   <tr className="bg-surface-muted/40">
                     <td colSpan={9} className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Due Now: {formatNumber(row.pendingReviews)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Apprentice: {formatNumber(row.apprenticeCount)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Guru: {formatNumber(row.guruCount)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Master: {formatNumber(row.masterCount)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Enlightened: {formatNumber(row.enlightenedCount)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Burned: {formatNumber(row.burnedCount)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Level Kanji Learned: {formatNumber(row.levelKanjiLearned)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Level Kanji Total: {formatNumber(row.levelKanjiTotal)}
-                        </span>
-                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                          Level Kanji Locked: {formatNumber(row.levelKanjiLocked)}
-                        </span>
+                      <div className="grid gap-3 lg:grid-cols-[1.1fr_2fr_1.5fr]">
+                        <div className="rounded-2xl border border-accent/25 bg-white p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                            Due Now
+                          </p>
+                          <p className="mt-1 text-4xl font-black text-accent">
+                            {formatNumber(row.pendingReviews)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-line bg-white p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                            SRS Stages
+                          </p>
+                          <div className="mt-3 grid grid-cols-5 gap-2">
+                            <div className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+                              <p className="text-[10px] font-bold uppercase text-slate-600">Apprentice</p>
+                              <p className="text-2xl font-black text-slate-900">{formatNumber(row.apprenticeCount)}</p>
+                            </div>
+                            <div className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+                              <p className="text-[10px] font-bold uppercase text-slate-600">Guru</p>
+                              <p className="text-2xl font-black text-slate-900">{formatNumber(row.guruCount)}</p>
+                            </div>
+                            <div className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+                              <p className="text-[10px] font-bold uppercase text-slate-600">Master</p>
+                              <p className="text-2xl font-black text-slate-900">{formatNumber(row.masterCount)}</p>
+                            </div>
+                            <div className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+                              <p className="text-[10px] font-bold uppercase text-slate-600">Enlightened</p>
+                              <p className="text-2xl font-black text-slate-900">{formatNumber(row.enlightenedCount)}</p>
+                            </div>
+                            <div className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+                              <p className="text-[10px] font-bold uppercase text-slate-600">Burned</p>
+                              <p className="text-2xl font-black text-slate-900">{formatNumber(row.burnedCount)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-line bg-white p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                            Level {row.wkLevel} Kanji
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                              Learned: {formatNumber(row.levelKanjiLearned)}
+                            </span>
+                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                              Total: {formatNumber(row.levelKanjiTotal)}
+                            </span>
+                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                              Locked: {formatNumber(row.levelKanjiLocked)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>

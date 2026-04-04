@@ -10,6 +10,9 @@
   --accent-2: #00a4ff;
   --hot: #ff5f3d;
   --highlight: #c4ff3d;
+  --radical: #2f80ed;
+  --kanji: #ff3b82;
+  --vocabulary: #8b5cf6;
 }
 
 @theme inline {
@@ -22,6 +25,9 @@
   --color-accent-2: var(--accent-2);
   --color-hot: var(--hot);
   --color-highlight: var(--highlight);
+  --color-radical: var(--radical);
+  --color-kanji: var(--kanji);
+  --color-vocabulary: var(--vocabulary);
   --font-sans: var(--font-body-sans);
   --font-display: var(--font-display-sans);
 }
@@ -84,4 +90,33 @@ h3 {
 
 .animate-enter-delay-3 {
   animation-delay: 270ms;
+}
+
+.subject-pill {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.subject-pill--radical {
+  border-color: color-mix(in srgb, var(--radical) 45%, white 55%);
+  color: var(--radical);
+  background: color-mix(in srgb, var(--radical) 10%, white 90%);
+}
+
+.subject-pill--kanji {
+  border-color: color-mix(in srgb, var(--kanji) 45%, white 55%);
+  color: var(--kanji);
+  background: color-mix(in srgb, var(--kanji) 10%, white 90%);
+}
+
+.subject-pill--vocabulary {
+  border-color: color-mix(in srgb, var(--vocabulary) 45%, white 55%);
+  color: var(--vocabulary);
+  background: color-mix(in srgb, var(--vocabulary) 10%, white 90%);
 }
