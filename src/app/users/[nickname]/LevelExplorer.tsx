@@ -117,6 +117,44 @@ function formatDate(input: string | null | undefined): string {
   }).format(parsed);
 }
 
+function formatNextReviewBadge(input: string | null | undefined): string | null {
+  if (!input) {
+    return null;
+  }
+
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const absolute = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+  }).format(parsed);
+
+  const deltaMs = parsed.getTime() - Date.now();
+  const absMs = Math.abs(deltaMs);
+
+  let relative = "soon";
+  if (absMs < 60 * 60 * 1000) {
+    const minutes = Math.max(1, Math.round(absMs / (60 * 1000)));
+    relative = `${deltaMs >= 0 ? "in" : ""} ${minutes} minute${minutes === 1 ? "" : "s"}`.trim();
+  } else if (absMs < 24 * 60 * 60 * 1000) {
+    const hours = Math.max(1, Math.round(absMs / (60 * 60 * 1000)));
+    relative = `${deltaMs >= 0 ? "in" : ""} ${hours} hour${hours === 1 ? "" : "s"}`.trim();
+  } else {
+    const days = Math.max(1, Math.round(absMs / (24 * 60 * 60 * 1000)));
+    relative = `${deltaMs >= 0 ? "in" : ""} ${days} day${days === 1 ? "" : "s"}`.trim();
+  }
+
+  if (deltaMs < 0) {
+    relative = `${relative} ago`;
+  }
+
+  return `Next review ${absolute} (${relative})`;
+}
+
 function stripHtml(input: string | undefined): string {
   if (!input) {
     return "";
@@ -943,41 +981,59 @@ export default function LevelExplorer({
                       SRS {item.srsStage}
                     </span>
                   </div>
+                  {item.subjectType === "kanji" && item.status !== "burned" ? (
+                    (() => {
+                      const nextReviewBadge = formatNextReviewBadge(item.availableAt);
+                      if (!nextReviewBadge) {
+                        return null;
+                      }
+
+                      return (
+                        <div className="mt-2 flex justify-center">
+                          <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                            {nextReviewBadge}
+                          </span>
+                        </div>
+                      );
+                    })()
+                  ) : null}
                 </button>
 
                 {selectedItem?.subjectId === item.subjectId ? (
                   <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-white p-5 sm:col-span-2 lg:col-span-3">
-                    <div className="flex flex-wrap items-end gap-3">
-                      <div
-                        className={`inline-flex rounded-2xl border ${
-                          glyphHasReading(selectedItem)
-                            ? "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
-                            : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
-                        } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
-                      >
-                        <div>
-                          <h3 className="text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
-                          {primaryReadingForDisplay(selectedItem) ? (
-                            <p className="mt-1 text-center text-sm font-semibold text-slate-700">
-                              {primaryReadingForDisplay(selectedItem)}
-                            </p>
-                          ) : null}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-end gap-3">
+                        <div
+                          className={`inline-flex rounded-2xl border ${
+                            glyphHasReading(selectedItem)
+                              ? "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
+                              : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
+                          } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
+                        >
+                          <div>
+                            <h3 className="text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
+                            {primaryReadingForDisplay(selectedItem) ? (
+                              <p className="mt-1 text-center text-sm font-semibold text-slate-700">
+                                {primaryReadingForDisplay(selectedItem)}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-2xl font-black leading-tight text-foreground">
-                          {selectedItem.meanings.join(", ") || "-"}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-600">
-                          WaniKani Level {selectedItem.wkLevel} · {selectedItem.subjectType}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-2xl font-black leading-tight text-foreground">
+                            {selectedItem.meanings.join(", ") || "-"}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-600">
+                            WaniKani Level {selectedItem.wkLevel} · {selectedItem.subjectType}
+                          </p>
                       </div>
                     </div>
-                    {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
-                      <p className="mt-2 inline-flex rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                      {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
+                        <p className="inline-flex self-start rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
                         JLPT N{selectedItem.jlptLevel}
                       </p>
                     ) : null}
+                    </div>
 
                     {selectedItem.subjectType === "vocabulary" ? (
                       <div className="mt-3">
