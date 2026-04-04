@@ -18,6 +18,11 @@ type AdminAccount = {
   lastSyncStatus: string;
 };
 
+function isManualRefreshOnCooldown(lastSyncedAt: string): boolean {
+  const last = new Date(lastSyncedAt).getTime();
+  return Date.now() - last < 60_000;
+}
+
 export default function AdminPage() {
   const [nickname, setNickname] = useState("");
   const [token, setToken] = useState("");
@@ -252,11 +257,13 @@ export default function AdminPage() {
                   </div>
                   <button
                     type="button"
-                    disabled={loading}
+                    disabled={loading || isManualRefreshOnCooldown(account.lastSyncedAt)}
                     onClick={() => refreshOne(account.id)}
                     className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Refresh user
+                    {isManualRefreshOnCooldown(account.lastSyncedAt)
+                      ? "Wait 1 minute"
+                      : "Refresh user"}
                   </button>
                 </article>
               ))

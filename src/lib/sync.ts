@@ -6,6 +6,7 @@ const DAILY_REFRESH_MS = 24 * 60 * 60 * 1000;
 const SYNC_LOCK_MS = 5 * 60 * 1000;
 const FAILURE_COOLDOWN_MS = 30 * 60 * 1000;
 const SUCCESS_COOLDOWN_MS = 60 * 60 * 1000;
+const MANUAL_REFRESH_COOLDOWN_MS = 60 * 1000;
 
 type SyncResult = {
   refreshed: boolean;
@@ -42,11 +43,14 @@ export async function refreshDueAccounts(maxAccounts = 2): Promise<void> {
 
 export async function refreshAccountById(accountId: string, force: boolean): Promise<SyncResult> {
   const now = new Date();
+  const manualThreshold = new Date(Date.now() - MANUAL_REFRESH_COOLDOWN_MS);
 
   const claim = await prisma.account.updateMany({
     where: {
       id: accountId,
-      ...(force ? {} : { nextSyncAllowedAt: { lte: now } }),
+      ...(force
+        ? { lastSyncedAt: { lt: manualThreshold } }
+        : { nextSyncAllowedAt: { lte: now } }),
       OR: [{ isSyncing: false }, { syncLockUntil: { lt: now } }, { syncLockUntil: null }],
     },
     data: {
@@ -58,7 +62,7 @@ export async function refreshAccountById(accountId: string, force: boolean): Pro
   });
 
   if (claim.count === 0) {
-    return { refreshed: false, reason: "busy-or-rate-limited" };
+    return { refreshed: false, reason: force ? "manual-cooldown-1m" : "busy-or-rate-limited" };
   }
 
   const account = await prisma.account.findUnique({

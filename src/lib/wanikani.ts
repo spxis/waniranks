@@ -54,6 +54,23 @@ type LeaderboardStats = {
   score: number;
 };
 
+export type LevelKanjiSnapshot = {
+  level: number;
+  kanjiTotal: number;
+  kanjiLearned: number;
+  kanjiGuruPlus: number;
+  kanjiLocked: number;
+  estimatedHoursRemaining: number | null;
+  items: Array<{
+    subjectId: number;
+    characters: string;
+    meanings: string[];
+    srsStage: number;
+    status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+    availableAt: string | null;
+  }>;
+};
+
 const BASE_URL = "https://api.wanikani.com/v2";
 
 async function fetchWaniKani<T>(path: string, token: string): Promise<T> {
@@ -138,18 +155,99 @@ function toDate(value: unknown): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+export async function getLevelKanjiSnapshot(
+  token: string,
+  level: number,
+): Promise<LevelKanjiSnapshot> {
+  const [levelSubjects, levelAssignments] = await Promise.all([
+    fetchWaniKani<WaniKaniCollectionResponse>(`/subjects?types=kanji&levels=${level}`, token),
+    fetchWaniKani<WaniKaniCollectionResponse>(
+      `/assignments?subject_types=kanji&levels=${level}`,
+      token,
+    ),
+  ]);
+
+  const subjectById = new Map(
+    levelSubjects.data.map((row) => [
+      row.id,
+      row.data as {
+        characters: string | null;
+        meanings: Array<{ meaning: string; primary: boolean }>;
+      },
+    ]),
+  );
+
+  const assignmentBySubjectId = new Map(
+    levelAssignments.data.map((row) => [
+      (row.data as { subject_id: number }).subject_id,
+      row.data as {
+        subject_id: number;
+        srs_stage: number;
+        unlocked_at: string | null;
+        available_at: string | null;
+      },
+    ]),
+  );
+
+  const items = levelSubjects.data
+    .map((subjectRow) => {
+      const subject = subjectById.get(subjectRow.id);
+      const assignment = assignmentBySubjectId.get(subjectRow.id);
+
+      const srsStage = assignment?.srs_stage ?? 0;
+      const locked = !assignment || !assignment.unlocked_at || srsStage <= 0;
+
+      return {
+        subjectId: subjectRow.id,
+        characters: subject?.characters ?? "?",
+        meanings: (subject?.meanings ?? []).slice(0, 3).map((item) => item.meaning),
+        srsStage,
+        status: srsLabel(srsStage, locked),
+        availableAt: assignment?.available_at ?? null,
+      };
+    })
+    .sort((a, b) => a.subjectId - b.subjectId);
+
+  const kanjiTotal = items.length;
+  const kanjiLearned = items.filter((item) => item.srsStage > 0).length;
+  const kanjiGuruPlus = items.filter((item) => item.srsStage >= 5).length;
+  const kanjiLocked = items.filter((item) => item.status === "locked").length;
+
+  let estimatedHoursRemaining: number | null = null;
+  const remainingGuru = Math.max(0, Math.ceil(kanjiTotal * 0.9) - kanjiGuruPlus);
+  const nextTimes = items
+    .filter((item) => item.status !== "locked" && item.srsStage < 5)
+    .map((item) => toDate(item.availableAt))
+    .filter((value): value is Date => value !== null)
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (remainingGuru <= 0) {
+    estimatedHoursRemaining = 0;
+  } else if (nextTimes.length >= remainingGuru) {
+    const target = nextTimes[remainingGuru - 1];
+    estimatedHoursRemaining = Math.max(1, Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60)));
+  }
+
+  return {
+    level,
+    kanjiTotal,
+    kanjiLearned,
+    kanjiGuruPlus,
+    kanjiLocked,
+    estimatedHoursRemaining,
+    items,
+  };
+}
+
 export async function getLeaderboardStats(token: string): Promise<LeaderboardStats> {
   const userRes = await fetchWaniKani<WaniKaniUserResponse>("/user", token);
 
-  const [reviewStatsRes, burnedRes, summaryRes, allAssignments, levelSubjects] = await Promise.all([
+  const [reviewStatsRes, burnedRes, summaryRes, allAssignments, levelSnapshot] = await Promise.all([
     fetchWaniKani<WaniKaniCollectionResponse>("/review_statistics", token),
     fetchWaniKani<WaniKaniCollectionResponse>("/assignments?srs_stages=9", token),
     fetchWaniKani<WaniKaniSummaryResponse>("/summary", token),
     fetchAllCollectionPages("/assignments", token),
-    fetchWaniKani<WaniKaniCollectionResponse>(
-      `/subjects?types=kanji&levels=${userRes.data.level}`,
-      token,
-    ),
+    getLevelKanjiSnapshot(token, userRes.data.level),
   ]);
 
   const wkLevel = userRes.data.level;
@@ -192,56 +290,12 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
     }
   }
 
-  const levelKanjiSubjects = levelSubjects.data.map((row) =>
-    row.data as {
-      characters: string | null;
-      meanings: Array<{ meaning: string; primary: boolean }>;
-    },
-  );
-  const levelKanjiTotal = levelKanjiSubjects.length;
-
-  const levelKanjiAssignments = allAssignmentData.filter(
-    (assignment) => assignment.subject_type === "kanji",
-  );
-
-  const levelKanjiItems = levelKanjiAssignments
-    .filter((assignment) => {
-      return levelSubjects.data.some((subject) => subject.id === assignment.subject_id);
-    })
-    .map((assignment) => {
-      const subjectIndex = levelSubjects.data.findIndex((subject) => subject.id === assignment.subject_id);
-      const subject = levelKanjiSubjects[subjectIndex];
-      const status = srsLabel(assignment.srs_stage, !assignment.unlocked_at);
-
-      return {
-        subjectId: assignment.subject_id,
-        characters: subject?.characters ?? "?",
-        meanings: (subject?.meanings ?? []).slice(0, 3).map((item) => item.meaning),
-        srsStage: assignment.srs_stage,
-        status,
-        availableAt: assignment.available_at,
-      };
-    })
-    .sort((a, b) => a.subjectId - b.subjectId);
-
-  const levelKanjiLearned = levelKanjiItems.filter((item) => item.srsStage > 0).length;
-  const levelKanjiGuruPlus = levelKanjiItems.filter((item) => item.srsStage >= 5).length;
-  const levelKanjiLocked = levelKanjiItems.filter((item) => item.status === "locked").length;
-
-  let estimatedHoursRemaining: number | null = null;
-  const remainingGuru = Math.max(0, Math.ceil(levelKanjiTotal * 0.9) - levelKanjiGuruPlus);
-  const nextTimes = levelKanjiItems
-    .filter((item) => item.status !== "locked" && item.srsStage < 5)
-    .map((item) => toDate(item.availableAt))
-    .filter((value): value is Date => value !== null)
-    .sort((a, b) => a.getTime() - b.getTime());
-
-  if (remainingGuru <= 0) {
-    estimatedHoursRemaining = 0;
-  } else if (nextTimes.length >= remainingGuru) {
-    const target = nextTimes[remainingGuru - 1];
-    estimatedHoursRemaining = Math.max(1, Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60)));
-  }
+  const levelKanjiTotal = levelSnapshot.kanjiTotal;
+  const levelKanjiLearned = levelSnapshot.kanjiLearned;
+  const levelKanjiGuruPlus = levelSnapshot.kanjiGuruPlus;
+  const levelKanjiLocked = levelSnapshot.kanjiLocked;
+  const estimatedHoursRemaining = levelSnapshot.estimatedHoursRemaining;
+  const levelKanjiItems = levelSnapshot.items;
 
   // Weighted score based on real progress metrics only.
   const score = wkLevel * 1000 + reviewCount * 2 + burnedCount * 4;

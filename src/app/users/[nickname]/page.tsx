@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { refreshDueAccounts } from "@/lib/sync";
+import LevelExplorer from "./LevelExplorer";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
@@ -21,23 +22,6 @@ function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
 
-function statusClass(status: LevelKanjiItem["status"]): string {
-  switch (status) {
-    case "locked":
-      return "bg-slate-100 text-slate-600";
-    case "apprentice":
-      return "bg-pink-100 text-pink-700";
-    case "guru":
-      return "bg-violet-100 text-violet-700";
-    case "master":
-      return "bg-sky-100 text-sky-700";
-    case "enlightened":
-      return "bg-amber-100 text-amber-700";
-    case "burned":
-      return "bg-emerald-100 text-emerald-700";
-  }
-}
-
 export default async function UserDetailPage({ params }: PageProps) {
   const { nickname } = await params;
   await refreshDueAccounts(1);
@@ -45,6 +29,7 @@ export default async function UserDetailPage({ params }: PageProps) {
   const account = await prisma.account.findUnique({
     where: { nickname: decodeURIComponent(nickname) },
     select: {
+      id: true,
       nickname: true,
       wkUsername: true,
       wkLevel: true,
@@ -135,45 +120,20 @@ export default async function UserDetailPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
-          <header className="border-b border-line bg-surface-muted px-5 py-4">
-            <h2 className="text-xl font-black text-foreground">Level {account.wkLevel} Kanji Items</h2>
-            <p className="text-xs uppercase tracking-[0.08em] text-slate-600">
-              Last synced {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(account.lastSyncedAt)}
-            </p>
-          </header>
-
-          {levelKanjiItems.length === 0 ? (
-            <p className="px-5 py-8 text-slate-600">No level item data available yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="border-b border-line text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
-                  <tr>
-                    <th className="px-5 py-3">Kanji</th>
-                    <th className="px-5 py-3">Meanings</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">SRS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line text-sm">
-                  {levelKanjiItems.map((item) => (
-                    <tr key={item.subjectId}>
-                      <td className="px-5 py-3 text-2xl font-black text-foreground">{item.characters}</td>
-                      <td className="px-5 py-3 text-slate-700">{item.meanings.join(", ")}</td>
-                      <td className="px-5 py-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 font-semibold text-slate-700">{item.srsStage}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        <LevelExplorer
+          accountId={account.id}
+          maxLevel={account.wkLevel}
+          initialSnapshot={{
+            level: account.wkLevel,
+            kanjiTotal: account.levelKanjiTotal,
+            kanjiLearned: account.levelKanjiLearned,
+            kanjiGuruPlus: account.levelKanjiGuruPlus,
+            kanjiLocked: account.levelKanjiLocked,
+            estimatedHoursRemaining: account.estimatedHoursRemaining,
+            items: levelKanjiItems,
+            syncedAt: account.lastSyncedAt.toISOString(),
+          }}
+        />
       </main>
     </div>
   );
