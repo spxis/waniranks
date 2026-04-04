@@ -135,6 +135,19 @@ function kanjiCountFromRow(row: LeaderboardRow): number {
   return 0;
 }
 
+function learnedKanjiFromRow(row: LeaderboardRow): number {
+  if (!isItemSpread(row.itemSpread)) {
+    return 0;
+  }
+
+  return (
+    row.itemSpread.guru.kanji +
+    row.itemSpread.master.kanji +
+    row.itemSpread.enlightened.kanji +
+    row.itemSpread.burned.kanji
+  );
+}
+
 function jlptCountsFromRow(row: LeaderboardRow): {
   n1: { learned: number; total: number; percent: number };
   n2: { learned: number; total: number; percent: number };
@@ -301,6 +314,7 @@ export default function LeaderboardTable({ rows }: Props) {
               <th className="px-4 py-3">Reviewed</th>
               <th className="px-4 py-3">Radicals</th>
               <th className="px-4 py-3">Kanji</th>
+              <th className="px-4 py-3">Learned</th>
               <th className="px-4 py-3">Vocab</th>
               <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3">Last Activity</th>
@@ -326,6 +340,7 @@ export default function LeaderboardTable({ rows }: Props) {
                   <td className="px-4 py-3">
                     <span className="subject-pill subject-pill--kanji">{formatNumber(kanjiCountFromRow(row))}</span>
                   </td>
+                  <td className="px-4 py-3 text-sm font-black text-foreground">{formatNumber(learnedKanjiFromRow(row))}</td>
                   <td className="px-4 py-3">
                     <span className="subject-pill subject-pill--vocabulary">{formatNumber(row.vocabularyCount)}</span>
                   </td>
@@ -348,7 +363,7 @@ export default function LeaderboardTable({ rows }: Props) {
                 </tr>
                 {expanded.has(row.id) ? (
                   <tr className="bg-surface-muted/40">
-                    <td colSpan={10} className="px-4 py-4">
+                    <td colSpan={11} className="px-4 py-4">
                       {(() => {
                         const spread = isItemSpread(row.itemSpread) ? row.itemSpread : EMPTY_ITEM_SPREAD;
                         const jlpt = jlptCountsFromRow(row);
@@ -579,6 +594,7 @@ export default function LeaderboardTable({ rows }: Props) {
                 <div className="rounded-lg bg-surface-muted p-2">Radicals {formatNumber(row.radicalCount)}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Kanji {formatNumber(kanjiCountFromRow(row))}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Vocab {formatNumber(row.vocabularyCount)}</div>
+                <div className="rounded-lg bg-surface-muted p-2">Learned {formatNumber(learnedKanjiFromRow(row))}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Due {formatNumber(row.pendingReviews)}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Burned {formatNumber(row.burnedCount)}</div>
                 <div className="col-span-2 rounded-lg bg-surface-muted p-2">Last sync {formatDate(row.lastSyncedAt)}</div>

@@ -158,6 +158,11 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const levelRadicalProgress = typeProgress("radical");
   const levelKanjiProgress = typeProgress("kanji");
   const levelVocabularyProgress = typeProgress("vocabulary");
+  const totalLearnedKanji =
+    itemSpread.guru.kanji +
+    itemSpread.master.kanji +
+    itemSpread.enlightened.kanji +
+    itemSpread.burned.kanji;
 
   const kanjiGuruGoal = Math.ceil(account.levelKanjiTotal * 0.9);
   const remainingToLevelUp = Math.max(0, kanjiGuruGoal - account.levelKanjiGuruPlus);
@@ -178,7 +183,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{account.nickname}</h1>
           <p className="mt-2 text-sm text-slate-600">@{account.wkUsername}</p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <article className="rounded-2xl border border-line bg-surface-muted p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level</p>
               <p className="mt-2 text-4xl font-black text-accent">{account.wkLevel}</p>
@@ -196,6 +201,11 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
                 {formatNumber(Math.max(0, account.levelKanjiTotal - account.levelKanjiLearned))}
               </p>
               <p className="text-xs text-slate-600">locked: {formatNumber(account.levelKanjiLocked)}</p>
+            </article>
+            <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-kanji">Total Learned</p>
+              <p className="mt-2 text-4xl font-black text-kanji">{formatNumber(totalLearnedKanji)}</p>
+              <p className="text-xs text-slate-600">all kanji at Guru+</p>
             </article>
             <article className="rounded-2xl border border-line bg-surface-muted p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Est. Time Remaining</p>

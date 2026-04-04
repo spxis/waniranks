@@ -378,7 +378,7 @@ export async function getLevelKanjiSnapshot(
 
   const onlyKanji = items.filter((item) => item.subjectType === "kanji");
   const kanjiTotal = onlyKanji.length;
-  const kanjiLearned = onlyKanji.filter((item) => item.srsStage > 0).length;
+  const kanjiLearned = onlyKanji.filter((item) => item.srsStage >= 5).length;
   const kanjiGuruPlus = onlyKanji.filter((item) => item.srsStage >= 5).length;
   const kanjiLocked = onlyKanji.filter((item) => item.status === "locked").length;
 
@@ -507,11 +507,13 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
       allAssignmentData
         .filter(
           (assignment) =>
-            assignment.subject_type === "kanji" && assignment.unlocked_at && assignment.srs_stage > 0,
+            assignment.subject_type === "kanji" && assignment.unlocked_at && assignment.srs_stage >= 5,
         )
         .map((assignment) => assignment.subject_id),
     ),
   );
+
+  const learnedKanjiCount = learnedKanjiSubjectIds.length;
 
   if (learnedKanjiSubjectIds.length > 0) {
     const chunkSize = 200;
@@ -599,7 +601,7 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
   const levelKanjiItems = levelSnapshot.items;
 
   // Weighted score based on real progress metrics only.
-  const score = wkLevel * 1000 + reviewCount * 2 + burnedCount * 4;
+  const score = wkLevel * 1000 + reviewCount * 2 + burnedCount * 4 + learnedKanjiCount * 3;
 
   return {
     wkUserId: userRes.data.id,
