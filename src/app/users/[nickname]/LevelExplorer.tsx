@@ -143,6 +143,7 @@ export default function LevelExplorer({
 }: Props) {
   const typeVisibilityStorageKey = `wr:explorer:${accountId}:type-visibility`;
   const selectedSubjectStorageKey = `wr:explorer:${accountId}:selected-subject`;
+  const stickyMergeStorageKey = `wr:explorer:${accountId}:sticky-merge`;
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
   const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
@@ -157,6 +158,7 @@ export default function LevelExplorer({
     kanji: true,
     vocabulary: true,
   });
+  const [stickyMerge, setStickyMerge] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
@@ -196,6 +198,17 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      const raw = window.localStorage.getItem(stickyMergeStorageKey);
+      if (raw === "1") {
+        setStickyMerge(true);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [stickyMergeStorageKey]);
+
+  useEffect(() => {
+    try {
       if (selectedSubjectId === null) {
         window.localStorage.removeItem(selectedSubjectStorageKey);
       } else {
@@ -221,6 +234,21 @@ export default function LevelExplorer({
       [type]: !visibleTypes[type],
     };
     setVisibleTypesAndPersist(next);
+  }
+
+  function setStickyMergeAndPersist(next: boolean) {
+    setStickyMerge(next);
+
+    try {
+      window.localStorage.setItem(stickyMergeStorageKey, next ? "1" : "0");
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+
+    if (!next) {
+      const firstSelected = Array.from(selectedLevels.values()).sort((a, b) => a - b)[0] ?? initialSnapshot.level;
+      setSelectedLevels(new Set([firstSelected]));
+    }
   }
 
   function setTypeFilterAndEnsureVisible(nextType: TypeFilter) {
@@ -271,21 +299,7 @@ export default function LevelExplorer({
     };
   }, [initialSnapshot, selectedLevels, snapshotsByLevel]);
 
-  async function toggleLevel(level: number) {
-    setError("");
-    const next = new Set(selectedLevels);
-    if (next.has(level)) {
-      if (next.size === 1) {
-        return;
-      }
-      next.delete(level);
-      setSelectedLevels(next);
-      return;
-    }
-
-    next.add(level);
-    setSelectedLevels(next);
-
+  async function ensureLevelLoaded(level: number) {
     if (snapshotsByLevel.has(level)) {
       return;
     }
@@ -310,6 +324,30 @@ export default function LevelExplorer({
     } finally {
       setLoading(false);
     }
+  }
+
+  async function toggleLevel(level: number) {
+    setError("");
+
+    if (!stickyMerge) {
+      setSelectedLevels(new Set([level]));
+      await ensureLevelLoaded(level);
+      return;
+    }
+
+    const next = new Set(selectedLevels);
+    if (next.has(level)) {
+      if (next.size === 1) {
+        return;
+      }
+      next.delete(level);
+      setSelectedLevels(next);
+      return;
+    }
+
+    next.add(level);
+    setSelectedLevels(next);
+    await ensureLevelLoaded(level);
   }
 
   const filteredItems = useMemo(() => {
@@ -510,7 +548,8 @@ export default function LevelExplorer({
             Click one or more level badges to combine data
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
           {levelOptions.map((level) => (
             <button
               key={level}
@@ -523,6 +562,19 @@ export default function LevelExplorer({
               L{level}
             </button>
           ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setStickyMergeAndPersist(!stickyMerge)}
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
+              stickyMerge
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-white text-slate-700"
+            }`}
+            aria-pressed={stickyMerge}
+          >
+            Sticky {stickyMerge ? "On" : "Off"}
+          </button>
         </div>
       </header>
 
