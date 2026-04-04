@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment } from "react";
+import { useEffect } from "react";
 import { useState } from "react";
 
 type LeaderboardRow = {
@@ -127,6 +128,32 @@ function formatSince(input: string | null): string {
 
 export default function LeaderboardTable({ rows }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showItemSpreadPanel, setShowItemSpreadPanel] = useState(true);
+  const [showLevelProgressPanel, setShowLevelProgressPanel] = useState(true);
+
+  useEffect(() => {
+    try {
+      const spread = window.localStorage.getItem("wr:leaderboard:item-spread-open");
+      const progress = window.localStorage.getItem("wr:leaderboard:level-progress-open");
+      if (spread === "0") {
+        setShowItemSpreadPanel(false);
+      }
+      if (progress === "0") {
+        setShowLevelProgressPanel(false);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, []);
+
+  function persistPanelState(key: string, value: boolean, setter: (next: boolean) => void) {
+    setter(value);
+    try {
+      window.localStorage.setItem(key, value ? "1" : "0");
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -261,50 +288,86 @@ export default function LeaderboardTable({ rows }: Props) {
 
                       <div className="grid gap-3 lg:grid-cols-[1.8fr_1.2fr]">
                         <div className="rounded-2xl border border-line bg-white p-4">
-                          <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Item Spread</p>
-                            <div className="flex flex-wrap gap-1 text-[10px]">
-                              <span className="subject-pill subject-pill--radical">R</span>
-                              <span className="subject-pill subject-pill--kanji">K</span>
-                              <span className="subject-pill subject-pill--vocabulary">V</span>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                persistPanelState(
+                                  "wr:leaderboard:item-spread-open",
+                                  !showItemSpreadPanel,
+                                  setShowItemSpreadPanel,
+                                )
+                              }
+                              className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
+                            >
+                              {showItemSpreadPanel ? "Collapse" : "Expand"}
+                            </button>
                           </div>
-                          <div className="mt-2 space-y-1">
-                            {([
-                              ["Apprentice", spread.apprentice],
-                              ["Guru", spread.guru],
-                              ["Master", spread.master],
-                              ["Enlightened", spread.enlightened],
-                              ["Burned", spread.burned],
-                            ] as const).map(([label, data]) => (
-                              <div key={label} className="grid grid-cols-[1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] items-center gap-2 rounded-lg border border-line bg-surface-muted px-2 py-1 text-xs font-semibold text-slate-700">
-                                <p>{label}</p>
-                                <p className="text-radical">{formatNumber(data.radical)}</p>
-                                <p className="text-kanji">{formatNumber(data.kanji)}</p>
-                                <p className="text-vocabulary">{formatNumber(data.vocabulary)}</p>
-                                <p className="text-right text-base font-black text-foreground">{formatNumber(data.total)}</p>
+                          {showItemSpreadPanel ? (
+                            <>
+                              <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
+                                <span className="subject-pill subject-pill--radical">R</span>
+                                <span className="subject-pill subject-pill--kanji">K</span>
+                                <span className="subject-pill subject-pill--vocabulary">V</span>
                               </div>
-                            ))}
-                          </div>
+                              <div className="mt-2 space-y-1">
+                                {([
+                                  ["Apprentice", spread.apprentice],
+                                  ["Guru", spread.guru],
+                                  ["Master", spread.master],
+                                  ["Enlightened", spread.enlightened],
+                                  ["Burned", spread.burned],
+                                ] as const).map(([label, data]) => (
+                                  <div key={label} className="grid grid-cols-[1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] items-center gap-2 rounded-lg border border-line bg-surface-muted px-2 py-1 text-xs font-semibold text-slate-700">
+                                    <p>{label}</p>
+                                    <p className="text-radical">{formatNumber(data.radical)}</p>
+                                    <p className="text-kanji">{formatNumber(data.kanji)}</p>
+                                    <p className="text-vocabulary">{formatNumber(data.vocabulary)}</p>
+                                    <p className="text-right text-base font-black text-foreground">{formatNumber(data.total)}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          ) : null}
                         </div>
 
                         <div className="rounded-2xl border border-line bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level Progress</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-700">Level {row.wkLevel}</p>
-                          <div className="mt-3 h-2 rounded-full bg-slate-200">
-                            <div
-                              className="h-2 rounded-full bg-kanji"
-                              style={{ width: `${row.levelKanjiTotal === 0 ? 0 : Math.min(100, Math.round((row.levelKanjiGuruPlus / row.levelKanjiTotal) * 100))}%` }}
-                            />
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level Progress</p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                persistPanelState(
+                                  "wr:leaderboard:level-progress-open",
+                                  !showLevelProgressPanel,
+                                  setShowLevelProgressPanel,
+                                )
+                              }
+                              className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
+                            >
+                              {showLevelProgressPanel ? "Collapse" : "Expand"}
+                            </button>
                           </div>
-                          <p className="mt-2 text-sm font-semibold text-slate-700">
-                            Guru+ Kanji: {formatNumber(row.levelKanjiGuruPlus)}/{formatNumber(row.levelKanjiTotal)}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {row.levelKanjiGuruPlus >= kanjiGoal
-                              ? "Level-up gate passed; cleanup remains."
-                              : `Need ${formatNumber(remainingToLevelUp)} more Guru+ kanji to level up.`}
-                          </p>
+                          {showLevelProgressPanel ? (
+                            <>
+                              <p className="mt-1 text-sm font-semibold text-slate-700">Level {row.wkLevel}</p>
+                              <div className="mt-3 h-2 rounded-full bg-slate-200">
+                                <div
+                                  className="h-2 rounded-full bg-kanji"
+                                  style={{ width: `${row.levelKanjiTotal === 0 ? 0 : Math.min(100, Math.round((row.levelKanjiGuruPlus / row.levelKanjiTotal) * 100))}%` }}
+                                />
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-slate-700">
+                                Guru+ Kanji: {formatNumber(row.levelKanjiGuruPlus)}/{formatNumber(row.levelKanjiTotal)}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {row.levelKanjiGuruPlus >= kanjiGoal
+                                  ? "Level-up gate passed; cleanup remains."
+                                  : `Need ${formatNumber(remainingToLevelUp)} more Guru+ kanji to level up.`}
+                              </p>
+                            </>
+                          ) : null}
                         </div>
                       </div>
                       </div>

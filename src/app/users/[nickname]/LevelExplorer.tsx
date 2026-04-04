@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type LevelItem = {
   subjectId: number;
@@ -128,6 +128,7 @@ export default function LevelExplorer({
   initialSnapshot,
   initialSrsFilter = "all",
 }: Props) {
+  const typeVisibilityStorageKey = `wr:explorer:${accountId}:type-visibility`;
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
   const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
@@ -137,8 +138,48 @@ export default function LevelExplorer({
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(
     initialSnapshot.items[0]?.subjectId ?? null,
   );
+  const [visibleTypes, setVisibleTypes] = useState({
+    radical: true,
+    kanji: true,
+    vocabulary: true,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(typeVisibilityStorageKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<typeof visibleTypes>;
+      setVisibleTypes((prev) => ({
+        radical: parsed.radical ?? prev.radical,
+        kanji: parsed.kanji ?? prev.kanji,
+        vocabulary: parsed.vocabulary ?? prev.vocabulary,
+      }));
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [typeVisibilityStorageKey]);
+
+  function setVisibleTypesAndPersist(next: typeof visibleTypes) {
+    setVisibleTypes(next);
+    try {
+      window.localStorage.setItem(typeVisibilityStorageKey, JSON.stringify(next));
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }
+
+  function toggleVisibleType(type: "radical" | "kanji" | "vocabulary") {
+    const next = {
+      ...visibleTypes,
+      [type]: !visibleTypes[type],
+    };
+    setVisibleTypesAndPersist(next);
+  }
 
   const levelOptions = useMemo(() => {
     return Array.from({ length: maxLevel }, (_, index) => index + 1);
@@ -218,9 +259,18 @@ export default function LevelExplorer({
     return combinedSnapshot.items.filter((item) => {
       const srsPass = srsFilter === "all" ? true : item.status === srsFilter;
       const typePass = typeFilter === "all" ? true : item.subjectType === typeFilter;
-      return srsPass && typePass;
+      const visibilityPass =
+        item.subjectType === "radical"
+          ? visibleTypes.radical
+          : item.subjectType === "kanji"
+            ? visibleTypes.kanji
+            : item.subjectType === "vocabulary"
+              ? visibleTypes.vocabulary
+              : true;
+
+      return srsPass && typePass && visibilityPass;
     });
-  }, [combinedSnapshot.items, srsFilter, typeFilter]);
+  }, [combinedSnapshot.items, srsFilter, typeFilter, visibleTypes]);
 
   const selectedItem =
     filteredItems.find((item) => item.subjectId === selectedSubjectId) ?? filteredItems[0] ?? null;
@@ -301,6 +351,20 @@ export default function LevelExplorer({
 
   function disabledBadgeClass(): string {
     return "cursor-not-allowed border-line bg-slate-100 text-slate-400";
+  }
+
+  function typeCardClass(type: LevelItem["subjectType"], selected: boolean): string {
+    const selectedRing = selected ? "ring-2 ring-accent" : "";
+    if (type === "radical") {
+      return `border-radical/50 bg-radical/15 text-radical ${selectedRing}`;
+    }
+    if (type === "kanji") {
+      return `border-kanji/50 bg-kanji/15 text-kanji ${selectedRing}`;
+    }
+    if (type === "vocabulary") {
+      return `border-vocabulary/50 bg-vocabulary/15 text-vocabulary ${selectedRing}`;
+    }
+    return `border-line bg-white text-slate-700 ${selectedRing}`;
   }
 
   const kanjiByCharacter = useMemo(() => {
@@ -425,48 +489,79 @@ export default function LevelExplorer({
             );
           })}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-600">Collapse item types</p>
+          {([
+            ["radical", visibleTypes.radical],
+            ["kanji", visibleTypes.kanji],
+            ["vocabulary", visibleTypes.vocabulary],
+          ] as const).map(([type, isVisible]) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => toggleVisibleType(type)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
+                isVisible ? typeBadgeClass(type, true, false) : "border-line bg-slate-100 text-slate-500"
+              }`}
+            >
+              {isVisible ? `Hide ${type}` : `Show ${type}`}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setVisibleTypesAndPersist({ radical: false, kanji: false, vocabulary: false })}
+            className="rounded-full border border-line bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-600"
+          >
+            Collapse all
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true })}
+            className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-700"
+          >
+            Expand all
+          </button>
+        </div>
       </div>
 
       {loading ? <p className="px-5 py-4 text-sm text-slate-600">Loading level data...</p> : null}
       {error ? <p className="px-5 py-4 text-sm text-red-700">{error}</p> : null}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="border-b border-line text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
-            <tr>
-              <th className="px-5 py-3">Kanji</th>
-              <th className="px-5 py-3">Type</th>
-              <th className="px-5 py-3">Meanings</th>
-              <th className="px-5 py-3">Readings</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">SRS</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line text-sm">
+      <div className="p-5">
+        {filteredItems.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-600">
+            No items visible. Expand one or more types above.
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => (
-              <tr
+              <button
                 key={`${item.subjectType}-${item.subjectId}`}
-                className={`cursor-pointer transition hover:bg-surface-muted ${
-                  selectedItem?.subjectId === item.subjectId ? "bg-surface-muted" : ""
-                }`}
+                type="button"
                 onClick={() => setSelectedSubjectId(item.subjectId)}
+                className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
+                  item.subjectType,
+                  selectedItem?.subjectId === item.subjectId,
+                )}`}
               >
-                <td className="px-5 py-3 text-2xl font-black text-foreground">{item.characters}</td>
-                <td className="px-5 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-4xl font-black leading-none">{item.characters}</p>
                   <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
-                </td>
-                <td className="px-5 py-3 text-slate-700">{item.meanings.join(", ")}</td>
-                <td className="px-5 py-3 text-slate-700">{(item.readings ?? []).join(", ") || "-"}</td>
-                <td className="px-5 py-3">
+                </div>
+                <p className="mt-2 text-sm font-semibold text-slate-700">{item.meanings.join(", ") || "-"}</p>
+                <p className="mt-1 text-xs text-slate-600">{(item.readings ?? []).join(", ") || "-"}</p>
+                <div className="mt-3 flex items-center justify-between gap-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
                     {item.status}
                   </span>
-                </td>
-                <td className="px-5 py-3 font-semibold text-slate-700">{item.srsStage}</td>
-              </tr>
+                  <span className="rounded-full border border-line bg-white px-2 py-1 text-xs font-bold text-slate-700">
+                    SRS {item.srsStage}
+                  </span>
+                </div>
+              </button>
             ))}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
 
       {selectedItem ? (
