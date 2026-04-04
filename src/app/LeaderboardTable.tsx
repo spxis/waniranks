@@ -126,6 +126,14 @@ function formatSince(input: string | null): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
+function kanjiCountFromRow(row: LeaderboardRow): number {
+  if (isItemSpread(row.itemSpread)) {
+    return row.itemSpread.totals.kanji;
+  }
+
+  return 0;
+}
+
 export default function LeaderboardTable({ rows }: Props) {
   const expandedStorageKey = "wr:leaderboard:expanded-rows";
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -210,6 +218,7 @@ export default function LeaderboardTable({ rows }: Props) {
               <th className="px-4 py-3">Level</th>
               <th className="px-4 py-3">Reviewed</th>
               <th className="px-4 py-3">Radicals</th>
+              <th className="px-4 py-3">Kanji</th>
               <th className="px-4 py-3">Vocab</th>
               <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3">Last Activity</th>
@@ -233,6 +242,9 @@ export default function LeaderboardTable({ rows }: Props) {
                     <span className="subject-pill subject-pill--radical">{formatNumber(row.radicalCount)}</span>
                   </td>
                   <td className="px-4 py-3">
+                    <span className="subject-pill subject-pill--kanji">{formatNumber(kanjiCountFromRow(row))}</span>
+                  </td>
+                  <td className="px-4 py-3">
                     <span className="subject-pill subject-pill--vocabulary">{formatNumber(row.vocabularyCount)}</span>
                   </td>
                   <td className="px-4 py-3 text-lg font-black text-hot">{formatNumber(row.score)}</td>
@@ -254,7 +266,7 @@ export default function LeaderboardTable({ rows }: Props) {
                 </tr>
                 {expanded.has(row.id) ? (
                   <tr className="bg-surface-muted/40">
-                    <td colSpan={9} className="px-4 py-4">
+                    <td colSpan={10} className="px-4 py-4">
                       {(() => {
                         const spread = isItemSpread(row.itemSpread) ? row.itemSpread : EMPTY_ITEM_SPREAD;
                         const kanjiGoal = Math.ceil(row.levelKanjiTotal * 0.9);
@@ -439,6 +451,7 @@ export default function LeaderboardTable({ rows }: Props) {
             {expanded.has(row.id) ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-slate-700">
                 <div className="rounded-lg bg-surface-muted p-2">Radicals {formatNumber(row.radicalCount)}</div>
+                <div className="rounded-lg bg-surface-muted p-2">Kanji {formatNumber(kanjiCountFromRow(row))}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Vocab {formatNumber(row.vocabularyCount)}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Due {formatNumber(row.pendingReviews)}</div>
                 <div className="rounded-lg bg-surface-muted p-2">Burned {formatNumber(row.burnedCount)}</div>
