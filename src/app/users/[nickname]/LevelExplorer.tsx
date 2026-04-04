@@ -146,6 +146,8 @@ export default function LevelExplorer({
   const typeVisibilityStorageKey = `wr:explorer:${accountId}:type-visibility`;
   const selectedSubjectStorageKey = `wr:explorer:${accountId}:selected-subject`;
   const stickyMergeStorageKey = `wr:explorer:${accountId}:sticky-merge`;
+  const srsFilterStorageKey = `wr:explorer:${accountId}:srs-filter`;
+  const typeFilterStorageKey = `wr:explorer:${accountId}:type-filter`;
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
   const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
@@ -208,6 +210,63 @@ export default function LevelExplorer({
       // Ignore storage errors in restricted browsing modes.
     }
   }, [stickyMergeStorageKey]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(srsFilterStorageKey);
+      if (!raw) {
+        return;
+      }
+
+      const allowed: SrsFilter[] = [
+        "all",
+        "apprentice",
+        "guru",
+        "master",
+        "enlightened",
+        "burned",
+        "locked",
+      ];
+
+      if (allowed.includes(raw as SrsFilter)) {
+        setSrsFilter(raw as SrsFilter);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [srsFilterStorageKey]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(typeFilterStorageKey);
+      if (!raw) {
+        return;
+      }
+
+      const allowed: TypeFilter[] = ["all", "radical", "kanji", "vocabulary"];
+      if (allowed.includes(raw as TypeFilter)) {
+        setTypeFilter(raw as TypeFilter);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [typeFilterStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(srsFilterStorageKey, srsFilter);
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [srsFilter, srsFilterStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(typeFilterStorageKey, typeFilter);
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [typeFilter, typeFilterStorageKey]);
 
   useEffect(() => {
     try {
@@ -716,9 +775,9 @@ export default function LevelExplorer({
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
-                    {item.subjectType === "kanji" && item.jlptLevel ? (
+                    {item.subjectType === "kanji" ? (
                       <span className="rounded-full border border-line bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
-                        JLPT N{item.jlptLevel}
+                        {item.jlptLevel ? `JLPT N${item.jlptLevel}` : "JLPT -"}
                       </span>
                     ) : null}
                   </div>
@@ -766,9 +825,9 @@ export default function LevelExplorer({
           <p className="text-sm font-semibold text-slate-600">
             WaniKani Level {selectedItem.wkLevel} · {selectedItem.subjectType}
           </p>
-          {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
+          {selectedItem.subjectType === "kanji" ? (
             <p className="mt-1 inline-flex rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-              JLPT N{selectedItem.jlptLevel}
+              {selectedItem.jlptLevel ? `JLPT N${selectedItem.jlptLevel}` : "JLPT -"}
             </p>
           ) : null}
 
