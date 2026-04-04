@@ -1,4 +1,5 @@
 import { decryptToken } from "@/lib/crypto";
+import { upsertDailySnapshot } from "@/lib/dailySnapshot";
 import { prisma } from "@/lib/prisma";
 import { getLeaderboardStats } from "@/lib/wanikani";
 
@@ -88,6 +89,8 @@ export async function refreshAccountById(accountId: string, force: boolean): Pro
 
     const stats = await getLeaderboardStats(token);
 
+    const syncedAt = new Date();
+
     await prisma.account.update({
       where: { id: account.id },
       data: {
@@ -111,13 +114,32 @@ export async function refreshAccountById(accountId: string, force: boolean): Pro
         lastActivityAt: stats.lastActivityAt,
         levelKanjiItems: stats.levelKanjiItems,
         score: stats.score,
-        lastSyncedAt: new Date(),
+        lastSyncedAt: syncedAt,
         nextSyncAllowedAt: nowPlus(SUCCESS_COOLDOWN_MS),
         lastSyncStatus: "ok",
         lastSyncError: null,
         isSyncing: false,
         syncLockUntil: null,
       },
+    });
+
+    await upsertDailySnapshot({
+      accountId: account.id,
+      wkLevel: stats.wkLevel,
+      reviewCount: stats.reviewCount,
+      burnedCount: stats.burnedCount,
+      pendingReviews: stats.pendingReviews,
+      radicalCount: stats.radicalCount,
+      vocabularyCount: stats.vocabularyCount,
+      apprenticeCount: stats.apprenticeCount,
+      guruCount: stats.guruCount,
+      masterCount: stats.masterCount,
+      enlightenedCount: stats.enlightenedCount,
+      levelKanjiLearned: stats.levelKanjiLearned,
+      levelKanjiTotal: stats.levelKanjiTotal,
+      score: stats.score,
+      lastActivityAt: stats.lastActivityAt,
+      lastSyncedAt: syncedAt,
     });
 
     return { refreshed: true };

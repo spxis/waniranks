@@ -61,3 +61,28 @@ model LevelSnapshot {
   @@unique([accountId, level])
   @@index([accountId])
 }
+
+model DailyAccountSnapshot {
+  id                 String   @id @default(cuid())
+  accountId          String
+  snapshotDatePst    String
+  snapshotAt         DateTime @default(now())
+  wkLevel            Int
+  reviewCount        Int
+  burnedCount        Int
+  pendingReviews     Int
+  radicalCount       Int
+  vocabularyCount    Int
+  apprenticeCount    Int
+  guruCount          Int
+  masterCount        Int
+  enlightenedCount   Int
+  levelKanjiLearned  Int
+  levelKanjiTotal    Int
+  score              Int
+  lastActivityAt     DateTime?
+  lastSyncedAt       DateTime
+
+  @@unique([accountId, snapshotDatePst])
+  @@index([accountId])
+}

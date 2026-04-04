@@ -134,19 +134,34 @@ export default function LeaderboardTable({ rows }: Props) {
                 {expanded.has(row.id) ? (
                   <tr className="bg-surface-muted/40">
                     <td colSpan={9} className="px-4 py-4">
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-xl border border-line bg-white p-3 text-sm font-semibold text-slate-700">
-                          Due now: {formatNumber(row.pendingReviews)}
-                        </div>
-                        <div className="rounded-xl border border-line bg-white p-3 text-sm font-semibold text-slate-700">
-                          SRS A/G: {formatNumber(row.apprenticeCount)} / {formatNumber(row.guruCount)}
-                        </div>
-                        <div className="rounded-xl border border-line bg-white p-3 text-sm font-semibold text-slate-700">
-                          SRS M/E/B: {formatNumber(row.masterCount)} / {formatNumber(row.enlightenedCount)} / {formatNumber(row.burnedCount)}
-                        </div>
-                        <div className="rounded-xl border border-line bg-white p-3 text-sm font-semibold text-slate-700">
-                          Level Kanji: {formatNumber(row.levelKanjiLearned)} / {formatNumber(row.levelKanjiTotal)} (locked {formatNumber(row.levelKanjiLocked)})
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Due Now: {formatNumber(row.pendingReviews)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Apprentice: {formatNumber(row.apprenticeCount)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Guru: {formatNumber(row.guruCount)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Master: {formatNumber(row.masterCount)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Enlightened: {formatNumber(row.enlightenedCount)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Burned: {formatNumber(row.burnedCount)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Level Kanji Learned: {formatNumber(row.levelKanjiLearned)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Level Kanji Total: {formatNumber(row.levelKanjiTotal)}
+                        </span>
+                        <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                          Level Kanji Locked: {formatNumber(row.levelKanjiLocked)}
+                        </span>
                       </div>
                     </td>
                   </tr>

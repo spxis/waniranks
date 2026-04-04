@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
 import { encryptToken } from "@/lib/crypto";
+import { upsertDailySnapshot } from "@/lib/dailySnapshot";
 import { prisma } from "@/lib/prisma";
 import { getLeaderboardStats } from "@/lib/wanikani";
 
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
     const { nickname, token } = parsed.data;
     const stats = await getLeaderboardStats(token);
     const encrypted = encryptToken(token);
+
+    const syncedAt = new Date();
 
     const account = await prisma.account.upsert({
       where: { nickname },
@@ -58,7 +61,7 @@ export async function POST(request: Request) {
         isSyncing: false,
         syncLockUntil: null,
         score: stats.score,
-        lastSyncedAt: new Date(),
+        lastSyncedAt: syncedAt,
       },
       create: {
         nickname,
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
         isSyncing: false,
         syncLockUntil: null,
         score: stats.score,
-        lastSyncedAt: new Date(),
+        lastSyncedAt: syncedAt,
       },
       select: {
         id: true,
@@ -114,6 +117,25 @@ export async function POST(request: Request) {
         score: true,
         lastSyncedAt: true,
       },
+    });
+
+    await upsertDailySnapshot({
+      accountId: account.id,
+      wkLevel: stats.wkLevel,
+      reviewCount: stats.reviewCount,
+      burnedCount: stats.burnedCount,
+      pendingReviews: stats.pendingReviews,
+      radicalCount: stats.radicalCount,
+      vocabularyCount: stats.vocabularyCount,
+      apprenticeCount: stats.apprenticeCount,
+      guruCount: stats.guruCount,
+      masterCount: stats.masterCount,
+      enlightenedCount: stats.enlightenedCount,
+      levelKanjiLearned: stats.levelKanjiLearned,
+      levelKanjiTotal: stats.levelKanjiTotal,
+      score: stats.score,
+      lastActivityAt: stats.lastActivityAt,
+      lastSyncedAt: syncedAt,
     });
 
     return NextResponse.json({ account }, { status: 201 });
