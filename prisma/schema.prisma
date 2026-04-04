@@ -14,7 +14,7 @@ model Account {
   tokenEncrypted String
   tokenIv        String
   tokenTag       String
-  wkUserId       Int      @unique
+  wkUserId       String   @unique
   wkUsername     String
   wkLevel        Int
   reviewCount    Int      @default(0)

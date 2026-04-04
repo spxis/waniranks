@@ -1,6 +1,6 @@
 type WaniKaniUserResponse = {
   data: {
-    id: number;
+    id: string;
     username: string;
     level: number;
   };
@@ -11,7 +11,7 @@ type WaniKaniReviewsResponse = {
 };
 
 type LeaderboardStats = {
-  wkUserId: number;
+  wkUserId: string;
   wkUsername: string;
   wkLevel: number;
   reviewCount: number;
