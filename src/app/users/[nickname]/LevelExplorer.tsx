@@ -223,6 +223,21 @@ export default function LevelExplorer({
     setVisibleTypesAndPersist(next);
   }
 
+  function setTypeFilterAndEnsureVisible(nextType: TypeFilter) {
+    setTypeFilter(nextType);
+
+    if (nextType === "all") {
+      return;
+    }
+
+    if (!visibleTypes[nextType]) {
+      setVisibleTypesAndPersist({
+        ...visibleTypes,
+        [nextType]: true,
+      });
+    }
+  }
+
   const levelOptions = useMemo(() => {
     return Array.from({ length: maxLevel }, (_, index) => index + 1);
   }, [maxLevel]);
@@ -398,13 +413,13 @@ export default function LevelExplorer({
   function typeCardClass(type: LevelItem["subjectType"], selected: boolean): string {
     const selectedRing = selected ? "ring-2 ring-accent" : "";
     if (type === "radical") {
-      return `border-radical/50 bg-radical/15 text-radical ${selectedRing}`;
+      return `border-radical/50 bg-white text-slate-800 ${selectedRing}`;
     }
     if (type === "kanji") {
-      return `border-kanji/50 bg-kanji/15 text-kanji ${selectedRing}`;
+      return `border-kanji/50 bg-white text-slate-800 ${selectedRing}`;
     }
     if (type === "vocabulary") {
-      return `border-vocabulary/50 bg-vocabulary/15 text-vocabulary ${selectedRing}`;
+      return `border-vocabulary/50 bg-white text-slate-800 ${selectedRing}`;
     }
     return `border-line bg-white text-slate-700 ${selectedRing}`;
   }
@@ -535,7 +550,7 @@ export default function LevelExplorer({
               <button
                 key={type}
                 type="button"
-                onClick={() => setTypeFilter(type)}
+                onClick={() => setTypeFilterAndEnsureVisible(type)}
                 disabled={disabled}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${typeBadgeClass(
                   type,
