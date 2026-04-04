@@ -188,6 +188,34 @@ function jlptCountsFromRow(row: LeaderboardRow): {
   };
 }
 
+function jlptCompletionClass(percent: number): string {
+  if (percent >= 98) {
+    return "border-emerald-600 bg-emerald-500 text-white";
+  }
+
+  if (percent >= 85) {
+    return "border-emerald-300 bg-emerald-200 text-emerald-900";
+  }
+
+  if (percent >= 70) {
+    return "border-emerald-200 bg-emerald-100 text-emerald-900";
+  }
+
+  if (percent >= 50) {
+    return "border-amber-200 bg-amber-100 text-amber-900";
+  }
+
+  if (percent >= 25) {
+    return "border-orange-200 bg-orange-100 text-orange-900";
+  }
+
+  if (percent > 0) {
+    return "border-red-200 bg-red-100 text-red-900";
+  }
+
+  return "border-red-300 bg-red-200 text-red-900";
+}
+
 export default function LeaderboardTable({ rows }: Props) {
   const expandedStorageKey = "wr:leaderboard:expanded-rows";
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -371,22 +399,42 @@ export default function LeaderboardTable({ rows }: Props) {
                           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
                             JLPT Levels
                           </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {([
-                              ["N1", jlpt.n1],
-                              ["N2", jlpt.n2],
-                              ["N3", jlpt.n3],
-                              ["N4", jlpt.n4],
-                              ["N5", jlpt.n5],
-                            ] as const).map(([label, count]) => (
-                              <div key={label} className="min-w-[64px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-                                <p className="text-[10px] font-bold uppercase text-slate-600">{label}</p>
-                                <p className="text-lg font-black leading-none text-slate-900">
-                                  {formatNumber(count.learned)}/{formatNumber(count.total)}
-                                </p>
-                                <p className="mt-1 text-[10px] font-semibold text-slate-500">{count.percent}%</p>
-                              </div>
-                            ))}
+                          <div className="mt-3 space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              {([
+                                ["N5", jlpt.n5],
+                                ["N4", jlpt.n4],
+                                ["N3", jlpt.n3],
+                              ] as const).map(([label, count]) => (
+                                <div
+                                  key={label}
+                                  className={`rounded-xl border p-2 text-center ${jlptCompletionClass(count.percent)}`}
+                                >
+                                  <p className="text-[10px] font-bold uppercase opacity-90">{label}</p>
+                                  <p className="text-lg font-black leading-none">
+                                    {formatNumber(count.learned)}/{formatNumber(count.total)}
+                                  </p>
+                                  <p className="mt-1 text-[10px] font-semibold opacity-90">{count.percent}%</p>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {([
+                                ["N2", jlpt.n2],
+                                ["N1", jlpt.n1],
+                              ] as const).map(([label, count]) => (
+                                <div
+                                  key={label}
+                                  className={`rounded-xl border p-2 text-center ${jlptCompletionClass(count.percent)}`}
+                                >
+                                  <p className="text-[10px] font-bold uppercase opacity-90">{label}</p>
+                                  <p className="text-lg font-black leading-none">
+                                    {formatNumber(count.learned)}/{formatNumber(count.total)}
+                                  </p>
+                                  <p className="mt-1 text-[10px] font-semibold opacity-90">{count.percent}%</p>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
