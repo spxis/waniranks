@@ -1069,8 +1069,15 @@ export default function LevelExplorer({
                       ) : null}
                     </div>
                   </div>
+                  <p
+                    className={`mt-2 text-xl font-black leading-tight ${
+                      item.status === "locked" || item.srsStage <= 0 ? "text-slate-500" : "text-slate-700"
+                    }`}
+                  >
+                    {item.meanings.join(", ") || "-"}
+                  </p>
                   <div
-                    className={`mt-2 rounded-xl border ${
+                    className={`mt-3 rounded-xl border ${
                       glyphHasReading(item)
                         ? "flex min-h-[6rem] w-full flex-col items-center justify-center px-3 py-2"
                         : "flex min-h-[6rem] w-full items-center justify-center px-3 py-3"
@@ -1087,13 +1094,6 @@ export default function LevelExplorer({
                       </p>
                     ) : null}
                   </div>
-                  <p
-                    className={`mt-3 text-xl font-black leading-tight ${
-                      item.status === "locked" || item.srsStage <= 0 ? "text-slate-500" : "text-slate-700"
-                    }`}
-                  >
-                    {item.meanings.join(", ") || "-"}
-                  </p>
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
                       {item.status}
