@@ -900,21 +900,30 @@ export default function LevelExplorer({
                 )} ${lockedCardStateClass(item)}`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div
-                    className={`rounded-xl border ${
-                      glyphHasReading(item)
-                        ? "inline-flex min-h-[5.25rem] min-w-[5.25rem] flex-col items-center justify-center px-3 py-2"
-                        : "inline-flex min-h-[5.25rem] min-w-[5.25rem] items-center justify-center px-3 py-3"
-                    } ${typeGlyphBoxClass(item.subjectType)} ${
-                      item.status === "locked" || item.srsStage <= 0 ? "opacity-60" : ""
-                    }`}
-                  >
-                    <p className="text-4xl font-black leading-none">{item.characters}</p>
-                    {primaryReadingForDisplay(item) ? (
-                      <p className="mt-1 text-center text-sm font-semibold text-slate-600">
-                        {primaryReadingForDisplay(item)}
-                      </p>
-                    ) : null}
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div
+                      className={`rounded-xl border ${
+                        glyphHasReading(item)
+                          ? "inline-flex min-h-[5.25rem] min-w-[5.25rem] flex-col items-center justify-center px-3 py-2"
+                          : "inline-flex min-h-[5.25rem] min-w-[5.25rem] items-center justify-center px-3 py-3"
+                      } ${typeGlyphBoxClass(item.subjectType)} ${
+                        item.status === "locked" || item.srsStage <= 0 ? "opacity-60" : ""
+                      }`}
+                    >
+                      <p className="text-4xl font-black leading-none">{item.characters}</p>
+                      {primaryReadingForDisplay(item) ? (
+                        <p className="mt-1 text-center text-sm font-semibold text-slate-600">
+                          {primaryReadingForDisplay(item)}
+                        </p>
+                      ) : null}
+                    </div>
+                    <p
+                      className={`line-clamp-2 text-xl font-black leading-tight ${
+                        item.status === "locked" || item.srsStage <= 0 ? "text-slate-500" : "text-slate-700"
+                      }`}
+                    >
+                      {item.meanings.join(", ") || "-"}
+                    </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
@@ -925,20 +934,6 @@ export default function LevelExplorer({
                     ) : null}
                   </div>
                 </div>
-                <p
-                  className={`mt-2 text-sm font-semibold ${
-                    item.status === "locked" || item.srsStage <= 0 ? "text-slate-500" : "text-slate-700"
-                  }`}
-                >
-                  {item.meanings.join(", ") || "-"}
-                </p>
-                <p
-                  className={`mt-1 text-xs ${
-                    item.status === "locked" || item.srsStage <= 0 ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  {(item.readings ?? []).join(", ") || "-"}
-                </p>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
                     {item.status}
