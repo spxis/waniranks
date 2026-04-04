@@ -1,11 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type Status = {
   type: "idle" | "ok" | "error";
   message: string;
+};
+
+type AdminAccount = {
+  id: string;
+  nickname: string;
+  wkUsername: string;
+  wkLevel: number;
+  pendingReviews: number;
+  lastSyncedAt: string;
+  lastSyncStatus: string;
 };
 
 export default function AdminPage() {
@@ -14,6 +24,19 @@ export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<AdminAccount[]>([]);
+
+  async function loadAccounts() {
+    const response = await fetch("/api/accounts", { cache: "no-store" });
+    const data = (await response.json()) as { accounts?: AdminAccount[] };
+    setAccounts(data.accounts ?? []);
+  }
+
+  useEffect(() => {
+    loadAccounts().catch(() => {
+      setStatus({ type: "error", message: "Could not load account list." });
+    });
+  }, []);
 
   async function addAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,6 +61,7 @@ export default function AdminPage() {
       setNickname("");
       setToken("");
       setStatus({ type: "ok", message: "Account saved." });
+      await loadAccounts();
     } catch (error) {
       setStatus({
         type: "error",
@@ -66,6 +90,41 @@ export default function AdminPage() {
       }
 
       setStatus({ type: "ok", message: "Leaderboard refreshed." });
+      await loadAccounts();
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Refresh failed.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function refreshOne(accountId: string) {
+    setLoading(true);
+    setStatus({ type: "idle", message: "" });
+
+    try {
+      const response = await fetch(`/api/accounts/${accountId}/refresh`, {
+        method: "POST",
+        headers: {
+          "x-admin-key": adminKey,
+        },
+      });
+
+      const data = (await response.json()) as { error?: string; refreshed?: boolean; reason?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Refresh failed.");
+      }
+
+      if (!data.refreshed && data.reason) {
+        setStatus({ type: "error", message: `Skipped: ${data.reason}` });
+      } else {
+        setStatus({ type: "ok", message: "User refreshed." });
+      }
+
+      await loadAccounts();
     } catch (error) {
       setStatus({
         type: "error",
@@ -169,6 +228,40 @@ export default function AdminPage() {
               {status.message}
             </p>
           ) : null}
+        </section>
+
+        <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.08)] sm:p-8">
+          <h2 className="text-2xl font-black text-foreground">Accounts</h2>
+          <div className="mt-4 space-y-3">
+            {accounts.length === 0 ? (
+              <p className="text-sm text-slate-600">No accounts yet.</p>
+            ) : (
+              accounts.map((account) => (
+                <article
+                  key={account.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-line bg-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-lg font-black text-foreground">{account.nickname}</p>
+                    <p className="text-sm text-slate-600">
+                      @{account.wkUsername} · Lv {account.wkLevel} · Due {account.pendingReviews}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">
+                      Last sync {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(account.lastSyncedAt))} · {account.lastSyncStatus}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => refreshOne(account.id)}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Refresh user
+                  </button>
+                </article>
+              ))
+            )}
+          </div>
         </section>
       </main>
     </div>

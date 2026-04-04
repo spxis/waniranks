@@ -40,6 +40,20 @@ export async function POST(request: Request) {
         reviewCount: stats.reviewCount,
         burnedCount: stats.burnedCount,
         pendingReviews: stats.pendingReviews,
+        apprenticeCount: stats.apprenticeCount,
+        guruCount: stats.guruCount,
+        masterCount: stats.masterCount,
+        enlightenedCount: stats.enlightenedCount,
+        levelKanjiTotal: stats.levelKanjiTotal,
+        levelKanjiLearned: stats.levelKanjiLearned,
+        levelKanjiGuruPlus: stats.levelKanjiGuruPlus,
+        levelKanjiLocked: stats.levelKanjiLocked,
+        estimatedHoursRemaining: stats.estimatedHoursRemaining,
+        levelKanjiItems: stats.levelKanjiItems,
+        lastSyncStatus: "ok",
+        lastSyncError: null,
+        isSyncing: false,
+        syncLockUntil: null,
         score: stats.score,
         lastSyncedAt: new Date(),
       },
@@ -54,6 +68,20 @@ export async function POST(request: Request) {
         reviewCount: stats.reviewCount,
         burnedCount: stats.burnedCount,
         pendingReviews: stats.pendingReviews,
+        apprenticeCount: stats.apprenticeCount,
+        guruCount: stats.guruCount,
+        masterCount: stats.masterCount,
+        enlightenedCount: stats.enlightenedCount,
+        levelKanjiTotal: stats.levelKanjiTotal,
+        levelKanjiLearned: stats.levelKanjiLearned,
+        levelKanjiGuruPlus: stats.levelKanjiGuruPlus,
+        levelKanjiLocked: stats.levelKanjiLocked,
+        estimatedHoursRemaining: stats.estimatedHoursRemaining,
+        levelKanjiItems: stats.levelKanjiItems,
+        lastSyncStatus: "ok",
+        lastSyncError: null,
+        isSyncing: false,
+        syncLockUntil: null,
         score: stats.score,
         lastSyncedAt: new Date(),
       },
@@ -65,6 +93,15 @@ export async function POST(request: Request) {
         reviewCount: true,
         burnedCount: true,
         pendingReviews: true,
+        apprenticeCount: true,
+        guruCount: true,
+        masterCount: true,
+        enlightenedCount: true,
+        levelKanjiTotal: true,
+        levelKanjiLearned: true,
+        levelKanjiGuruPlus: true,
+        levelKanjiLocked: true,
+        estimatedHoursRemaining: true,
         score: true,
         lastSyncedAt: true,
       },
@@ -77,6 +114,40 @@ export async function POST(request: Request) {
       { error: "Could not save token. Confirm env vars and token validity." },
       { status: 500 },
     );
+  }
+}
+
+export async function GET() {
+  try {
+    const accounts = await prisma.account.findMany({
+      orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
+      select: {
+        id: true,
+        nickname: true,
+        wkUsername: true,
+        wkLevel: true,
+        reviewCount: true,
+        burnedCount: true,
+        pendingReviews: true,
+        apprenticeCount: true,
+        guruCount: true,
+        masterCount: true,
+        enlightenedCount: true,
+        levelKanjiTotal: true,
+        levelKanjiLearned: true,
+        levelKanjiGuruPlus: true,
+        levelKanjiLocked: true,
+        estimatedHoursRemaining: true,
+        score: true,
+        lastSyncedAt: true,
+        lastSyncStatus: true,
+      },
+    });
+
+    return NextResponse.json({ accounts });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Could not fetch accounts." }, { status: 500 });
   }
 }
 

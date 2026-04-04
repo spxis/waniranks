@@ -86,6 +86,30 @@ Prisma schema in `prisma/schema.prisma` defines one model:
 4. Tokens are decrypted in memory only.
 5. For each account, fresh WaniKani stats are fetched and persisted.
 
+## Sync and Caching Strategy
+
+The app is intentionally designed to avoid excessive WaniKani API usage while keeping data fresh.
+
+- Source of truth for reads: Postgres (`Account` snapshot fields)
+- External API refresh trigger: server-side on page/API reads when data is stale
+- Stale threshold: 24 hours (`lastSyncedAt`)
+- Failure backoff: 30 minutes (`nextSyncAllowedAt`)
+- Success cooldown: 60 minutes (`nextSyncAllowedAt`)
+- Concurrency control: DB lock fields (`isSyncing`, `syncLockUntil`) to prevent duplicate refreshes under concurrent traffic
+
+This means many visitors can hit the site, but reads still use cached DB data and only a small number of stale accounts are refreshed opportunistically.
+
+### Refresh modes
+
+- Automatic stale refresh:
+  - Triggered by page/API reads
+  - Refreshes only stale accounts and respects lock/cooldown windows
+- Admin refresh all:
+  - Attempts all accounts but still respects lock/cooldown to avoid bursts
+- Admin refresh one user:
+  - Explicit per-user action from admin screen
+  - Uses lock-safe refresh path
+
 ## Environment Configuration
 
 Required variables:

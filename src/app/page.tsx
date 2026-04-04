@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { refreshDueAccounts } from "@/lib/sync";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,8 @@ export default async function Home() {
   let setupMessage = "";
 
   try {
+    await refreshDueAccounts(1);
+
     leaderboard = await prisma.account.findMany({
       orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
       select: {
@@ -157,7 +160,11 @@ export default async function Home() {
                             #{rank}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-lg font-black text-foreground">{row.nickname}</td>
+                        <td className="px-5 py-4 text-lg font-black text-foreground">
+                          <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
+                            {row.nickname}
+                          </Link>
+                        </td>
                         <td className="px-5 py-4 font-semibold text-slate-700">{row.wkUsername}</td>
                         <td className="px-5 py-4 text-lg font-black text-accent">{row.wkLevel}</td>
                         <td className="px-5 py-4 font-semibold">{formatNumber(row.reviewCount)}</td>

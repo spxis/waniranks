@@ -20,6 +20,21 @@ model Account {
   reviewCount    Int      @default(0)
   burnedCount    Int      @default(0)
   pendingReviews Int      @default(0)
+  apprenticeCount Int     @default(0)
+  guruCount       Int     @default(0)
+  masterCount     Int     @default(0)
+  enlightenedCount Int    @default(0)
+  levelKanjiTotal Int     @default(0)
+  levelKanjiLearned Int   @default(0)
+  levelKanjiGuruPlus Int  @default(0)
+  levelKanjiLocked Int    @default(0)
+  estimatedHoursRemaining Int?
+  levelKanjiItems Json?
+  isSyncing       Boolean  @default(false)
+  syncLockUntil   DateTime?
+  nextSyncAllowedAt DateTime @default(now())
+  lastSyncStatus  String   @default("idle")
+  lastSyncError   String?
   score          Int      @default(0)
   lastSyncedAt   DateTime @default(now())
   createdAt      DateTime @default(now())
