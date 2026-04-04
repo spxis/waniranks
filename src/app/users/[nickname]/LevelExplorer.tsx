@@ -643,7 +643,7 @@ export default function LevelExplorer({
                   <div className={`rounded-xl border px-4 py-2 ${typeGlyphBoxClass(item.subjectType)}`}>
                     <p className="text-4xl font-black leading-none">{item.characters}</p>
                     {primaryReadingForDisplay(item) ? (
-                      <p className="mt-1 text-xs font-semibold text-slate-600">
+                      <p className="mt-1 text-center text-xs font-semibold text-slate-600">
                         {primaryReadingForDisplay(item)}
                       </p>
                     ) : null}
@@ -672,7 +672,7 @@ export default function LevelExplorer({
             <div>
               <h3 className="text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
               {primaryReadingForDisplay(selectedItem) ? (
-                <p className="mt-1 text-sm font-semibold text-slate-700">
+                <p className="mt-1 text-center text-sm font-semibold text-slate-700">
                   {primaryReadingForDisplay(selectedItem)}
                 </p>
               ) : null}
@@ -701,7 +701,7 @@ export default function LevelExplorer({
                       className="rounded-xl border border-kanji/50 bg-kanji/15 px-4 py-2 text-kanji"
                     >
                       <p className="text-3xl font-black leading-none">{item.char}</p>
-                      <p className="mt-1 text-xs font-semibold text-slate-600">{item.reading}</p>
+                      <p className="mt-1 text-center text-xs font-semibold text-slate-600">{item.reading}</p>
                     </button>
                   ))
                 )}
