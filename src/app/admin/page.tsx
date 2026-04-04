@@ -27,9 +27,72 @@ export default function AdminPage() {
   const [nickname, setNickname] = useState("");
   const [token, setToken] = useState("");
   const [adminKey, setAdminKey] = useState("");
+  const [rememberDevice, setRememberDevice] = useState(true);
+  const [sessionAuthorized, setSessionAuthorized] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
+
+  async function getAdminSessionStatus() {
+    try {
+      const response = await fetch("/api/admin/session", { cache: "no-store" });
+      const data = (await response.json()) as { authorized?: boolean };
+      setSessionAuthorized(Boolean(data.authorized));
+    } finally {
+      setCheckingSession(false);
+    }
+  }
+
+  async function persistAdminSession() {
+    if (!rememberDevice || !adminKey.trim() || sessionAuthorized) {
+      return;
+    }
+
+    const response = await fetch("/api/admin/session", {
+      method: "POST",
+      headers: {
+        "x-admin-key": adminKey,
+      },
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      throw new Error(data.error ?? "Could not remember this device.");
+    }
+
+    setSessionAuthorized(true);
+  }
+
+  async function clearAdminSession() {
+    setLoading(true);
+    setStatus({ type: "idle", message: "" });
+
+    try {
+      const response = await fetch("/api/admin/session", {
+        method: "DELETE",
+      });
+
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Could not forget this device.");
+      }
+
+      setSessionAuthorized(false);
+      setStatus({ type: "ok", message: "This device is no longer remembered." });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Request failed.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function adminAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+    return adminKey.trim() ? { ...extraHeaders, "x-admin-key": adminKey } : extraHeaders;
+  }
 
   async function loadAccounts() {
     const response = await fetch("/api/accounts", { cache: "no-store" });
@@ -41,6 +104,10 @@ export default function AdminPage() {
     loadAccounts().catch(() => {
       setStatus({ type: "error", message: "Could not load account list." });
     });
+
+    getAdminSessionStatus().catch(() => {
+      setCheckingSession(false);
+    });
   }, []);
 
   async function addAccount(event: FormEvent<HTMLFormElement>) {
@@ -51,10 +118,9 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/accounts", {
         method: "POST",
-        headers: {
+        headers: adminAuthHeaders({
           "Content-Type": "application/json",
-          "x-admin-key": adminKey,
-        },
+        }),
         body: JSON.stringify({ nickname, token }),
       });
 
@@ -65,6 +131,7 @@ export default function AdminPage() {
 
       setNickname("");
       setToken("");
+      await persistAdminSession();
       setStatus({ type: "ok", message: "Account saved." });
       await loadAccounts();
     } catch (error) {
@@ -84,9 +151,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/leaderboard/refresh", {
         method: "POST",
-        headers: {
-          "x-admin-key": adminKey,
-        },
+        headers: adminAuthHeaders(),
       });
 
       const data = (await response.json()) as { error?: string };
@@ -94,6 +159,7 @@ export default function AdminPage() {
         throw new Error(data.error ?? "Refresh failed.");
       }
 
+      await persistAdminSession();
       setStatus({ type: "ok", message: "Leaderboard refreshed." });
       await loadAccounts();
     } catch (error) {
@@ -113,9 +179,7 @@ export default function AdminPage() {
     try {
       const response = await fetch(`/api/accounts/${accountId}/refresh`, {
         method: "POST",
-        headers: {
-          "x-admin-key": adminKey,
-        },
+        headers: adminAuthHeaders(),
       });
 
       const data = (await response.json()) as { error?: string; refreshed?: boolean; reason?: string };
@@ -126,6 +190,7 @@ export default function AdminPage() {
       if (!data.refreshed && data.reason) {
         setStatus({ type: "error", message: `Skipped: ${data.reason}` });
       } else {
+        await persistAdminSession();
         setStatus({ type: "ok", message: "User refreshed." });
       }
 
@@ -165,12 +230,18 @@ export default function AdminPage() {
               </span>
               <input
                 type="password"
-                required
                 value={adminKey}
                 onChange={(event) => setAdminKey(event.target.value)}
                 className="w-full rounded-2xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
-                placeholder="Paste admin key"
+                placeholder={sessionAuthorized ? "Already remembered on this device" : "Paste admin key"}
               />
+              <p className="mt-1.5 text-xs font-semibold text-slate-500">
+                {checkingSession
+                  ? "Checking admin session..."
+                  : sessionAuthorized
+                    ? "This device is remembered. You only need the key again if you forget this device."
+                    : "Needed once to unlock admin actions on this browser/device."}
+              </p>
             </label>
 
             <label className="block">
@@ -203,6 +274,16 @@ export default function AdminPage() {
               />
             </label>
 
+            <label className="inline-flex items-center gap-2 px-1 text-sm font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={rememberDevice}
+                onChange={(event) => setRememberDevice(event.target.checked)}
+                className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+              />
+              Remember admin access on this device for 30 days (stored as HttpOnly cookie)
+            </label>
+
             <div className="grid gap-3 pt-1 sm:grid-cols-2">
               <button
                 type="submit"
@@ -220,6 +301,15 @@ export default function AdminPage() {
                 Refresh all stats
               </button>
             </div>
+
+            <button
+              type="button"
+              disabled={loading || !sessionAuthorized}
+              onClick={clearAdminSession}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-5 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Forget this device
+            </button>
           </form>
 
           {status.message ? (
