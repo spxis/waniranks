@@ -20,6 +20,8 @@ model Account {
   reviewCount    Int      @default(0)
   burnedCount    Int      @default(0)
   pendingReviews Int      @default(0)
+  radicalCount   Int      @default(0)
+  vocabularyCount Int     @default(0)
   apprenticeCount Int     @default(0)
   guruCount       Int     @default(0)
   masterCount     Int     @default(0)

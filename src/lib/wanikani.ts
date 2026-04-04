@@ -35,6 +35,8 @@ type LeaderboardStats = {
   reviewCount: number;
   burnedCount: number;
   pendingReviews: number;
+  radicalCount: number;
+  vocabularyCount: number;
   apprenticeCount: number;
   guruCount: number;
   masterCount: number;
@@ -64,6 +66,7 @@ export type LevelKanjiSnapshot = {
   estimatedHoursRemaining: number | null;
   items: Array<{
     subjectId: number;
+    subjectType: "kanji" | "radical" | "vocabulary";
     wkLevel: number;
     characters: string;
     meanings: string[];
@@ -180,9 +183,12 @@ export async function getLevelKanjiSnapshot(
   level: number,
 ): Promise<LevelKanjiSnapshot> {
   const [levelSubjects, levelAssignments] = await Promise.all([
-    fetchWaniKani<WaniKaniCollectionResponse>(`/subjects?types=kanji&levels=${level}`, token),
     fetchWaniKani<WaniKaniCollectionResponse>(
-      `/assignments?subject_types=kanji&levels=${level}`,
+      `/subjects?types=kanji,radical,vocabulary&levels=${level}`,
+      token,
+    ),
+    fetchWaniKani<WaniKaniCollectionResponse>(
+      `/assignments?subject_types=kanji,radical,vocabulary&levels=${level}`,
       token,
     ),
   ]);
@@ -193,6 +199,7 @@ export async function getLevelKanjiSnapshot(
       row.data as {
         level: number;
         characters: string | null;
+        slug: string | null;
         meanings: Array<{ meaning: string; primary: boolean }>;
         readings: Array<{ reading: string; primary: boolean; accepted_answer: boolean }>;
         component_subject_ids: number[];
@@ -279,11 +286,13 @@ export async function getLevelKanjiSnapshot(
 
       const srsStage = assignment?.srs_stage ?? 0;
       const locked = !assignment || !assignment.unlocked_at || srsStage <= 0;
+      const object = (subjectRow.object ?? "kanji") as "kanji" | "radical" | "vocabulary";
 
       return {
         subjectId: subjectRow.id,
+        subjectType: object,
         wkLevel: subject?.level ?? level,
-        characters: subject?.characters ?? "?",
+        characters: subject?.characters ?? subject?.slug ?? "?",
         meanings: (subject?.meanings ?? []).slice(0, 3).map((item) => item.meaning),
         readings: (subject?.readings ?? [])
           .filter((item) => item.accepted_answer)
@@ -316,14 +325,15 @@ export async function getLevelKanjiSnapshot(
     })
     .sort((a, b) => a.subjectId - b.subjectId);
 
-  const kanjiTotal = items.length;
-  const kanjiLearned = items.filter((item) => item.srsStage > 0).length;
-  const kanjiGuruPlus = items.filter((item) => item.srsStage >= 5).length;
-  const kanjiLocked = items.filter((item) => item.status === "locked").length;
+  const onlyKanji = items.filter((item) => item.subjectType === "kanji");
+  const kanjiTotal = onlyKanji.length;
+  const kanjiLearned = onlyKanji.filter((item) => item.srsStage > 0).length;
+  const kanjiGuruPlus = onlyKanji.filter((item) => item.srsStage >= 5).length;
+  const kanjiLocked = onlyKanji.filter((item) => item.status === "locked").length;
 
   let estimatedHoursRemaining: number | null = null;
   const remainingGuru = Math.max(0, Math.ceil(kanjiTotal * 0.9) - kanjiGuruPlus);
-  const nextTimes = items
+  const nextTimes = onlyKanji
     .filter((item) => item.status !== "locked" && item.srsStage < 5)
     .map((item) => toDate(item.availableAt))
     .filter((value): value is Date => value !== null)
@@ -377,6 +387,13 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
     },
   );
 
+  const radicalCount = allAssignmentData.filter(
+    (assignment) => assignment.subject_type === "radical" && assignment.srs_stage > 0,
+  ).length;
+  const vocabularyCount = allAssignmentData.filter(
+    (assignment) => assignment.subject_type === "vocabulary" && assignment.srs_stage > 0,
+  ).length;
+
   let apprenticeCount = 0;
   let guruCount = 0;
   let masterCount = 0;
@@ -415,6 +432,8 @@ export async function getLeaderboardStats(token: string): Promise<LeaderboardSta
     reviewCount,
     burnedCount,
     pendingReviews,
+    radicalCount,
+    vocabularyCount,
     apprenticeCount,
     guruCount,
     masterCount,

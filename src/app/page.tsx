@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { refreshDueAccounts } from "@/lib/sync";
 import Link from "next/link";
+import LeaderboardTable from "./LeaderboardTable";
 
 export const dynamic = "force-dynamic";
 
@@ -12,18 +13,18 @@ type LeaderboardRow = {
   reviewCount: number;
   burnedCount: number;
   pendingReviews: number;
+  radicalCount: number;
+  vocabularyCount: number;
+  apprenticeCount: number;
+  guruCount: number;
+  masterCount: number;
+  enlightenedCount: number;
+  levelKanjiTotal: number;
+  levelKanjiLearned: number;
+  levelKanjiLocked: number;
   score: number;
   lastSyncedAt: Date;
 };
-
-function formatDate(input: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(input);
-}
 
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
@@ -46,6 +47,15 @@ export default async function Home() {
         reviewCount: true,
         burnedCount: true,
         pendingReviews: true,
+        radicalCount: true,
+        vocabularyCount: true,
+        apprenticeCount: true,
+        guruCount: true,
+        masterCount: true,
+        enlightenedCount: true,
+        levelKanjiTotal: true,
+        levelKanjiLearned: true,
+        levelKanjiLocked: true,
         score: true,
         lastSyncedAt: true,
       },
@@ -127,63 +137,12 @@ export default async function Home() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="border-b border-line bg-surface-muted text-left text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
-                  <tr>
-                    <th className="px-5 py-4">Rank</th>
-                    <th className="px-5 py-4">Nickname</th>
-                    <th className="px-5 py-4">WaniKani</th>
-                    <th className="px-5 py-4">Level</th>
-                    <th className="px-5 py-4">Reviewed</th>
-                    <th className="px-5 py-4">Burned</th>
-                    <th className="px-5 py-4">Due Now</th>
-                    <th className="px-5 py-4">Score</th>
-                    <th className="px-5 py-4">Synced</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line text-sm text-slate-800">
-                  {leaderboard.map((row, index) => {
-                    const rank = index + 1;
-                    const topRank = rank <= 3;
-
-                    return (
-                      <tr key={row.id} className="transition hover:bg-surface-muted/80">
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex min-w-12 items-center justify-center rounded-full px-3 py-1 text-sm font-black ${
-                              topRank
-                                ? "bg-highlight text-slate-900"
-                                : "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            #{rank}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-lg font-black text-foreground">
-                          <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
-                            {row.nickname}
-                          </Link>
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-slate-700">{row.wkUsername}</td>
-                        <td className="px-5 py-4 text-lg font-black text-accent">{row.wkLevel}</td>
-                        <td className="px-5 py-4 font-semibold">{formatNumber(row.reviewCount)}</td>
-                        <td className="px-5 py-4 font-semibold">{formatNumber(row.burnedCount)}</td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">
-                          {formatNumber(row.pendingReviews)}
-                        </td>
-                        <td className="px-5 py-4 text-lg font-black text-hot">
-                          {formatNumber(row.score)}
-                        </td>
-                        <td className="px-5 py-4 text-xs uppercase tracking-[0.08em] text-slate-500">
-                          {formatDate(row.lastSyncedAt)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <LeaderboardTable
+              rows={leaderboard.map((row) => ({
+                ...row,
+                lastSyncedAt: row.lastSyncedAt.toISOString(),
+              }))}
+            />
           )}
         </section>
         <p className="mt-3 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">

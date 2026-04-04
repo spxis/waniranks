@@ -7,6 +7,7 @@ import LevelExplorer from "./LevelExplorer";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
+  searchParams: Promise<{ srs?: string }>;
 };
 
 type LevelKanjiItem = {
@@ -22,8 +23,29 @@ function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
 
-export default async function UserDetailPage({ params }: PageProps) {
+export default async function UserDetailPage({ params, searchParams }: PageProps) {
   const { nickname } = await params;
+  const query = await searchParams;
+  const allowedSrs = new Set([
+    "all",
+    "apprentice",
+    "guru",
+    "master",
+    "enlightened",
+    "burned",
+    "locked",
+  ]);
+  const initialSrsFilter = allowedSrs.has(query.srs ?? "")
+    ? (query.srs as
+        | "all"
+        | "apprentice"
+        | "guru"
+        | "master"
+        | "enlightened"
+        | "burned"
+        | "locked")
+    : "all";
+
   await refreshDueAccounts(1);
 
   const account = await prisma.account.findUnique({
@@ -36,6 +58,8 @@ export default async function UserDetailPage({ params }: PageProps) {
       reviewCount: true,
       burnedCount: true,
       pendingReviews: true,
+      radicalCount: true,
+      vocabularyCount: true,
       apprenticeCount: true,
       guruCount: true,
       masterCount: true,
@@ -101,21 +125,27 @@ export default async function UserDetailPage({ params }: PageProps) {
             </article>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
+            <Link href={`?srs=apprentice#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               Apprentice: {formatNumber(account.apprenticeCount)}
-            </div>
-            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            </Link>
+            <Link href={`?srs=guru#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               Guru: {formatNumber(account.guruCount)}
-            </div>
-            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            </Link>
+            <Link href={`?srs=master#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               Master: {formatNumber(account.masterCount)}
-            </div>
-            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            </Link>
+            <Link href={`?srs=enlightened#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               Enlightened: {formatNumber(account.enlightenedCount)}
+            </Link>
+            <Link href={`?srs=burned#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
+              Burned: {formatNumber(account.burnedCount)}
+            </Link>
+            <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+              Radicals: {formatNumber(account.radicalCount)}
             </div>
             <div className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-              Burned: {formatNumber(account.burnedCount)}
+              Vocabulary: {formatNumber(account.vocabularyCount)}
             </div>
           </div>
         </section>
@@ -133,6 +163,7 @@ export default async function UserDetailPage({ params }: PageProps) {
             items: levelKanjiItems,
             syncedAt: account.lastSyncedAt.toISOString(),
           }}
+          initialSrsFilter={initialSrsFilter}
         />
       </main>
     </div>

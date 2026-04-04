@@ -97,6 +97,8 @@ export async function refreshAccountById(accountId: string, force: boolean): Pro
         reviewCount: stats.reviewCount,
         burnedCount: stats.burnedCount,
         pendingReviews: stats.pendingReviews,
+        radicalCount: stats.radicalCount,
+        vocabularyCount: stats.vocabularyCount,
         apprenticeCount: stats.apprenticeCount,
         guruCount: stats.guruCount,
         masterCount: stats.masterCount,

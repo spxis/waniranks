@@ -17,6 +17,8 @@ export async function GET() {
         reviewCount: true,
         burnedCount: true,
         pendingReviews: true,
+        radicalCount: true,
+        vocabularyCount: true,
         apprenticeCount: true,
         guruCount: true,
         masterCount: true,

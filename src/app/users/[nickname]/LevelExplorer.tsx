@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 type LevelItem = {
   subjectId: number;
+  subjectType?: "kanji" | "radical" | "vocabulary";
   wkLevel?: number;
   characters: string;
   meanings: string[];
@@ -45,13 +46,18 @@ type Props = {
   accountId: string;
   maxLevel: number;
   initialSnapshot: Snapshot;
+  initialSrsFilter?: SrsFilter;
 };
+
+type SrsFilter = "all" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "locked";
+type TypeFilter = "all" | "kanji" | "radical" | "vocabulary";
 
 function normalizeSnapshot(raw: Snapshot): Snapshot {
   return {
     ...raw,
     items: raw.items.map((item) => ({
       ...item,
+      subjectType: item.subjectType ?? "kanji",
       wkLevel: item.wkLevel ?? raw.level,
       characters: item.characters ?? "?",
       meanings: item.meanings ?? [],
@@ -116,9 +122,18 @@ function stripHtml(input: string | undefined): string {
   return input.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: Props) {
-  const [selectedLevel, setSelectedLevel] = useState(initialSnapshot.level);
-  const [snapshot, setSnapshot] = useState<Snapshot>(normalizeSnapshot(initialSnapshot));
+export default function LevelExplorer({
+  accountId,
+  maxLevel,
+  initialSnapshot,
+  initialSrsFilter = "all",
+}: Props) {
+  const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
+  const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
+    new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
+  );
+  const [srsFilter, setSrsFilter] = useState<SrsFilter>(initialSrsFilter);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(
     initialSnapshot.items[0]?.subjectId ?? null,
   );
@@ -129,11 +144,51 @@ export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: 
     return Array.from({ length: maxLevel }, (_, index) => index + 1).reverse();
   }, [maxLevel]);
 
-  async function onSelectLevel(level: number) {
-    setSelectedLevel(level);
-    setError("");
+  const combinedSnapshot = useMemo(() => {
+    const selected = Array.from(selectedLevels.values()).sort((a, b) => a - b);
+    const snapshots = selected
+      .map((level) => snapshotsByLevel.get(level))
+      .filter((snapshot): snapshot is Snapshot => Boolean(snapshot));
 
-    if (level === snapshot.level) {
+    if (snapshots.length === 0) {
+      return normalizeSnapshot(initialSnapshot);
+    }
+
+    const items = snapshots.flatMap((snapshot) => snapshot.items);
+    const kanjiItems = items.filter((item) => item.subjectType === "kanji");
+
+    return {
+      level: selected[selected.length - 1],
+      kanjiTotal: kanjiItems.length,
+      kanjiLearned: kanjiItems.filter((item) => item.srsStage > 0).length,
+      kanjiGuruPlus: kanjiItems.filter((item) => item.srsStage >= 5).length,
+      kanjiLocked: kanjiItems.filter((item) => item.status === "locked").length,
+      estimatedHoursRemaining: null,
+      items,
+      syncedAt: snapshots
+        .map((snapshot) => snapshot.syncedAt)
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .pop(),
+    };
+  }, [initialSnapshot, selectedLevels, snapshotsByLevel]);
+
+  async function toggleLevel(level: number) {
+    setError("");
+    const next = new Set(selectedLevels);
+    if (next.has(level)) {
+      if (next.size === 1) {
+        return;
+      }
+      next.delete(level);
+      setSelectedLevels(next);
+      return;
+    }
+
+    next.add(level);
+    setSelectedLevels(next);
+
+    if (snapshotsByLevel.has(level)) {
       return;
     }
 
@@ -147,8 +202,11 @@ export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: 
       }
 
       const normalized = normalizeSnapshot(data.snapshot);
-      setSnapshot(normalized);
-      setSelectedSubjectId(normalized.items[0]?.subjectId ?? null);
+      setSnapshotsByLevel((prev) => {
+        const map = new Map(prev);
+        map.set(level, normalized);
+        return map;
+      });
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Could not load level details.");
     } finally {
@@ -156,50 +214,123 @@ export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: 
     }
   }
 
+  const filteredItems = useMemo(() => {
+    return combinedSnapshot.items.filter((item) => {
+      const srsPass = srsFilter === "all" ? true : item.status === srsFilter;
+      const typePass = typeFilter === "all" ? true : item.subjectType === typeFilter;
+      return srsPass && typePass;
+    });
+  }, [combinedSnapshot.items, srsFilter, typeFilter]);
+
   const selectedItem =
-    snapshot.items.find((item) => item.subjectId === selectedSubjectId) ?? snapshot.items[0] ?? null;
+    filteredItems.find((item) => item.subjectId === selectedSubjectId) ?? filteredItems[0] ?? null;
+
+  const counts = useMemo(() => {
+    const base = {
+      all: combinedSnapshot.items.length,
+      apprentice: 0,
+      guru: 0,
+      master: 0,
+      enlightened: 0,
+      burned: 0,
+      locked: 0,
+      kanji: 0,
+      radical: 0,
+      vocabulary: 0,
+    };
+
+    for (const item of combinedSnapshot.items) {
+      base[item.status] += 1;
+      if (item.subjectType) {
+        base[item.subjectType] += 1;
+      }
+    }
+
+    return base;
+  }, [combinedSnapshot.items]);
+
+  const selectedLevelList = Array.from(selectedLevels.values()).sort((a, b) => a - b);
+
+  function badgeClass(active: boolean): string {
+    return active
+      ? "border-accent bg-accent text-white"
+      : "border-line bg-white text-slate-700 hover:bg-surface-muted";
+  }
 
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
-      <header className="flex flex-col gap-3 border-b border-line bg-surface-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <section id="explorer" className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
+      <header className="flex flex-col gap-3 border-b border-line bg-surface-muted px-5 py-4">
         <div>
-          <h2 className="text-xl font-black text-foreground">Kanji by Level</h2>
+          <h2 className="text-xl font-black text-foreground">Level Explorer</h2>
           <p className="text-xs uppercase tracking-[0.08em] text-slate-600">
-            Choose any level up to {maxLevel}
+            Click one or more level badges to combine data
           </p>
         </div>
-        <label className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level</span>
-          <select
-            value={selectedLevel}
-            onChange={(event) => onSelectLevel(Number(event.target.value))}
-            className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            {levelOptions.map((level) => (
-              <option key={level} value={level}>
-                Level {level}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-wrap gap-2">
+          {levelOptions.map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => toggleLevel(level)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                selectedLevels.has(level),
+              )}`}
+            >
+              L{level}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-line bg-surface-muted p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Total Kanji</p>
-          <p className="mt-1 text-2xl font-black text-foreground">{formatNumber(snapshot.kanjiTotal)}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Selected levels</p>
+          <p className="mt-1 text-2xl font-black text-foreground">{selectedLevelList.join(", ")}</p>
         </div>
         <div className="rounded-xl border border-line bg-surface-muted p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Learned</p>
-          <p className="mt-1 text-2xl font-black text-foreground">{formatNumber(snapshot.kanjiLearned)}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Total Items</p>
+          <p className="mt-1 text-2xl font-black text-foreground">{formatNumber(combinedSnapshot.items.length)}</p>
         </div>
         <div className="rounded-xl border border-line bg-surface-muted p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Guru+</p>
-          <p className="mt-1 text-2xl font-black text-accent">{formatNumber(snapshot.kanjiGuruPlus)}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Kanji Learned</p>
+          <p className="mt-1 text-2xl font-black text-accent">{formatNumber(combinedSnapshot.kanjiLearned)}</p>
         </div>
         <div className="rounded-xl border border-line bg-surface-muted p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Locked</p>
-          <p className="mt-1 text-2xl font-black text-hot">{formatNumber(snapshot.kanjiLocked)}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Kanji Locked</p>
+          <p className="mt-1 text-2xl font-black text-hot">{formatNumber(combinedSnapshot.kanjiLocked)}</p>
+        </div>
+      </div>
+
+      <div className="space-y-3 border-b border-line px-5 py-4">
+        <div className="flex flex-wrap gap-2">
+          {(["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const).map(
+            (status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setSrsFilter(status)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                  srsFilter === status,
+                )}`}
+              >
+                {status} ({formatNumber(counts[status])})
+              </button>
+            ),
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(["all", "kanji", "radical", "vocabulary"] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setTypeFilter(type)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                typeFilter === type,
+              )}`}
+            >
+              {type} ({formatNumber(counts[type])})
+            </button>
+          ))}
         </div>
       </div>
 
@@ -211,6 +342,7 @@ export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: 
           <thead className="border-b border-line text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
             <tr>
               <th className="px-5 py-3">Kanji</th>
+              <th className="px-5 py-3">Type</th>
               <th className="px-5 py-3">Meanings</th>
               <th className="px-5 py-3">Readings</th>
               <th className="px-5 py-3">Status</th>
@@ -218,15 +350,16 @@ export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: 
             </tr>
           </thead>
           <tbody className="divide-y divide-line text-sm">
-            {snapshot.items.map((item) => (
+            {filteredItems.map((item) => (
               <tr
-                key={item.subjectId}
+                key={`${item.subjectType}-${item.subjectId}`}
                 className={`cursor-pointer transition hover:bg-surface-muted ${
                   selectedItem?.subjectId === item.subjectId ? "bg-surface-muted" : ""
                 }`}
                 onClick={() => setSelectedSubjectId(item.subjectId)}
               >
                 <td className="px-5 py-3 text-2xl font-black text-foreground">{item.characters}</td>
+                <td className="px-5 py-3 text-xs font-bold uppercase text-slate-500">{item.subjectType}</td>
                 <td className="px-5 py-3 text-slate-700">{item.meanings.join(", ")}</td>
                 <td className="px-5 py-3 text-slate-700">{(item.readings ?? []).join(", ") || "-"}</td>
                 <td className="px-5 py-3">
@@ -244,7 +377,9 @@ export default function LevelExplorer({ accountId, maxLevel, initialSnapshot }: 
       {selectedItem ? (
         <section className="border-t border-line bg-white/80 p-5">
           <h3 className="text-2xl font-black text-foreground">{selectedItem.characters}</h3>
-          <p className="text-sm font-semibold text-slate-600">WaniKani Level {selectedItem.wkLevel}</p>
+          <p className="text-sm font-semibold text-slate-600">
+            WaniKani Level {selectedItem.wkLevel} · {selectedItem.subjectType}
+          </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
