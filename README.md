@@ -5,13 +5,22 @@ WaniRanks is a family WaniKani leaderboard app.
 
 Tokens are encrypted at rest before being stored in the database.
 
+## Architecture
+
+See `docs/ARCHITECTURE.md` for system design, data flow, security, and deployment details.
+
 ## Getting Started
 
-1. Create env vars.
+1. Create env vars and fill in your Neon connection strings.
 
 ```bash
 cp .env.example .env
 ```
+
+- `DATABASE_URL`: Neon pooled connection string (host usually includes `-pooler`)
+- `DIRECT_URL`: Neon direct connection string (non-pooler host)
+- `TOKEN_ENCRYPTION_KEY`: generate with `openssl rand -base64 32`
+- `ADMIN_API_KEY`: your private admin key for `/admin`
 
 2. Push the Prisma schema.
 
@@ -36,6 +45,7 @@ Deploy on Vercel Hobby and use Neon Postgres Free.
 Required Vercel environment variables:
 
 - `DATABASE_URL`
+- `DIRECT_URL`
 - `TOKEN_ENCRYPTION_KEY`
 - `ADMIN_API_KEY`
 
@@ -44,8 +54,6 @@ Generate encryption key with:
 ```bash
 openssl rand -base64 32
 ```
-
-For production, switch Prisma datasource to PostgreSQL and set `DATABASE_URL` to your Neon connection string.
 
 ## Scripts
 
