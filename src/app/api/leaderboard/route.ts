@@ -12,6 +12,8 @@ export async function GET() {
         wkUsername: true,
         wkLevel: true,
         reviewCount: true,
+        burnedCount: true,
+        pendingReviews: true,
         score: true,
         lastSyncedAt: true,
       },

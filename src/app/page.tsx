@@ -9,6 +9,8 @@ type LeaderboardRow = {
   wkUsername: string;
   wkLevel: number;
   reviewCount: number;
+  burnedCount: number;
+  pendingReviews: number;
   score: number;
   lastSyncedAt: Date;
 };
@@ -39,6 +41,8 @@ export default async function Home() {
         wkUsername: true,
         wkLevel: true,
         reviewCount: true,
+        burnedCount: true,
+        pendingReviews: true,
         score: true,
         lastSyncedAt: true,
       },
@@ -128,7 +132,9 @@ export default async function Home() {
                     <th className="px-5 py-4">Nickname</th>
                     <th className="px-5 py-4">WaniKani</th>
                     <th className="px-5 py-4">Level</th>
-                    <th className="px-5 py-4">Reviews</th>
+                    <th className="px-5 py-4">Reviewed</th>
+                    <th className="px-5 py-4">Burned</th>
+                    <th className="px-5 py-4">Due Now</th>
                     <th className="px-5 py-4">Score</th>
                     <th className="px-5 py-4">Synced</th>
                   </tr>
@@ -155,6 +161,10 @@ export default async function Home() {
                         <td className="px-5 py-4 font-semibold text-slate-700">{row.wkUsername}</td>
                         <td className="px-5 py-4 text-lg font-black text-accent">{row.wkLevel}</td>
                         <td className="px-5 py-4 font-semibold">{formatNumber(row.reviewCount)}</td>
+                        <td className="px-5 py-4 font-semibold">{formatNumber(row.burnedCount)}</td>
+                        <td className="px-5 py-4 font-semibold text-slate-600">
+                          {formatNumber(row.pendingReviews)}
+                        </td>
                         <td className="px-5 py-4 text-lg font-black text-hot">
                           {formatNumber(row.score)}
                         </td>
@@ -170,7 +180,7 @@ export default async function Home() {
           )}
         </section>
         <p className="mt-3 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-          Score formula: level x 1000 + reviews
+          Score formula: level x 1000 + reviewed x 2 + burned x 4
         </p>
       </main>
     </div>

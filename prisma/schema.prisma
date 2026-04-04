@@ -18,6 +18,8 @@ model Account {
   wkUsername     String
   wkLevel        Int
   reviewCount    Int      @default(0)
+  burnedCount    Int      @default(0)
+  pendingReviews Int      @default(0)
   score          Int      @default(0)
   lastSyncedAt   DateTime @default(now())
   createdAt      DateTime @default(now())

@@ -44,6 +44,8 @@ export async function POST(request: Request) {
             wkUsername: stats.wkUsername,
             wkLevel: stats.wkLevel,
             reviewCount: stats.reviewCount,
+            burnedCount: stats.burnedCount,
+            pendingReviews: stats.pendingReviews,
             score: stats.score,
             lastSyncedAt: new Date(),
           },
