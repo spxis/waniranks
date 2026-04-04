@@ -623,7 +623,7 @@ export default function LevelExplorer({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {(["all", "kanji", "radical", "vocabulary"] as const).map((type) => {
+          {(["all", "radical", "kanji", "vocabulary"] as const).map((type) => {
             const count = counts[type];
             const disabled = type !== "all" && count === 0;
 

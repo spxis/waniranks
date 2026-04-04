@@ -210,28 +210,36 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
             <Link href={`?srs=apprentice#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              Apprentice: {formatNumber(account.apprenticeCount)}
+              <span className="block">Apprentice:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.apprenticeCount)}</span>
             </Link>
             <Link href={`?srs=guru#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              Guru: {formatNumber(account.guruCount)}
+              <span className="block">Guru:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.guruCount)}</span>
             </Link>
             <Link href={`?srs=master#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              Master: {formatNumber(account.masterCount)}
+              <span className="block">Master:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.masterCount)}</span>
             </Link>
             <Link href={`?srs=enlightened#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              Enlightened: {formatNumber(account.enlightenedCount)}
+              <span className="block">Enlightened:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.enlightenedCount)}</span>
             </Link>
             <Link href={`?srs=burned#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              Burned: {formatNumber(account.burnedCount)}
+              <span className="block">Burned:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.burnedCount)}</span>
             </Link>
             <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-sm font-semibold text-radical">
-              Radicals: {formatNumber(account.radicalCount)}
+              <span className="block">Radicals:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.radicalCount)}</span>
             </div>
             <div className="rounded-xl border border-kanji/40 bg-kanji/10 px-3 py-2 text-sm font-semibold text-kanji">
-              Kanji: {formatNumber(itemSpread.totals.kanji)}
+              <span className="block">Kanji:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(itemSpread.totals.kanji)}</span>
             </div>
             <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-sm font-semibold text-vocabulary">
-              Vocabulary: {formatNumber(account.vocabularyCount)}
+              <span className="block">Vocabulary:</span>
+              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.vocabularyCount)}</span>
             </div>
           </div>
         </section>
