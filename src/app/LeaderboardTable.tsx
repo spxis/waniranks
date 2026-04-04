@@ -307,9 +307,9 @@ export default function LeaderboardTable({ rows }: Props) {
                           {showItemSpreadPanel ? (
                             <>
                               <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
-                                <span className="subject-pill subject-pill--radical">R</span>
-                                <span className="subject-pill subject-pill--kanji">K</span>
-                                <span className="subject-pill subject-pill--vocabulary">V</span>
+                                <span className="subject-pill subject-pill--radical">Radical</span>
+                                <span className="subject-pill subject-pill--kanji">Kanji</span>
+                                <span className="subject-pill subject-pill--vocabulary">Vocabulary</span>
                               </div>
                               <div className="mt-2 space-y-1">
                                 {([
