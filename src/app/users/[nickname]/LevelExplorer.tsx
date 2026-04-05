@@ -65,6 +65,15 @@ type RelatedReference = {
   label: string;
 };
 
+function snapshotHasComponentKanjiData(snapshot: Snapshot): boolean {
+  const vocabularyItems = snapshot.items.filter((item) => item.subjectType === "vocabulary");
+  if (vocabularyItems.length === 0) {
+    return true;
+  }
+
+  return vocabularyItems.every((item) => Array.isArray(item.componentKanji));
+}
+
 function normalizeSnapshot(raw: Snapshot): Snapshot {
   return {
     ...raw,
@@ -578,8 +587,8 @@ export default function LevelExplorer({
     };
   }, [initialSnapshot, selectedLevels, snapshotsByLevel]);
 
-  async function ensureLevelLoaded(level: number) {
-    if (snapshotsByLevel.has(level)) {
+  async function ensureLevelLoaded(level: number, forceReload = false) {
+    if (!forceReload && snapshotsByLevel.has(level)) {
       return;
     }
 
@@ -604,6 +613,17 @@ export default function LevelExplorer({
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    const current = snapshotsByLevel.get(initialSnapshot.level);
+    if (!current) {
+      return;
+    }
+
+    if (!snapshotHasComponentKanjiData(current)) {
+      void ensureLevelLoaded(initialSnapshot.level, true);
+    }
+  }, [initialSnapshot.level, snapshotsByLevel]);
 
   async function toggleLevel(level: number) {
     setError("");
@@ -971,6 +991,9 @@ export default function LevelExplorer({
   }, [selectedItem, kanjiByCharacter, subjectById]);
 
   async function jumpToKanji(subjectId: number, wkLevel: number | null) {
+    setShowLockedItems(true);
+    setShowBurnedItems(true);
+
     if (typeof wkLevel === "number") {
       await ensureLevelLoaded(wkLevel);
       setSelectedLevels((prev) => {
