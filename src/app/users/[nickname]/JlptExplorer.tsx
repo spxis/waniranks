@@ -17,7 +17,7 @@ type Props = {
     readings?: string[];
     status?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
     srsStage?: number;
-    wkLevel?: number;
+    wkLevel?: number | null;
   }>;
 };
 
@@ -46,7 +46,7 @@ export default function JlptExplorer({
       readings?: string[];
       status?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
       srsStage?: number;
-      wkLevel?: number;
+      wkLevel?: number | null;
     }>();
 
     for (const item of userKanjiItems) {
@@ -298,7 +298,11 @@ export default function JlptExplorer({
             return (
               <article
                 key={`${item.nLevel}-${item.kanji}`}
-                className="rounded-2xl border border-line bg-white p-3 text-center"
+                className={`rounded-2xl border p-3 text-center ${
+                  userMatch
+                    ? "border-kanji/50 bg-kanji/10"
+                    : "border-line bg-white"
+                }`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <p className="subject-pill border-line bg-white text-slate-700">N{item.nLevel}</p>
@@ -306,7 +310,7 @@ export default function JlptExplorer({
                     {userMatch?.status ?? "untracked"}
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-black text-foreground">{item.kanji}</p>
+                <p className={`mt-2 text-5xl font-black ${userMatch ? "text-kanji" : "text-foreground"}`}>{item.kanji}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-600">{readingLabel(primaryReading)}</p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                   {userMatch ? `WK L${userMatch.wkLevel ?? "?"} / SRS ${userMatch.srsStage ?? 0}` : "No WK match in loaded data"}

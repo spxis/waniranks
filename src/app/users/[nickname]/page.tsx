@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 
+import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { refreshDueAccounts } from "@/lib/sync";
+import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserDashboardTabs from "./UserDashboardTabs";
 
@@ -109,6 +111,9 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
     where: { nickname: decodeURIComponent(nickname) },
     select: {
       id: true,
+      tokenEncrypted: true,
+      tokenIv: true,
+      tokenTag: true,
       nickname: true,
       wkUsername: true,
       wkLevel: true,
@@ -138,6 +143,12 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   const levelKanjiItems = (account.levelKanjiItems ?? []) as LevelKanjiItem[];
   const itemSpread = isItemSpread(account.itemSpread) ? account.itemSpread : EMPTY_ITEM_SPREAD;
+  const token = decryptToken({
+    encrypted: account.tokenEncrypted,
+    iv: account.tokenIv,
+    tag: account.tokenTag,
+  });
+  const userKanjiIndex = await getUserKanjiIndex(token);
   const jlptKanjiRows = await prisma.jlptKanji.findMany({
     orderBy: [{ nLevel: "asc" }, { kanji: "asc" }],
     select: { kanji: true, nLevel: true },
@@ -227,6 +238,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
             kanji: row.kanji,
             nLevel: row.nLevel,
           }))}
+          userKanjiItems={userKanjiIndex}
         />
       </main>
     </div>

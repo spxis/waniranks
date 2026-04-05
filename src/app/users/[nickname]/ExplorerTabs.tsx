@@ -72,6 +72,14 @@ type Props = {
   initialSnapshot: Snapshot;
   initialSrsFilter: SrsFilter;
   jlptItems: JlptItem[];
+  userKanjiItems: Array<{
+    characters: string;
+    primaryReadings?: string[];
+    readings?: string[];
+    status?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+    srsStage?: number;
+    wkLevel?: number | null;
+  }>;
 };
 
 export default function ExplorerTabs({
@@ -80,6 +88,7 @@ export default function ExplorerTabs({
   initialSnapshot,
   initialSrsFilter,
   jlptItems,
+  userKanjiItems,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"level" | "jlpt">("level");
   const [showEnglish, setShowEnglish] = useState(false);
@@ -140,7 +149,7 @@ export default function ExplorerTabs({
         <JlptExplorer
           items={jlptItems}
           showEnglish={showEnglish}
-          userKanjiItems={initialSnapshot.items.filter((item) => item.subjectType === "kanji")}
+          userKanjiItems={userKanjiItems}
         />
       </div>
     </section>

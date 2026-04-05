@@ -76,6 +76,16 @@ type LeaderboardStats = {
   score: number;
 };
 
+export type UserKanjiIndexItem = {
+  subjectId: number;
+  characters: string;
+  readings: string[];
+  primaryReadings: string[];
+  srsStage: number;
+  status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+  wkLevel: number | null;
+};
+
 export type LevelKanjiSnapshot = {
   level: number;
   kanjiTotal: number;
@@ -220,6 +230,101 @@ function normalizeAssignmentType(input: string): "radical" | "kanji" | "vocabula
   }
 
   return null;
+}
+
+export async function getUserKanjiIndex(token: string): Promise<UserKanjiIndexItem[]> {
+  const assignmentsCollection = await fetchAllCollectionPages("/assignments?subject_types=kanji", token);
+
+  const assignments = assignmentsCollection.data
+    .map((row) =>
+      row.data as {
+        subject_id: number;
+        subject_type: string;
+        srs_stage: number;
+        unlocked_at: string | null;
+      },
+    )
+    .filter((assignment) => assignment.subject_type === "kanji");
+
+  const ids = Array.from(new Set(assignments.map((assignment) => assignment.subject_id)));
+  const subjectById = new Map<
+    number,
+    {
+      characters: string;
+      readings: string[];
+      primaryReadings: string[];
+      wkLevel: number | null;
+    }
+  >();
+
+  const chunkSize = 200;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize).join(",");
+    if (!chunk) {
+      continue;
+    }
+
+    const subjects = await fetchAllCollectionPages(`/subjects?ids=${chunk}`, token);
+    for (const row of subjects.data) {
+      if ((row.object ?? "") !== "kanji") {
+        continue;
+      }
+
+      const data = row.data as {
+        characters?: string | null;
+        level?: number | null;
+        readings?: Array<{ reading?: string; primary?: boolean; accepted_answer?: boolean }>;
+      };
+
+      const characters = data.characters ?? "";
+      if (!characters) {
+        continue;
+      }
+
+      const readings = (data.readings ?? [])
+        .filter((reading) => reading.accepted_answer ?? true)
+        .map((reading) => reading.reading)
+        .filter((reading): reading is string => typeof reading === "string" && reading.length > 0);
+
+      const primaryReadings = (data.readings ?? [])
+        .filter((reading) => reading.primary)
+        .map((reading) => reading.reading)
+        .filter((reading): reading is string => typeof reading === "string" && reading.length > 0);
+
+      subjectById.set(row.id, {
+        characters,
+        readings,
+        primaryReadings,
+        wkLevel: typeof data.level === "number" ? data.level : null,
+      });
+    }
+  }
+
+  const byChar = new Map<string, UserKanjiIndexItem>();
+  for (const assignment of assignments) {
+    const subject = subjectById.get(assignment.subject_id);
+    if (!subject) {
+      continue;
+    }
+
+    const locked = !assignment.unlocked_at || assignment.srs_stage <= 0;
+    const item: UserKanjiIndexItem = {
+      subjectId: assignment.subject_id,
+      characters: subject.characters,
+      readings: subject.readings,
+      primaryReadings: subject.primaryReadings,
+      srsStage: assignment.srs_stage,
+      status: srsLabel(assignment.srs_stage, locked),
+      wkLevel: subject.wkLevel,
+    };
+
+    const existing = byChar.get(item.characters);
+    if (!existing || item.srsStage >= existing.srsStage) {
+      byChar.set(item.characters, item);
+    }
+  }
+
+  return Array.from(byChar.values());
 }
 
 export async function getLevelKanjiSnapshot(

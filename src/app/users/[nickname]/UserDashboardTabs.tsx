@@ -183,26 +183,26 @@ export default function UserDashboardTabs({
       {activeTab === "main" ? (
         <div className="mt-4" role="tabpanel">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
+            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level</p>
               <p className="mt-2 text-4xl font-black text-accent">{wkLevel}</p>
             </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
+            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Learned Kanji</p>
               <p className="mt-2 text-4xl font-black text-foreground">{formatNumber(levelKanjiLearned)}</p>
               <p className="text-xs text-slate-600">of {formatNumber(levelKanjiTotal)} in this level</p>
             </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
+            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Remaining (Level)</p>
               <p className="mt-2 text-4xl font-black text-hot">{formatNumber(Math.max(0, levelKanjiTotal - levelKanjiLearned))}</p>
               <p className="text-xs text-slate-600">locked: {formatNumber(levelKanjiLocked)}</p>
             </article>
-            <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-4">
+            <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-4 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-kanji">Total Learned</p>
               <p className="mt-2 text-4xl font-black text-kanji">{formatNumber(totalLearnedKanji)}</p>
               <p className="text-xs text-slate-600">all kanji at Guru+</p>
             </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
+            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Est. Time Remaining</p>
               <p className="mt-2 text-3xl font-black text-foreground">
                 {estimatedHoursRemaining === null ? "Unknown" : `${estimatedHoursRemaining}h`}
@@ -212,35 +212,35 @@ export default function UserDashboardTabs({
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
-            <Link href="?srs=apprentice#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
+            <Link href="?srs=apprentice#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               <span className="block">Apprentice:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(apprenticeCount)}</span>
             </Link>
-            <Link href="?srs=guru#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
+            <Link href="?srs=guru#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               <span className="block">Guru:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(guruCount)}</span>
             </Link>
-            <Link href="?srs=master#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
+            <Link href="?srs=master#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               <span className="block">Master:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(masterCount)}</span>
             </Link>
-            <Link href="?srs=enlightened#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
+            <Link href="?srs=enlightened#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               <span className="block">Enlightened:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(enlightenedCount)}</span>
             </Link>
-            <Link href="?srs=burned#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
+            <Link href="?srs=burned#explorer" className="rounded-xl border border-line bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-surface-muted">
               <span className="block">Burned:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(burnedCount)}</span>
             </Link>
-            <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-sm font-semibold text-radical">
+            <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-center text-sm font-semibold text-radical">
               <span className="block">Radicals:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(radicalCount)}</span>
             </div>
-            <div className="rounded-xl border border-kanji/40 bg-kanji/10 px-3 py-2 text-sm font-semibold text-kanji">
+            <div className="rounded-xl border border-kanji/40 bg-kanji/10 px-3 py-2 text-center text-sm font-semibold text-kanji">
               <span className="block">Kanji:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(totalKanjiCount)}</span>
             </div>
-            <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-sm font-semibold text-vocabulary">
+            <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-center text-sm font-semibold text-vocabulary">
               <span className="block">Vocabulary:</span>
               <span className="mt-0.5 block text-4xl leading-none">{formatNumber(vocabularyCount)}</span>
             </div>
