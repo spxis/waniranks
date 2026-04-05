@@ -1494,10 +1494,18 @@ export default function LevelExplorer({
           const isClickable = linked !== null;
           const relationType = linked?.subjectType;
           const reading = typeof item.reading === "string" && item.reading.trim() ? item.reading : null;
-          const subtitle =
-            showPrimaryReadingEnglish && reading
-              ? pronunciationForReading(reading) ?? reading
-              : null;
+          const subtitle = (() => {
+            if (!reading) {
+              return null;
+            }
+
+            if (!showPrimaryReadingEnglish) {
+              return reading;
+            }
+
+            const pronunciation = pronunciationForReading(reading);
+            return pronunciation ? `${reading} / ${pronunciation}` : reading;
+          })();
           const key =
             "fallbackKey" in entry && typeof entry.fallbackKey === "string"
               ? entry.fallbackKey
@@ -1548,9 +1556,14 @@ export default function LevelExplorer({
       <div className="mt-2 flex flex-wrap gap-2">
         {vocabularyKanjiLinks.map((item) => (
           (() => {
-            const subtitle = showPrimaryReadingEnglish
-              ? pronunciationForReading(item.reading) ?? item.reading
-              : null;
+            const subtitle = (() => {
+              if (!showPrimaryReadingEnglish) {
+                return item.reading;
+              }
+
+              const pronunciation = pronunciationForReading(item.reading);
+              return pronunciation ? `${item.reading} / ${pronunciation}` : item.reading;
+            })();
 
             return (
           <button
@@ -2041,7 +2054,7 @@ export default function LevelExplorer({
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                         <p className="text-xs font-bold uppercase text-slate-600">Used in vocabulary</p>
                         {renderRelatedReferenceCards(selectedItem.usedInVocabulary ?? [], {
-                          large: selectedItem.subjectType === "kanji",
+                          large: true,
                         })}
                       </article>
                     </div>
