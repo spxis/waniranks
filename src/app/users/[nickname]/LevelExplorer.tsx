@@ -1793,7 +1793,7 @@ export default function LevelExplorer({
                   )} ${lockedCardStateClass(item)}`}
                 >
                   <div className="flex items-start justify-end gap-1">
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {item.subjectType === "kanji" && item.jlptLevel ? (
                         <span className="rounded-full border border-line bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
@@ -1834,40 +1834,42 @@ export default function LevelExplorer({
                       );
                     })()}
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
+                  <div className="mt-3 grid grid-cols-3 items-center gap-2">
+                    <span
+                      className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}
+                    >
                       {item.status}
                     </span>
-                    <span className="rounded-full border border-line bg-white px-2 py-1 text-xs font-bold text-slate-700">
-                      SRS {item.srsStage}
-                    </span>
-                  </div>
-                  {item.subjectType === "kanji" && item.status !== "burned" ? (
-                    (() => {
-                      const nextReviewBadge = formatNextReviewBadge(item.availableAt);
-                      if (!nextReviewBadge) {
-                        return null;
-                      }
+                    {item.subjectType === "kanji" && item.status !== "burned" ? (
+                      (() => {
+                        const nextReviewBadge = formatNextReviewBadge(item.availableAt);
+                        if (!nextReviewBadge) {
+                          return <span />;
+                        }
 
-                      return (
-                        <div className="mt-2 flex justify-center">
+                        return (
                           <span
-                            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.03em] ${nextReviewBadge.className}`}
+                            className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.03em] ${nextReviewBadge.className}`}
                           >
                             {nextReviewBadge.label}
                           </span>
-                        </div>
-                      );
-                    })()
-                  ) : null}
+                        );
+                      })()
+                    ) : (
+                      <span />
+                    )}
+                    <span className="justify-self-end rounded-full border border-line bg-white px-2 py-1 text-xs font-bold text-slate-700">
+                      SRS {item.srsStage}
+                    </span>
+                  </div>
                 </button>
 
                 {selectedItem && index === detailInsertIndex ? (
                   <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-white p-5 sm:col-span-2 lg:col-span-3">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <div className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-x-3">
+                      <div className="row-span-2 inline-flex">
                         <div
-                          className={`inline-flex rounded-2xl border ${
+                          className={`${
                             glyphHasReading(selectedItem)
                               ? "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
                               : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
@@ -1889,13 +1891,8 @@ export default function LevelExplorer({
                             })()}
                           </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-2xl font-black leading-tight text-foreground">
-                            {selectedItem.meanings.join(", ") || "-"}
-                          </p>
-                        </div>
                       </div>
-                      <div className="flex flex-wrap justify-end gap-1 self-start">
+                      <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
                         <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
                         {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
@@ -1903,6 +1900,11 @@ export default function LevelExplorer({
                             JLPT N{selectedItem.jlptLevel}
                           </span>
                         ) : null}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-3xl font-black leading-tight text-foreground">
+                          {selectedItem.meanings.join(", ") || "-"}
+                        </p>
                       </div>
                     </div>
 
