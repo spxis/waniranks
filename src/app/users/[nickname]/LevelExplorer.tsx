@@ -2140,7 +2140,7 @@ export default function LevelExplorer({
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {item.subjectType === "kanji" && item.jlptLevel ? (
                         <span className="subject-pill border-line bg-white text-slate-700">
-                          JLPT N{item.jlptLevel}
+                          N{item.jlptLevel}
                         </span>
                       ) : null}
                     </div>
@@ -2243,7 +2243,7 @@ export default function LevelExplorer({
                         <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
                         {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
                           <span className="subject-pill border-line bg-white text-slate-700">
-                            JLPT N{selectedItem.jlptLevel}
+                            N{selectedItem.jlptLevel}
                           </span>
                         ) : null}
                       </div>
