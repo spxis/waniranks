@@ -36,11 +36,30 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const bootPreferencesScript = `(() => {
+    try {
+      const font = localStorage.getItem("wr:jp-font");
+      const fontMode = font === "serif" ? "serif" : "sans";
+      document.documentElement.setAttribute("data-jp-font", fontMode);
+    } catch {}
+
+    try {
+      const theme = localStorage.getItem("wr:theme");
+      const themeMode = theme === "dark" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", themeMode);
+    } catch {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();`;
+
   return (
     <html
       lang="en"
       className={`${bodySans.variable} ${displaySans.variable} ${jpSans.variable} ${jpSerif.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: bootPreferencesScript }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <main className="flex-1">{children}</main>
         <AppFooter />
