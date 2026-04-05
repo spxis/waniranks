@@ -62,14 +62,6 @@ function formatDate(input: string | null | undefined): string {
   }).format(parsed);
 }
 
-function stripHtml(input: string | undefined): string {
-  if (!input) {
-    return "";
-  }
-
-  return input.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-}
-
 export default function JlptExplorer({
   items,
   showEnglish = false,
@@ -565,6 +557,7 @@ export default function JlptExplorer({
                       const meanings = selectedUserMatch?.meanings?.length
                         ? selectedUserMatch.meanings
                         : selectedPreload?.meanings ?? [];
+                      const jsonMeanings = (selectedPreload?.meanings ?? []).filter((meaning) => meaning.trim().length > 0);
 
                       return (
                         <>
@@ -615,14 +608,18 @@ export default function JlptExplorer({
                             </div>
                           </div>
 
-                          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                          <div className="mt-4">
                             <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
-                              <p className="mt-2 text-foreground/90">{stripHtml(selectedUserMatch?.meaningExplanation) || "-"}</p>
-                            </article>
-                            <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-foreground/70">Reading explanation</p>
-                              <p className="mt-2 text-foreground/90">{stripHtml(selectedUserMatch?.readingExplanation) || "-"}</p>
+                              {jsonMeanings.length > 0 ? (
+                                <ul className="mt-2 space-y-1 text-foreground/90">
+                                  {jsonMeanings.map((meaning) => (
+                                    <li key={meaning}>- {meaning}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="mt-2 text-foreground/90">-</p>
+                              )}
                             </article>
                           </div>
                         </>
