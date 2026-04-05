@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { refreshDueAccounts } from "@/lib/sync";
+import JlptExplorer from "./JlptExplorer";
 import LevelExplorer from "./LevelExplorer";
 import UserDashboardTabs from "./UserDashboardTabs";
 
@@ -138,6 +139,10 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   const levelKanjiItems = (account.levelKanjiItems ?? []) as LevelKanjiItem[];
   const itemSpread = isItemSpread(account.itemSpread) ? account.itemSpread : EMPTY_ITEM_SPREAD;
+  const jlptKanjiRows = await prisma.jlptKanji.findMany({
+    orderBy: [{ nLevel: "asc" }, { kanji: "asc" }],
+    select: { kanji: true, nLevel: true },
+  });
 
   const rankedAccounts = await prisma.account.findMany({
     orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
@@ -219,6 +224,13 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
             syncedAt: account.lastSyncedAt.toISOString(),
           }}
           initialSrsFilter={initialSrsFilter}
+        />
+
+        <JlptExplorer
+          items={jlptKanjiRows.map((row) => ({
+            kanji: row.kanji,
+            nLevel: row.nLevel,
+          }))}
         />
       </main>
     </div>

@@ -84,7 +84,7 @@ export default function ExplorerSearchBar() {
 
   return (
     <form onSubmit={submitSearch} className="w-full" aria-busy={isSearching}>
-      <div className="mx-auto flex w-full max-w-xl items-center gap-2 rounded-full border border-line bg-surface px-2 py-1">
+      <div className="flex w-full items-center gap-2 rounded-full border border-line bg-surface px-2 py-1">
         <input
           type="search"
           value={query}
