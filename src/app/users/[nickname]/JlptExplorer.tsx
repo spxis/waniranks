@@ -8,6 +8,12 @@ import jlptReadings from "@/data/jlptReadings.json";
 type JlptItem = {
   kanji: string;
   nLevel: number;
+  strokeCount: number | null;
+  primaryMeaning: string | null;
+  meanings: string[];
+  onReadings: string[];
+  kunReadings: string[];
+  nanoriReadings: string[];
 };
 
 type Props = {
@@ -144,8 +150,17 @@ export default function JlptExplorer({
       }
 
       const preload = records[item.kanji];
-      const readings = preload?.readings ?? [];
-      const meanings = preload?.meanings ?? [];
+      const readings = [
+        ...item.kunReadings,
+        ...item.onReadings,
+        ...item.nanoriReadings,
+        ...(preload?.readings ?? []),
+      ];
+      const meanings = [
+        ...(item.primaryMeaning ? [item.primaryMeaning] : []),
+        ...item.meanings,
+        ...(preload?.meanings ?? []),
+      ];
       const romaji = normalizeSearch(toRomaji(item.kanji, { upcaseKatakana: false }));
       const readingRomajiMatch = readings.some((reading) =>
         normalizeSearch(toRomaji(reading, { upcaseKatakana: false })).includes(normalizedQuery),
@@ -242,12 +257,14 @@ export default function JlptExplorer({
   }
 
   function jlptTitleForDisplay({
+    mainMeaning,
     userMeanings,
     fallbackMeanings,
     primaryReading,
     fallbackReadings,
     kanji,
   }: {
+    mainMeaning?: string | null;
     userMeanings?: string[];
     fallbackMeanings?: string[];
     primaryReading: string | null;
@@ -255,6 +272,10 @@ export default function JlptExplorer({
     kanji: string;
   }): string {
     if (showEnglish) {
+      if (mainMeaning && mainMeaning.trim()) {
+        return mainMeaning;
+      }
+
       const fromUser = userMeanings?.[0];
       if (fromUser) {
         return fromUser;
@@ -347,8 +368,17 @@ export default function JlptExplorer({
 
         const romaji = normalizeSearch(toRomaji(item.kanji, { upcaseKatakana: false }));
         const preload = (jlptReadings as JlptReadingsRecord)[item.kanji];
-        const readings = preload?.readings ?? [];
-        const meanings = preload?.meanings ?? [];
+        const readings = [
+          ...item.kunReadings,
+          ...item.onReadings,
+          ...item.nanoriReadings,
+          ...(preload?.readings ?? []),
+        ];
+        const meanings = [
+          ...(item.primaryMeaning ? [item.primaryMeaning] : []),
+          ...item.meanings,
+          ...(preload?.meanings ?? []),
+        ];
         const readingRomajiMatch = readings.some((reading) =>
           normalizeSearch(toRomaji(reading, { upcaseKatakana: false })).includes(normalizedQuery),
         );
@@ -495,12 +525,20 @@ export default function JlptExplorer({
           {filteredItems.map((item, index) => {
             const userMatch = userKanjiByChar.get(item.kanji);
             const preload = (jlptReadings as JlptReadingsRecord)[item.kanji];
+            const dbReadings = [
+              ...item.kunReadings,
+              ...item.onReadings,
+              ...item.nanoriReadings,
+            ];
             const primaryReading = userMatch
               ? (userMatch.primaryReadings ?? [])[0] ?? (userMatch.readings ?? [])[0] ?? null
-              : null;
-            const fallbackReadings = preload?.readings ?? [];
-            const fallbackMeanings = preload?.meanings ?? [];
+              : dbReadings[0] ?? null;
+            const fallbackReadings = dbReadings.length > 0 ? dbReadings : (preload?.readings ?? []);
+            const fallbackMeanings = item.meanings.length > 0
+              ? item.meanings
+              : (preload?.meanings ?? []);
             const heading = jlptTitleForDisplay({
+              mainMeaning: item.primaryMeaning,
               userMeanings: userMatch?.meanings,
               fallbackMeanings,
               primaryReading,
@@ -548,15 +586,23 @@ export default function JlptExplorer({
                     {(() => {
                       const selectedUserMatch = userKanjiByChar.get(selectedItem.kanji);
                       const selectedPreload = (jlptReadings as JlptReadingsRecord)[selectedItem.kanji];
+                      const selectedDbReadings = [
+                        ...selectedItem.kunReadings,
+                        ...selectedItem.onReadings,
+                        ...selectedItem.nanoriReadings,
+                      ];
                       const primary = selectedUserMatch
                         ? (selectedUserMatch.primaryReadings ?? [])[0] ?? (selectedUserMatch.readings ?? [])[0] ?? null
-                        : selectedPreload?.readings?.[0] ?? null;
+                        : selectedDbReadings[0] ?? selectedPreload?.readings?.[0] ?? null;
                       const secondary = selectedUserMatch
                         ? (selectedUserMatch.readings ?? []).filter((reading) => reading !== primary)
-                        : (selectedPreload?.readings ?? []).filter((reading) => reading !== primary);
+                        : (selectedDbReadings.length > 0 ? selectedDbReadings : (selectedPreload?.readings ?? []))
+                            .filter((reading) => reading !== primary);
                       const meanings = selectedUserMatch?.meanings?.length
                         ? selectedUserMatch.meanings
-                        : selectedPreload?.meanings ?? [];
+                        : selectedItem.meanings.length > 0
+                          ? selectedItem.meanings
+                          : selectedPreload?.meanings ?? [];
                       const jsonMeanings = (selectedPreload?.meanings ?? []).filter((meaning) => meaning.trim().length > 0);
 
                       return (
@@ -573,17 +619,22 @@ export default function JlptExplorer({
                             <div className="min-w-0">
                               <p className="text-3xl font-black leading-tight text-foreground">
                                 {jlptTitleForDisplay({
+                                  mainMeaning: selectedItem.primaryMeaning,
                                   userMeanings: selectedUserMatch?.meanings,
-                                  fallbackMeanings: selectedPreload?.meanings ?? [],
+                                  fallbackMeanings: selectedItem.meanings.length > 0
+                                    ? selectedItem.meanings
+                                    : selectedPreload?.meanings ?? [],
                                   primaryReading: primary,
-                                  fallbackReadings: selectedPreload?.readings ?? [],
+                                  fallbackReadings: selectedDbReadings.length > 0
+                                    ? selectedDbReadings
+                                    : selectedPreload?.readings ?? [],
                                   kanji: selectedItem.kanji,
                                 })}
                               </p>
                             </div>
                           </div>
 
-                          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
                               <p className="mt-1 font-semibold text-foreground/90">{readingLabel(primary)}</p>
@@ -595,18 +646,43 @@ export default function JlptExplorer({
                               </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
-                              <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch?.startedAt)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Kunyomi</p>
+                              <p className="mt-1 font-semibold text-foreground/90">
+                                {selectedItem.kunReadings.length > 0 ? selectedItem.kunReadings.join(", ") : "-"}
+                              </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-foreground/70">Next review</p>
-                              <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch?.availableAt)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Onyomi</p>
+                              <p className="mt-1 font-semibold text-foreground/90">
+                                {selectedItem.onReadings.length > 0 ? selectedItem.onReadings.join(", ") : "-"}
+                              </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-foreground/70">Passed</p>
-                              <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch?.passedAt)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Stroke count</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{selectedItem.strokeCount ?? "-"}</p>
+                            </div>
+                            <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                              <p className="text-xs font-bold uppercase text-foreground/70">Main meaning</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{selectedItem.primaryMeaning ?? "-"}</p>
                             </div>
                           </div>
+
+                          {selectedUserMatch ? (
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                                <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
+                                <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch.startedAt)}</p>
+                              </div>
+                              <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                                <p className="text-xs font-bold uppercase text-foreground/70">Next review</p>
+                                <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch.availableAt)}</p>
+                              </div>
+                              <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                                <p className="text-xs font-bold uppercase text-foreground/70">Passed</p>
+                                <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch.passedAt)}</p>
+                              </div>
+                            </div>
+                          ) : null}
 
                           <div className="mt-4">
                             <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">

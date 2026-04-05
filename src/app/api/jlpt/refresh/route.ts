@@ -46,10 +46,24 @@ export async function POST(request: Request) {
       }
     }
 
-    await prisma.$transaction([
-      prisma.jlptKanji.deleteMany({}),
-      prisma.jlptKanji.createMany({ data: records, skipDuplicates: true }),
-    ]);
+    const nextKanjiSet = new Set(records.map((record) => record.kanji));
+
+    await prisma.jlptKanji.createMany({ data: records, skipDuplicates: true });
+
+    for (const record of records) {
+      await prisma.jlptKanji.update({
+        where: { kanji: record.kanji },
+        data: { nLevel: record.nLevel },
+      });
+    }
+
+    await prisma.jlptKanji.deleteMany({
+      where: {
+        kanji: {
+          notIn: Array.from(nextKanjiSet),
+        },
+      },
+    });
 
     return NextResponse.json({ ok: true, count: records.length });
   } catch (error) {

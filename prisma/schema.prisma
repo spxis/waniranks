@@ -93,6 +93,13 @@ model JlptKanji {
   id        String   @id @default(cuid())
   kanji     String   @unique
   nLevel    Int
+  strokeCount Int?
+  primaryMeaning String?
+  meanings   String[] @default([])
+  onReadings String[] @default([])
+  kunReadings String[] @default([])
+  nanoriReadings String[] @default([])
+  enrichedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

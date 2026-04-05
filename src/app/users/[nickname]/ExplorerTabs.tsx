@@ -62,6 +62,12 @@ type Snapshot = {
 type JlptItem = {
   kanji: string;
   nLevel: number;
+  strokeCount: number | null;
+  primaryMeaning: string | null;
+  meanings: string[];
+  onReadings: string[];
+  kunReadings: string[];
+  nanoriReadings: string[];
 };
 
 type SrsFilter = "all" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "locked";

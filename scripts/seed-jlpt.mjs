@@ -27,10 +27,26 @@ async function main() {
     }
   }
 
-  await prisma.jlptKanji.deleteMany({});
+  const nextKanjiSet = new Set(records.map((record) => record.kanji));
+
   await prisma.jlptKanji.createMany({
     data: records,
     skipDuplicates: true,
+  });
+
+  for (const record of records) {
+    await prisma.jlptKanji.update({
+      where: { kanji: record.kanji },
+      data: { nLevel: record.nLevel },
+    });
+  }
+
+  await prisma.jlptKanji.deleteMany({
+    where: {
+      kanji: {
+        notIn: Array.from(nextKanjiSet),
+      },
+    },
   });
 
   console.log(`Seeded ${records.length} JLPT kanji entries.`);

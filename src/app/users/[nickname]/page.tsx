@@ -22,6 +22,17 @@ type LevelKanjiItem = {
   subjectType?: "kanji" | "radical" | "vocabulary";
 };
 
+type JlptKanjiRow = {
+  kanji: string;
+  nLevel: number;
+  strokeCount: number | null;
+  primaryMeaning: string | null;
+  meanings: string[];
+  onReadings: string[];
+  kunReadings: string[];
+  nanoriReadings: string[];
+};
+
 type ItemSpreadRow = {
   radical: number;
   kanji: number;
@@ -151,8 +162,17 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const userKanjiIndex = await getUserKanjiIndex(token);
   const jlptKanjiRows = await prisma.jlptKanji.findMany({
     orderBy: [{ nLevel: "asc" }, { kanji: "asc" }],
-    select: { kanji: true, nLevel: true },
-  });
+    select: {
+      kanji: true,
+      nLevel: true,
+      strokeCount: true,
+      primaryMeaning: true,
+      meanings: true,
+      onReadings: true,
+      kunReadings: true,
+      nanoriReadings: true,
+    },
+  }) as JlptKanjiRow[];
 
   const rankedAccounts = await prisma.account.findMany({
     orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
@@ -237,6 +257,12 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           jlptItems={jlptKanjiRows.map((row) => ({
             kanji: row.kanji,
             nLevel: row.nLevel,
+            strokeCount: row.strokeCount,
+            primaryMeaning: row.primaryMeaning,
+            meanings: row.meanings,
+            onReadings: row.onReadings,
+            kunReadings: row.kunReadings,
+            nanoriReadings: row.nanoriReadings,
           }))}
           userKanjiItems={userKanjiIndex}
         />

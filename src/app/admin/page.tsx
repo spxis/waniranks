@@ -32,6 +32,8 @@ export default function AdminPage() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
   const [loading, setLoading] = useState(false);
+  const [jlptRefreshing, setJlptRefreshing] = useState(false);
+  const [jlptEnriching, setJlptEnriching] = useState(false);
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
 
   async function getAdminSessionStatus() {
@@ -205,6 +207,76 @@ export default function AdminPage() {
     }
   }
 
+  async function refreshJlptList() {
+    setJlptRefreshing(true);
+    setStatus({ type: "idle", message: "" });
+
+    try {
+      const response = await fetch("/api/jlpt/refresh", {
+        method: "POST",
+        headers: adminAuthHeaders(),
+      });
+
+      const data = (await response.json()) as { error?: string; count?: number };
+      if (!response.ok) {
+        throw new Error(data.error ?? "JLPT list refresh failed.");
+      }
+
+      await persistAdminSession();
+      setStatus({
+        type: "ok",
+        message: `JLPT list refreshed (${data.count ?? 0} records).`,
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "JLPT list refresh failed.",
+      });
+    } finally {
+      setJlptRefreshing(false);
+    }
+  }
+
+  async function enrichJlptKanji() {
+    setJlptEnriching(true);
+    setStatus({ type: "idle", message: "" });
+
+    try {
+      const response = await fetch("/api/jlpt/enrich", {
+        method: "POST",
+        headers: adminAuthHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({ limit: 250, onlyMissing: true }),
+      });
+
+      const data = (await response.json()) as {
+        error?: string;
+        processed?: number;
+        updated?: number;
+        failed?: number;
+        remaining?: number;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "JLPT enrichment failed.");
+      }
+
+      await persistAdminSession();
+      setStatus({
+        type: "ok",
+        message: `JLPT enriched chunk processed=${data.processed ?? 0}, updated=${data.updated ?? 0}, failed=${data.failed ?? 0}, remaining=${data.remaining ?? 0}.`,
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "JLPT enrichment failed.",
+      });
+    } finally {
+      setJlptEnriching(false);
+    }
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <div className="noise-overlay pointer-events-none absolute inset-0" />
@@ -299,6 +371,25 @@ export default function AdminPage() {
                 className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Refresh all stats
+              </button>
+            </div>
+
+            <div className="grid gap-3 pt-1 sm:grid-cols-2">
+              <button
+                type="button"
+                disabled={loading || jlptRefreshing || jlptEnriching}
+                onClick={refreshJlptList}
+                className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {jlptRefreshing ? "Refreshing JLPT..." : "Refresh JLPT List"}
+              </button>
+              <button
+                type="button"
+                disabled={loading || jlptRefreshing || jlptEnriching}
+                onClick={enrichJlptKanji}
+                className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {jlptEnriching ? "Enriching JLPT..." : "Enrich JLPT Data"}
               </button>
             </div>
 

@@ -61,3 +61,28 @@ openssl rand -base64 32
 - `pnpm lint`: run ESLint
 - `pnpm db:push`: sync Prisma schema to the DB
 - `pnpm db:studio`: open Prisma Studio
+- `pnpm db:seed:jlpt`: refresh JLPT N-level membership list
+- `pnpm db:enrich:jlpt`: enrich JLPT kanji metadata (stroke count, meanings, on/kun readings)
+
+## JLPT Data Refresh Strategy (Manual)
+
+JLPT data refresh is intentionally manual and infrequent.
+
+1. Refresh the JLPT membership list.
+
+```bash
+pnpm db:seed:jlpt
+```
+
+2. Enrich JLPT kanji metadata.
+
+```bash
+pnpm db:enrich:jlpt
+```
+
+3. Optional admin API triggers (on demand):
+
+- `POST /api/jlpt/refresh` (refresh JLPT N-level list)
+- `POST /api/jlpt/enrich` with JSON body like `{ "limit": 250, "onlyMissing": true }`
+
+Both endpoints require admin authorization (`x-admin-key` or admin session cookie).
