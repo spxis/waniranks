@@ -14,7 +14,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed:jlpt": "node scripts/seed-jlpt.mjs"
+    "db:seed:jlpt": "node scripts/seed-jlpt.mjs",
+    "db:seed:jlpt:readings": "node scripts/build-jlpt-readings.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

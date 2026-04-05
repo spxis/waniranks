@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toRomaji } from "wanakana";
 
+import jlptReadings from "@/data/jlptReadings.json";
+
 type JlptItem = {
   kanji: string;
   nLevel: number;
@@ -28,6 +30,8 @@ function formatNumber(input: number): string {
 function normalizeSearch(input: string): string {
   return input.trim().toLowerCase();
 }
+
+type JlptReadingsMap = Record<string, { nLevel: number; readings: string[] }>;
 
 export default function JlptExplorer({
   items,
@@ -122,6 +126,15 @@ export default function JlptExplorer({
 
     const romaji = toRomaji(reading, { upcaseKatakana: false }).trim();
     return romaji && romaji !== reading ? `${reading} / ${romaji}` : reading;
+  }
+
+  function readingLabelFromList(readings: string[]): string {
+    if (readings.length === 0) {
+      return "-";
+    }
+
+    const primary = readings[0] ?? null;
+    return readingLabel(primary);
   }
 
   function toggleNLevel(level: number) {
@@ -291,9 +304,11 @@ export default function JlptExplorer({
         <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filteredItems.map((item) => {
             const userMatch = userKanjiByChar.get(item.kanji);
+            const preload = (jlptReadings as JlptReadingsMap)[item.kanji];
             const primaryReading = userMatch
               ? (userMatch.primaryReadings ?? [])[0] ?? (userMatch.readings ?? [])[0] ?? null
               : null;
+            const fallbackReadings = preload?.readings ?? [];
 
             return (
               <article
@@ -311,9 +326,11 @@ export default function JlptExplorer({
                   </span>
                 </div>
                 <p className={`mt-2 text-5xl font-black ${userMatch ? "text-kanji" : "text-foreground"}`}>{item.kanji}</p>
-                <p className="mt-1 text-sm font-semibold text-slate-600">{readingLabel(primaryReading)}</p>
+                <p className="mt-1 text-sm font-semibold text-slate-600">
+                  {primaryReading ? readingLabel(primaryReading) : readingLabelFromList(fallbackReadings)}
+                </p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  {userMatch ? `WK L${userMatch.wkLevel ?? "?"} / SRS ${userMatch.srsStage ?? 0}` : "No WK match in loaded data"}
+                  {userMatch ? `WK L${userMatch.wkLevel ?? "?"} / SRS ${userMatch.srsStage ?? 0}` : "No WK match"}
                 </p>
               </article>
             );

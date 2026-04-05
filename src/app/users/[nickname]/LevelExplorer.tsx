@@ -1904,19 +1904,19 @@ export default function LevelExplorer({
       </header>
 
       <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-line bg-surface-muted p-3">
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Selected levels</p>
           <p className="mt-1 text-2xl font-black text-foreground">{selectedLevelList.join(", ")}</p>
         </div>
-        <div className="rounded-xl border border-line bg-surface-muted p-3">
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Total Items</p>
           <p className="mt-1 text-2xl font-black text-foreground">{formatNumber(combinedSnapshot.items.length)}</p>
         </div>
-        <div className="rounded-xl border border-line bg-surface-muted p-3">
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Kanji Learned</p>
           <p className="mt-1 text-2xl font-black text-accent">{formatNumber(combinedSnapshot.kanjiLearned)}</p>
         </div>
-        <div className="rounded-xl border border-line bg-surface-muted p-3">
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Kanji Locked</p>
           <p className="mt-1 text-2xl font-black text-hot">{formatNumber(combinedSnapshot.kanjiLocked)}</p>
         </div>
