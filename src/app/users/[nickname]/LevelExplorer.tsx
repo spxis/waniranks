@@ -307,10 +307,14 @@ function ReadingListWithPronunciation({
   mode = "tooltip",
 }: {
   readings: string[];
-  mode?: "tooltip" | "inline";
+  mode?: "tooltip" | "inline" | "plain";
 }) {
   if (readings.length === 0) {
     return <span>-</span>;
+  }
+
+  if (mode === "plain") {
+    return <>{readings.join(", ")}</>;
   }
 
   if (mode === "inline") {
@@ -358,6 +362,7 @@ export default function LevelExplorer({
   const reviewTimingFilterStorageKey = `wr:explorer:${accountId}:review-timing-filter`;
   const showLockedStorageKey = `wr:explorer:${accountId}:show-locked`;
   const showBurnedStorageKey = `wr:explorer:${accountId}:show-burned`;
+  const showPrimaryReadingEnglishStorageKey = `wr:explorer:${accountId}:show-primary-reading-english`;
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
   const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
@@ -380,6 +385,7 @@ export default function LevelExplorer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [gridColumns, setGridColumns] = useState(1);
+  const [showPrimaryReadingEnglish, setShowPrimaryReadingEnglish] = useState(true);
   const applyingUrlStateRef = useRef(false);
   const hasHydratedUrlStateRef = useRef(false);
   const pendingHistoryModeRef = useRef<"replace" | "push">("replace");
@@ -715,6 +721,17 @@ export default function LevelExplorer({
   }, [showBurnedStorageKey]);
 
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(showPrimaryReadingEnglishStorageKey);
+      if (raw === "0") {
+        setShowPrimaryReadingEnglish(false);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [showPrimaryReadingEnglishStorageKey]);
+
+  useEffect(() => {
     const computeColumns = () => {
       if (window.matchMedia("(min-width: 1024px)").matches) {
         setGridColumns(3);
@@ -789,6 +806,14 @@ export default function LevelExplorer({
       // Ignore storage errors in restricted browsing modes.
     }
   }, [showBurnedItems, showBurnedStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(showPrimaryReadingEnglishStorageKey, showPrimaryReadingEnglish ? "1" : "0");
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [showPrimaryReadingEnglish, showPrimaryReadingEnglishStorageKey]);
 
   useEffect(() => {
     try {
@@ -1839,17 +1864,8 @@ export default function LevelExplorer({
 
                 {selectedItem && index === detailInsertIndex ? (
                   <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-white p-5 sm:col-span-2 lg:col-span-3">
-                    <div>
-                      <div className="flex flex-wrap justify-end gap-1">
-                        <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
-                        <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
-                        {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
-                          <span className="subject-pill border-line bg-white text-slate-700">
-                            JLPT N{selectedItem.jlptLevel}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-2 flex min-w-0 items-end gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
                         <div
                           className={`inline-flex rounded-2xl border ${
                             glyphHasReading(selectedItem)
@@ -1879,6 +1895,15 @@ export default function LevelExplorer({
                           </p>
                         </div>
                       </div>
+                      <div className="flex flex-wrap justify-end gap-1 self-start">
+                        <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
+                        <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
+                        {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
+                          <span className="subject-pill border-line bg-white text-slate-700">
+                            JLPT N{selectedItem.jlptLevel}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1899,11 +1924,27 @@ export default function LevelExplorer({
                         <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedItem.passedAt)}</p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm sm:col-span-2">
-                        <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
+                          {selectedItem.subjectType !== "radical" ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowPrimaryReadingEnglish((prev) => !prev)}
+                              className="rounded-full border border-line bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
+                            >
+                              {showPrimaryReadingEnglish ? "Hide English" : "Show English"}
+                            </button>
+                          ) : null}
+                        </div>
                         <p className="mt-1 font-semibold text-slate-800">
                           {selectedItem.subjectType === "radical"
                             ? "Not applicable"
-                            : <ReadingListWithPronunciation readings={selectedItem.primaryReadings ?? []} mode="inline" />}
+                            : (
+                                <ReadingListWithPronunciation
+                                  readings={selectedItem.primaryReadings ?? []}
+                                  mode={showPrimaryReadingEnglish ? "inline" : "plain"}
+                                />
+                              )}
                         </p>
                       </div>
                     </div>
