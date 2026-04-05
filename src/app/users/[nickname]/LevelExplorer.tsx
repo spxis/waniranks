@@ -1515,13 +1515,22 @@ export default function LevelExplorer({
     setSelectedSubjectId(subjectId);
   }
 
-  async function searchAndReveal(rawQuery: string) {
+  async function searchAndReveal(rawQuery: string, requestId?: string) {
     const trimmed = rawQuery.trim();
     if (!trimmed) {
+      if (typeof window !== "undefined" && requestId) {
+        window.dispatchEvent(
+          new CustomEvent("wr:explorer-search-complete", {
+            detail: { requestId, ok: false, message: "Please enter a search term." },
+          }),
+        );
+      }
       return;
     }
 
     setError("");
+    let ok = false;
+    let completionMessage = "";
 
     let found = combinedSnapshot.items.find((item) => itemMatchesSearch(item, trimmed)) ?? null;
 
@@ -1538,26 +1547,36 @@ export default function LevelExplorer({
     }
 
     if (!found) {
-      setError(`No item matched "${trimmed}".`);
-      return;
+      completionMessage = `No item matched "${trimmed}".`;
+      setError(completionMessage);
+    } else {
+      markHistoryPush();
+
+      const targetLevel = typeof found.wkLevel === "number" ? found.wkLevel : initialSnapshot.level;
+      await ensureLevelLoaded(targetLevel);
+
+      setSelectedLevels((prev) => {
+        if (stickyMerge) {
+          const next = new Set(prev);
+          next.add(targetLevel);
+          return next;
+        }
+
+        return new Set([targetLevel]);
+      });
+
+      setSelectedSubjectId(found.subjectId);
+      ok = true;
+      completionMessage = `Found ${found.meanings[0] ?? found.characters}.`;
     }
 
-    markHistoryPush();
-
-    const targetLevel = typeof found.wkLevel === "number" ? found.wkLevel : initialSnapshot.level;
-    await ensureLevelLoaded(targetLevel);
-
-    setSelectedLevels((prev) => {
-      if (stickyMerge) {
-        const next = new Set(prev);
-        next.add(targetLevel);
-        return next;
-      }
-
-      return new Set([targetLevel]);
-    });
-
-    setSelectedSubjectId(found.subjectId);
+    if (typeof window !== "undefined" && requestId) {
+      window.dispatchEvent(
+        new CustomEvent("wr:explorer-search-complete", {
+          detail: { requestId, ok, message: completionMessage },
+        }),
+      );
+    }
   }
 
   function jumpToRelatedSubject(subjectId: number) {
@@ -1606,15 +1625,16 @@ export default function LevelExplorer({
     runFromUrl();
 
     const onSearch = (event: Event) => {
-      const custom = event as CustomEvent<{ query?: string }>;
+      const custom = event as CustomEvent<{ query?: string; requestId?: string }>;
       const query = custom.detail?.query ?? "";
+      const requestId = custom.detail?.requestId;
       const trimmed = query.trim();
       if (!trimmed) {
         return;
       }
 
       lastHandledFindQueryRef.current = trimmed;
-      void searchAndReveal(trimmed);
+      void searchAndReveal(trimmed, requestId);
     };
 
     const onPopState = () => {
