@@ -2299,7 +2299,7 @@ export default function LevelExplorer({
                       </button>
                     </div>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                         <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
                         <p className="mt-1 font-semibold text-slate-800">
