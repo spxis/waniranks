@@ -28,6 +28,15 @@ type LeaderboardRow = {
   lastActivityAt: Date | null;
   score: number;
   lastSyncedAt: Date;
+  dailyDelta?: {
+    score: number;
+    reviewCount: number;
+    wkLevel: number;
+    radicalCount: number;
+    vocabularyCount: number;
+    burnedCount: number;
+    levelKanjiLearned: number;
+  } | null;
 };
 
 function formatNumber(input: number): string {
@@ -68,6 +77,77 @@ export default async function Home() {
         lastSyncedAt: true,
       },
     });
+
+    if (leaderboard.length > 0) {
+      const accountIds = leaderboard.map((row) => row.id);
+      const snapshots = await prisma.dailyAccountSnapshot.findMany({
+        where: { accountId: { in: accountIds } },
+        orderBy: [{ snapshotDatePst: "desc" }],
+        select: {
+          accountId: true,
+          score: true,
+          reviewCount: true,
+          wkLevel: true,
+          radicalCount: true,
+          vocabularyCount: true,
+          burnedCount: true,
+          levelKanjiLearned: true,
+        },
+      });
+
+      const latestTwoByAccount = new Map<
+        string,
+        Array<{
+          score: number;
+          reviewCount: number;
+          wkLevel: number;
+          radicalCount: number;
+          vocabularyCount: number;
+          burnedCount: number;
+          levelKanjiLearned: number;
+        }>
+      >();
+
+      for (const snapshot of snapshots) {
+        const current = latestTwoByAccount.get(snapshot.accountId) ?? [];
+        if (current.length >= 2) {
+          continue;
+        }
+
+        current.push({
+          score: snapshot.score,
+          reviewCount: snapshot.reviewCount,
+          wkLevel: snapshot.wkLevel,
+          radicalCount: snapshot.radicalCount,
+          vocabularyCount: snapshot.vocabularyCount,
+          burnedCount: snapshot.burnedCount,
+          levelKanjiLearned: snapshot.levelKanjiLearned,
+        });
+        latestTwoByAccount.set(snapshot.accountId, current);
+      }
+
+      leaderboard = leaderboard.map((row) => {
+        const snapshotsForAccount = latestTwoByAccount.get(row.id) ?? [];
+        const previous = snapshotsForAccount[1] ?? null;
+
+        if (!previous) {
+          return { ...row, dailyDelta: null };
+        }
+
+        return {
+          ...row,
+          dailyDelta: {
+            score: row.score - previous.score,
+            reviewCount: row.reviewCount - previous.reviewCount,
+            wkLevel: row.wkLevel - previous.wkLevel,
+            radicalCount: row.radicalCount - previous.radicalCount,
+            vocabularyCount: row.vocabularyCount - previous.vocabularyCount,
+            burnedCount: row.burnedCount - previous.burnedCount,
+            levelKanjiLearned: row.levelKanjiLearned - previous.levelKanjiLearned,
+          },
+        };
+      });
+    }
   } catch {
     setupMessage = "Leaderboard will appear after DATABASE_URL is configured and synced.";
   }

@@ -28,6 +28,15 @@ type LeaderboardRow = {
   lastActivityAt: string | null;
   score: number;
   lastSyncedAt: string;
+  dailyDelta?: {
+    score: number;
+    reviewCount: number;
+    wkLevel: number;
+    radicalCount: number;
+    vocabularyCount: number;
+    burnedCount: number;
+    levelKanjiLearned: number;
+  } | null;
 };
 
 type Props = {
@@ -125,6 +134,38 @@ function formatSince(input: string | null): string {
 
   const days = Math.floor(hours / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function formatDelta(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  if (value > 0) {
+    return `+${formatNumber(value)}`;
+  }
+
+  if (value < 0) {
+    return `-${formatNumber(Math.abs(value))}`;
+  }
+
+  return "0";
+}
+
+function deltaClass(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "text-slate-400";
+  }
+
+  if (value > 0) {
+    return "text-emerald-700";
+  }
+
+  if (value < 0) {
+    return "text-red-700";
+  }
+
+  return "text-slate-500";
 }
 
 function kanjiCountFromRow(row: LeaderboardRow): number {
@@ -330,10 +371,24 @@ export default function LeaderboardTable({ rows }: Props) {
                     <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
                       {row.nickname}
                     </Link>
-                    <p className="text-xs font-semibold text-slate-500">@{row.wkUsername}</p>
+                    <p className="text-xs font-semibold text-slate-500">
+                      <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
+                        @{row.wkUsername}
+                      </Link>
+                    </p>
                   </td>
-                  <td className="px-4 py-3 text-lg font-black text-accent">{row.wkLevel}</td>
-                  <td className="px-4 py-3 font-semibold">{formatNumber(row.reviewCount)}</td>
+                  <td className="px-4 py-3 text-lg font-black text-accent">
+                    <p>{row.wkLevel}</p>
+                    <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.wkLevel)}`}>
+                      {formatDelta(row.dailyDelta?.wkLevel)}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3 font-semibold">
+                    <p>{formatNumber(row.reviewCount)}</p>
+                    <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.reviewCount)}`}>
+                      {formatDelta(row.dailyDelta?.reviewCount)}
+                    </p>
+                  </td>
                   <td className="px-4 py-3">
                     <span className="subject-pill subject-pill--radical">{formatNumber(row.radicalCount)}</span>
                   </td>
@@ -344,7 +399,12 @@ export default function LeaderboardTable({ rows }: Props) {
                   <td className="px-4 py-3">
                     <span className="subject-pill subject-pill--vocabulary">{formatNumber(row.vocabularyCount)}</span>
                   </td>
-                  <td className="px-4 py-3 text-lg font-black text-hot">{formatNumber(row.score)}</td>
+                  <td className="px-4 py-3 text-lg font-black text-hot">
+                    <p>{formatNumber(row.score)}</p>
+                    <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.score)}`}>
+                      {formatDelta(row.dailyDelta?.score)}
+                    </p>
+                  </td>
                   <td className="px-4 py-3 text-xs uppercase tracking-[0.08em] text-slate-500">
                     <p>{row.lastActivityAt ? formatDate(row.lastActivityAt) : "-"}</p>
                     <p className="mt-1 text-[10px] font-semibold normal-case tracking-normal text-slate-400">
@@ -555,6 +615,26 @@ export default function LeaderboardTable({ rows }: Props) {
                           ) : null}
                         </div>
                       </div>
+
+                      <div className="rounded-2xl border border-line bg-white p-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">24h Change</p>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                          {([
+                            ["Score", row.dailyDelta?.score],
+                            ["Reviews", row.dailyDelta?.reviewCount],
+                            ["Level", row.dailyDelta?.wkLevel],
+                            ["Radicals", row.dailyDelta?.radicalCount],
+                            ["Vocab", row.dailyDelta?.vocabularyCount],
+                            ["Burned", row.dailyDelta?.burnedCount],
+                            ["Learned Kanji", row.dailyDelta?.levelKanjiLearned],
+                          ] as const).map(([label, delta]) => (
+                            <div key={label} className="rounded-xl border border-line bg-surface-muted px-3 py-2">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">{label}</p>
+                              <p className={`mt-1 text-xl font-black ${deltaClass(delta)}`}>{formatDelta(delta)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                       </div>
                         );
                       })()}
@@ -575,7 +655,11 @@ export default function LeaderboardTable({ rows }: Props) {
                 <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="text-3xl font-black text-foreground hover:text-accent">
                   #{index + 1} {row.nickname}
                 </Link>
-                <p className="mt-0.5 text-sm text-slate-500">@{row.wkUsername}</p>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
+                    @{row.wkUsername}
+                  </Link>
+                </p>
               </div>
               <button
                 type="button"
@@ -590,14 +674,23 @@ export default function LeaderboardTable({ rows }: Props) {
               <div className="rounded-xl bg-surface-muted px-3 py-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Level</p>
                 <p className="mt-1 text-xl font-black text-accent">Lv {row.wkLevel}</p>
+                <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.wkLevel)}`}>
+                  {formatDelta(row.dailyDelta?.wkLevel)}
+                </p>
               </div>
               <div className="rounded-xl bg-surface-muted px-3 py-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Reviewed</p>
                 <p className="mt-1 text-xl font-black text-foreground">{formatNumber(row.reviewCount)}</p>
+                <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.reviewCount)}`}>
+                  {formatDelta(row.dailyDelta?.reviewCount)}
+                </p>
               </div>
               <div className="rounded-xl bg-surface-muted px-3 py-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Score</p>
                 <p className="mt-1 text-xl font-black text-hot">{formatNumber(row.score)}</p>
+                <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.score)}`}>
+                  {formatDelta(row.dailyDelta?.score)}
+                </p>
               </div>
               <div className="rounded-xl bg-surface-muted px-3 py-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Pending</p>

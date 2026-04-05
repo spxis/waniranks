@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { refreshDueAccounts } from "@/lib/sync";
 import LevelExplorer from "./LevelExplorer";
+import UserAdminRefreshButton from "./UserAdminRefreshButton";
 import UserProgressPanels from "./UserProgressPanels";
 
 type PageProps = {
@@ -140,6 +141,13 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const levelKanjiItems = (account.levelKanjiItems ?? []) as LevelKanjiItem[];
   const itemSpread = isItemSpread(account.itemSpread) ? account.itemSpread : EMPTY_ITEM_SPREAD;
 
+  const rankedAccounts = await prisma.account.findMany({
+    orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
+    select: { id: true },
+  });
+  const globalRank = Math.max(1, rankedAccounts.findIndex((row) => row.id === account.id) + 1);
+  const totalPlayers = rankedAccounts.length;
+
   const currentLevelItems = levelKanjiItems.filter(
     (item) => item.subjectType === "radical" || item.subjectType === "kanji" || item.subjectType === "vocabulary",
   );
@@ -179,9 +187,17 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
         </Link>
 
         <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
-          <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{account.nickname}</h1>
-          <p className="mt-2 text-sm text-slate-600">@{account.wkUsername}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
+              <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{account.nickname}</h1>
+              <p className="mt-2 text-sm text-slate-600">@{account.wkUsername}</p>
+              <p className="mt-1 inline-flex rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                Global Rank #{globalRank} of {formatNumber(totalPlayers)}
+              </p>
+            </div>
+            <UserAdminRefreshButton accountId={account.id} />
+          </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <article className="rounded-2xl border border-line bg-surface-muted p-4">
