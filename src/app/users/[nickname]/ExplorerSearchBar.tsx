@@ -136,7 +136,7 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
             }
           }}
           placeholder={scope === "jlpt" ? "Search JLPT kanji" : "Search kanji, hiragana, or romaji"}
-          className="h-9 min-w-0 flex-1 rounded-full bg-transparent px-3 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-500"
+          className="h-9 min-w-0 flex-1 rounded-full bg-transparent px-3 text-sm font-semibold text-foreground outline-none placeholder:text-foreground/50"
           aria-label="Search level explorer"
           disabled={isSearching}
         />

@@ -950,12 +950,14 @@ export default function LevelExplorer({
       ...visibleTypes,
       [type]: !visibleTypes[type],
     });
+    setSelectedSubjectId(null);
     setTypeFilter("all");
   }
 
   function enableAllTypes() {
     markHistoryPush();
     setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true });
+    setSelectedSubjectId(null);
     setTypeFilter("all");
   }
 
@@ -996,6 +998,7 @@ export default function LevelExplorer({
   function setSrsFilterWithHistory(nextStatus: SrsFilter) {
     markHistoryPush();
 
+    setSelectedSubjectId(null);
     setSrsFilter(nextStatus);
   }
 
@@ -1086,6 +1089,7 @@ export default function LevelExplorer({
     markHistoryPush();
 
     setError("");
+    setSelectedSubjectId(null);
 
     if (searchAvailableLevels && !searchAvailableLevels.has(level)) {
       return;
@@ -1116,6 +1120,7 @@ export default function LevelExplorer({
     markHistoryPush();
 
     const allLevels = new Set(levelOptions);
+    setSelectedSubjectId(null);
     setSelectedLevels(allLevels);
 
     setSearchMatchedSubjectIds(null);
@@ -1503,6 +1508,16 @@ export default function LevelExplorer({
           value !== null,
       );
   }, [selectedItem, kanjiByCharacter, subjectById]);
+
+  const hasPrimaryRelatedPanel = selectedItem
+    ? selectedItem.subjectType === "vocabulary"
+      ? vocabularyKanjiLinks.length > 0
+      : (selectedItem.radicals?.length ?? 0) > 0
+    : false;
+  const hasVisuallySimilarPanel = (selectedItem?.visuallySimilar?.length ?? 0) > 0;
+  const hasUsedInVocabularyPanel = (selectedItem?.usedInVocabulary?.length ?? 0) > 0;
+  const relatedPanelCount =
+    Number(hasPrimaryRelatedPanel) + Number(hasVisuallySimilarPanel) + Number(hasUsedInVocabularyPanel);
 
   async function jumpToKanji(subjectId: number, wkLevel: number | null) {
     markHistoryPush();
@@ -2039,8 +2054,8 @@ export default function LevelExplorer({
                 type="button"
                 onClick={() => {
                   markHistoryPush();
-                  setJlptFilter(level);
                   setSelectedSubjectId(null);
+                  setJlptFilter(level);
                   if (level !== "all") {
                     setTypeFilterAndEnsureVisible("kanji");
                   }
@@ -2072,6 +2087,7 @@ export default function LevelExplorer({
                 type="button"
                 onClick={() => {
                   markHistoryPush();
+                  setSelectedSubjectId(null);
                   setReviewTimingFilter(timing);
                 }}
                 disabled={disabled}
@@ -2116,7 +2132,26 @@ export default function LevelExplorer({
                     selectedItem?.subjectId === item.subjectId,
                   )} ${lockedCardStateClass(item)}`}
                 >
-                  <div className="flex items-start justify-end gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    {selectedItem?.subjectId === item.subjectId ? (
+                      <span
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-accent/40 bg-accent/15 text-accent"
+                        title="Viewing details. Click this card to close."
+                        aria-label="Viewing details"
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                          <path
+                            d="M8.5 14a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11Zm0-1.7a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6Zm4.6 1.2 3.2 3.2"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span />
+                    )}
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {item.subjectType === "kanji" && item.jlptLevel ? (
@@ -2287,30 +2322,48 @@ export default function LevelExplorer({
                       </article>
                     </div>
 
-                    <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                      <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-foreground/70">
-                          {selectedItem.subjectType === "vocabulary" ? "Kanji" : "Radicals"}
-                        </p>
-                        {selectedItem.subjectType === "vocabulary"
-                          ? renderVocabularyKanjiCards()
-                          : renderRelatedReferenceCards(selectedItem.radicals ?? [], {
+                    {relatedPanelCount > 0 ? (
+                      <div
+                        className={`mt-4 grid gap-3 ${
+                          relatedPanelCount >= 3
+                            ? "lg:grid-cols-3"
+                            : relatedPanelCount === 2
+                              ? "lg:grid-cols-2"
+                              : "lg:grid-cols-1"
+                        }`}
+                      >
+                        {hasPrimaryRelatedPanel ? (
+                          <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                            <p className="text-xs font-bold uppercase text-foreground/70">
+                              {selectedItem.subjectType === "vocabulary" ? "Kanji" : "Radicals"}
+                            </p>
+                            {selectedItem.subjectType === "vocabulary"
+                              ? renderVocabularyKanjiCards()
+                              : renderRelatedReferenceCards(selectedItem.radicals ?? [], {
+                                  large: selectedItem.subjectType === "kanji",
+                                })}
+                          </article>
+                        ) : null}
+
+                        {hasVisuallySimilarPanel ? (
+                          <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                            <p className="text-xs font-bold uppercase text-foreground/70">Visually similar</p>
+                            {renderRelatedReferenceCards(selectedItem.visuallySimilar ?? [], {
                               large: selectedItem.subjectType === "kanji",
                             })}
-                      </article>
-                      <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-foreground/70">Visually similar</p>
-                        {renderRelatedReferenceCards(selectedItem.visuallySimilar ?? [], {
-                          large: selectedItem.subjectType === "kanji",
-                        })}
-                      </article>
-                      <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-foreground/70">Used in vocabulary</p>
-                        {renderRelatedReferenceCards(selectedItem.usedInVocabulary ?? [], {
-                          large: true,
-                        })}
-                      </article>
-                    </div>
+                          </article>
+                        ) : null}
+
+                        {hasUsedInVocabularyPanel ? (
+                          <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                            <p className="text-xs font-bold uppercase text-foreground/70">Used in vocabulary</p>
+                            {renderRelatedReferenceCards(selectedItem.usedInVocabulary ?? [], {
+                              large: true,
+                            })}
+                          </article>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </section>
                 ) : null}
               </Fragment>
