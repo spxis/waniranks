@@ -276,6 +276,20 @@ function glyphSubtitleForDisplay(item: LevelItem): string | null {
   return primaryReadingForDisplay(item);
 }
 
+function englishSubtitleForDisplay(item: LevelItem): string | null {
+  if (item.subjectType === "radical") {
+    return item.meanings[0] ?? null;
+  }
+
+  const reading = primaryReadingForDisplay(item);
+  if (!reading) {
+    return null;
+  }
+
+  const pronunciation = pronunciationForReading(reading);
+  return pronunciation ? `${reading} / ${pronunciation}` : reading;
+}
+
 function glyphHasReading(item: LevelItem): boolean {
   return Boolean(glyphSubtitleForDisplay(item));
 }
@@ -1480,6 +1494,10 @@ export default function LevelExplorer({
           const isClickable = linked !== null;
           const relationType = linked?.subjectType;
           const reading = typeof item.reading === "string" && item.reading.trim() ? item.reading : null;
+          const subtitle =
+            showPrimaryReadingEnglish && reading
+              ? pronunciationForReading(reading) ?? reading
+              : null;
           const key =
             "fallbackKey" in entry && typeof entry.fallbackKey === "string"
               ? entry.fallbackKey
@@ -1492,9 +1510,9 @@ export default function LevelExplorer({
                 className={`${relatedReferenceCardClass(relationType, false, size)} inline-flex flex-col items-center`}
               >
                 <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
-                {reading ? (
+                {subtitle ? (
                   <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
-                    <ReadingWithPronunciation reading={reading} />
+                    {subtitle}
                   </span>
                 ) : null}
               </span>
@@ -1509,9 +1527,9 @@ export default function LevelExplorer({
               className={`${relatedReferenceCardClass(relationType, true, size)} inline-flex flex-col items-center`}
             >
               <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
-              {reading ? (
+              {subtitle ? (
                 <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
-                  <ReadingWithPronunciation reading={reading} />
+                  {subtitle}
                 </span>
               ) : null}
             </button>
@@ -1529,6 +1547,12 @@ export default function LevelExplorer({
     return (
       <div className="mt-2 flex flex-wrap gap-2">
         {vocabularyKanjiLinks.map((item) => (
+          (() => {
+            const subtitle = showPrimaryReadingEnglish
+              ? pronunciationForReading(item.reading) ?? item.reading
+              : null;
+
+            return (
           <button
             key={`${selectedItem?.subjectId ?? "vocab"}-${item.subjectId}`}
             type="button"
@@ -1536,10 +1560,14 @@ export default function LevelExplorer({
             className="inline-flex cursor-pointer flex-col rounded-xl border border-kanji/50 bg-kanji/10 px-4 py-3 text-left text-kanji transition hover:bg-kanji/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             <span className="text-4xl font-black leading-none">{item.char}</span>
-            <span className="mt-1 w-full text-center text-sm font-semibold leading-none text-slate-600">
-              <ReadingWithPronunciation reading={item.reading} />
-            </span>
+            {subtitle ? (
+              <span className="mt-1 w-full text-center text-sm font-semibold leading-none text-slate-600">
+                {subtitle}
+              </span>
+            ) : null}
           </button>
+            );
+          })()
         ))}
       </div>
     );
@@ -1911,7 +1939,9 @@ export default function LevelExplorer({
                           <div>
                             <h3 className="text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
                             {(() => {
-                              const subtitle = glyphSubtitleForDisplay(selectedItem);
+                              const subtitle = showPrimaryReadingEnglish
+                                ? englishSubtitleForDisplay(selectedItem)
+                                : glyphSubtitleForDisplay(selectedItem);
                               if (!subtitle) {
                                 return null;
                               }
@@ -1941,6 +1971,16 @@ export default function LevelExplorer({
                       </div>
                     </div>
 
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowPrimaryReadingEnglish((prev) => !prev)}
+                        className="rounded-full border border-line bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
+                      >
+                        {showPrimaryReadingEnglish ? "Hide English" : "Show English"}
+                      </button>
+                    </div>
+
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                         <p className="text-xs font-bold uppercase text-slate-600">SRS state</p>
@@ -1959,18 +1999,7 @@ export default function LevelExplorer({
                         <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedItem.passedAt)}</p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm sm:col-span-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
-                          {selectedItem.subjectType !== "radical" ? (
-                            <button
-                              type="button"
-                              onClick={() => setShowPrimaryReadingEnglish((prev) => !prev)}
-                              className="rounded-full border border-line bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
-                            >
-                              {showPrimaryReadingEnglish ? "Hide English" : "Show English"}
-                            </button>
-                          ) : null}
-                        </div>
+                        <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
                         <p className="mt-1 font-semibold text-slate-800">
                           {selectedItem.subjectType === "radical"
                             ? "Not applicable"
