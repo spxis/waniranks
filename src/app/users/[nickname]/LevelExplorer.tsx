@@ -83,8 +83,6 @@ type ExplorerUrlState = {
   type: TypeFilter;
   jlpt: JlptFilter;
   review: ReviewTimingFilter;
-  showLocked: boolean;
-  showBurned: boolean;
   stickyMerge: boolean;
 };
 
@@ -498,12 +496,11 @@ export default function LevelExplorer({
   const typeVisibilityStorageKey = `wr:explorer:${accountId}:type-visibility`;
   const selectedSubjectStorageKey = `wr:explorer:${accountId}:selected-subject`;
   const stickyMergeStorageKey = `wr:explorer:${accountId}:sticky-merge`;
+  const filtersCollapsedStorageKey = `wr:explorer:${accountId}:filters-collapsed`;
   const srsFilterStorageKey = `wr:explorer:${accountId}:srs-filter`;
   const typeFilterStorageKey = `wr:explorer:${accountId}:type-filter`;
   const jlptFilterStorageKey = `wr:explorer:${accountId}:jlpt-filter`;
   const reviewTimingFilterStorageKey = `wr:explorer:${accountId}:review-timing-filter`;
-  const showLockedStorageKey = `wr:explorer:${accountId}:show-locked`;
-  const showBurnedStorageKey = `wr:explorer:${accountId}:show-burned`;
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
   const [snapshotsByLevel, setSnapshotsByLevel] = useState<Map<number, Snapshot>>(
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
@@ -520,9 +517,8 @@ export default function LevelExplorer({
     kanji: true,
     vocabulary: true,
   });
-  const [showLockedItems, setShowLockedItems] = useState(false);
-  const [showBurnedItems, setShowBurnedItems] = useState(true);
   const [stickyMerge, setStickyMerge] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [searchMatchedSubjectIds, setSearchMatchedSubjectIds] = useState<Set<number> | null>(null);
@@ -583,8 +579,6 @@ export default function LevelExplorer({
       type,
       jlpt,
       review,
-      showLocked: parseBooleanParam(params.get("locked"), false),
-      showBurned: parseBooleanParam(params.get("burned"), true),
       stickyMerge: parseBooleanParam(params.get("sticky"), false),
     };
   }
@@ -609,8 +603,8 @@ export default function LevelExplorer({
     params.set("type", typeFilter);
     params.set("jlpt", jlptFilter);
     params.set("review", reviewTimingFilter);
-    params.set("locked", showLockedItems ? "1" : "0");
-    params.set("burned", showBurnedItems ? "1" : "0");
+    params.delete("locked");
+    params.delete("burned");
     params.set("sticky", stickyMerge ? "1" : "0");
 
     const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
@@ -646,8 +640,6 @@ export default function LevelExplorer({
       setTypeFilter(parsed.type);
       setJlptFilter(parsed.jlpt);
       setReviewTimingFilter(parsed.review);
-      setShowLockedItems(parsed.showLocked);
-      setShowBurnedItems(parsed.showBurned);
       setStickyMerge(parsed.stickyMerge);
 
       for (const level of parsed.levels.values()) {
@@ -686,8 +678,6 @@ export default function LevelExplorer({
     typeFilter,
     jlptFilter,
     reviewTimingFilter,
-    showLockedItems,
-    showBurnedItems,
     stickyMerge,
   ]);
 
@@ -743,6 +733,17 @@ export default function LevelExplorer({
       // Ignore storage errors in restricted browsing modes.
     }
   }, [stickyMergeStorageKey]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(filtersCollapsedStorageKey);
+      if (raw === "1") {
+        setFiltersCollapsed(true);
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [filtersCollapsedStorageKey]);
 
   useEffect(() => {
     try {
@@ -834,36 +835,6 @@ export default function LevelExplorer({
   }, [reviewTimingFilterStorageKey]);
 
   useEffect(() => {
-    try {
-      if (new URLSearchParams(window.location.search).has("locked")) {
-        return;
-      }
-
-      const raw = window.localStorage.getItem(showLockedStorageKey);
-      if (raw === "1") {
-        setShowLockedItems(true);
-      }
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }, [showLockedStorageKey]);
-
-  useEffect(() => {
-    try {
-      if (new URLSearchParams(window.location.search).has("burned")) {
-        return;
-      }
-
-      const raw = window.localStorage.getItem(showBurnedStorageKey);
-      if (raw === "0") {
-        setShowBurnedItems(false);
-      }
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }, [showBurnedStorageKey]);
-
-  useEffect(() => {
     const computeColumns = () => {
       if (window.matchMedia("(min-width: 1024px)").matches) {
         setGridColumns(4);
@@ -922,22 +893,6 @@ export default function LevelExplorer({
       // Ignore storage errors in restricted browsing modes.
     }
   }, [reviewTimingFilter, reviewTimingFilterStorageKey]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(showLockedStorageKey, showLockedItems ? "1" : "0");
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }, [showLockedItems, showLockedStorageKey]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(showBurnedStorageKey, showBurnedItems ? "1" : "0");
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }, [showBurnedItems, showBurnedStorageKey]);
 
   useEffect(() => {
     try {
@@ -1025,12 +980,19 @@ export default function LevelExplorer({
     }
   }
 
-  function setSrsFilterAndSyncLocked(nextStatus: SrsFilter) {
+  function setSrsFilterWithHistory(nextStatus: SrsFilter) {
     markHistoryPush();
 
     setSrsFilter(nextStatus);
-    if (nextStatus === "locked") {
-      setShowLockedItems(true);
+  }
+
+  function setFiltersCollapsedAndPersist(next: boolean) {
+    setFiltersCollapsed(next);
+
+    try {
+      window.localStorage.setItem(filtersCollapsedStorageKey, next ? "1" : "0");
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
     }
   }
 
@@ -1178,8 +1140,8 @@ export default function LevelExplorer({
           jlptFilter === "all"
             ? true
             : item.subjectType === "kanji" && item.jlptLevel === Number(jlptFilter.slice(1));
-        const lockedPass = showLockedItems ? true : item.status !== "locked";
-        const burnedPass = showBurnedItems ? true : item.status !== "burned";
+        const lockedPass = item.status !== "locked";
+        const burnedPass = true;
         const reviewTimingPass = passesReviewTimingFilter(item, reviewTimingFilter);
         const visibilityPass =
           item.subjectType === "radical"
@@ -1212,8 +1174,6 @@ export default function LevelExplorer({
     typeFilter,
     jlptFilter,
     reviewTimingFilter,
-    showLockedItems,
-    showBurnedItems,
     visibleTypes,
     searchMatchedSubjectIds,
   ]);
@@ -1360,13 +1320,6 @@ export default function LevelExplorer({
       setReviewTimingFilter("all");
     }
 
-    if (selectedItemFromAll.status === "locked" && !showLockedItems) {
-      setShowLockedItems(true);
-    }
-
-    if (selectedItemFromAll.status === "burned" && !showBurnedItems) {
-      setShowBurnedItems(true);
-    }
   }, [
     selectedItem,
     selectedItemFromAll,
@@ -1375,14 +1328,12 @@ export default function LevelExplorer({
     srsFilter,
     jlptFilter,
     reviewTimingFilter,
-    showLockedItems,
-    showBurnedItems,
   ]);
 
   function badgeClass(active: boolean): string {
     return active
       ? "border-accent bg-accent text-white"
-      : "border-line bg-white text-slate-700 hover:bg-surface-muted";
+      : "border-line bg-surface text-foreground hover:bg-surface-muted";
   }
 
   function typeBadgeClass(type: TypeFilter, active: boolean, disabled: boolean): string {
@@ -1428,21 +1379,21 @@ export default function LevelExplorer({
   }
 
   function disabledBadgeClass(): string {
-    return "cursor-not-allowed border-line bg-slate-100 text-slate-400";
+    return "cursor-not-allowed border-line bg-surface-muted text-foreground/45";
   }
 
   function typeCardClass(type: LevelItem["subjectType"], selected: boolean): string {
     const selectedRing = selected ? "ring-2 ring-accent" : "";
     if (type === "radical") {
-      return `border-radical/50 bg-white text-slate-800 ${selectedRing}`;
+      return `border-radical/50 bg-surface text-foreground ${selectedRing}`;
     }
     if (type === "kanji") {
-      return `border-kanji/50 bg-white text-slate-800 ${selectedRing}`;
+      return `border-kanji/50 bg-surface text-foreground ${selectedRing}`;
     }
     if (type === "vocabulary") {
-      return `border-vocabulary/50 bg-white text-slate-800 ${selectedRing}`;
+      return `border-vocabulary/50 bg-surface text-foreground ${selectedRing}`;
     }
-    return `border-line bg-white text-slate-700 ${selectedRing}`;
+    return `border-line bg-surface text-foreground ${selectedRing}`;
   }
 
   function lockedCardStateClass(item: LevelItem): string {
@@ -1450,7 +1401,7 @@ export default function LevelExplorer({
       return "";
     }
 
-    return "bg-slate-50/80 text-slate-500";
+    return "bg-surface-muted/90 text-foreground/60";
   }
 
   function typeGlyphBoxClass(type: LevelItem["subjectType"]): string {
@@ -1463,7 +1414,7 @@ export default function LevelExplorer({
     if (type === "vocabulary") {
       return "border-vocabulary/50 bg-vocabulary/15 text-vocabulary";
     }
-    return "border-line bg-white text-slate-700";
+    return "border-line bg-surface text-foreground";
   }
 
   function glyphTextSizeClass(characters: string): string {
@@ -1543,9 +1494,6 @@ export default function LevelExplorer({
   async function jumpToKanji(subjectId: number, wkLevel: number | null) {
     markHistoryPush();
 
-    setShowLockedItems(true);
-    setShowBurnedItems(true);
-
     if (typeof wkLevel === "number") {
       await ensureLevelLoaded(wkLevel);
       setSelectedLevels((prev) => {
@@ -1623,8 +1571,6 @@ export default function LevelExplorer({
       setSelectedLevels(levelsWithMatches.size > 0 ? levelsWithMatches : new Set([initialSnapshot.level]));
       setSearchAvailableLevels(levelsWithMatches);
       setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true });
-      setShowLockedItems(true);
-      setShowBurnedItems(true);
       setTypeFilter("all");
       setSrsFilter("all");
       setJlptFilter("all");
@@ -1672,14 +1618,6 @@ export default function LevelExplorer({
     setSrsFilter("all");
     setJlptFilter("all");
     setReviewTimingFilter("all");
-
-    if (found?.status === "locked") {
-      setShowLockedItems(true);
-    }
-
-    if (found?.status === "burned") {
-      setShowBurnedItems(true);
-    }
 
     setSelectedSubjectId(subjectId);
   }
@@ -1771,12 +1709,12 @@ export default function LevelExplorer({
       return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-vocabulary/50 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20" : "border-vocabulary/30 bg-vocabulary/5 text-vocabulary/80"}`;
     }
 
-    return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-line bg-white text-slate-700 hover:bg-slate-100" : "border-line bg-slate-50 text-slate-500"}`;
+    return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-line bg-surface text-foreground hover:bg-surface-muted" : "border-line bg-surface-muted text-foreground/60"}`;
   }
 
   function renderRelatedReferenceCards(items: RelatedReference[], options?: { large?: boolean }) {
     if (items.length === 0) {
-      return <p className="mt-2 text-slate-500">-</p>;
+      return <p className="mt-2 text-foreground/60">-</p>;
     }
 
     const size = options?.large ? "large" : "normal";
@@ -1853,7 +1791,7 @@ export default function LevelExplorer({
               >
                 <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
                 {subtitle ? (
-                  <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
+                  <span className="mt-1 text-center text-sm font-semibold leading-none text-foreground/70">
                     {subtitle}
                   </span>
                 ) : null}
@@ -1872,7 +1810,7 @@ export default function LevelExplorer({
             >
               <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
               {subtitle ? (
-                <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
+                <span className="mt-1 text-center text-sm font-semibold leading-none text-foreground/70">
                   {subtitle}
                 </span>
               ) : null}
@@ -1885,7 +1823,7 @@ export default function LevelExplorer({
 
   function renderVocabularyKanjiCards() {
     if (vocabularyKanjiLinks.length === 0) {
-      return <p className="mt-2 text-slate-500">-</p>;
+      return <p className="mt-2 text-foreground/60">-</p>;
     }
 
     return (
@@ -1910,7 +1848,7 @@ export default function LevelExplorer({
           >
             <span className="text-4xl font-black leading-none">{item.char}</span>
             {subtitle ? (
-              <span className="mt-1 w-full text-center text-sm font-semibold leading-none text-slate-600">
+              <span className="mt-1 w-full text-center text-sm font-semibold leading-none text-foreground/70">
                 {subtitle}
               </span>
             ) : null}
@@ -1927,7 +1865,7 @@ export default function LevelExplorer({
       <header className="flex flex-col gap-3 border-b border-line bg-surface-muted px-5 py-4">
         <div>
           <h2 className="text-xl font-black text-foreground">WaniKani Explorer</h2>
-          <p className="text-xs uppercase tracking-[0.08em] text-slate-600">
+          <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
             Click one or more level badges to combine data
           </p>
         </div>
@@ -1964,56 +1902,13 @@ export default function LevelExplorer({
             className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
               stickyMerge
                 ? "border-accent bg-accent text-white"
-                : "border-line bg-white text-slate-700"
+                : "border-line bg-surface text-foreground"
             }`}
             aria-pressed={stickyMerge}
           >
             Sticky {stickyMerge ? "On" : "Off"}
           </button>
         </div>
-      </header>
-
-      <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Selected levels</p>
-          <p className="mt-1 text-2xl font-black text-foreground">{selectedLevelList.join(", ")}</p>
-        </div>
-        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Total Items</p>
-          <p className="mt-1 text-2xl font-black text-foreground">{formatNumber(combinedSnapshot.items.length)}</p>
-        </div>
-        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Kanji Learned</p>
-          <p className="mt-1 text-2xl font-black text-accent">{formatNumber(combinedSnapshot.kanjiLearned)}</p>
-        </div>
-        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Kanji Locked</p>
-          <p className="mt-1 text-2xl font-black text-hot">{formatNumber(combinedSnapshot.kanjiLocked)}</p>
-        </div>
-      </div>
-
-      <div className="border-b border-line px-5 py-4">
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">JLPT mix (kanji in selected levels)</p>
-        <div className="mt-2 grid grid-cols-5 gap-2">
-          {([
-            ["N5", jlptCounts.n5],
-            ["N4", jlptCounts.n4],
-            ["N3", jlptCounts.n3],
-            ["N2", jlptCounts.n2],
-            ["N1", jlptCounts.n1],
-          ] as const).map(([label, count]) => (
-            <div key={label} className="rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-slate-600">{label}</p>
-              <p className="text-2xl font-black text-foreground">{formatNumber(count)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-b border-line px-5 py-4">
-        <section className="rounded-2xl border border-line bg-surface-muted/60 p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">Filters</p>
-          <div className="mt-3 space-y-3">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -2043,6 +1938,59 @@ export default function LevelExplorer({
             </button>
           ))}
         </div>
+      </header>
+
+      <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Selected levels</p>
+          <p className="mt-1 text-2xl font-black text-foreground">{selectedLevelList.join(", ")}</p>
+        </div>
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Total Items</p>
+          <p className="mt-1 text-2xl font-black text-foreground">{formatNumber(combinedSnapshot.items.length)}</p>
+        </div>
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Kanji Learned</p>
+          <p className="mt-1 text-2xl font-black text-accent">{formatNumber(combinedSnapshot.kanjiLearned)}</p>
+        </div>
+        <div className="rounded-xl border border-line bg-surface-muted p-3 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Kanji Locked</p>
+          <p className="mt-1 text-2xl font-black text-hot">{formatNumber(combinedSnapshot.kanjiLocked)}</p>
+        </div>
+      </div>
+
+      <div className="border-b border-line px-5 py-4">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">JLPT mix (kanji in selected levels)</p>
+        <div className="mt-2 grid grid-cols-5 gap-2">
+          {([
+            ["N5", jlptCounts.n5],
+            ["N4", jlptCounts.n4],
+            ["N3", jlptCounts.n3],
+            ["N2", jlptCounts.n2],
+            ["N1", jlptCounts.n1],
+          ] as const).map(([label, count]) => (
+            <div key={label} className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+              <p className="text-[10px] font-bold uppercase text-foreground/70">{label}</p>
+              <p className="text-2xl font-black text-foreground">{formatNumber(count)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-b border-line px-5 py-4">
+        <section className="rounded-2xl border border-line bg-surface-muted/60 p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">Filters</p>
+            <button
+              type="button"
+              onClick={() => setFiltersCollapsedAndPersist(!filtersCollapsed)}
+              className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground"
+              aria-expanded={!filtersCollapsed}
+            >
+              {filtersCollapsed ? "Expand" : "Collapse"}
+            </button>
+          </div>
+          {!filtersCollapsed ? <div className="mt-3 space-y-3">
         <div className="flex flex-wrap gap-2">
           {(["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const).map(
             (status) => (
@@ -2054,7 +2002,7 @@ export default function LevelExplorer({
                   <button
                     key={status}
                     type="button"
-                    onClick={() => setSrsFilterAndSyncLocked(status)}
+                    onClick={() => setSrsFilterWithHistory(status)}
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
                       disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)
@@ -2123,51 +2071,13 @@ export default function LevelExplorer({
             );
           })}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              markHistoryPush();
-              setShowLockedItems((prev) => !prev);
-            }}
-            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-              showLockedItems
-                ? "border-slate-500 bg-slate-600 text-white"
-                : "border-line bg-white text-slate-700"
-            }`}
-          >
-            {showLockedItems ? "Hide Locked" : "Show Locked"}
-          </button>
-          <p className="text-xs font-semibold text-slate-500">
-            Locked items are hidden by default.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              markHistoryPush();
-              setShowBurnedItems((prev) => !prev);
-            }}
-            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-              showBurnedItems
-                ? "border-emerald-500 bg-emerald-600 text-white"
-                : "border-line bg-white text-slate-700"
-            }`}
-          >
-            {showBurnedItems ? "Hide Burned" : "Show Burned"}
-          </button>
-          <p className="text-xs font-semibold text-slate-500">
-            Burned items are visible by default.
-          </p>
-        </div>
-          </div>
+          </div> : null}
         </section>
       </div>
 
-      {loading ? <p className="px-5 py-4 text-sm text-slate-600">Loading level data...</p> : null}
+      {loading ? <p className="px-5 py-4 text-sm text-foreground/70">Loading level data...</p> : null}
       {searchMatchedSubjectIds ? (
-        <p className="px-5 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">
+        <p className="px-5 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/70">
           Showing {formatNumber(searchMatchedSubjectIds.size)} search result{searchMatchedSubjectIds.size === 1 ? "" : "s"}
         </p>
       ) : null}
@@ -2175,7 +2085,7 @@ export default function LevelExplorer({
 
       <div className="p-5">
         {filteredItems.length === 0 ? (
-          <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-600">
+          <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
             No items visible. Expand one or more types above.
           </div>
         ) : (
@@ -2197,7 +2107,7 @@ export default function LevelExplorer({
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {item.subjectType === "kanji" && item.jlptLevel ? (
-                        <span className="subject-pill border-line bg-white text-slate-700">
+                        <span className="subject-pill border-line bg-surface text-foreground">
                           N{item.jlptLevel}
                         </span>
                       ) : null}
@@ -2205,7 +2115,7 @@ export default function LevelExplorer({
                   </div>
                   <p
                     className={`mt-2 text-xl font-black leading-tight ${
-                      item.status === "locked" || item.srsStage <= 0 ? "text-slate-500" : "text-slate-700"
+                      item.status === "locked" || item.srsStage <= 0 ? "text-foreground/60" : "text-foreground"
                     }`}
                   >
                     {item.meanings.join(", ") || "-"}
@@ -2229,7 +2139,7 @@ export default function LevelExplorer({
                       }
 
                       return (
-                        <p className="mt-1 w-full text-center text-sm font-semibold text-slate-600 whitespace-nowrap">
+                        <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/70 whitespace-nowrap">
                           <ReadingWithPronunciation reading={subtitle} />
                         </p>
                       );
@@ -2259,14 +2169,14 @@ export default function LevelExplorer({
                     ) : (
                       <span />
                     )}
-                    <span className="justify-self-end rounded-full border border-line bg-white px-2 py-1 text-xs font-bold text-slate-700">
+                    <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
                       SRS {item.srsStage}
                     </span>
                   </div>
                 </button>
 
                 {selectedItem && index === detailInsertIndex ? (
-                  <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-white p-5 sm:col-span-2 lg:col-span-4">
+                  <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
                     <div className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-x-3">
                       <div className="row-span-2 inline-flex">
                         <div
@@ -2287,7 +2197,7 @@ export default function LevelExplorer({
                               }
 
                               return (
-                                <p className="mt-1 w-full text-center text-sm font-semibold text-slate-700">
+                                <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/85">
                                   <ReadingWithPronunciation reading={subtitle} />
                                 </p>
                               );
@@ -2298,9 +2208,9 @@ export default function LevelExplorer({
                       <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
                         <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{selectedItem.status}</span>
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
-                        <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
+                        <span className="subject-pill border-line bg-surface text-foreground">WK {selectedItem.wkLevel}</span>
                         {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
-                          <span className="subject-pill border-line bg-white text-slate-700">
+                          <span className="subject-pill border-line bg-surface text-foreground">
                             N{selectedItem.jlptLevel}
                           </span>
                         ) : null}
@@ -2314,8 +2224,8 @@ export default function LevelExplorer({
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
-                        <p className="mt-1 font-semibold text-slate-800">
+                        <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
+                        <p className="mt-1 font-semibold text-foreground/90">
                           {selectedItem.subjectType === "radical"
                             ? "Not applicable"
                             : (
@@ -2327,8 +2237,8 @@ export default function LevelExplorer({
                         </p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Secondary readings</p>
-                        <p className="mt-1 font-semibold text-slate-800">
+                        <p className="text-xs font-bold uppercase text-foreground/70">Secondary readings</p>
+                        <p className="mt-1 font-semibold text-foreground/90">
                           {selectedItem.subjectType === "radical"
                             ? "Not applicable"
                             : (
@@ -2340,33 +2250,33 @@ export default function LevelExplorer({
                         </p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Started</p>
-                        <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedItem.startedAt)}</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
+                        <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedItem.startedAt)}</p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Next review</p>
-                        <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedItem.availableAt)}</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Next review</p>
+                        <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedItem.availableAt)}</p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Passed</p>
-                        <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedItem.passedAt)}</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Passed</p>
+                        <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedItem.passedAt)}</p>
                       </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Meaning explanation</p>
-                        <p className="mt-2 text-slate-800">{stripHtml(selectedItem.meaningExplanation) || "-"}</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
+                        <p className="mt-2 text-foreground/90">{stripHtml(selectedItem.meaningExplanation) || "-"}</p>
                       </article>
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Reading explanation</p>
-                        <p className="mt-2 text-slate-800">{stripHtml(selectedItem.readingExplanation) || "-"}</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Reading explanation</p>
+                        <p className="mt-2 text-foreground/90">{stripHtml(selectedItem.readingExplanation) || "-"}</p>
                       </article>
                     </div>
 
                     <div className="mt-4 grid gap-3 lg:grid-cols-3">
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">
+                        <p className="text-xs font-bold uppercase text-foreground/70">
                           {selectedItem.subjectType === "vocabulary" ? "Kanji" : "Radicals"}
                         </p>
                         {selectedItem.subjectType === "vocabulary"
@@ -2376,13 +2286,13 @@ export default function LevelExplorer({
                             })}
                       </article>
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Visually similar</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Visually similar</p>
                         {renderRelatedReferenceCards(selectedItem.visuallySimilar ?? [], {
                           large: selectedItem.subjectType === "kanji",
                         })}
                       </article>
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">Used in vocabulary</p>
+                        <p className="text-xs font-bold uppercase text-foreground/70">Used in vocabulary</p>
                         {renderRelatedReferenceCards(selectedItem.usedInVocabulary ?? [], {
                           large: true,
                         })}

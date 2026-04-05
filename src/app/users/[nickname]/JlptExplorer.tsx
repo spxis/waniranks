@@ -200,7 +200,7 @@ export default function JlptExplorer({
   function badgeClass(active: boolean): string {
     return active
       ? "border-accent bg-accent text-white"
-      : "border-line bg-white text-slate-700 hover:bg-surface-muted";
+      : "border-line bg-surface text-foreground hover:bg-surface-muted";
   }
 
   function statusClass(
@@ -379,7 +379,7 @@ export default function JlptExplorer({
       <header className="border-b border-line bg-surface-muted px-5 py-4">
         <div>
           <h2 className="text-xl font-black text-foreground">JLPT Explorer</h2>
-          <p className="text-xs uppercase tracking-[0.08em] text-slate-600">
+          <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
             Browse all N1-N5 kanji ({formatNumber(items.length)} total)
           </p>
         </div>
@@ -448,7 +448,7 @@ export default function JlptExplorer({
             className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
               stickyLevels
                 ? "border-accent bg-accent text-white"
-                : "border-line bg-white text-slate-700"
+                : "border-line bg-surface text-foreground"
             }`}
           >
             Sticky {stickyLevels ? "On" : "Off"}
@@ -457,10 +457,10 @@ export default function JlptExplorer({
       </header>
 
       <div className="p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/70">
           Showing {formatNumber(filteredItems.length)} results
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-foreground/60">
           WaniKani-specific SRS stats are shown only where subject mappings exist.
         </p>
 
@@ -482,20 +482,20 @@ export default function JlptExplorer({
                   onClick={() => setSelectedKanji((prev) => (prev === item.kanji ? null : item.kanji))}
                   className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${
                     userMatch
-                      ? "border-kanji/50 bg-white text-slate-800"
-                      : "border-line bg-white text-slate-700"
+                      ? "border-kanji/50 bg-surface text-foreground"
+                      : "border-line bg-surface text-foreground"
                   } ${selectedKanji === item.kanji ? "ring-2 ring-accent" : ""}`}
                 >
                   <div className="flex items-start justify-end gap-1">
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className="subject-pill subject-pill--kanji">kanji</span>
-                      <span className="subject-pill border-line bg-white text-slate-700">N{item.nLevel}</span>
+                      <span className="subject-pill border-line bg-surface text-foreground">N{item.nLevel}</span>
                     </div>
                   </div>
-                  <p className="mt-2 text-xl font-black leading-tight text-slate-700">{heading}</p>
+                  <p className="mt-2 text-xl font-black leading-tight text-foreground">{heading}</p>
                   <div className={`mt-3 rounded-xl border border-kanji/50 bg-kanji/10 px-3 py-2 ${userMatch ? "text-kanji" : "text-foreground"}`}>
                     <p className="text-center text-6xl font-black leading-none">{item.kanji}</p>
-                    <p className="mt-1 text-center text-sm font-semibold text-slate-600">
+                    <p className="mt-1 text-center text-sm font-semibold text-foreground/70">
                       {primaryReading ? readingLabel(primaryReading) : readingLabelFromList(fallbackReadings)}
                     </p>
                   </div>
@@ -504,14 +504,14 @@ export default function JlptExplorer({
                       {userMatch?.status ?? "untracked"}
                     </span>
                     <span />
-                    <span className="justify-self-end rounded-full border border-line bg-white px-2 py-1 text-xs font-bold text-slate-700">
+                    <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
                       {userMatch ? `SRS ${userMatch.srsStage ?? 0}` : "-"}
                     </span>
                   </div>
                 </button>
 
                 {selectedItem && index === detailInsertIndex ? (
-                  <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-white p-5 sm:col-span-2 lg:col-span-4">
+                  <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
                     {(() => {
                       const selectedUserMatch = userKanjiByChar.get(selectedItem.kanji);
                       const selectedPreload = (jlptReadings as JlptReadingsRecord)[selectedItem.kanji];
@@ -533,7 +533,7 @@ export default function JlptExplorer({
                             </div>
                             <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
                               <span className="subject-pill subject-pill--kanji">kanji</span>
-                              <span className="subject-pill border-line bg-white text-slate-700">N{selectedItem.nLevel}</span>
+                              <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.nLevel}</span>
                               <span className={`subject-pill ${statusClass(selectedUserMatch?.status)}`}>{selectedUserMatch?.status ?? "untracked"}</span>
                             </div>
                             <div className="min-w-0">
@@ -545,37 +545,37 @@ export default function JlptExplorer({
 
                           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
-                              <p className="mt-1 font-semibold text-slate-800">{readingLabel(primary)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{readingLabel(primary)}</p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Secondary readings</p>
-                              <p className="mt-1 font-semibold text-slate-800">
+                              <p className="text-xs font-bold uppercase text-foreground/70">Secondary readings</p>
+                              <p className="mt-1 font-semibold text-foreground/90">
                                 {secondary.length > 0 ? secondary.map((reading) => readingLabel(reading)).join(", ") : "-"}
                               </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Started</p>
-                              <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedUserMatch?.startedAt)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch?.startedAt)}</p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Next review</p>
-                              <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedUserMatch?.availableAt)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Next review</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch?.availableAt)}</p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Passed</p>
-                              <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedUserMatch?.passedAt)}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Passed</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedUserMatch?.passedAt)}</p>
                             </div>
                           </div>
 
                           <div className="mt-4 grid gap-3 lg:grid-cols-2">
                             <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Meaning explanation</p>
-                              <p className="mt-2 text-slate-800">{stripHtml(selectedUserMatch?.meaningExplanation) || "-"}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
+                              <p className="mt-2 text-foreground/90">{stripHtml(selectedUserMatch?.meaningExplanation) || "-"}</p>
                             </article>
                             <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-slate-600">Reading explanation</p>
-                              <p className="mt-2 text-slate-800">{stripHtml(selectedUserMatch?.readingExplanation) || "-"}</p>
+                              <p className="text-xs font-bold uppercase text-foreground/70">Reading explanation</p>
+                              <p className="mt-2 text-foreground/90">{stripHtml(selectedUserMatch?.readingExplanation) || "-"}</p>
                             </article>
                           </div>
                         </>
