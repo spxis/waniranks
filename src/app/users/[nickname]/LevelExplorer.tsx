@@ -27,6 +27,7 @@ type LevelItem = {
     subjectId: number;
     label: string;
     wkLevel?: number | null;
+    reading?: string | null;
   }>;
   meaningExplanation?: string;
   readingExplanation?: string;
@@ -268,7 +269,7 @@ function ReadingWithPronunciation({
 
   return (
     <span
-      className={`${className ?? ""} cursor-help decoration-dotted underline-offset-2`}
+      className={className}
       title={`Pronunciation: ${pronunciation}`}
       aria-label={`${reading} pronunciation ${pronunciation}`}
     >
@@ -1015,7 +1016,12 @@ export default function LevelExplorer({
         return {
           char: component.label,
           subjectId: component.subjectId,
-          reading: found ? (found.primaryReadings ?? [])[0] ?? "-" : "-",
+          reading:
+            typeof component.reading === "string" && component.reading.length > 0
+              ? component.reading
+              : found
+                ? (found.primaryReadings ?? [])[0] ?? "-"
+                : "-",
           wkLevel:
             typeof component.wkLevel === "number"
               ? component.wkLevel
@@ -1108,18 +1114,18 @@ export default function LevelExplorer({
     const sizeClass = size === "large" ? "px-4 py-3" : "px-3 py-2";
 
     if (type === "radical") {
-      return `${base} ${sizeClass} ${isClickable ? "border-radical/50 bg-radical/10 text-radical hover:bg-radical/20" : "border-radical/30 bg-radical/5 text-radical/80"}`;
+      return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-radical/50 bg-radical/10 text-radical hover:bg-radical/20" : "border-radical/30 bg-radical/5 text-radical/80"}`;
     }
 
     if (type === "kanji") {
-      return `${base} ${sizeClass} ${isClickable ? "border-kanji/50 bg-kanji/10 text-kanji hover:bg-kanji/20" : "border-kanji/30 bg-kanji/5 text-kanji/80"}`;
+      return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-kanji/50 bg-kanji/10 text-kanji hover:bg-kanji/20" : "border-kanji/30 bg-kanji/5 text-kanji/80"}`;
     }
 
     if (type === "vocabulary") {
-      return `${base} ${sizeClass} ${isClickable ? "border-vocabulary/50 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20" : "border-vocabulary/30 bg-vocabulary/5 text-vocabulary/80"}`;
+      return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-vocabulary/50 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20" : "border-vocabulary/30 bg-vocabulary/5 text-vocabulary/80"}`;
     }
 
-    return `${base} ${sizeClass} ${isClickable ? "border-line bg-white text-slate-700 hover:bg-slate-100" : "border-line bg-slate-50 text-slate-500"}`;
+    return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-line bg-white text-slate-700 hover:bg-slate-100" : "border-line bg-slate-50 text-slate-500"}`;
   }
 
   function renderRelatedReferenceCards(items: RelatedReference[], options?: { large?: boolean }) {
@@ -1214,9 +1220,12 @@ export default function LevelExplorer({
             key={`${selectedItem?.subjectId ?? "vocab"}-${item.subjectId}`}
             type="button"
             onClick={() => jumpToKanji(item.subjectId, item.wkLevel)}
-            className="inline-flex rounded-xl border border-kanji/50 bg-kanji/10 px-4 py-3 text-left text-kanji transition hover:bg-kanji/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="inline-flex cursor-pointer flex-col rounded-xl border border-kanji/50 bg-kanji/10 px-4 py-3 text-left text-kanji transition hover:bg-kanji/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             <span className="text-4xl font-black leading-none">{item.char}</span>
+            <span className="mt-1 text-sm font-semibold leading-none text-slate-600">
+              <ReadingWithPronunciation reading={item.reading} />
+            </span>
           </button>
         ))}
       </div>

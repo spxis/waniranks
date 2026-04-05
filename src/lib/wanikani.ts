@@ -107,6 +107,7 @@ export type LevelKanjiSnapshot = {
       subjectId: number;
       label: string;
       wkLevel: number | null;
+      reading: string | null;
     }>;
     meaningExplanation: string;
     readingExplanation: string;
@@ -302,6 +303,7 @@ export async function getLevelKanjiSnapshot(
       characters: string | null;
       slug: string | null;
       level: number | null;
+      primaryReading: string | null;
     }
   >();
 
@@ -314,13 +316,25 @@ export async function getLevelKanjiSnapshot(
       const relatedCollection = await fetchAllCollectionPages(`/subjects?ids=${chunk}`, token);
 
       for (const row of relatedCollection.data) {
-        const data = row.data as { characters?: string | null; slug?: string | null; level?: number | null };
+        const data = row.data as {
+          characters?: string | null;
+          slug?: string | null;
+          level?: number | null;
+          readings?: Array<{ reading?: string; primary?: boolean; accepted_answer?: boolean }>;
+        };
+        const primaryReading =
+          data.readings
+            ?.filter((reading) => reading.primary && (reading.accepted_answer ?? true))
+            .map((reading) => reading.reading)
+            .find((reading): reading is string => typeof reading === "string" && reading.length > 0) ?? null;
+
         relatedSubjects.set(row.id, {
           subjectId: row.id,
           object: row.object ?? "subject",
           characters: data.characters ?? null,
           slug: data.slug ?? null,
           level: typeof data.level === "number" ? data.level : null,
+          primaryReading,
         });
       }
     }
@@ -379,6 +393,7 @@ export async function getLevelKanjiSnapshot(
             subjectId: id,
             label: subjectLabel(id),
             wkLevel: relatedSubjects.get(id)?.level ?? null,
+            reading: relatedSubjects.get(id)?.primaryReading ?? null,
           })),
         meaningExplanation: subject?.meaning_mnemonic ?? "",
         readingExplanation: subject?.reading_mnemonic ?? "",
