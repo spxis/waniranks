@@ -1443,6 +1443,7 @@ export default function LevelExplorer({
       return segments.map((segment, index) => ({
         subjectId: item.subjectId,
         label: segment,
+        reading: null,
         fallbackKey: `${item.subjectId}-${segment}-${index}`,
       }));
     });
@@ -1453,10 +1454,12 @@ export default function LevelExplorer({
           const item = {
             subjectId: entry.subjectId,
             label: entry.label,
+            reading: "reading" in entry ? entry.reading : null,
           };
           const linked = subjectById.get(item.subjectId) ?? null;
           const isClickable = linked !== null;
           const relationType = linked?.subjectType;
+          const reading = typeof item.reading === "string" && item.reading.trim() ? item.reading : null;
           const key =
             "fallbackKey" in entry && typeof entry.fallbackKey === "string"
               ? entry.fallbackKey
@@ -1466,9 +1469,14 @@ export default function LevelExplorer({
             return (
               <span
                 key={key}
-                className={`${relatedReferenceCardClass(relationType, false, size)} inline-flex`}
+                className={`${relatedReferenceCardClass(relationType, false, size)} inline-flex flex-col items-center`}
               >
                 <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
+                {reading ? (
+                  <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
+                    <ReadingWithPronunciation reading={reading} />
+                  </span>
+                ) : null}
               </span>
             );
           }
@@ -1478,9 +1486,14 @@ export default function LevelExplorer({
               key={key}
               type="button"
               onClick={() => jumpToRelatedSubject(item.subjectId)}
-              className={`${relatedReferenceCardClass(relationType, true, size)} inline-flex`}
+              className={`${relatedReferenceCardClass(relationType, true, size)} inline-flex flex-col items-center`}
             >
               <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
+              {reading ? (
+                <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
+                  <ReadingWithPronunciation reading={reading} />
+                </span>
+              ) : null}
             </button>
           );
         })}

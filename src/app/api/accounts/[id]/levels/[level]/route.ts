@@ -24,23 +24,60 @@ function hasObjectRelationRows(value: unknown): boolean {
   return typeof row.subjectId === "number" && typeof row.label === "string";
 }
 
+function hasReadingMetadataRows(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0) {
+    return true;
+  }
+
+  for (const row of value) {
+    if (!row || typeof row !== "object") {
+      return false;
+    }
+
+    if (!Object.hasOwn(row, "reading")) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function snapshotHasDrilldownFields(items: unknown): boolean {
   if (!Array.isArray(items) || items.length === 0) {
     return true;
   }
 
-  const first = items[0] as Record<string, unknown>;
-  return (
-    typeof first.subjectType === "string" &&
-    Array.isArray(first.readings) &&
-    hasObjectRelationRows(first.radicals) &&
-    hasObjectRelationRows(first.visuallySimilar) &&
-    hasObjectRelationRows(first.usedInVocabulary) &&
-    hasObjectRelationRows(first.componentKanji) &&
-    typeof first.meaningExplanation === "string" &&
-    typeof first.readingExplanation === "string" &&
-    Object.hasOwn(first, "jlptLevel")
-  );
+  for (const item of items) {
+    if (!item || typeof item !== "object") {
+      return false;
+    }
+
+    const row = item as Record<string, unknown>;
+    const baseValid =
+      typeof row.subjectType === "string" &&
+      Array.isArray(row.readings) &&
+      hasObjectRelationRows(row.radicals) &&
+      hasObjectRelationRows(row.visuallySimilar) &&
+      hasObjectRelationRows(row.usedInVocabulary) &&
+      hasObjectRelationRows(row.componentKanji) &&
+      typeof row.meaningExplanation === "string" &&
+      typeof row.readingExplanation === "string" &&
+      Object.hasOwn(row, "jlptLevel");
+
+    if (!baseValid) {
+      return false;
+    }
+
+    if (row.subjectType === "kanji" && !hasReadingMetadataRows(row.usedInVocabulary)) {
+      return false;
+    }
+
+    if (row.subjectType === "vocabulary" && !hasReadingMetadataRows(row.componentKanji)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export async function GET(_: Request, context: RouteContext) {

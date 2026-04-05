@@ -102,6 +102,7 @@ export type LevelKanjiSnapshot = {
     usedInVocabulary: Array<{
       subjectId: number;
       label: string;
+      reading: string | null;
     }>;
     componentKanji: Array<{
       subjectId: number;
@@ -383,6 +384,7 @@ export async function getLevelKanjiSnapshot(
         usedInVocabulary: (subject?.amalgamation_subject_ids ?? []).map((id) => ({
           subjectId: id,
           label: subjectLabel(id),
+          reading: relatedSubjects.get(id)?.primaryReading ?? null,
         })),
         componentKanji: (subject?.component_subject_ids ?? [])
           .filter((id) => {
