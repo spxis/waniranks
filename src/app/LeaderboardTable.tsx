@@ -154,7 +154,7 @@ function formatDelta(value: number | null | undefined): string {
 
 function deltaClass(value: number | null | undefined): string {
   if (value === null || value === undefined) {
-    return "text-slate-400";
+    return "text-foreground/50";
   }
 
   if (value > 0) {
@@ -165,7 +165,7 @@ function deltaClass(value: number | null | undefined): string {
     return "text-red-700";
   }
 
-  return "text-slate-500";
+  return "text-foreground/60";
 }
 
 function kanjiCountFromRow(row: LeaderboardRow): number {
@@ -347,7 +347,7 @@ export default function LeaderboardTable({ rows }: Props) {
     <div className="space-y-4">
       <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full">
-          <thead className="border-b border-line bg-surface-muted text-left text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+          <thead className="border-b border-line bg-surface-muted text-left text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">
             <tr>
               <th className="px-4 py-3">#</th>
               <th className="px-4 py-3">Nickname</th>
@@ -362,7 +362,7 @@ export default function LeaderboardTable({ rows }: Props) {
               <th className="px-4 py-3">More</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line text-sm text-slate-800">
+          <tbody className="divide-y divide-line text-sm text-foreground/90">
             {rows.map((row, index) => (
               <Fragment key={row.id}>
                 <tr key={row.id} className="transition hover:bg-surface-muted/80">
@@ -371,7 +371,7 @@ export default function LeaderboardTable({ rows }: Props) {
                     <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
                       {row.nickname}
                     </Link>
-                    <p className="text-xs font-semibold text-slate-500">
+                    <p className="text-xs font-semibold text-foreground/60">
                       <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
                         @{row.wkUsername}
                       </Link>
@@ -405,9 +405,9 @@ export default function LeaderboardTable({ rows }: Props) {
                       {formatDelta(row.dailyDelta?.score)}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-xs uppercase tracking-[0.08em] text-slate-500">
+                  <td className="px-4 py-3 text-xs uppercase tracking-[0.08em] text-foreground/60">
                     <p>{row.lastActivityAt ? formatDate(row.lastActivityAt) : "-"}</p>
-                    <p className="mt-1 text-[10px] font-semibold normal-case tracking-normal text-slate-400">
+                    <p className="mt-1 text-[10px] font-semibold normal-case tracking-normal text-foreground/50">
                       {formatSince(row.lastActivityAt)}
                     </p>
                   </td>
@@ -415,7 +415,7 @@ export default function LeaderboardTable({ rows }: Props) {
                     <button
                       type="button"
                       onClick={() => toggle(row.id)}
-                      className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-700"
+                      className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground"
                     >
                       {expanded.has(row.id) ? "Hide" : "Expand"}
                     </button>
@@ -433,8 +433,8 @@ export default function LeaderboardTable({ rows }: Props) {
                         return (
                       <div className="space-y-3">
                       <div className="grid gap-3 lg:grid-cols-[0.7fr_1.5fr_1.5fr_1fr]">
-                        <div className="rounded-2xl border border-accent/25 bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                        <div className="rounded-2xl border border-accent/25 bg-surface p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
                             Due Now
                           </p>
                           <p className="mt-1 text-4xl font-black text-accent">
@@ -442,36 +442,36 @@ export default function LeaderboardTable({ rows }: Props) {
                           </p>
                         </div>
 
-                        <div className="rounded-2xl border border-line bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                        <div className="rounded-2xl border border-line bg-surface p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
                             SRS Stages
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-                              <p className="text-[10px] font-bold uppercase text-slate-600">Apprentice</p>
-                              <p className="text-xl font-black leading-none text-slate-900">{formatNumber(row.apprenticeCount)}</p>
+                              <p className="text-[10px] font-bold uppercase text-foreground/70">Apprentice</p>
+                              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.apprenticeCount)}</p>
                             </div>
                             <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-                              <p className="text-[10px] font-bold uppercase text-slate-600">Guru</p>
-                              <p className="text-xl font-black leading-none text-slate-900">{formatNumber(row.guruCount)}</p>
+                              <p className="text-[10px] font-bold uppercase text-foreground/70">Guru</p>
+                              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.guruCount)}</p>
                             </div>
                             <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-                              <p className="text-[10px] font-bold uppercase text-slate-600">Master</p>
-                              <p className="text-xl font-black leading-none text-slate-900">{formatNumber(row.masterCount)}</p>
+                              <p className="text-[10px] font-bold uppercase text-foreground/70">Master</p>
+                              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.masterCount)}</p>
                             </div>
                             <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-                              <p className="text-[10px] font-bold uppercase text-slate-600">Enlightened</p>
-                              <p className="text-xl font-black leading-none text-slate-900">{formatNumber(row.enlightenedCount)}</p>
+                              <p className="text-[10px] font-bold uppercase text-foreground/70">Enlightened</p>
+                              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.enlightenedCount)}</p>
                             </div>
                             <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-                              <p className="text-[10px] font-bold uppercase text-slate-600">Burned</p>
-                              <p className="text-xl font-black leading-none text-slate-900">{formatNumber(row.burnedCount)}</p>
+                              <p className="text-[10px] font-bold uppercase text-foreground/70">Burned</p>
+                              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.burnedCount)}</p>
                             </div>
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-line bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                        <div className="rounded-2xl border border-line bg-surface p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
                             JLPT Levels
                           </p>
                           <div className="mt-3 space-y-2">
@@ -513,18 +513,18 @@ export default function LeaderboardTable({ rows }: Props) {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-line bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
+                        <div className="rounded-2xl border border-line bg-surface p-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
                             Level {row.wkLevel} Kanji
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80">
                               Learned: {formatNumber(row.levelKanjiLearned)}
                             </span>
-                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80">
                               Total: {formatNumber(row.levelKanjiTotal)}
                             </span>
-                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+                            <span className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80">
                               Locked: {formatNumber(row.levelKanjiLocked)}
                             </span>
                           </div>
@@ -532,7 +532,7 @@ export default function LeaderboardTable({ rows }: Props) {
                       </div>
 
                       <div className="grid gap-3 lg:grid-cols-[1.8fr_1.2fr]">
-                        <div className="rounded-2xl border border-line bg-white p-4">
+                        <div className="rounded-2xl border border-line bg-surface p-4">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Item Spread</p>
                             <button
@@ -544,7 +544,7 @@ export default function LeaderboardTable({ rows }: Props) {
                                   setShowItemSpreadPanel,
                                 )
                               }
-                              className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
+                              className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground"
                             >
                               {showItemSpreadPanel ? "Collapse" : "Expand"}
                             </button>
@@ -564,7 +564,7 @@ export default function LeaderboardTable({ rows }: Props) {
                                   ["Enlightened", spread.enlightened],
                                   ["Burned", spread.burned],
                                 ] as const).map(([label, data]) => (
-                                  <div key={label} className="grid grid-cols-[1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] items-center gap-2 rounded-lg border border-line bg-surface-muted px-2 py-1 text-xs font-semibold text-slate-700">
+                                  <div key={label} className="grid grid-cols-[1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] items-center gap-2 rounded-lg border border-line bg-surface-muted px-2 py-1 text-xs font-semibold text-foreground/80">
                                     <p>{label}</p>
                                     <p className="text-radical">{formatNumber(data.radical)}</p>
                                     <p className="text-kanji">{formatNumber(data.kanji)}</p>
@@ -577,7 +577,7 @@ export default function LeaderboardTable({ rows }: Props) {
                           ) : null}
                         </div>
 
-                        <div className="rounded-2xl border border-line bg-white p-4">
+                        <div className="rounded-2xl border border-line bg-surface p-4">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level Progress</p>
                             <button
@@ -589,24 +589,24 @@ export default function LeaderboardTable({ rows }: Props) {
                                   setShowLevelProgressPanel,
                                 )
                               }
-                              className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700"
+                              className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground"
                             >
                               {showLevelProgressPanel ? "Collapse" : "Expand"}
                             </button>
                           </div>
                           {showLevelProgressPanel ? (
                             <>
-                              <p className="mt-1 text-sm font-semibold text-slate-700">Level {row.wkLevel}</p>
-                              <div className="mt-3 h-2 rounded-full bg-slate-200">
+                              <p className="mt-1 text-sm font-semibold text-foreground/80">Level {row.wkLevel}</p>
+                              <div className="mt-3 h-2 rounded-full bg-surface-muted">
                                 <div
                                   className="h-2 rounded-full bg-kanji"
                                   style={{ width: `${row.levelKanjiTotal === 0 ? 0 : Math.min(100, Math.round((row.levelKanjiGuruPlus / row.levelKanjiTotal) * 100))}%` }}
                                 />
                               </div>
-                              <p className="mt-2 text-sm font-semibold text-slate-700">
+                              <p className="mt-2 text-sm font-semibold text-foreground/80">
                                 Guru+ Kanji: {formatNumber(row.levelKanjiGuruPlus)}/{formatNumber(row.levelKanjiTotal)}
                               </p>
-                              <p className="mt-1 text-sm text-slate-600">
+                              <p className="mt-1 text-sm text-foreground/70">
                                 {row.levelKanjiGuruPlus >= kanjiGoal
                                   ? "Level-up gate passed; cleanup remains."
                                   : `Need ${formatNumber(remainingToLevelUp)} more Guru+ kanji to level up.`}
@@ -616,8 +616,8 @@ export default function LeaderboardTable({ rows }: Props) {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-line bg-white p-4">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">24h Change</p>
+                      <div className="rounded-2xl border border-line bg-surface p-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">24h Change</p>
                         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                           {([
                             ["Score", row.dailyDelta?.score],
@@ -629,7 +629,7 @@ export default function LeaderboardTable({ rows }: Props) {
                             ["Learned Kanji", row.dailyDelta?.levelKanjiLearned],
                           ] as const).map(([label, delta]) => (
                             <div key={label} className="rounded-xl border border-line bg-surface-muted px-3 py-2">
-                              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">{label}</p>
+                              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70">{label}</p>
                               <p className={`mt-1 text-xl font-black ${deltaClass(delta)}`}>{formatDelta(delta)}</p>
                             </div>
                           ))}
@@ -649,13 +649,13 @@ export default function LeaderboardTable({ rows }: Props) {
 
       <div className="space-y-4 md:hidden">
         {rows.map((row, index) => (
-          <article key={row.id} className="rounded-2xl border border-line bg-white/90 p-4 shadow-[0_10px_24px_rgba(8,16,36,0.06)]">
+          <article key={row.id} className="rounded-2xl border border-line bg-surface/90 p-4 shadow-[0_10px_24px_rgba(8,16,36,0.06)]">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="text-3xl font-black text-foreground hover:text-accent">
                   #{index + 1} {row.nickname}
                 </Link>
-                <p className="mt-0.5 text-sm text-slate-500">
+                <p className="mt-0.5 text-sm text-foreground/60">
                   <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">
                     @{row.wkUsername}
                   </Link>
@@ -664,36 +664,36 @@ export default function LeaderboardTable({ rows }: Props) {
               <button
                 type="button"
                 onClick={() => toggle(row.id)}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-700"
+                className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground"
               >
                 {expanded.has(row.id) ? "Hide" : "More"}
               </button>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm font-semibold text-slate-700">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm font-semibold text-foreground/80">
               <div className="rounded-xl bg-surface-muted px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Level</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/60">Level</p>
                 <p className="mt-1 text-xl font-black text-accent">Lv {row.wkLevel}</p>
                 <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.wkLevel)}`}>
                   {formatDelta(row.dailyDelta?.wkLevel)}
                 </p>
               </div>
               <div className="rounded-xl bg-surface-muted px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Reviewed</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/60">Reviewed</p>
                 <p className="mt-1 text-xl font-black text-foreground">{formatNumber(row.reviewCount)}</p>
                 <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.reviewCount)}`}>
                   {formatDelta(row.dailyDelta?.reviewCount)}
                 </p>
               </div>
               <div className="rounded-xl bg-surface-muted px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Score</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/60">Score</p>
                 <p className="mt-1 text-xl font-black text-hot">{formatNumber(row.score)}</p>
                 <p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.score)}`}>
                   {formatDelta(row.dailyDelta?.score)}
                 </p>
               </div>
               <div className="rounded-xl bg-surface-muted px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Pending</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/60">Pending</p>
                 <p className="mt-1 text-xl font-black text-accent">{formatNumber(row.pendingReviews)}</p>
               </div>
             </div>
@@ -702,16 +702,16 @@ export default function LeaderboardTable({ rows }: Props) {
               <span className="subject-pill subject-pill--radical">R {formatNumber(row.radicalCount)}</span>
               <span className="subject-pill subject-pill--kanji">K {formatNumber(kanjiCountFromRow(row))}</span>
               <span className="subject-pill subject-pill--vocabulary">V {formatNumber(row.vocabularyCount)}</span>
-              <span className="rounded-full border border-line bg-surface px-2 py-0.5 font-bold uppercase tracking-[0.08em] text-slate-600">
+              <span className="rounded-full border border-line bg-surface px-2 py-0.5 font-bold uppercase tracking-[0.08em] text-foreground/70">
                 Learned {formatNumber(learnedKanjiFromRow(row))}
               </span>
             </div>
 
-            <p className="mt-2 text-[11px] font-semibold text-slate-500">
+            <p className="mt-2 text-[11px] font-semibold text-foreground/60">
               Activity: {row.lastActivityAt ? formatDate(row.lastActivityAt) : "-"} · {formatSince(row.lastActivityAt)}
             </p>
             {expanded.has(row.id) ? (
-              <div className="mt-3 space-y-2 text-xs font-semibold text-slate-700">
+              <div className="mt-3 space-y-2 text-xs font-semibold text-foreground/80">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg bg-surface-muted p-2">Apprentice {formatNumber(row.apprenticeCount)}</div>
                   <div className="rounded-lg bg-surface-muted p-2">Guru {formatNumber(row.guruCount)}</div>

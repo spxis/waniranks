@@ -174,7 +174,7 @@ export default async function Home() {
               <h1 className="mt-2 text-4xl leading-[0.9] text-foreground sm:text-6xl lg:text-7xl">
                 WaniRanks
               </h1>
-              <p className="mt-4 max-w-2xl text-base text-slate-700 sm:text-lg">
+              <p className="mt-4 max-w-2xl text-base text-foreground/75 sm:text-lg">
                 Live level race for your household. Keep it competitive, track progress,
                 and flex daily review grind.
               </p>
@@ -184,7 +184,7 @@ export default async function Home() {
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3 sm:gap-4">
             <article className="animate-enter animate-enter-delay-1 rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">
                 Players
               </p>
               <p className="mt-2 text-4xl font-black text-foreground sm:text-5xl">
@@ -192,7 +192,7 @@ export default async function Home() {
               </p>
             </article>
             <article className="animate-enter animate-enter-delay-2 rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">
                 Total Reviews
               </p>
               <p className="mt-2 text-4xl font-black text-foreground sm:text-5xl">
@@ -200,13 +200,13 @@ export default async function Home() {
               </p>
             </article>
             <article className="animate-enter animate-enter-delay-3 rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">
                 Avg. Level / Top Score
               </p>
               <p className="mt-2 text-4xl font-black text-foreground sm:text-5xl">
                 L{averageLevel}
               </p>
-              <p className="text-sm font-semibold text-slate-600">{formatNumber(topScore)} pts</p>
+              <p className="text-sm font-semibold text-foreground/65">{formatNumber(topScore)} pts</p>
             </article>
           </div>
         </section>
@@ -215,7 +215,7 @@ export default async function Home() {
           {leaderboard.length === 0 ? (
             <div className="p-10 text-center">
               <p className="text-xl font-black text-foreground">No players yet</p>
-              <p className="mt-2 text-slate-600">
+              <p className="mt-2 text-foreground/70">
                 {setupMessage || "Add your first family member from the admin page."}
               </p>
             </div>
@@ -229,7 +229,7 @@ export default async function Home() {
             />
           )}
         </section>
-        <p className="mt-3 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <p className="mt-3 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">
           Score formula: level x 1000 + reviewed x 2 + burned x 4 + learned kanji x 3
         </p>
       </main>

@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toRomaji } from "wanakana";
 
+import LevelRelatedPanels from "./LevelRelatedPanels";
+
 type LevelItem = {
   subjectId: number;
   subjectType?: "kanji" | "radical" | "vocabulary";
@@ -1516,8 +1518,9 @@ export default function LevelExplorer({
     : false;
   const hasVisuallySimilarPanel = (selectedItem?.visuallySimilar?.length ?? 0) > 0;
   const hasUsedInVocabularyPanel = (selectedItem?.usedInVocabulary?.length ?? 0) > 0;
-  const relatedPanelCount =
-    Number(hasPrimaryRelatedPanel) + Number(hasVisuallySimilarPanel) + Number(hasUsedInVocabularyPanel);
+  const selectedMeaningExplanation = stripHtml(selectedItem?.meaningExplanation) || "-";
+  const selectedReadingExplanationRaw = stripHtml(selectedItem?.readingExplanation);
+  const showReadingExplanation = selectedReadingExplanationRaw.length > 0;
 
   async function jumpToKanji(subjectId: number, wkLevel: number | null) {
     markHistoryPush();
@@ -2311,59 +2314,38 @@ export default function LevelExplorer({
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <div className={`mt-4 grid gap-3 ${showReadingExplanation ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
                       <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                         <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
-                        <p className="mt-2 text-foreground/90">{stripHtml(selectedItem.meaningExplanation) || "-"}</p>
+                        <p className="mt-2 text-foreground/90">{selectedMeaningExplanation}</p>
                       </article>
-                      <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-foreground/70">Reading explanation</p>
-                        <p className="mt-2 text-foreground/90">{stripHtml(selectedItem.readingExplanation) || "-"}</p>
-                      </article>
+                      {showReadingExplanation ? (
+                        <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                          <p className="text-xs font-bold uppercase text-foreground/70">Reading explanation</p>
+                          <p className="mt-2 text-foreground/90">{selectedReadingExplanationRaw}</p>
+                        </article>
+                      ) : null}
                     </div>
 
-                    {relatedPanelCount > 0 ? (
-                      <div
-                        className={`mt-4 grid gap-3 ${
-                          relatedPanelCount >= 3
-                            ? "lg:grid-cols-3"
-                            : relatedPanelCount === 2
-                              ? "lg:grid-cols-2"
-                              : "lg:grid-cols-1"
-                        }`}
-                      >
-                        {hasPrimaryRelatedPanel ? (
-                          <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                            <p className="text-xs font-bold uppercase text-foreground/70">
-                              {selectedItem.subjectType === "vocabulary" ? "Kanji" : "Radicals"}
-                            </p>
-                            {selectedItem.subjectType === "vocabulary"
-                              ? renderVocabularyKanjiCards()
-                              : renderRelatedReferenceCards(selectedItem.radicals ?? [], {
-                                  large: selectedItem.subjectType === "kanji",
-                                })}
-                          </article>
-                        ) : null}
-
-                        {hasVisuallySimilarPanel ? (
-                          <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                            <p className="text-xs font-bold uppercase text-foreground/70">Visually similar</p>
-                            {renderRelatedReferenceCards(selectedItem.visuallySimilar ?? [], {
+                    <LevelRelatedPanels
+                      hasPrimary={hasPrimaryRelatedPanel}
+                      hasVisuallySimilar={hasVisuallySimilarPanel}
+                      hasUsedInVocabulary={hasUsedInVocabularyPanel}
+                      primaryTitle={selectedItem.subjectType === "vocabulary" ? "Kanji" : "Radicals"}
+                      primaryContent={
+                        selectedItem.subjectType === "vocabulary"
+                          ? renderVocabularyKanjiCards()
+                          : renderRelatedReferenceCards(selectedItem.radicals ?? [], {
                               large: selectedItem.subjectType === "kanji",
-                            })}
-                          </article>
-                        ) : null}
-
-                        {hasUsedInVocabularyPanel ? (
-                          <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                            <p className="text-xs font-bold uppercase text-foreground/70">Used in vocabulary</p>
-                            {renderRelatedReferenceCards(selectedItem.usedInVocabulary ?? [], {
-                              large: true,
-                            })}
-                          </article>
-                        ) : null}
-                      </div>
-                    ) : null}
+                            })
+                      }
+                      visuallySimilarContent={renderRelatedReferenceCards(selectedItem.visuallySimilar ?? [], {
+                        large: selectedItem.subjectType === "kanji",
+                      })}
+                      usedInVocabularyContent={renderRelatedReferenceCards(selectedItem.usedInVocabulary ?? [], {
+                        large: true,
+                      })}
+                    />
                   </section>
                 ) : null}
               </Fragment>

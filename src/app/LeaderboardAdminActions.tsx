@@ -57,14 +57,14 @@ export default function LeaderboardAdminActions() {
             });
           }}
           disabled={refreshing}
-          className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-white px-5 text-xs font-bold uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
         >
           {refreshing ? "Refreshing..." : "Refresh"}
         </button>
       ) : null}
       <Link
         href="/admin"
-        className="inline-flex h-11 items-center justify-center rounded-full border border-accent/50 bg-accent px-6 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:bg-accent-2"
+        className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-6 text-sm font-bold uppercase tracking-[0.14em] text-foreground transition hover:bg-surface-muted"
       >
         Open Admin
       </Link>
