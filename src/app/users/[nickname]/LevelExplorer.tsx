@@ -526,6 +526,7 @@ export default function LevelExplorer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [searchMatchedSubjectIds, setSearchMatchedSubjectIds] = useState<Set<number> | null>(null);
+  const [searchAvailableLevels, setSearchAvailableLevels] = useState<Set<number> | null>(null);
   const [gridColumns, setGridColumns] = useState(1);
   const applyingUrlStateRef = useRef(false);
   const hasHydratedUrlStateRef = useRef(false);
@@ -1111,6 +1112,10 @@ export default function LevelExplorer({
 
     setError("");
 
+    if (searchAvailableLevels && !searchAvailableLevels.has(level)) {
+      return;
+    }
+
     if (!stickyMerge) {
       setSelectedLevels(new Set([level]));
       await ensureLevelLoaded(level);
@@ -1130,6 +1135,31 @@ export default function LevelExplorer({
     next.add(level);
     setSelectedLevels(next);
     await ensureLevelLoaded(level);
+  }
+
+  async function selectAllLevelsAndClearSearch() {
+    markHistoryPush();
+
+    const allLevels = new Set(levelOptions);
+    setSelectedLevels(allLevels);
+
+    setSearchMatchedSubjectIds(null);
+    setSearchAvailableLevels(null);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("findLevel");
+      params.delete("findJlpt");
+      const next = `${window.location.pathname}?${params.toString()}#explorer`;
+      window.history.pushState(null, "", next);
+      window.dispatchEvent(
+        new CustomEvent("wr:explorer-search-clear", {
+          detail: { scope: "all" },
+        }),
+      );
+    }
+
+    await Promise.all(levelOptions.map((level) => ensureLevelLoaded(level)));
   }
 
   const filteredItems = useMemo(() => {
@@ -1580,7 +1610,8 @@ export default function LevelExplorer({
     if (matchedItems.length === 0) {
       completionMessage = `No item matched "${trimmed}".`;
       setError(completionMessage);
-      setSearchMatchedSubjectIds(null);
+      setSearchMatchedSubjectIds(new Set());
+      setSearchAvailableLevels(new Set());
     } else {
       markHistoryPush();
 
@@ -1590,6 +1621,7 @@ export default function LevelExplorer({
       }
 
       setSelectedLevels(levelsWithMatches.size > 0 ? levelsWithMatches : new Set([initialSnapshot.level]));
+      setSearchAvailableLevels(levelsWithMatches);
       setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true });
       setShowLockedItems(true);
       setShowBurnedItems(true);
@@ -1662,6 +1694,7 @@ export default function LevelExplorer({
       const trimmed = fromUrl?.trim() ?? "";
       if (!trimmed) {
         setSearchMatchedSubjectIds(null);
+        setSearchAvailableLevels(null);
         return;
       }
 
@@ -1696,11 +1729,24 @@ export default function LevelExplorer({
       runFromUrl();
     };
 
+    const onClear = (event: Event) => {
+      const custom = event as CustomEvent<{ scope?: "level" | "jlpt" | "all" }>;
+      const scope = custom.detail?.scope ?? "all";
+      if (scope !== "all" && scope !== "level") {
+        return;
+      }
+
+      setSearchMatchedSubjectIds(null);
+      setSearchAvailableLevels(null);
+    };
+
     window.addEventListener("wr:explorer-search", onSearch as EventListener);
     window.addEventListener("popstate", onPopState);
+    window.addEventListener("wr:explorer-search-clear", onClear as EventListener);
     return () => {
       window.removeEventListener("wr:explorer-search", onSearch as EventListener);
       window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("wr:explorer-search-clear", onClear as EventListener);
     };
   }, [combinedSnapshot.items, maxLevel, snapshotsByLevel]);
 
@@ -1887,11 +1933,23 @@ export default function LevelExplorer({
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void selectAllLevelsAndClearSearch();
+            }}
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+              searchAvailableLevels === null && selectedLevels.size === levelOptions.length,
+            )}`}
+          >
+            All
+          </button>
           {levelOptions.map((level) => (
             <button
               key={level}
               type="button"
               onClick={() => toggleLevel(level)}
+              disabled={searchAvailableLevels !== null && !searchAvailableLevels.has(level)}
               className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
                 selectedLevels.has(level),
               )}`}

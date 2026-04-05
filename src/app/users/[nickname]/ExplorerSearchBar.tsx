@@ -42,9 +42,26 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
       }, 1200);
     };
 
+    const onClear = (event: Event) => {
+      const custom = event as CustomEvent<{ scope?: "level" | "jlpt" | "all" }>;
+      const targetScope = custom.detail?.scope ?? "all";
+      if (targetScope !== "all" && targetScope !== scope) {
+        return;
+      }
+
+      activeRequestIdRef.current = null;
+      submitLockedRef.current = false;
+      setIsSearching(false);
+      setSearchState("idle");
+      setSrStatus("Search cleared.");
+      setQuery("");
+    };
+
     window.addEventListener("wr:explorer-search-complete", onComplete as EventListener);
+    window.addEventListener("wr:explorer-search-clear", onClear as EventListener);
     return () => {
       window.removeEventListener("wr:explorer-search-complete", onComplete as EventListener);
+      window.removeEventListener("wr:explorer-search-clear", onClear as EventListener);
       if (clearIndicatorTimeoutRef.current !== null) {
         window.clearTimeout(clearIndicatorTimeoutRef.current);
       }
@@ -87,13 +104,37 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
     );
   }
 
+  function clearSearch() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete("findLevel");
+    params.delete("findJlpt");
+    const next = `${window.location.pathname}?${params.toString()}#explorer`;
+    window.history.pushState(null, "", next);
+
+    window.dispatchEvent(
+      new CustomEvent("wr:explorer-search-clear", {
+        detail: { scope: "all" },
+      }),
+    );
+  }
+
   return (
     <form onSubmit={submitSearch} className="w-full" aria-busy={isSearching}>
       <div className="flex w-full items-center gap-2 rounded-full border border-line bg-surface px-2 py-1">
         <input
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setQuery(nextValue);
+            if (!nextValue.trim()) {
+              clearSearch();
+            }
+          }}
           placeholder={scope === "jlpt" ? "Search JLPT kanji" : "Search kanji, hiragana, or romaji"}
           className="h-9 min-w-0 flex-1 rounded-full bg-transparent px-3 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-500"
           aria-label="Search level explorer"
