@@ -14,14 +14,20 @@ type LevelItem = {
   radicals?: Array<{
     subjectId: number;
     label: string;
+    reading?: string | null;
+    meaning?: string | null;
   }>;
   visuallySimilar?: Array<{
     subjectId: number;
     label: string;
+    reading?: string | null;
+    meaning?: string | null;
   }>;
   usedInVocabulary?: Array<{
     subjectId: number;
     label: string;
+    reading?: string | null;
+    meaning?: string | null;
   }>;
   componentKanji?: Array<{
     subjectId: number;
@@ -65,6 +71,8 @@ type ReviewTimingFilter = "all" | "overdue" | "next1h" | "next8h" | "next24h" | 
 type RelatedReference = {
   subjectId: number;
   label: string;
+  reading?: string | null;
+  meaning?: string | null;
 };
 
 type ExplorerUrlState = {
@@ -93,11 +101,23 @@ function parseBooleanParam(input: string | null, fallback: boolean): boolean {
 
 function snapshotHasComponentKanjiData(snapshot: Snapshot): boolean {
   const vocabularyItems = snapshot.items.filter((item) => item.subjectType === "vocabulary");
-  if (vocabularyItems.length === 0) {
-    return true;
-  }
+  const kanjiItems = snapshot.items.filter((item) => item.subjectType === "kanji");
 
-  return vocabularyItems.every((item) => Array.isArray(item.componentKanji));
+  const vocabularyReady =
+    vocabularyItems.length === 0
+      ? true
+      : vocabularyItems.every((item) =>
+          Array.isArray(item.componentKanji) &&
+          (item.componentKanji ?? []).every((entry) => Object.hasOwn(entry as object, "reading")),
+        );
+
+  const kanjiReady = kanjiItems.every(
+    (item) =>
+      (item.usedInVocabulary ?? []).every((entry) => Object.hasOwn(entry as object, "reading")) &&
+      (item.radicals ?? []).every((entry) => Object.hasOwn(entry as object, "meaning")),
+  );
+
+  return vocabularyReady && kanjiReady;
 }
 
 function normalizeSnapshot(raw: Snapshot): Snapshot {
@@ -250,7 +270,8 @@ function primaryReadingForDisplay(item: LevelItem): string | null {
   }
 
   if (item.subjectType === "radical") {
-    return null;
+    const meaning = (item.meanings ?? [])[0] ?? null;
+    return meaning ?? null;
   }
 
   return "-";
@@ -1444,6 +1465,7 @@ export default function LevelExplorer({
         subjectId: item.subjectId,
         label: segment,
         reading: null,
+        meaning: null,
         fallbackKey: `${item.subjectId}-${segment}-${index}`,
       }));
     });
@@ -1455,11 +1477,14 @@ export default function LevelExplorer({
             subjectId: entry.subjectId,
             label: entry.label,
             reading: "reading" in entry ? entry.reading : null,
+            meaning: "meaning" in entry ? entry.meaning : null,
           };
           const linked = subjectById.get(item.subjectId) ?? null;
           const isClickable = linked !== null;
           const relationType = linked?.subjectType;
           const reading = typeof item.reading === "string" && item.reading.trim() ? item.reading : null;
+          const meaning = typeof item.meaning === "string" && item.meaning.trim() ? item.meaning : null;
+          const subtitle = reading ?? meaning;
           const key =
             "fallbackKey" in entry && typeof entry.fallbackKey === "string"
               ? entry.fallbackKey
@@ -1472,9 +1497,9 @@ export default function LevelExplorer({
                 className={`${relatedReferenceCardClass(relationType, false, size)} inline-flex flex-col items-center`}
               >
                 <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
-                {reading ? (
+                {subtitle ? (
                   <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
-                    <ReadingWithPronunciation reading={reading} />
+                    <ReadingWithPronunciation reading={subtitle} />
                   </span>
                 ) : null}
               </span>
@@ -1489,9 +1514,9 @@ export default function LevelExplorer({
               className={`${relatedReferenceCardClass(relationType, true, size)} inline-flex flex-col items-center`}
             >
               <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
-              {reading ? (
+              {subtitle ? (
                 <span className="mt-1 text-center text-sm font-semibold leading-none text-slate-600">
-                  <ReadingWithPronunciation reading={reading} />
+                  <ReadingWithPronunciation reading={subtitle} />
                 </span>
               ) : null}
             </button>

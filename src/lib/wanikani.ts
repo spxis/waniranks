@@ -94,15 +94,20 @@ export type LevelKanjiSnapshot = {
     radicals: Array<{
       subjectId: number;
       label: string;
+      reading: string | null;
+      meaning: string | null;
     }>;
     visuallySimilar: Array<{
       subjectId: number;
       label: string;
+      reading: string | null;
+      meaning: string | null;
     }>;
     usedInVocabulary: Array<{
       subjectId: number;
       label: string;
       reading: string | null;
+      meaning: string | null;
     }>;
     componentKanji: Array<{
       subjectId: number;
@@ -305,6 +310,7 @@ export async function getLevelKanjiSnapshot(
       slug: string | null;
       level: number | null;
       primaryReading: string | null;
+      primaryMeaning: string | null;
     }
   >();
 
@@ -322,12 +328,22 @@ export async function getLevelKanjiSnapshot(
           slug?: string | null;
           level?: number | null;
           readings?: Array<{ reading?: string; primary?: boolean; accepted_answer?: boolean }>;
+          meanings?: Array<{ meaning?: string; primary?: boolean }>;
         };
         const primaryReading =
           data.readings
             ?.filter((reading) => reading.primary && (reading.accepted_answer ?? true))
             .map((reading) => reading.reading)
             .find((reading): reading is string => typeof reading === "string" && reading.length > 0) ?? null;
+        const primaryMeaning =
+          data.meanings
+            ?.filter((meaning) => meaning.primary)
+            .map((meaning) => meaning.meaning)
+            .find((meaning): meaning is string => typeof meaning === "string" && meaning.length > 0) ??
+          data.meanings
+            ?.map((meaning) => meaning.meaning)
+            .find((meaning): meaning is string => typeof meaning === "string" && meaning.length > 0) ??
+          null;
 
         relatedSubjects.set(row.id, {
           subjectId: row.id,
@@ -336,6 +352,7 @@ export async function getLevelKanjiSnapshot(
           slug: data.slug ?? null,
           level: typeof data.level === "number" ? data.level : null,
           primaryReading,
+          primaryMeaning,
         });
       }
     }
@@ -376,15 +393,23 @@ export async function getLevelKanjiSnapshot(
             const related = relatedSubjects.get(id);
             return related?.object === "radical";
           })
-          .map((id) => ({ subjectId: id, label: subjectLabel(id) })),
+          .map((id) => ({
+            subjectId: id,
+            label: subjectLabel(id),
+            reading: null,
+            meaning: relatedSubjects.get(id)?.primaryMeaning ?? null,
+          })),
         visuallySimilar: (subject?.visually_similar_subject_ids ?? []).map((id) => ({
           subjectId: id,
           label: subjectLabel(id),
+          reading: relatedSubjects.get(id)?.primaryReading ?? null,
+          meaning: relatedSubjects.get(id)?.primaryMeaning ?? null,
         })),
         usedInVocabulary: (subject?.amalgamation_subject_ids ?? []).map((id) => ({
           subjectId: id,
           label: subjectLabel(id),
           reading: relatedSubjects.get(id)?.primaryReading ?? null,
+          meaning: relatedSubjects.get(id)?.primaryMeaning ?? null,
         })),
         componentKanji: (subject?.component_subject_ids ?? [])
           .filter((id) => {
