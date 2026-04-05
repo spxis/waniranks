@@ -1901,7 +1901,7 @@ export default function LevelExplorer({
                     >
                       {item.status}
                     </span>
-                    {item.subjectType === "kanji" && item.status !== "burned" ? (
+                    {item.status !== "burned" ? (
                       (() => {
                         const nextReviewBadge = formatNextReviewBadge(item.availableAt);
                         if (!nextReviewBadge) {
@@ -1937,7 +1937,7 @@ export default function LevelExplorer({
                           } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
                         >
                           <div>
-                            <h3 className="text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
+                            <h3 className="text-center text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
                             {(() => {
                               const subtitle = showPrimaryReadingEnglish
                                 ? englishSubtitleForDisplay(selectedItem)
@@ -1956,6 +1956,7 @@ export default function LevelExplorer({
                         </div>
                       </div>
                       <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
+                        <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{selectedItem.status}</span>
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
                         <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
                         {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
@@ -1981,10 +1982,19 @@ export default function LevelExplorer({
                       </button>
                     </div>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                        <p className="text-xs font-bold uppercase text-slate-600">SRS state</p>
-                        <p className="mt-1 font-semibold text-slate-800">{selectedItem.status}</p>
+                        <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {selectedItem.subjectType === "radical"
+                            ? "Not applicable"
+                            : (
+                                <ReadingListWithPronunciation
+                                  readings={selectedItem.primaryReadings ?? []}
+                                  mode={showPrimaryReadingEnglish ? "inline" : "plain"}
+                                />
+                              )}
+                        </p>
                       </div>
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                         <p className="text-xs font-bold uppercase text-slate-600">Started</p>
@@ -1997,19 +2007,6 @@ export default function LevelExplorer({
                       <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                         <p className="text-xs font-bold uppercase text-slate-600">Passed</p>
                         <p className="mt-1 font-semibold text-slate-800">{formatDate(selectedItem.passedAt)}</p>
-                      </div>
-                      <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm sm:col-span-2">
-                        <p className="text-xs font-bold uppercase text-slate-600">Primary reading</p>
-                        <p className="mt-1 font-semibold text-slate-800">
-                          {selectedItem.subjectType === "radical"
-                            ? "Not applicable"
-                            : (
-                                <ReadingListWithPronunciation
-                                  readings={selectedItem.primaryReadings ?? []}
-                                  mode={showPrimaryReadingEnglish ? "inline" : "plain"}
-                                />
-                              )}
-                        </p>
                       </div>
                     </div>
 
