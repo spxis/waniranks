@@ -499,6 +499,7 @@ export default function LevelExplorer({
   const [stickyMerge, setStickyMerge] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [searchMatchedSubjectIds, setSearchMatchedSubjectIds] = useState<Set<number> | null>(null);
   const [gridColumns, setGridColumns] = useState(1);
   const [showPrimaryReadingEnglish, setShowPrimaryReadingEnglish] = useState(true);
   const applyingUrlStateRef = useRef(false);
@@ -1122,6 +1123,7 @@ export default function LevelExplorer({
 
     return combinedSnapshot.items
       .filter((item) => {
+        const searchPass = searchMatchedSubjectIds ? searchMatchedSubjectIds.has(item.subjectId) : true;
         const srsPass = srsFilter === "all" ? true : item.status === srsFilter;
         const typePass = typeFilter === "all" ? true : item.subjectType === typeFilter;
         const jlptPass =
@@ -1140,7 +1142,7 @@ export default function LevelExplorer({
                 ? visibleTypes.vocabulary
                 : true;
 
-        return srsPass && typePass && jlptPass && lockedPass && burnedPass && reviewTimingPass && visibilityPass;
+        return searchPass && srsPass && typePass && jlptPass && lockedPass && burnedPass && reviewTimingPass && visibilityPass;
       })
       .sort((a, b) => {
         const aOrder = a.subjectType ? typeOrder[a.subjectType] : 99;
@@ -1165,6 +1167,7 @@ export default function LevelExplorer({
     showLockedItems,
     showBurnedItems,
     visibleTypes,
+    searchMatchedSubjectIds,
   ]);
 
   const selectedItem = filteredItems.find((item) => item.subjectId === selectedSubjectId) ?? null;
@@ -1532,42 +1535,55 @@ export default function LevelExplorer({
     let ok = false;
     let completionMessage = "";
 
-    let found = combinedSnapshot.items.find((item) => itemMatchesSearch(item, trimmed)) ?? null;
+    const matchesById = new Map<number, LevelItem>();
 
-    if (!found) {
-      for (let level = 1; level <= maxLevel; level += 1) {
-        const snapshot = await ensureLevelLoaded(level);
-        const candidates = snapshot?.items ?? [];
-        const match = candidates.find((item) => itemMatchesSearch(item, trimmed));
-        if (match) {
-          found = match;
-          break;
+    function collectMatches(items: LevelItem[]) {
+      for (const item of items) {
+        if (itemMatchesSearch(item, trimmed)) {
+          matchesById.set(item.subjectId, item);
         }
       }
     }
 
-    if (!found) {
+    collectMatches(combinedSnapshot.items);
+
+    for (let level = 1; level <= maxLevel; level += 1) {
+      const snapshot = snapshotsByLevel.get(level) ?? (await ensureLevelLoaded(level));
+      collectMatches(snapshot?.items ?? []);
+    }
+
+    const matchedItems = Array.from(matchesById.values()).sort((a, b) => {
+      if ((a.wkLevel ?? 0) !== (b.wkLevel ?? 0)) {
+        return (a.wkLevel ?? 0) - (b.wkLevel ?? 0);
+      }
+      return a.subjectId - b.subjectId;
+    });
+
+    if (matchedItems.length === 0) {
       completionMessage = `No item matched "${trimmed}".`;
       setError(completionMessage);
+      setSearchMatchedSubjectIds(null);
     } else {
       markHistoryPush();
 
-      const targetLevel = typeof found.wkLevel === "number" ? found.wkLevel : initialSnapshot.level;
-      await ensureLevelLoaded(targetLevel);
+      const levelsWithMatches = new Set<number>();
+      for (const item of matchedItems) {
+        levelsWithMatches.add(typeof item.wkLevel === "number" ? item.wkLevel : initialSnapshot.level);
+      }
 
-      setSelectedLevels((prev) => {
-        if (stickyMerge) {
-          const next = new Set(prev);
-          next.add(targetLevel);
-          return next;
-        }
+      setSelectedLevels(levelsWithMatches.size > 0 ? levelsWithMatches : new Set([initialSnapshot.level]));
+      setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true });
+      setShowLockedItems(true);
+      setShowBurnedItems(true);
+      setTypeFilter("all");
+      setSrsFilter("all");
+      setJlptFilter("all");
+      setReviewTimingFilter("all");
+      setSelectedSubjectId(null);
+      setSearchMatchedSubjectIds(new Set(matchedItems.map((item) => item.subjectId)));
 
-        return new Set([targetLevel]);
-      });
-
-      setSelectedSubjectId(found.subjectId);
       ok = true;
-      completionMessage = `Found ${found.meanings[0] ?? found.characters}.`;
+      completionMessage = `Found ${matchedItems.length} result${matchedItems.length === 1 ? "" : "s"}.`;
     }
 
     if (typeof window !== "undefined" && requestId) {
@@ -1614,7 +1630,12 @@ export default function LevelExplorer({
     const runFromUrl = () => {
       const fromUrl = new URLSearchParams(window.location.search).get("find");
       const trimmed = fromUrl?.trim() ?? "";
-      if (!trimmed || lastHandledFindQueryRef.current === trimmed) {
+      if (!trimmed) {
+        setSearchMatchedSubjectIds(null);
+        return;
+      }
+
+      if (lastHandledFindQueryRef.current === trimmed) {
         return;
       }
 
@@ -1647,7 +1668,7 @@ export default function LevelExplorer({
       window.removeEventListener("wr:explorer-search", onSearch as EventListener);
       window.removeEventListener("popstate", onPopState);
     };
-  }, [combinedSnapshot.items, maxLevel, stickyMerge]);
+  }, [combinedSnapshot.items, maxLevel, snapshotsByLevel]);
 
   function relatedReferenceCardClass(
     type: LevelItem["subjectType"],
@@ -1893,7 +1914,10 @@ export default function LevelExplorer({
         </div>
       </div>
 
-      <div className="space-y-3 border-b border-line px-5 py-4">
+      <div className="border-b border-line px-5 py-4">
+        <section className="rounded-2xl border border-line bg-surface-muted/60 p-3 sm:p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">Filters</p>
+          <div className="mt-3 space-y-3">
         <div className="flex flex-wrap gap-2">
           {(["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const).map(
             (status) => (
@@ -1952,6 +1976,7 @@ export default function LevelExplorer({
                 onClick={() => {
                   markHistoryPush();
                   setJlptFilter(level);
+                  setSelectedSubjectId(null);
                   if (level !== "all") {
                     setTypeFilterAndEnsureVisible("kanji");
                   }
@@ -2072,9 +2097,16 @@ export default function LevelExplorer({
             Burned items are visible by default.
           </p>
         </div>
+          </div>
+        </section>
       </div>
 
       {loading ? <p className="px-5 py-4 text-sm text-slate-600">Loading level data...</p> : null}
+      {searchMatchedSubjectIds ? (
+        <p className="px-5 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">
+          Showing {formatNumber(searchMatchedSubjectIds.size)} search result{searchMatchedSubjectIds.size === 1 ? "" : "s"}
+        </p>
+      ) : null}
       {error ? <p className="px-5 py-4 text-sm text-red-700">{error}</p> : null}
 
       <div className="p-5">
