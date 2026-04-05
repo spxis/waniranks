@@ -94,16 +94,19 @@ export type LevelKanjiSnapshot = {
     radicals: Array<{
       subjectId: number;
       label: string;
+      wkLevel: number | null;
       reading: string | null;
     }>;
     visuallySimilar: Array<{
       subjectId: number;
       label: string;
+      wkLevel: number | null;
       reading: string | null;
     }>;
     usedInVocabulary: Array<{
       subjectId: number;
       label: string;
+      wkLevel: number | null;
       reading: string | null;
     }>;
     componentKanji: Array<{
@@ -389,11 +392,13 @@ export async function getLevelKanjiSnapshot(
           .map((id) => ({
             subjectId: id,
             label: subjectLabel(id),
+            wkLevel: relatedSubjects.get(id)?.level ?? null,
             reading: relatedSubjects.get(id)?.primaryMeaning ?? null,
           })),
         visuallySimilar: (subject?.visually_similar_subject_ids ?? []).map((id) => ({
           subjectId: id,
           label: subjectLabel(id),
+          wkLevel: relatedSubjects.get(id)?.level ?? null,
           reading:
             relatedSubjects.get(id)?.object === "radical"
               ? relatedSubjects.get(id)?.primaryMeaning ?? null
@@ -402,6 +407,7 @@ export async function getLevelKanjiSnapshot(
         usedInVocabulary: (subject?.amalgamation_subject_ids ?? []).map((id) => ({
           subjectId: id,
           label: subjectLabel(id),
+          wkLevel: relatedSubjects.get(id)?.level ?? null,
           reading: relatedSubjects.get(id)?.primaryReading ?? null,
         })),
         componentKanji: (subject?.component_subject_ids ?? [])

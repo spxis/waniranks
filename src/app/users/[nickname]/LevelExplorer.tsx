@@ -14,16 +14,19 @@ type LevelItem = {
   radicals?: Array<{
     subjectId: number;
     label: string;
+    wkLevel?: number | null;
     reading?: string | null;
   }>;
   visuallySimilar?: Array<{
     subjectId: number;
     label: string;
+    wkLevel?: number | null;
     reading?: string | null;
   }>;
   usedInVocabulary?: Array<{
     subjectId: number;
     label: string;
+    wkLevel?: number | null;
     reading?: string | null;
   }>;
   componentKanji?: Array<{
@@ -68,6 +71,7 @@ type ReviewTimingFilter = "all" | "overdue" | "next1h" | "next8h" | "next24h" | 
 type RelatedReference = {
   subjectId: number;
   label: string;
+  wkLevel?: number | null;
   reading?: string | null;
 };
 
@@ -1595,31 +1599,43 @@ export default function LevelExplorer({
     }
   }
 
-  function jumpToRelatedSubject(subjectId: number) {
+  async function jumpToRelatedSubject(subjectId: number, targetLevel?: number | null) {
     markHistoryPush();
 
-    const found = subjectById.get(subjectId);
-    if (!found) {
-      return;
+    if (typeof targetLevel === "number") {
+      await ensureLevelLoaded(targetLevel);
+      setSelectedLevels((prev) => {
+        if (stickyMerge) {
+          const next = new Set(prev);
+          next.add(targetLevel);
+          return next;
+        }
+
+        return new Set([targetLevel]);
+      });
     }
 
-    if (found.subjectType) {
+    const found = subjectById.get(subjectId);
+
+    if (found?.subjectType) {
       setTypeFilterAndEnsureVisible(found.subjectType);
+    } else {
+      setTypeFilter("all");
     }
 
     setSrsFilter("all");
     setJlptFilter("all");
     setReviewTimingFilter("all");
 
-    if (found.status === "locked") {
+    if (found?.status === "locked") {
       setShowLockedItems(true);
     }
 
-    if (found.status === "burned") {
+    if (found?.status === "burned") {
       setShowBurnedItems(true);
     }
 
-    setSelectedSubjectId(found.subjectId);
+    setSelectedSubjectId(subjectId);
   }
 
   useEffect(() => {
@@ -1729,6 +1745,7 @@ export default function LevelExplorer({
       return segments.map((segment, index) => ({
         subjectId: item.subjectId,
         label: segment,
+        wkLevel: item.wkLevel ?? null,
         reading: null,
         fallbackKey: `${item.subjectId}-${segment}-${index}`,
       }));
@@ -1740,10 +1757,11 @@ export default function LevelExplorer({
           const item = {
             subjectId: entry.subjectId,
             label: entry.label,
+            wkLevel: "wkLevel" in entry ? entry.wkLevel : null,
             reading: "reading" in entry ? entry.reading : null,
           };
           const linked = subjectById.get(item.subjectId) ?? null;
-          const isClickable = linked !== null;
+          const isClickable = linked !== null || typeof item.wkLevel === "number";
           const relationType = linked?.subjectType;
           const reading = typeof item.reading === "string" && item.reading.trim() ? item.reading : null;
           const subtitle = (() => {
@@ -1783,7 +1801,9 @@ export default function LevelExplorer({
             <button
               key={key}
               type="button"
-              onClick={() => jumpToRelatedSubject(item.subjectId)}
+              onClick={() => {
+                void jumpToRelatedSubject(item.subjectId, item.wkLevel ?? linked?.wkLevel ?? null);
+              }}
               className={`${relatedReferenceCardClass(relationType, true, size)} inline-flex flex-col items-center`}
             >
               <span className={`${labelClass(item.label)} font-black leading-none`}>{item.label}</span>
