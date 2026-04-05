@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toRomaji } from "wanakana";
 
 type LevelItem = {
@@ -66,6 +66,30 @@ type RelatedReference = {
   subjectId: number;
   label: string;
 };
+
+type ExplorerUrlState = {
+  levels: Set<number>;
+  subjectId: number | null;
+  srs: SrsFilter;
+  type: TypeFilter;
+  jlpt: JlptFilter;
+  review: ReviewTimingFilter;
+  showLocked: boolean;
+  showBurned: boolean;
+  stickyMerge: boolean;
+};
+
+function parseBooleanParam(input: string | null, fallback: boolean): boolean {
+  if (input === "1") {
+    return true;
+  }
+
+  if (input === "0") {
+    return false;
+  }
+
+  return fallback;
+}
 
 function snapshotHasComponentKanjiData(snapshot: Snapshot): boolean {
   const vocabularyItems = snapshot.items.filter((item) => item.subjectType === "vocabulary");
@@ -332,6 +356,167 @@ export default function LevelExplorer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [gridColumns, setGridColumns] = useState(1);
+  const applyingUrlStateRef = useRef(false);
+  const hasHydratedUrlStateRef = useRef(false);
+  const pendingHistoryModeRef = useRef<"replace" | "push">("replace");
+
+  function markHistoryPush() {
+    pendingHistoryModeRef.current = "push";
+  }
+
+  function parseUrlState(search: string): ExplorerUrlState {
+    const params = new URLSearchParams(search);
+
+    const levelValues = (params.get("levels") ?? "")
+      .split(",")
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isInteger(value) && value >= 1 && value <= maxLevel);
+
+    const levels = new Set(levelValues.length > 0 ? levelValues : [initialSnapshot.level]);
+
+    const subjectRaw = Number(params.get("subject"));
+    const subjectId = Number.isInteger(subjectRaw) && subjectRaw > 0 ? subjectRaw : null;
+
+    const srsRaw = params.get("srs");
+    const srsAllowed: SrsFilter[] = [
+      "all",
+      "apprentice",
+      "guru",
+      "master",
+      "enlightened",
+      "burned",
+      "locked",
+    ];
+    const srs = srsAllowed.includes(srsRaw as SrsFilter) ? (srsRaw as SrsFilter) : "all";
+
+    const typeRaw = params.get("type");
+    const typeAllowed: TypeFilter[] = ["all", "radical", "kanji", "vocabulary"];
+    const type = typeAllowed.includes(typeRaw as TypeFilter) ? (typeRaw as TypeFilter) : "all";
+
+    const jlptRaw = params.get("jlpt");
+    const jlptAllowed: JlptFilter[] = ["all", "n5", "n4", "n3", "n2", "n1"];
+    const jlpt = jlptAllowed.includes(jlptRaw as JlptFilter) ? (jlptRaw as JlptFilter) : "all";
+
+    const reviewRaw = params.get("review");
+    const reviewAllowed: ReviewTimingFilter[] = ["all", "overdue", "next1h", "next8h", "next24h", "next72h"];
+    const review = reviewAllowed.includes(reviewRaw as ReviewTimingFilter)
+      ? (reviewRaw as ReviewTimingFilter)
+      : "all";
+
+    return {
+      levels,
+      subjectId,
+      srs,
+      type,
+      jlpt,
+      review,
+      showLocked: parseBooleanParam(params.get("locked"), false),
+      showBurned: parseBooleanParam(params.get("burned"), true),
+      stickyMerge: parseBooleanParam(params.get("sticky"), false),
+    };
+  }
+
+  function writeUrlState() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const levelsList = Array.from(selectedLevels.values()).sort((a, b) => a - b);
+
+    params.set("levels", levelsList.join(","));
+
+    if (selectedSubjectId === null) {
+      params.delete("subject");
+    } else {
+      params.set("subject", String(selectedSubjectId));
+    }
+
+    params.set("srs", srsFilter);
+    params.set("type", typeFilter);
+    params.set("jlpt", jlptFilter);
+    params.set("review", reviewTimingFilter);
+    params.set("locked", showLockedItems ? "1" : "0");
+    params.set("burned", showBurnedItems ? "1" : "0");
+    params.set("sticky", stickyMerge ? "1" : "0");
+
+    const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (next === current) {
+      pendingHistoryModeRef.current = "replace";
+      return;
+    }
+
+    const mode = pendingHistoryModeRef.current;
+    pendingHistoryModeRef.current = "replace";
+
+    if (mode === "push") {
+      window.history.pushState(null, "", next);
+      return;
+    }
+
+    window.history.replaceState(null, "", next);
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const applyFromUrl = () => {
+      applyingUrlStateRef.current = true;
+      const parsed = parseUrlState(window.location.search);
+
+      setSelectedLevels(parsed.levels);
+      setSelectedSubjectId(parsed.subjectId);
+      setSrsFilter(parsed.srs);
+      setTypeFilter(parsed.type);
+      setJlptFilter(parsed.jlpt);
+      setReviewTimingFilter(parsed.review);
+      setShowLockedItems(parsed.showLocked);
+      setShowBurnedItems(parsed.showBurned);
+      setStickyMerge(parsed.stickyMerge);
+
+      for (const level of parsed.levels.values()) {
+        void ensureLevelLoaded(level);
+      }
+
+      window.setTimeout(() => {
+        applyingUrlStateRef.current = false;
+      }, 0);
+    };
+
+    applyFromUrl();
+    hasHydratedUrlStateRef.current = true;
+
+    const onPopState = () => {
+      applyFromUrl();
+    };
+
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydratedUrlStateRef.current || applyingUrlStateRef.current) {
+      return;
+    }
+
+    writeUrlState();
+  }, [
+    selectedLevels,
+    selectedSubjectId,
+    srsFilter,
+    typeFilter,
+    jlptFilter,
+    reviewTimingFilter,
+    showLockedItems,
+    showBurnedItems,
+    stickyMerge,
+  ]);
 
   useEffect(() => {
     try {
@@ -353,6 +538,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("subject")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(selectedSubjectStorageKey);
       if (!raw) {
         return;
@@ -369,6 +558,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("sticky")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(stickyMergeStorageKey);
       if (raw === "1") {
         setStickyMerge(true);
@@ -380,6 +573,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("srs")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(srsFilterStorageKey);
       if (!raw) {
         return;
@@ -405,6 +602,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("type")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(typeFilterStorageKey);
       if (!raw) {
         return;
@@ -421,6 +622,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("jlpt")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(jlptFilterStorageKey);
       if (!raw) {
         return;
@@ -437,6 +642,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("review")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(reviewTimingFilterStorageKey);
       if (!raw) {
         return;
@@ -453,6 +662,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("locked")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(showLockedStorageKey);
       if (raw === "1") {
         setShowLockedItems(true);
@@ -464,6 +677,10 @@ export default function LevelExplorer({
 
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).has("burned")) {
+        return;
+      }
+
       const raw = window.localStorage.getItem(showBurnedStorageKey);
       if (raw === "0") {
         setShowBurnedItems(false);
@@ -571,6 +788,8 @@ export default function LevelExplorer({
   }
 
   function toggleVisibleType(type: "radical" | "kanji" | "vocabulary") {
+    markHistoryPush();
+
     const next = {
       ...visibleTypes,
       [type]: !visibleTypes[type],
@@ -579,6 +798,8 @@ export default function LevelExplorer({
   }
 
   function setStickyMergeAndPersist(next: boolean) {
+    markHistoryPush();
+
     setStickyMerge(next);
 
     try {
@@ -594,6 +815,8 @@ export default function LevelExplorer({
   }
 
   function setTypeFilterAndEnsureVisible(nextType: TypeFilter) {
+    markHistoryPush();
+
     setTypeFilter(nextType);
 
     if (nextType === "all") {
@@ -609,6 +832,8 @@ export default function LevelExplorer({
   }
 
   function setSrsFilterAndSyncLocked(nextStatus: SrsFilter) {
+    markHistoryPush();
+
     setSrsFilter(nextStatus);
     if (nextStatus === "locked") {
       setShowLockedItems(true);
@@ -687,6 +912,8 @@ export default function LevelExplorer({
   }, [initialSnapshot.level, snapshotsByLevel]);
 
   async function toggleLevel(level: number) {
+    markHistoryPush();
+
     setError("");
 
     if (!stickyMerge) {
@@ -1057,6 +1284,8 @@ export default function LevelExplorer({
   }, [selectedItem, kanjiByCharacter, subjectById]);
 
   async function jumpToKanji(subjectId: number, wkLevel: number | null) {
+    markHistoryPush();
+
     setShowLockedItems(true);
     setShowBurnedItems(true);
 
@@ -1081,6 +1310,8 @@ export default function LevelExplorer({
   }
 
   function jumpToRelatedSubject(subjectId: number) {
+    markHistoryPush();
+
     const found = subjectById.get(subjectId);
     if (!found) {
       return;
@@ -1223,7 +1454,7 @@ export default function LevelExplorer({
             className="inline-flex cursor-pointer flex-col rounded-xl border border-kanji/50 bg-kanji/10 px-4 py-3 text-left text-kanji transition hover:bg-kanji/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             <span className="text-4xl font-black leading-none">{item.char}</span>
-            <span className="mt-1 text-sm font-semibold leading-none text-slate-600">
+            <span className="mt-1 w-full text-center text-sm font-semibold leading-none text-slate-600">
               <ReadingWithPronunciation reading={item.reading} />
             </span>
           </button>
@@ -1365,6 +1596,7 @@ export default function LevelExplorer({
                 key={level}
                 type="button"
                 onClick={() => {
+                  markHistoryPush();
                   setJlptFilter(level);
                   if (level !== "all") {
                     setTypeFilterAndEnsureVisible("kanji");
@@ -1395,7 +1627,10 @@ export default function LevelExplorer({
               <button
                 key={timing}
                 type="button"
-                onClick={() => setReviewTimingFilter(timing)}
+                onClick={() => {
+                  markHistoryPush();
+                  setReviewTimingFilter(timing);
+                }}
                 disabled={disabled}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
                   disabled ? disabledBadgeClass() : badgeClass(reviewTimingFilter === timing)
@@ -1426,14 +1661,20 @@ export default function LevelExplorer({
           ))}
           <button
             type="button"
-            onClick={() => setVisibleTypesAndPersist({ radical: false, kanji: false, vocabulary: false })}
+            onClick={() => {
+              markHistoryPush();
+              setVisibleTypesAndPersist({ radical: false, kanji: false, vocabulary: false });
+            }}
             className="rounded-full border border-line bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-600"
           >
             Collapse all
           </button>
           <button
             type="button"
-            onClick={() => setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true })}
+            onClick={() => {
+              markHistoryPush();
+              setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true });
+            }}
             className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-700"
           >
             Expand all
@@ -1442,7 +1683,10 @@ export default function LevelExplorer({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowLockedItems((prev) => !prev)}
+            onClick={() => {
+              markHistoryPush();
+              setShowLockedItems((prev) => !prev);
+            }}
             className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
               showLockedItems
                 ? "border-slate-500 bg-slate-600 text-white"
@@ -1458,7 +1702,10 @@ export default function LevelExplorer({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowBurnedItems((prev) => !prev)}
+            onClick={() => {
+              markHistoryPush();
+              setShowBurnedItems((prev) => !prev);
+            }}
             className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
               showBurnedItems
                 ? "border-emerald-500 bg-emerald-600 text-white"
@@ -1487,9 +1734,10 @@ export default function LevelExplorer({
               <Fragment key={`${item.subjectType}-${item.subjectId}`}>
                 <button
                   type="button"
-                  onClick={() =>
-                    setSelectedSubjectId((prev) => (prev === item.subjectId ? null : item.subjectId))
-                  }
+                  onClick={() => {
+                    markHistoryPush();
+                    setSelectedSubjectId((prev) => (prev === item.subjectId ? null : item.subjectId));
+                  }}
                   className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
                     item.subjectType,
                     selectedItem?.subjectId === item.subjectId,
