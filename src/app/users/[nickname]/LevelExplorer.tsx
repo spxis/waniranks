@@ -302,9 +302,33 @@ function ReadingWithPronunciation({
   );
 }
 
-function ReadingListWithPronunciation({ readings }: { readings: string[] }) {
+function ReadingListWithPronunciation({
+  readings,
+  mode = "tooltip",
+}: {
+  readings: string[];
+  mode?: "tooltip" | "inline";
+}) {
   if (readings.length === 0) {
     return <span>-</span>;
+  }
+
+  if (mode === "inline") {
+    return (
+      <>
+        {readings.map((reading, index) => {
+          const pronunciation = pronunciationForReading(reading);
+          const label = pronunciation ? `${reading} / ${pronunciation}` : reading;
+
+          return (
+            <Fragment key={`${reading}-${index}`}>
+              {index > 0 ? ", " : null}
+              <span>{label}</span>
+            </Fragment>
+          );
+        })}
+      </>
+    );
   }
 
   return (
@@ -1815,8 +1839,17 @@ export default function LevelExplorer({
 
                 {selectedItem && index === detailInsertIndex ? (
                   <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-white p-5 sm:col-span-2 lg:col-span-3">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-end gap-3">
+                    <div>
+                      <div className="flex flex-wrap justify-end gap-1">
+                        <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
+                        <span className="subject-pill border-line bg-white text-slate-700">WK {selectedItem.wkLevel}</span>
+                        {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
+                          <span className="subject-pill border-line bg-white text-slate-700">
+                            JLPT N{selectedItem.jlptLevel}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 flex min-w-0 items-end gap-3">
                         <div
                           className={`inline-flex rounded-2xl border ${
                             glyphHasReading(selectedItem)
@@ -1846,17 +1879,6 @@ export default function LevelExplorer({
                           </p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
-                        <span className="rounded-full border border-line bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
-                          WK {selectedItem.wkLevel}
-                        </span>
-                        {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
-                          <span className="rounded-full border border-line bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
-                            JLPT N{selectedItem.jlptLevel}
-                          </span>
-                        ) : null}
-                      </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1881,7 +1903,7 @@ export default function LevelExplorer({
                         <p className="mt-1 font-semibold text-slate-800">
                           {selectedItem.subjectType === "radical"
                             ? "Not applicable"
-                            : <ReadingListWithPronunciation readings={selectedItem.primaryReadings ?? []} />}
+                            : <ReadingListWithPronunciation readings={selectedItem.primaryReadings ?? []} mode="inline" />}
                         </p>
                       </div>
                     </div>
