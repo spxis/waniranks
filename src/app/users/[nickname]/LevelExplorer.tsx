@@ -466,6 +466,27 @@ function ReadingListWithPronunciation({
   );
 }
 
+function secondaryReadingsForDisplay(item: LevelItem): string[] {
+  const primary = new Set((item.primaryReadings ?? []).map((reading) => reading.trim()));
+  const allReadings = (item.readings ?? [])
+    .map((reading) => reading.trim())
+    .filter((reading) => Boolean(reading));
+
+  const seen = new Set<string>();
+  const secondary: string[] = [];
+
+  for (const reading of allReadings) {
+    if (primary.has(reading) || seen.has(reading)) {
+      continue;
+    }
+
+    seen.add(reading);
+    secondary.push(reading);
+  }
+
+  return secondary;
+}
+
 export default function LevelExplorer({
   accountId,
   maxLevel,
@@ -2287,6 +2308,19 @@ export default function LevelExplorer({
                             : (
                                 <ReadingListWithPronunciation
                                   readings={selectedItem.primaryReadings ?? []}
+                                  mode={showPrimaryReadingEnglish ? "inline" : "plain"}
+                                />
+                              )}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                        <p className="text-xs font-bold uppercase text-slate-600">Secondary readings</p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {selectedItem.subjectType === "radical"
+                            ? "Not applicable"
+                            : (
+                                <ReadingListWithPronunciation
+                                  readings={secondaryReadingsForDisplay(selectedItem)}
                                   mode={showPrimaryReadingEnglish ? "inline" : "plain"}
                                 />
                               )}
