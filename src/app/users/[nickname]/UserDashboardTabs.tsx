@@ -90,6 +90,8 @@ export default function UserDashboardTabs({
 }: Props) {
   const tabStorageKey = `wr:user:${accountId}:dashboard-tab`;
   const [activeTab, setActiveTab] = useState<TabId>("main");
+  const actionButtonBaseClass =
+    "inline-flex h-10 min-w-[9.5rem] items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
 
   useEffect(() => {
     try {
@@ -114,57 +116,73 @@ export default function UserDashboardTabs({
   function tabClass(tab: TabId): string {
     const active = activeTab === tab;
     return active
-      ? "rounded-full border border-accent bg-accent px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-white"
-      : "rounded-full border border-line bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-700 hover:bg-surface-muted";
+      ? `${actionButtonBaseClass} border-accent bg-accent text-white`
+      : `${actionButtonBaseClass} border-line bg-white text-slate-700 hover:bg-surface-muted`;
   }
 
   return (
     <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="User dashboard tabs">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "main"}
-            className={tabClass("main")}
-            onClick={() => switchTab("main")}
-          >
-            Main Data
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "item-spread"}
-            className={tabClass("item-spread")}
-            onClick={() => switchTab("item-spread")}
-          >
-            Item Spread
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "level-progress"}
-            className={tabClass("level-progress")}
-            onClick={() => switchTab("level-progress")}
-          >
-            Level Progress
-          </button>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
+            <Link
+              href="/"
+              className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-white px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Leaderboard
+            </Link>
+          </div>
+          <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
+          <p className="mt-2 text-sm text-slate-600">@{wkUsername}</p>
+          <p className="mt-1 inline-flex rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
+            Global Rank #{globalRank} of {formatNumber(totalPlayers)}
+          </p>
         </div>
-        <UserAdminRefreshButton accountId={accountId} />
+
+        <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="User dashboard tabs">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "main"}
+              className={tabClass("main")}
+              onClick={() => switchTab("main")}
+            >
+              Main Data
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "item-spread"}
+              className={tabClass("item-spread")}
+              onClick={() => switchTab("item-spread")}
+            >
+              Item Spread
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "level-progress"}
+              className={tabClass("level-progress")}
+              onClick={() => switchTab("level-progress")}
+            >
+              Level Progress
+            </button>
+          </div>
+          <span className="hidden h-8 w-px bg-line lg:inline-block" aria-hidden="true" />
+          <UserAdminRefreshButton
+            accountId={accountId}
+            label="Refresh"
+            showMessage={false}
+            buttonClassName={`${actionButtonBaseClass} border-line bg-white text-slate-800 hover:bg-surface-muted`}
+          />
+        </div>
       </div>
 
       {activeTab === "main" ? (
         <div className="mt-4" role="tabpanel">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
-            <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
-            <p className="mt-2 text-sm text-slate-600">@{wkUsername}</p>
-            <p className="mt-1 inline-flex rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-              Global Rank #{globalRank} of {formatNumber(totalPlayers)}
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <article className="rounded-2xl border border-line bg-surface-muted p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level</p>
               <p className="mt-2 text-4xl font-black text-accent">{wkLevel}</p>

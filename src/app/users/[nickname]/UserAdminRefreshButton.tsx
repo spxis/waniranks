@@ -5,9 +5,17 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   accountId: string;
+  label?: string;
+  buttonClassName?: string;
+  showMessage?: boolean;
 };
 
-export default function UserAdminRefreshButton({ accountId }: Props) {
+export default function UserAdminRefreshButton({
+  accountId,
+  label = "Refresh user",
+  buttonClassName,
+  showMessage = true,
+}: Props) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -76,11 +84,14 @@ export default function UserAdminRefreshButton({ accountId }: Props) {
           });
         }}
         disabled={refreshing}
-        className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+        className={
+          buttonClassName ??
+          "inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+        }
       >
-        {refreshing ? "Refreshing..." : "Refresh user"}
+        {refreshing ? "Refreshing..." : label}
       </button>
-      {message ? <p className="text-xs font-semibold text-slate-600">{message}</p> : null}
+      {showMessage && message ? <p className="text-xs font-semibold text-slate-600">{message}</p> : null}
     </div>
   );
 }
