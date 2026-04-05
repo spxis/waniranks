@@ -103,6 +103,11 @@ export type LevelKanjiSnapshot = {
       subjectId: number;
       label: string;
     }>;
+    componentKanji: Array<{
+      subjectId: number;
+      label: string;
+      wkLevel: number | null;
+    }>;
     meaningExplanation: string;
     readingExplanation: string;
     jlptLevel: number | null;
@@ -296,6 +301,7 @@ export async function getLevelKanjiSnapshot(
       object: string;
       characters: string | null;
       slug: string | null;
+      level: number | null;
     }
   >();
 
@@ -308,12 +314,13 @@ export async function getLevelKanjiSnapshot(
       const relatedCollection = await fetchAllCollectionPages(`/subjects?ids=${chunk}`, token);
 
       for (const row of relatedCollection.data) {
-        const data = row.data as { characters?: string | null; slug?: string | null };
+        const data = row.data as { characters?: string | null; slug?: string | null; level?: number | null };
         relatedSubjects.set(row.id, {
           subjectId: row.id,
           object: row.object ?? "subject",
           characters: data.characters ?? null,
           slug: data.slug ?? null,
+          level: typeof data.level === "number" ? data.level : null,
         });
       }
     }
@@ -363,6 +370,16 @@ export async function getLevelKanjiSnapshot(
           subjectId: id,
           label: subjectLabel(id),
         })),
+        componentKanji: (subject?.component_subject_ids ?? [])
+          .filter((id) => {
+            const related = relatedSubjects.get(id);
+            return related?.object === "kanji";
+          })
+          .map((id) => ({
+            subjectId: id,
+            label: subjectLabel(id),
+            wkLevel: relatedSubjects.get(id)?.level ?? null,
+          })),
         meaningExplanation: subject?.meaning_mnemonic ?? "",
         readingExplanation: subject?.reading_mnemonic ?? "",
         jlptLevel:

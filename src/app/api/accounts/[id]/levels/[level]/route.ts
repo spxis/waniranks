@@ -36,6 +36,7 @@ function snapshotHasDrilldownFields(items: unknown): boolean {
     hasObjectRelationRows(first.radicals) &&
     hasObjectRelationRows(first.visuallySimilar) &&
     hasObjectRelationRows(first.usedInVocabulary) &&
+    hasObjectRelationRows(first.componentKanji) &&
     typeof first.meaningExplanation === "string" &&
     typeof first.readingExplanation === "string" &&
     Object.hasOwn(first, "jlptLevel")

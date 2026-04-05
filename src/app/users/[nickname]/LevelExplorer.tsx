@@ -22,6 +22,11 @@ type LevelItem = {
     subjectId: number;
     label: string;
   }>;
+  componentKanji?: Array<{
+    subjectId: number;
+    label: string;
+    wkLevel?: number | null;
+  }>;
   meaningExplanation?: string;
   readingExplanation?: string;
   jlptLevel?: number | null;
@@ -74,6 +79,7 @@ function normalizeSnapshot(raw: Snapshot): Snapshot {
       radicals: item.radicals ?? [],
       visuallySimilar: item.visuallySimilar ?? [],
       usedInVocabulary: item.usedInVocabulary ?? [],
+      componentKanji: item.componentKanji ?? [],
       meaningExplanation: item.meaningExplanation ?? "",
       readingExplanation: item.readingExplanation ?? "",
       jlptLevel: item.jlptLevel ?? null,
@@ -920,7 +926,28 @@ export default function LevelExplorer({
 
   const vocabularyKanjiLinks = useMemo(() => {
     if (!selectedItem || selectedItem.subjectType !== "vocabulary") {
-      return [] as Array<{ char: string; subjectId: number; reading: string }>;
+      return [] as Array<{ char: string; subjectId: number; reading: string; wkLevel: number | null }>;
+    }
+
+    const componentLinks = (selectedItem.componentKanji ?? [])
+      .map((component) => {
+        const found = subjectById.get(component.subjectId);
+        return {
+          char: component.label,
+          subjectId: component.subjectId,
+          reading: found ? (found.primaryReadings ?? [])[0] ?? "-" : "-",
+          wkLevel:
+            typeof component.wkLevel === "number"
+              ? component.wkLevel
+              : typeof found?.wkLevel === "number"
+                ? found.wkLevel
+                : null,
+        };
+      })
+      .filter((item) => Boolean(item.char));
+
+    if (componentLinks.length > 0) {
+      return componentLinks;
     }
 
     return Array.from(selectedItem.characters)
@@ -934,14 +961,33 @@ export default function LevelExplorer({
           char,
           subjectId: found.subjectId,
           reading: (found.primaryReadings ?? [])[0] ?? "-",
+          wkLevel: typeof found.wkLevel === "number" ? found.wkLevel : null,
         };
       })
-      .filter((value): value is { char: string; subjectId: number; reading: string } => value !== null);
-  }, [selectedItem, kanjiByCharacter]);
+      .filter(
+        (value): value is { char: string; subjectId: number; reading: string; wkLevel: number | null } =>
+          value !== null,
+      );
+  }, [selectedItem, kanjiByCharacter, subjectById]);
 
-  function jumpToKanji(subjectId: number) {
+  async function jumpToKanji(subjectId: number, wkLevel: number | null) {
+    if (typeof wkLevel === "number") {
+      await ensureLevelLoaded(wkLevel);
+      setSelectedLevels((prev) => {
+        if (stickyMerge) {
+          const next = new Set(prev);
+          next.add(wkLevel);
+          return next;
+        }
+
+        return new Set([wkLevel]);
+      });
+    }
+
     setTypeFilter("kanji");
     setSrsFilter("all");
+    setJlptFilter("all");
+    setReviewTimingFilter("all");
     setSelectedSubjectId(subjectId);
   }
 
@@ -1425,7 +1471,7 @@ export default function LevelExplorer({
                               <button
                                 key={`${selectedItem.subjectId}-${item.subjectId}`}
                                 type="button"
-                                onClick={() => jumpToKanji(item.subjectId)}
+                                onClick={() => jumpToKanji(item.subjectId, item.wkLevel)}
                                 className="rounded-xl border border-kanji/50 bg-kanji/15 px-4 py-2 text-kanji"
                               >
                                 <p className="text-3xl font-black leading-none">{item.char}</p>
