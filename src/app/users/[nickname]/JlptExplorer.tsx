@@ -4,6 +4,16 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toRomaji } from "wanakana";
 
 import jlptReadings from "@/data/jlptReadings.json";
+import {
+  formatDate,
+  formatNumber,
+  jlptHeading,
+  normalizeReadingForSearch,
+  normalizeSearch,
+  readingLabel,
+  readingLabelFromList,
+  stripReadingSeparators,
+} from "./jlptDisplay";
 
 type JlptItem = {
   kanji: string;
@@ -36,37 +46,9 @@ type Props = {
   }>;
 };
 
-function formatNumber(input: number): string {
-  return new Intl.NumberFormat("en-US").format(input);
-}
-
-function normalizeSearch(input: string): string {
-  return input.trim().toLowerCase();
-}
-
-type JlptReadingsMap = Record<string, { nLevel: number; readings: string[] }>;
-
 type JlptReadingsRecord = Record<string, { nLevel: number; readings: string[]; meanings?: string[] }>;
 
 type JlptFilter = "all" | "kanji" | "none";
-
-function formatDate(input: string | null | undefined): string {
-  if (!input) {
-    return "-";
-  }
-
-  const parsed = new Date(input);
-  if (Number.isNaN(parsed.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsed);
-}
 
 export default function JlptExplorer({
   items,
@@ -163,13 +145,20 @@ export default function JlptExplorer({
       ];
       const romaji = normalizeSearch(toRomaji(item.kanji, { upcaseKatakana: false }));
       const readingRomajiMatch = readings.some((reading) =>
-        normalizeSearch(toRomaji(reading, { upcaseKatakana: false })).includes(normalizedQuery),
+        normalizeSearch(toRomaji(stripReadingSeparators(reading), { upcaseKatakana: false })).includes(normalizedQuery),
       );
+
+      const readingMatch = readings.some((reading) => {
+        const normalizedReading = normalizeSearch(reading);
+        const normalizedNoSeparator = normalizeReadingForSearch(reading);
+        return normalizedReading.includes(normalizedQuery) || normalizedNoSeparator.includes(normalizedQuery);
+      });
+
       return (
         item.kanji.includes(query.trim()) ||
         normalizeSearch(item.kanji).includes(normalizedQuery) ||
         romaji.includes(normalizedQuery) ||
-        readings.some((reading) => normalizeSearch(reading).includes(normalizedQuery)) ||
+        readingMatch ||
         readingRomajiMatch ||
         meanings.some((meaning) => normalizeSearch(meaning).includes(normalizedQuery))
       );
@@ -220,81 +209,6 @@ export default function JlptExplorer({
     if (status === "enlightened") return "bg-amber-100 text-amber-700";
     if (status === "burned") return "bg-surface-muted text-foreground/80";
     return "bg-surface-muted text-foreground/65";
-  }
-
-  function readingLabel(reading: string | null): string {
-    if (!reading) {
-      return "-";
-    }
-
-    if (!showEnglish) {
-      return reading;
-    }
-
-    const romaji = toRomaji(reading, { upcaseKatakana: false }).trim();
-    return romaji && romaji !== reading ? `${reading} / ${romaji}` : reading;
-  }
-
-  function readingLabelFromList(readings: string[]): string {
-    if (readings.length === 0) {
-      return "-";
-    }
-
-    const primary = readings[0] ?? null;
-    return readingLabel(primary);
-  }
-
-  function meaningLabelFromList(meanings: string[]): string {
-    if (meanings.length === 0) {
-      return "-";
-    }
-
-    if (!showEnglish) {
-      return "-";
-    }
-
-    return meanings.slice(0, 2).join(", ");
-  }
-
-  function jlptTitleForDisplay({
-    mainMeaning,
-    userMeanings,
-    fallbackMeanings,
-    primaryReading,
-    fallbackReadings,
-    kanji,
-  }: {
-    mainMeaning?: string | null;
-    userMeanings?: string[];
-    fallbackMeanings?: string[];
-    primaryReading: string | null;
-    fallbackReadings: string[];
-    kanji: string;
-  }): string {
-    if (showEnglish) {
-      if (mainMeaning && mainMeaning.trim()) {
-        return mainMeaning;
-      }
-
-      const fromUser = userMeanings?.[0];
-      if (fromUser) {
-        return fromUser;
-      }
-
-      const fromFallback = meaningLabelFromList(fallbackMeanings ?? []);
-      return fromFallback || "-";
-    }
-
-    if (primaryReading) {
-      return primaryReading;
-    }
-
-    const fallbackReading = fallbackReadings[0] ?? null;
-    if (fallbackReading) {
-      return fallbackReading;
-    }
-
-    return kanji;
   }
 
   function toggleNLevel(level: number) {
@@ -380,13 +294,20 @@ export default function JlptExplorer({
           ...(preload?.meanings ?? []),
         ];
         const readingRomajiMatch = readings.some((reading) =>
-          normalizeSearch(toRomaji(reading, { upcaseKatakana: false })).includes(normalizedQuery),
+          normalizeSearch(toRomaji(stripReadingSeparators(reading), { upcaseKatakana: false })).includes(normalizedQuery),
         );
+
+        const readingMatch = readings.some((reading) => {
+          const normalizedReading = normalizeSearch(reading);
+          const normalizedNoSeparator = normalizeReadingForSearch(reading);
+          return normalizedReading.includes(normalizedQuery) || normalizedNoSeparator.includes(normalizedQuery);
+        });
+
         return (
           item.kanji.includes(nextQuery) ||
           normalizeSearch(item.kanji).includes(normalizedQuery) ||
           romaji.includes(normalizedQuery) ||
-          readings.some((reading) => normalizeSearch(reading).includes(normalizedQuery)) ||
+          readingMatch ||
           readingRomajiMatch ||
           meanings.some((meaning) => normalizeSearch(meaning).includes(normalizedQuery))
         );
@@ -537,14 +458,7 @@ export default function JlptExplorer({
             const fallbackMeanings = item.meanings.length > 0
               ? item.meanings
               : (preload?.meanings ?? []);
-            const heading = jlptTitleForDisplay({
-              mainMeaning: item.primaryMeaning,
-              userMeanings: userMatch?.meanings,
-              fallbackMeanings,
-              primaryReading,
-              fallbackReadings,
-              kanji: item.kanji,
-            });
+            const heading = jlptHeading(item.primaryMeaning, userMatch?.meanings, fallbackMeanings, item.kanji);
 
             return (
               <Fragment key={`${item.nLevel}-${item.kanji}`}>
@@ -567,7 +481,7 @@ export default function JlptExplorer({
                   <div className={`mt-3 rounded-xl border border-kanji/50 bg-kanji/10 px-3 py-2 ${userMatch ? "text-kanji" : "text-foreground"}`}>
                     <p className="text-center text-6xl font-black leading-none">{item.kanji}</p>
                     <p className="mt-1 text-center text-sm font-semibold text-foreground/70">
-                      {primaryReading ? readingLabel(primaryReading) : readingLabelFromList(fallbackReadings)}
+                      {primaryReading ? readingLabel(primaryReading, showEnglish) : readingLabelFromList(fallbackReadings, showEnglish)}
                     </p>
                   </div>
                   <div className="mt-3 grid grid-cols-3 items-center gap-2">
@@ -618,18 +532,12 @@ export default function JlptExplorer({
                             </div>
                             <div className="min-w-0">
                               <p className="text-3xl font-black leading-tight text-foreground">
-                                {jlptTitleForDisplay({
-                                  mainMeaning: selectedItem.primaryMeaning,
-                                  userMeanings: selectedUserMatch?.meanings,
-                                  fallbackMeanings: selectedItem.meanings.length > 0
-                                    ? selectedItem.meanings
-                                    : selectedPreload?.meanings ?? [],
-                                  primaryReading: primary,
-                                  fallbackReadings: selectedDbReadings.length > 0
-                                    ? selectedDbReadings
-                                    : selectedPreload?.readings ?? [],
-                                  kanji: selectedItem.kanji,
-                                })}
+                                {jlptHeading(
+                                  selectedItem.primaryMeaning,
+                                  selectedUserMatch?.meanings,
+                                  selectedItem.meanings.length > 0 ? selectedItem.meanings : selectedPreload?.meanings ?? [],
+                                  selectedItem.kanji,
+                                )}
                               </p>
                             </div>
                           </div>
@@ -637,24 +545,24 @@ export default function JlptExplorer({
                           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
-                              <p className="mt-1 font-semibold text-foreground/90">{readingLabel(primary)}</p>
+                              <p className="mt-1 font-semibold text-foreground/90">{readingLabel(primary, showEnglish)}</p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Secondary readings</p>
                               <p className="mt-1 font-semibold text-foreground/90">
-                                {secondary.length > 0 ? secondary.map((reading) => readingLabel(reading)).join(", ") : "-"}
+                                {secondary.length > 0 ? secondary.map((reading) => readingLabel(reading, showEnglish)).join(", ") : "-"}
                               </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Kunyomi</p>
                               <p className="mt-1 font-semibold text-foreground/90">
-                                {selectedItem.kunReadings.length > 0 ? selectedItem.kunReadings.join(", ") : "-"}
+                                {selectedItem.kunReadings.length > 0 ? selectedItem.kunReadings.map((reading) => stripReadingSeparators(reading)).join(", ") : "-"}
                               </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Onyomi</p>
                               <p className="mt-1 font-semibold text-foreground/90">
-                                {selectedItem.onReadings.length > 0 ? selectedItem.onReadings.join(", ") : "-"}
+                                {selectedItem.onReadings.length > 0 ? selectedItem.onReadings.map((reading) => stripReadingSeparators(reading)).join(", ") : "-"}
                               </p>
                             </div>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
