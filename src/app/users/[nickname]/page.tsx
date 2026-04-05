@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { refreshDueAccounts } from "@/lib/sync";
 import ExplorerSearchBar from "./ExplorerSearchBar";
 import LevelExplorer from "./LevelExplorer";
-import UserAdminRefreshButton from "./UserAdminRefreshButton";
-import UserProgressPanels from "./UserProgressPanels";
+import UserDashboardTabs from "./UserDashboardTabs";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
@@ -191,93 +190,26 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           <div className="hidden sm:block" aria-hidden="true" />
         </div>
 
-        <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
-              <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{account.nickname}</h1>
-              <p className="mt-2 text-sm text-slate-600">@{account.wkUsername}</p>
-              <p className="mt-1 inline-flex rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-700">
-                Global Rank #{globalRank} of {formatNumber(totalPlayers)}
-              </p>
-            </div>
-            <UserAdminRefreshButton accountId={account.id} />
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Level</p>
-              <p className="mt-2 text-4xl font-black text-accent">{account.wkLevel}</p>
-            </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Learned Kanji</p>
-              <p className="mt-2 text-4xl font-black text-foreground">
-                {formatNumber(account.levelKanjiLearned)}
-              </p>
-              <p className="text-xs text-slate-600">of {formatNumber(account.levelKanjiTotal)} in this level</p>
-            </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Remaining (Level)</p>
-              <p className="mt-2 text-4xl font-black text-hot">
-                {formatNumber(Math.max(0, account.levelKanjiTotal - account.levelKanjiLearned))}
-              </p>
-              <p className="text-xs text-slate-600">locked: {formatNumber(account.levelKanjiLocked)}</p>
-            </article>
-            <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-kanji">Total Learned</p>
-              <p className="mt-2 text-4xl font-black text-kanji">{formatNumber(totalLearnedKanji)}</p>
-              <p className="text-xs text-slate-600">all kanji at Guru+</p>
-            </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">Est. Time Remaining</p>
-              <p className="mt-2 text-3xl font-black text-foreground">
-                {account.estimatedHoursRemaining === null
-                  ? "Unknown"
-                  : `${account.estimatedHoursRemaining}h`}
-              </p>
-              <p className="text-xs text-slate-600">Until 90% level kanji at Guru+</p>
-            </article>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
-            <Link href={`?srs=apprentice#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              <span className="block">Apprentice:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.apprenticeCount)}</span>
-            </Link>
-            <Link href={`?srs=guru#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              <span className="block">Guru:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.guruCount)}</span>
-            </Link>
-            <Link href={`?srs=master#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              <span className="block">Master:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.masterCount)}</span>
-            </Link>
-            <Link href={`?srs=enlightened#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              <span className="block">Enlightened:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.enlightenedCount)}</span>
-            </Link>
-            <Link href={`?srs=burned#explorer`} className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-muted">
-              <span className="block">Burned:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.burnedCount)}</span>
-            </Link>
-            <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-sm font-semibold text-radical">
-              <span className="block">Radicals:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.radicalCount)}</span>
-            </div>
-            <div className="rounded-xl border border-kanji/40 bg-kanji/10 px-3 py-2 text-sm font-semibold text-kanji">
-              <span className="block">Kanji:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(itemSpread.totals.kanji)}</span>
-            </div>
-            <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-sm font-semibold text-vocabulary">
-              <span className="block">Vocabulary:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(account.vocabularyCount)}</span>
-            </div>
-          </div>
-        </section>
-
-        <UserProgressPanels
+        <UserDashboardTabs
           accountId={account.id}
+          nickname={account.nickname}
+          wkUsername={account.wkUsername}
+          globalRank={globalRank}
+          totalPlayers={totalPlayers}
           wkLevel={account.wkLevel}
+          levelKanjiLearned={account.levelKanjiLearned}
+          levelKanjiTotal={account.levelKanjiTotal}
+          levelKanjiLocked={account.levelKanjiLocked}
+          totalLearnedKanji={totalLearnedKanji}
+          estimatedHoursRemaining={account.estimatedHoursRemaining}
+          apprenticeCount={account.apprenticeCount}
+          guruCount={account.guruCount}
+          masterCount={account.masterCount}
+          enlightenedCount={account.enlightenedCount}
+          burnedCount={account.burnedCount}
+          radicalCount={account.radicalCount}
+          totalKanjiCount={itemSpread.totals.kanji}
+          vocabularyCount={account.vocabularyCount}
           itemSpread={itemSpread}
           levelRadicalProgress={levelRadicalProgress}
           levelKanjiProgress={levelKanjiProgress}
