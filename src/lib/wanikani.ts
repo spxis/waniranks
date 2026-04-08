@@ -62,6 +62,10 @@ export type ExistingLeaderboardState = {
   wkLevel: number;
   reviewCount: number;
   burnedCount: number;
+  reviewsUpdatedAt: Date | null;
+  lastRadicalGuruedAt: Date | null;
+  lastKanjiGuruedAt: Date | null;
+  lastVocabularyGuruedAt: Date | null;
   assignmentCache: unknown;
   assignmentCacheUpdatedAt: Date | null;
   wkHttpCache: unknown;
@@ -70,6 +74,7 @@ export type ExistingLeaderboardState = {
 type LeaderboardSyncCache = {
   assignmentCache: AssignmentCacheRow[];
   assignmentCacheUpdatedAt: Date;
+  reviewsUpdatedAt: Date | null;
   wkHttpCache: HttpCacheState;
 };
 
@@ -115,6 +120,9 @@ type LeaderboardStats = {
     n4: { learned: number; total: number; percent: number };
     n5: { learned: number; total: number; percent: number };
   };
+  lastRadicalGuruedAt: Date | null;
+  lastKanjiGuruedAt: Date | null;
+  lastVocabularyGuruedAt: Date | null;
   score: number;
   cache: LeaderboardSyncCache;
 };
@@ -724,6 +732,13 @@ type WaniKaniAssignmentData = {
   available_at: string | null;
 };
 
+type WaniKaniReviewData = {
+  subject_id: number;
+  starting_srs_stage: number;
+  ending_srs_stage: number;
+  created_at: string | null;
+};
+
 function parseHttpCacheState(input: unknown): HttpCacheState {
   if (!input || typeof input !== "object") {
     return {};
@@ -743,6 +758,51 @@ function parseHttpCacheState(input: unknown): HttpCacheState {
     const etag = typeof row.etag === "string" ? row.etag : null;
     const lastModified = typeof row.lastModified === "string" ? row.lastModified : null;
     output[key] = { etag, lastModified };
+  }
+
+  return output;
+}
+
+function maxDate(input: Array<Date | null>): Date | null {
+  const values = input
+    .filter((item): item is Date => item !== null)
+    .map((item) => item.getTime());
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return new Date(Math.max(...values));
+}
+
+function reviewsCheckpointDate(collection: WaniKaniCollectionResponse): Date | null {
+  const collectionUpdatedAt = toDate(collection.data_updated_at);
+  const rowUpdatedAt = maxDate(collection.data.map((row) => toDate(row.data_updated_at)));
+  return maxDate([collectionUpdatedAt, rowUpdatedAt]);
+}
+
+async function loadSubjectTypes(
+  token: string,
+  subjectIds: number[],
+): Promise<Map<number, "radical" | "kanji" | "vocabulary">> {
+  const output = new Map<number, "radical" | "kanji" | "vocabulary">();
+  const chunkSize = 200;
+
+  for (let i = 0; i < subjectIds.length; i += chunkSize) {
+    const chunk = subjectIds.slice(i, i + chunkSize).join(",");
+    if (!chunk) {
+      continue;
+    }
+
+    const subjectChunk = await fetchAllCollectionPages(`/subjects?ids=${chunk}`, token);
+    for (const row of subjectChunk.data) {
+      const normalized = normalizeAssignmentType(row.object ?? "");
+      if (!normalized) {
+        continue;
+      }
+
+      output.set(row.id, normalized);
+    }
   }
 
   return output;
@@ -906,6 +966,62 @@ export async function getLeaderboardStats(
   const allAssignmentData = assignmentRows.map(
     (row) => row.data as WaniKaniAssignmentData,
   );
+
+  const assignmentTypeBySubjectId = new Map<number, "radical" | "kanji" | "vocabulary">();
+  for (const assignment of allAssignmentData) {
+    const normalized = normalizeAssignmentType(assignment.subject_type);
+    if (!normalized) {
+      continue;
+    }
+
+    assignmentTypeBySubjectId.set(assignment.subject_id, normalized);
+  }
+
+  const reviewPath = existing.reviewsUpdatedAt
+    ? `/reviews?updated_after=${encodeURIComponent(existing.reviewsUpdatedAt.toISOString())}`
+    : "/reviews";
+  const reviewCollection = await fetchAllCollectionPages(reviewPath, token);
+  const reviews = reviewCollection.data.map((row) => row.data as WaniKaniReviewData);
+
+  const missingSubjectIds = Array.from(
+    new Set(
+      reviews
+        .map((review) => review.subject_id)
+        .filter((subjectId) => !assignmentTypeBySubjectId.has(subjectId)),
+    ),
+  );
+  const fallbackTypeBySubjectId =
+    missingSubjectIds.length > 0 ? await loadSubjectTypes(token, missingSubjectIds) : new Map();
+
+  const lastGuruedAt = {
+    radical: existing.lastRadicalGuruedAt,
+    kanji: existing.lastKanjiGuruedAt,
+    vocabulary: existing.lastVocabularyGuruedAt,
+  };
+
+  for (const review of reviews) {
+    if (!(review.starting_srs_stage < 5 && review.ending_srs_stage >= 5)) {
+      continue;
+    }
+
+    const type = assignmentTypeBySubjectId.get(review.subject_id) ?? fallbackTypeBySubjectId.get(review.subject_id);
+    if (!type) {
+      continue;
+    }
+
+    const createdAt = toDate(review.created_at);
+    if (!createdAt) {
+      continue;
+    }
+
+    const current = lastGuruedAt[type];
+    if (!current || createdAt.getTime() > current.getTime()) {
+      lastGuruedAt[type] = createdAt;
+    }
+  }
+
+  const reviewsUpdatedAt =
+    maxDate([existing.reviewsUpdatedAt, reviewsCheckpointDate(reviewCollection)]) ?? existing.reviewsUpdatedAt;
 
   const lastActivityAt = allAssignmentData
     .flatMap((assignment) => [
@@ -1091,10 +1207,14 @@ export async function getLeaderboardStats(
     levelKanjiItems,
     itemSpread,
     jlptCounts,
+    lastRadicalGuruedAt: lastGuruedAt.radical,
+    lastKanjiGuruedAt: lastGuruedAt.kanji,
+    lastVocabularyGuruedAt: lastGuruedAt.vocabulary,
     score,
     cache: {
       assignmentCache: assignmentRows,
       assignmentCacheUpdatedAt: assignmentCacheUpdatedAt ?? new Date(),
+      reviewsUpdatedAt,
       wkHttpCache: {
         user: mergeHttpCacheEntry(httpCache.user, userResponse.headers),
         reviewStats: mergeHttpCacheEntry(httpCache.reviewStats, reviewStatsResponse.headers),

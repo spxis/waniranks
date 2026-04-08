@@ -36,6 +36,10 @@ model Account {
   jlptCounts      Json?
   assignmentCache Json?
   assignmentCacheUpdatedAt DateTime?
+  reviewsUpdatedAt DateTime?
+  lastRadicalGuruedAt DateTime?
+  lastKanjiGuruedAt DateTime?
+  lastVocabularyGuruedAt DateTime?
   wkHttpCache     Json?
   lastActivityAt  DateTime?
   isSyncing       Boolean  @default(false)

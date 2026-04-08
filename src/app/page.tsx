@@ -26,6 +26,9 @@ type LeaderboardRow = {
   itemSpread: unknown;
   jlptCounts: unknown;
   lastActivityAt: Date | null;
+  lastRadicalGuruedAt: Date | null;
+  lastKanjiGuruedAt: Date | null;
+  lastVocabularyGuruedAt: Date | null;
   score: number;
   lastSyncedAt: Date;
   dailyDelta?: {
@@ -73,6 +76,9 @@ export default async function Home() {
         itemSpread: true,
         jlptCounts: true,
         lastActivityAt: true,
+        lastRadicalGuruedAt: true,
+        lastKanjiGuruedAt: true,
+        lastVocabularyGuruedAt: true,
         score: true,
         lastSyncedAt: true,
       },
@@ -224,6 +230,15 @@ export default async function Home() {
               rows={leaderboard.map((row) => ({
                 ...row,
                 lastActivityAt: row.lastActivityAt ? row.lastActivityAt.toISOString() : null,
+                lastRadicalGuruedAt: row.lastRadicalGuruedAt
+                  ? row.lastRadicalGuruedAt.toISOString()
+                  : null,
+                lastKanjiGuruedAt: row.lastKanjiGuruedAt
+                  ? row.lastKanjiGuruedAt.toISOString()
+                  : null,
+                lastVocabularyGuruedAt: row.lastVocabularyGuruedAt
+                  ? row.lastVocabularyGuruedAt.toISOString()
+                  : null,
                 lastSyncedAt: row.lastSyncedAt.toISOString(),
               }))}
             />

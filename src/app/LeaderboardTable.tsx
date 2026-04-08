@@ -29,6 +29,9 @@ type LeaderboardRow = {
   itemSpread: unknown;
   jlptCounts: unknown;
   lastActivityAt: string | null;
+  lastRadicalGuruedAt: string | null;
+  lastKanjiGuruedAt: string | null;
+  lastVocabularyGuruedAt: string | null;
   score: number;
   lastSyncedAt: string;
   dailyDelta?: {
@@ -68,6 +71,36 @@ type SortState = {
   key: SortKey;
   direction: SortDirection;
 };
+
+const ALL_TABS: LeaderboardTab[] = ["overall", "radicals", "kanji", "vocabulary"];
+const ALL_SORT_KEYS: SortKey[] = [
+  "nickname",
+  "wkLevel",
+  "reviewCount",
+  "score",
+  "lastActivityAt",
+  "radicalLearned",
+  "radicalTotal",
+  "radicalPercent",
+  "kanjiLearned",
+  "kanjiTotal",
+  "kanjiPercent",
+  "vocabularyLearned",
+  "vocabularyTotal",
+  "vocabularyPercent",
+];
+
+function isLeaderboardTab(value: string | null): value is LeaderboardTab {
+  return value !== null && (ALL_TABS as string[]).includes(value);
+}
+
+function isSortKey(value: string | null): value is SortKey {
+  return value !== null && (ALL_SORT_KEYS as string[]).includes(value);
+}
+
+function isSortDirection(value: string | null): value is SortDirection {
+  return value === "asc" || value === "desc";
+}
 
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
@@ -294,12 +327,75 @@ export default function LeaderboardTable({ rows }: Props) {
     vocabulary: { label: "Vocabulary", defaultSort: { key: "vocabularyPercent", direction: "desc" } },
   };
 
-  const [activeTab, setActiveTab] = useState<LeaderboardTab>("overall");
-  const [sortByTab, setSortByTab] = useState<Record<LeaderboardTab, SortState>>({
-    overall: tabConfig.overall.defaultSort,
-    radicals: tabConfig.radicals.defaultSort,
-    kanji: tabConfig.kanji.defaultSort,
-    vocabulary: tabConfig.vocabulary.defaultSort,
+  const [activeTab, setActiveTab] = useState<LeaderboardTab>(() => {
+    if (typeof window === "undefined") {
+      return "overall";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const tabFromQuery = params.get("tab");
+    if (isLeaderboardTab(tabFromQuery)) {
+      return tabFromQuery;
+    }
+
+    try {
+      const tabFromStorage = window.localStorage.getItem("wr:leaderboard:active-tab");
+      if (isLeaderboardTab(tabFromStorage)) {
+        return tabFromStorage;
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+
+    return "overall";
+  });
+  const [sortByTab, setSortByTab] = useState<Record<LeaderboardTab, SortState>>(() => {
+    const defaults: Record<LeaderboardTab, SortState> = {
+      overall: tabConfig.overall.defaultSort,
+      radicals: tabConfig.radicals.defaultSort,
+      kanji: tabConfig.kanji.defaultSort,
+      vocabulary: tabConfig.vocabulary.defaultSort,
+    };
+
+    if (typeof window === "undefined") {
+      return defaults;
+    }
+
+    let output = { ...defaults };
+
+    try {
+      const stored = window.localStorage.getItem("wr:leaderboard:sort-by-tab");
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<Record<LeaderboardTab, SortState>>;
+        for (const tab of ALL_TABS) {
+          const candidate = parsed?.[tab];
+          if (!candidate || !isSortKey(candidate.key) || !isSortDirection(candidate.direction)) {
+            continue;
+          }
+
+          output[tab] = { key: candidate.key, direction: candidate.direction };
+        }
+      }
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const tabFromQuery = params.get("tab");
+    const sortFromQuery = params.get("sort");
+    const dirFromQuery = params.get("dir");
+
+    if (isLeaderboardTab(tabFromQuery) && isSortKey(sortFromQuery) && isSortDirection(dirFromQuery)) {
+      output = {
+        ...output,
+        [tabFromQuery]: {
+          key: sortFromQuery,
+          direction: dirFromQuery,
+        },
+      };
+    }
+
+    return output;
   });
 
   const expandedStorageKey = "wr:leaderboard:expanded-rows";
@@ -347,9 +443,6 @@ export default function LeaderboardTable({ rows }: Props) {
     () => new Set(Array.from(expanded).filter((id) => validRowIds.has(id))),
     [expanded, validRowIds],
   );
-  const allRowIds = rows.map((row) => row.id);
-  const allExpanded = rows.length > 0 && filteredExpanded.size === rows.length;
-  const anyExpanded = filteredExpanded.size > 0;
 
   useEffect(() => {
     try {
@@ -358,6 +451,23 @@ export default function LeaderboardTable({ rows }: Props) {
       // Ignore storage errors in restricted browsing modes.
     }
   }, [expandedStorageKey, filteredExpanded]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("wr:leaderboard:active-tab", activeTab);
+      window.localStorage.setItem("wr:leaderboard:sort-by-tab", JSON.stringify(sortByTab));
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", activeTab);
+    params.set("sort", sortByTab[activeTab].key);
+    params.set("dir", sortByTab[activeTab].direction);
+    const hash = window.location.hash || "";
+    const next = `${window.location.pathname}?${params.toString()}${hash}`;
+    window.history.replaceState(window.history.state, "", next);
+  }, [activeTab, sortByTab]);
 
   function persistPanelState(key: string, value: boolean, setter: (next: boolean) => void) {
     setter(value);
@@ -436,6 +546,9 @@ export default function LeaderboardTable({ rows }: Props) {
     return rowsCopy;
   }, [rows, activeSort]);
 
+  const allRowIds = sortedRows.map((row) => row.id);
+  const allExpanded = allRowIds.length > 0 && allRowIds.every((id) => filteredExpanded.has(id));
+
   function expandAllRows() {
     const next = new Set(allRowIds);
     setExpanded(next);
@@ -481,6 +594,15 @@ export default function LeaderboardTable({ rows }: Props) {
     }
   }
 
+  function toggleAllRows() {
+    if (allExpanded) {
+      collapseAllRows();
+      return;
+    }
+
+    expandAllRows();
+  }
+
   function tabClass(tab: LeaderboardTab): string {
     if (tab === "overall") {
       return activeTab === tab
@@ -523,19 +645,11 @@ export default function LeaderboardTable({ rows }: Props) {
       <div className="flex flex-wrap items-center justify-end gap-2 px-4 sm:px-6">
         <button
           type="button"
-          onClick={expandAllRows}
-          disabled={rows.length === 0 || allExpanded}
+          onClick={toggleAllRows}
+          disabled={sortedRows.length === 0}
           className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Expand All
-        </button>
-        <button
-          type="button"
-          onClick={collapseAllRows}
-          disabled={!anyExpanded}
-          className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Collapse All
+          {allExpanded ? "Collapse All" : "Expand All"}
         </button>
       </div>
 
@@ -872,6 +986,22 @@ export default function LeaderboardTable({ rows }: Props) {
                                   ? "Level-up gate passed; cleanup remains."
                                   : `Need ${formatNumber(remainingToLevelUp)} more Guru+ kanji to level up.`}
                               </p>
+                              <div className="mt-3 border-t border-line pt-3">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/60">
+                                  Last Gurued
+                                </p>
+                                <div className="mt-2 space-y-1 text-xs font-semibold text-foreground/75">
+                                  <p>
+                                    Radical: {row.lastRadicalGuruedAt ? formatDate(row.lastRadicalGuruedAt) : "-"}
+                                  </p>
+                                  <p>
+                                    Kanji: {row.lastKanjiGuruedAt ? formatDate(row.lastKanjiGuruedAt) : "-"}
+                                  </p>
+                                  <p>
+                                    Vocab: {row.lastVocabularyGuruedAt ? formatDate(row.lastVocabularyGuruedAt) : "-"}
+                                  </p>
+                                </div>
+                              </div>
                             </>
                           ) : null}
                         </div>
@@ -986,6 +1116,14 @@ export default function LeaderboardTable({ rows }: Props) {
                 </div>
                 <div className="rounded-lg bg-surface-muted p-2">
                   Last sync {formatDate(row.lastSyncedAt)}
+                </div>
+                <div className="rounded-lg bg-surface-muted p-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70">
+                    Last Gurued
+                  </p>
+                  <p className="mt-1">R {row.lastRadicalGuruedAt ? formatDate(row.lastRadicalGuruedAt) : "-"}</p>
+                  <p>K {row.lastKanjiGuruedAt ? formatDate(row.lastKanjiGuruedAt) : "-"}</p>
+                  <p>V {row.lastVocabularyGuruedAt ? formatDate(row.lastVocabularyGuruedAt) : "-"}</p>
                 </div>
                 <div className="grid grid-cols-5 gap-1">
                   {(() => {
