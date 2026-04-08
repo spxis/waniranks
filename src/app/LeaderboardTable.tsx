@@ -507,7 +507,7 @@ export default function LeaderboardTable({ rows }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 px-4 pt-4 sm:px-6">
         {(Object.entries(tabConfig) as Array<[LeaderboardTab, { label: string }]>).map(([key, tab]) => (
           <button
             key={key}
@@ -520,7 +520,7 @@ export default function LeaderboardTable({ rows }: Props) {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2 px-4 sm:px-6">
         <button
           type="button"
           onClick={expandAllRows}
