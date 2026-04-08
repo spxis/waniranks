@@ -5,7 +5,9 @@ import { refreshDueAccounts } from "@/lib/sync";
 
 export async function GET() {
   try {
-    await refreshDueAccounts(1);
+    void refreshDueAccounts(1).catch((error) => {
+      console.error("Non-blocking refresh failed", error);
+    });
 
     const leaderboard = await prisma.account.findMany({
       orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],

@@ -54,7 +54,10 @@ export default async function Home() {
   let setupMessage = "";
 
   try {
-    await refreshDueAccounts(1);
+    const refreshPromise = refreshDueAccounts(1).catch((error) => {
+      console.error("Non-blocking refresh failed", error);
+      return { refreshed: 0, skipped: 0 };
+    });
 
     leaderboard = await prisma.account.findMany({
       orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
@@ -160,6 +163,8 @@ export default async function Home() {
         };
       });
     }
+
+    void refreshPromise;
   } catch {
     setupMessage = "Leaderboard will appear after DATABASE_URL is configured and synced.";
   }
