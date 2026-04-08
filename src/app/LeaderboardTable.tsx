@@ -46,6 +46,29 @@ type Props = {
   rows: LeaderboardRow[];
 };
 
+type LeaderboardTab = "overall" | "radicals" | "kanji" | "vocabulary";
+type SortDirection = "asc" | "desc";
+type SortKey =
+  | "nickname"
+  | "wkLevel"
+  | "reviewCount"
+  | "score"
+  | "lastActivityAt"
+  | "radicalLearned"
+  | "radicalTotal"
+  | "radicalPercent"
+  | "kanjiLearned"
+  | "kanjiTotal"
+  | "kanjiPercent"
+  | "vocabularyLearned"
+  | "vocabularyTotal"
+  | "vocabularyPercent";
+
+type SortState = {
+  key: SortKey;
+  direction: SortDirection;
+};
+
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
@@ -136,6 +159,52 @@ function learnedKanjiFromRow(row: LeaderboardRow): number {
   );
 }
 
+function learnedRadicalsFromRow(row: LeaderboardRow): number {
+  if (!isItemSpread(row.itemSpread)) {
+    return 0;
+  }
+
+  return (
+    row.itemSpread.guru.radical +
+    row.itemSpread.master.radical +
+    row.itemSpread.enlightened.radical +
+    row.itemSpread.burned.radical
+  );
+}
+
+function learnedVocabularyFromRow(row: LeaderboardRow): number {
+  if (!isItemSpread(row.itemSpread)) {
+    return 0;
+  }
+
+  return (
+    row.itemSpread.guru.vocabulary +
+    row.itemSpread.master.vocabulary +
+    row.itemSpread.enlightened.vocabulary +
+    row.itemSpread.burned.vocabulary
+  );
+}
+
+function learnedPercent(learned: number, total: number): number {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return Math.round((learned / total) * 100);
+}
+
+function nextDirection(current: SortState | null, key: SortKey): SortDirection {
+  if (!current || current.key !== key) {
+    if (key === "nickname") {
+      return "asc";
+    }
+
+    return "desc";
+  }
+
+  return current.direction === "desc" ? "asc" : "desc";
+}
+
 function jlptCountsFromRow(row: LeaderboardRow): {
   n1: { learned: number; total: number; percent: number };
   n2: { learned: number; total: number; percent: number };
@@ -218,6 +287,21 @@ function jlptCompletionClass(percent: number): string {
 }
 
 export default function LeaderboardTable({ rows }: Props) {
+  const tabConfig: Record<LeaderboardTab, { label: string; defaultSort: SortState }> = {
+    overall: { label: "Overall", defaultSort: { key: "score", direction: "desc" } },
+    radicals: { label: "Radicals", defaultSort: { key: "radicalPercent", direction: "desc" } },
+    kanji: { label: "Kanji", defaultSort: { key: "kanjiPercent", direction: "desc" } },
+    vocabulary: { label: "Vocabulary", defaultSort: { key: "vocabularyPercent", direction: "desc" } },
+  };
+
+  const [activeTab, setActiveTab] = useState<LeaderboardTab>("overall");
+  const [sortByTab, setSortByTab] = useState<Record<LeaderboardTab, SortState>>({
+    overall: tabConfig.overall.defaultSort,
+    radicals: tabConfig.radicals.defaultSort,
+    kanji: tabConfig.kanji.defaultSort,
+    vocabulary: tabConfig.vocabulary.defaultSort,
+  });
+
   const expandedStorageKey = "wr:leaderboard:expanded-rows";
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
@@ -303,6 +387,55 @@ export default function LeaderboardTable({ rows }: Props) {
     });
   }
 
+  const activeSort = sortByTab[activeTab];
+
+  const sortedRows = useMemo(() => {
+    const rowsCopy = [...rows];
+
+    function getSortValue(row: LeaderboardRow, key: SortKey): number | string {
+      const radicalsLearned = learnedRadicalsFromRow(row);
+      const kanjiLearned = learnedKanjiFromRow(row);
+      const vocabularyLearned = learnedVocabularyFromRow(row);
+      const kanjiTotal = kanjiCountFromRow(row);
+
+      if (key === "nickname") return row.nickname.toLowerCase();
+      if (key === "wkLevel") return row.wkLevel;
+      if (key === "reviewCount") return row.reviewCount;
+      if (key === "score") return row.score;
+      if (key === "lastActivityAt") return row.lastActivityAt ? new Date(row.lastActivityAt).getTime() : 0;
+      if (key === "radicalLearned") return radicalsLearned;
+      if (key === "radicalTotal") return row.radicalCount;
+      if (key === "radicalPercent") return learnedPercent(radicalsLearned, row.radicalCount);
+      if (key === "kanjiLearned") return kanjiLearned;
+      if (key === "kanjiTotal") return kanjiTotal;
+      if (key === "kanjiPercent") return learnedPercent(kanjiLearned, kanjiTotal);
+      if (key === "vocabularyLearned") return vocabularyLearned;
+      if (key === "vocabularyTotal") return row.vocabularyCount;
+
+      return learnedPercent(vocabularyLearned, row.vocabularyCount);
+    }
+
+    rowsCopy.sort((a, b) => {
+      const aValue = getSortValue(a, activeSort.key);
+      const bValue = getSortValue(b, activeSort.key);
+      let base = 0;
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        base = aValue.localeCompare(bValue);
+      } else {
+        base = Number(aValue) - Number(bValue);
+      }
+
+      if (base === 0) {
+        base = b.score - a.score;
+      }
+
+      return activeSort.direction === "desc" ? -base : base;
+    });
+
+    return rowsCopy;
+  }, [rows, activeSort]);
+
   function expandAllRows() {
     const next = new Set(allRowIds);
     setExpanded(next);
@@ -311,6 +444,32 @@ export default function LeaderboardTable({ rows }: Props) {
     } catch {
       // Ignore storage errors in restricted browsing modes.
     }
+  }
+
+  function requestSort(key: SortKey) {
+    setSortByTab((prev) => ({
+      ...prev,
+      [activeTab]: {
+        key,
+        direction: nextDirection(prev[activeTab], key),
+      },
+    }));
+  }
+
+  function headerClassFor(sortKey: SortKey): string {
+    if (activeSort.key !== sortKey) {
+      return "text-foreground/70";
+    }
+
+    return "text-accent";
+  }
+
+  function sortIcon(sortKey: SortKey): string {
+    if (activeSort.key !== sortKey) {
+      return "<>";
+    }
+
+    return activeSort.direction === "desc" ? "v" : "^";
   }
 
   function collapseAllRows() {
@@ -324,6 +483,23 @@ export default function LeaderboardTable({ rows }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {(Object.entries(tabConfig) as Array<[LeaderboardTab, { label: string }]>).map(([key, tab]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setActiveTab(key)}
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
+              activeTab === key
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-surface text-foreground"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
@@ -348,20 +524,51 @@ export default function LeaderboardTable({ rows }: Props) {
           <thead className="border-b border-line bg-surface-muted text-left text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">
             <tr>
               <th className="px-4 py-3">#</th>
-              <th className="px-4 py-3">Nickname</th>
-              <th className="px-4 py-3">Level</th>
-              <th className="px-4 py-3">Reviewed</th>
-              <th className="px-4 py-3">Radicals</th>
-              <th className="px-4 py-3">Kanji</th>
-              <th className="px-4 py-3">Learned</th>
-              <th className="px-4 py-3">Vocab</th>
-              <th className="px-4 py-3">Score</th>
-              <th className="px-4 py-3">Last Activity</th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("nickname")} className={`inline-flex items-center gap-1 ${headerClassFor("nickname")}`}>
+                  Nickname <span className="text-[10px]">{sortIcon("nickname")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("wkLevel")} className={`inline-flex items-center gap-1 ${headerClassFor("wkLevel")}`}>
+                  Level <span className="text-[10px]">{sortIcon("wkLevel")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("reviewCount")} className={`inline-flex items-center gap-1 ${headerClassFor("reviewCount")}`}>
+                  Reviewed <span className="text-[10px]">{sortIcon("reviewCount")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("radicalPercent")} className={`inline-flex items-center gap-1 ${headerClassFor("radicalPercent")}`}>
+                  Radicals (G+) <span className="text-[10px]">{sortIcon("radicalPercent")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("kanjiPercent")} className={`inline-flex items-center gap-1 ${headerClassFor("kanjiPercent")}`}>
+                  Kanji (G+) <span className="text-[10px]">{sortIcon("kanjiPercent")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("vocabularyPercent")} className={`inline-flex items-center gap-1 ${headerClassFor("vocabularyPercent")}`}>
+                  Vocab (G+) <span className="text-[10px]">{sortIcon("vocabularyPercent")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("score")} className={`inline-flex items-center gap-1 ${headerClassFor("score")}`}>
+                  Score <span className="text-[10px]">{sortIcon("score")}</span>
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => requestSort("lastActivityAt")} className={`inline-flex items-center gap-1 ${headerClassFor("lastActivityAt")}`}>
+                  Last Activity <span className="text-[10px]">{sortIcon("lastActivityAt")}</span>
+                </button>
+              </th>
               <th className="px-4 py-3">More</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line text-sm text-foreground/90">
-            {rows.map((row, index) => (
+            {sortedRows.map((row, index) => (
               <Fragment key={row.id}>
                 <tr key={row.id} className="transition hover:bg-surface-muted/80">
                   <td className="px-4 py-3 font-black">#{index + 1}</td>
@@ -388,14 +595,50 @@ export default function LeaderboardTable({ rows }: Props) {
                     </p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="subject-pill subject-pill--radical">{formatNumber(row.radicalCount)}</span>
+                    {(() => {
+                      const learned = learnedRadicalsFromRow(row);
+                      const percent = learnedPercent(learned, row.radicalCount);
+
+                      return (
+                        <>
+                          <span className="subject-pill subject-pill--radical">{formatNumber(learned)}</span>
+                          <p className="mt-1 text-[10px] font-semibold text-foreground/60">
+                            / {formatNumber(row.radicalCount)} ({percent}%)
+                          </p>
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="subject-pill subject-pill--kanji">{formatNumber(kanjiCountFromRow(row))}</span>
+                    {(() => {
+                      const learned = learnedKanjiFromRow(row);
+                      const total = kanjiCountFromRow(row);
+                      const percent = learnedPercent(learned, total);
+
+                      return (
+                        <>
+                          <span className="subject-pill subject-pill--kanji">{formatNumber(learned)}</span>
+                          <p className="mt-1 text-[10px] font-semibold text-foreground/60">
+                            / {formatNumber(total)} ({percent}%)
+                          </p>
+                        </>
+                      );
+                    })()}
                   </td>
-                  <td className="px-4 py-3 text-sm font-black text-foreground">{formatNumber(learnedKanjiFromRow(row))}</td>
                   <td className="px-4 py-3">
-                    <span className="subject-pill subject-pill--vocabulary">{formatNumber(row.vocabularyCount)}</span>
+                    {(() => {
+                      const learned = learnedVocabularyFromRow(row);
+                      const percent = learnedPercent(learned, row.vocabularyCount);
+
+                      return (
+                        <>
+                          <span className="subject-pill subject-pill--vocabulary">{formatNumber(learned)}</span>
+                          <p className="mt-1 text-[10px] font-semibold text-foreground/60">
+                            / {formatNumber(row.vocabularyCount)} ({percent}%)
+                          </p>
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-lg font-black text-hot">
                     <p>{formatNumber(row.score)}</p>
@@ -646,7 +889,7 @@ export default function LeaderboardTable({ rows }: Props) {
       </div>
 
       <div className="space-y-4 md:hidden">
-        {rows.map((row, index) => (
+        {sortedRows.map((row, index) => (
           <article key={row.id} className="rounded-2xl border border-line bg-surface/90 p-4 shadow-[0_10px_24px_rgba(8,16,36,0.06)]">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -697,11 +940,14 @@ export default function LeaderboardTable({ rows }: Props) {
             </div>
 
             <div className="mt-3 flex flex-wrap gap-1 text-[10px]">
-              <span className="subject-pill subject-pill--radical">R {formatNumber(row.radicalCount)}</span>
-              <span className="subject-pill subject-pill--kanji">K {formatNumber(kanjiCountFromRow(row))}</span>
-              <span className="subject-pill subject-pill--vocabulary">V {formatNumber(row.vocabularyCount)}</span>
-              <span className="rounded-full border border-line bg-surface px-2 py-0.5 font-bold uppercase tracking-[0.08em] text-foreground/70">
-                Learned {formatNumber(learnedKanjiFromRow(row))}
+              <span className="subject-pill subject-pill--radical">
+                R {formatNumber(learnedRadicalsFromRow(row))}/{formatNumber(row.radicalCount)} ({learnedPercent(learnedRadicalsFromRow(row), row.radicalCount)}%)
+              </span>
+              <span className="subject-pill subject-pill--kanji">
+                K {formatNumber(learnedKanjiFromRow(row))}/{formatNumber(kanjiCountFromRow(row))} ({learnedPercent(learnedKanjiFromRow(row), kanjiCountFromRow(row))}%)
+              </span>
+              <span className="subject-pill subject-pill--vocabulary">
+                V {formatNumber(learnedVocabularyFromRow(row))}/{formatNumber(row.vocabularyCount)} ({learnedPercent(learnedVocabularyFromRow(row), row.vocabularyCount)}%)
               </span>
             </div>
 
