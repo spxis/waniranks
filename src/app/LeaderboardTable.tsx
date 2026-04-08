@@ -221,6 +221,9 @@ export default function LeaderboardTable({ rows }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showItemSpreadPanel, setShowItemSpreadPanel] = useState(true);
   const [showLevelProgressPanel, setShowLevelProgressPanel] = useState(true);
+  const allRowIds = rows.map((row) => row.id);
+  const allExpanded = rows.length > 0 && expanded.size === rows.length;
+  const anyExpanded = expanded.size > 0;
 
   useEffect(() => {
     try {
@@ -289,8 +292,46 @@ export default function LeaderboardTable({ rows }: Props) {
     });
   }
 
+  function expandAllRows() {
+    const next = new Set(allRowIds);
+    setExpanded(next);
+    try {
+      window.localStorage.setItem(expandedStorageKey, JSON.stringify(Array.from(next)));
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }
+
+  function collapseAllRows() {
+    setExpanded(new Set());
+    try {
+      window.localStorage.setItem(expandedStorageKey, JSON.stringify([]));
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={expandAllRows}
+          disabled={rows.length === 0 || allExpanded}
+          className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Expand All
+        </button>
+        <button
+          type="button"
+          onClick={collapseAllRows}
+          disabled={!anyExpanded}
+          className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Collapse All
+        </button>
+      </div>
+
       <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full">
           <thead className="border-b border-line bg-surface-muted text-left text-xs font-bold uppercase tracking-[0.14em] text-foreground/70">
