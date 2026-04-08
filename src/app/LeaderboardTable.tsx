@@ -481,6 +481,30 @@ export default function LeaderboardTable({ rows }: Props) {
     }
   }
 
+  function tabClass(tab: LeaderboardTab): string {
+    if (tab === "overall") {
+      return activeTab === tab
+        ? "border-accent bg-accent text-white"
+        : "border-line bg-surface text-foreground";
+    }
+
+    if (tab === "radicals") {
+      return activeTab === tab
+        ? "border-radical bg-radical text-white"
+        : "border-radical/40 bg-radical/10 text-radical";
+    }
+
+    if (tab === "kanji") {
+      return activeTab === tab
+        ? "border-kanji bg-kanji text-white"
+        : "border-kanji/40 bg-kanji/10 text-kanji";
+    }
+
+    return activeTab === tab
+      ? "border-vocabulary bg-vocabulary text-white"
+      : "border-vocabulary/40 bg-vocabulary/10 text-vocabulary";
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -489,11 +513,7 @@ export default function LeaderboardTable({ rows }: Props) {
             key={key}
             type="button"
             onClick={() => setActiveTab(key)}
-            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-              activeTab === key
-                ? "border-accent bg-accent text-white"
-                : "border-line bg-surface text-foreground"
-            }`}
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${tabClass(key)}`}
           >
             {tab.label}
           </button>
