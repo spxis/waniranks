@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 
 type Props = {
-  scope?: "level" | "jlpt";
+  scope?: "level" | "jlpt" | "study";
 };
 
 export default function ExplorerSearchBar({ scope = "level" }: Props) {
@@ -45,7 +45,7 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
     };
 
     const onClear = (event: Event) => {
-      const custom = event as CustomEvent<{ scope?: "level" | "jlpt" | "all" }>;
+      const custom = event as CustomEvent<{ scope?: "level" | "jlpt" | "study" | "all" }>;
       const targetScope = custom.detail?.scope ?? "all";
       if (targetScope !== "all" && targetScope !== scope) {
         return;
@@ -78,7 +78,13 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
 
     const readQueryFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
-      const next = (scope === "jlpt" ? params.get("findJlpt") : params.get("findLevel"))?.trim() ?? "";
+      const next = (
+        scope === "jlpt"
+          ? params.get("findJlpt")
+          : scope === "study"
+            ? params.get("findStudy")
+            : params.get("findLevel")
+      )?.trim() ?? "";
       setQuery(next);
     };
 
@@ -120,6 +126,7 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
     const params = new URLSearchParams(window.location.search);
     params.set("findLevel", trimmed);
     params.set("findJlpt", trimmed);
+    params.set("findStudy", trimmed);
 
     const next = `${window.location.pathname}?${params.toString()}#explorer`;
     window.history.pushState(null, "", next);
@@ -139,6 +146,7 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
     const params = new URLSearchParams(window.location.search);
     params.delete("findLevel");
     params.delete("findJlpt");
+    params.delete("findStudy");
     const next = `${window.location.pathname}?${params.toString()}#explorer`;
     window.history.pushState(null, "", next);
 
@@ -164,7 +172,7 @@ export default function ExplorerSearchBar({ scope = "level" }: Props) {
           }}
           placeholder={scope === "jlpt" ? "Search JLPT kanji" : "Search kanji, hiragana, or romaji"}
           className="h-9 min-w-0 flex-1 rounded-full bg-transparent px-3 text-sm font-semibold text-foreground outline-none placeholder:text-foreground/50"
-          aria-label="Search level explorer"
+          aria-label={scope === "jlpt" ? "Search JLPT explorer" : scope === "study" ? "Search study explorer" : "Search level explorer"}
           disabled={isSearching}
         />
         <button

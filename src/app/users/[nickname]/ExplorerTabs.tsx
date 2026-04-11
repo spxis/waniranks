@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import ExplorerSearchBar from "./ExplorerSearchBar";
 import JlptExplorer from "./jlpt-explorer/components/JlptExplorer";
 import LevelExplorer from "./level-explorer/components/LevelExplorer";
 import StudyExplorer from "./study-explorer/components/StudyExplorer";
@@ -163,7 +162,7 @@ export default function ExplorerTabs({
     }
 
     const params = new URLSearchParams(window.location.search);
-    const query = (params.get("findLevel") ?? params.get("findJlpt") ?? "").trim();
+    const query = (params.get("findLevel") ?? params.get("findJlpt") ?? params.get("findStudy") ?? "").trim();
     if (!query) {
       return;
     }
@@ -225,8 +224,7 @@ export default function ExplorerTabs({
             JLPT Explorer
           </button>
         </div>
-        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-          {activeTab !== "study" ? <ExplorerSearchBar scope={activeTab} /> : null}
+          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
           {activeTab === "study" ? (
             <>
               <button
@@ -245,6 +243,7 @@ export default function ExplorerTabs({
               </button>
             </>
           ) : null}
+            const query = (params.get("findLevel") ?? params.get("findJlpt") ?? params.get("findStudy") ?? "").trim();
           <button
             type="button"
             onClick={() => setStudyMode((prev) => !prev)}

@@ -3,7 +3,9 @@
 import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRef } from "react";
+import { toRomaji } from "wanakana";
 
+import ExplorerSearchBar from "../../ExplorerSearchBar";
 import type { LevelItem, SrsFilter } from "../../explorerTypes";
 import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
 import {
@@ -57,6 +59,32 @@ const fetcher = async (url: string): Promise<QueueResponse> => {
 };
 
 const STUDY_QUEUE_STORAGE_TTL_MS = 90_000;
+
+function normalizeStudySearch(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function itemMatchesStudyQuery(item: StudyQueueItem, normalizedQuery: string): boolean {
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  if (normalizeStudySearch(item.characters).includes(normalizedQuery)) {
+    return true;
+  }
+
+  if (item.meanings.some((meaning) => normalizeStudySearch(meaning).includes(normalizedQuery))) {
+    return true;
+  }
+
+  const allReadings = [...(item.primaryReadings ?? []), ...(item.readings ?? [])];
+  if (allReadings.some((reading) => normalizeStudySearch(reading).includes(normalizedQuery))) {
+    return true;
+  }
+
+  const romaji = normalizeStudySearch(toRomaji(`${item.characters} ${allReadings.join(" ")}`, { upcaseKatakana: false }));
+  return romaji.includes(normalizedQuery);
+}
 
 function readStoredQueue(accountId: string, mode: "review" | "lesson"): QueueResponse | undefined {
   if (typeof window === "undefined") {
@@ -152,6 +180,7 @@ export default function StudyExplorer({
   const levelStorageKey = `wr:study-level:${accountId}`;
   const typeStorageKey = `wr:study-type:${accountId}`;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const lastHandledStudyQueryRef = useRef("");
   const [cachedQueueData, setCachedQueueData] = useState<QueueResponse | undefined>(() =>
     readStoredQueue(
       accountId,
@@ -197,6 +226,7 @@ export default function StudyExplorer({
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
   const [revealedAssignmentIds, setRevealedAssignmentIds] = useState<Set<number>>(new Set());
   const [showLocked, setShowLocked] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const counts = data?.counts ?? persistedCounts;
   const availableLevels = useMemo(() => {
@@ -233,6 +263,79 @@ export default function StudyExplorer({
       window.localStorage.removeItem(countsStorageKey);
     }
   }, [countsStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const runFromUrl = () => {
+      const fromUrl = new URLSearchParams(window.location.search).get("findStudy");
+      const trimmed = fromUrl?.trim() ?? "";
+
+      if (!trimmed) {
+        setSearchQuery("");
+        return;
+      }
+
+      if (lastHandledStudyQueryRef.current === trimmed) {
+        return;
+      }
+
+      lastHandledStudyQueryRef.current = trimmed;
+      setSearchQuery(trimmed);
+    };
+
+    runFromUrl();
+
+    const onPopState = () => {
+      runFromUrl();
+    };
+
+    const onSearch = (event: Event) => {
+      const custom = event as CustomEvent<{ query?: string; requestId?: string; scope?: "level" | "jlpt" | "study" }>;
+      if (custom.detail?.scope !== "study") {
+        return;
+      }
+
+      const nextQuery = custom.detail?.query?.trim() ?? "";
+      const requestId = custom.detail?.requestId;
+      lastHandledStudyQueryRef.current = nextQuery;
+      setSearchQuery(nextQuery);
+
+      if (requestId) {
+        window.dispatchEvent(
+          new CustomEvent("wr:explorer-search-complete", {
+            detail: {
+              requestId,
+              ok: true,
+              message: nextQuery ? "Search updated." : "Search cleared.",
+            },
+          }),
+        );
+      }
+    };
+
+    const onClear = (event: Event) => {
+      const custom = event as CustomEvent<{ scope?: "level" | "jlpt" | "study" | "all" }>;
+      const targetScope = custom.detail?.scope ?? "all";
+      if (targetScope !== "all" && targetScope !== "study") {
+        return;
+      }
+
+      setSearchQuery("");
+      lastHandledStudyQueryRef.current = "";
+    };
+
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("wr:explorer-search", onSearch as EventListener);
+    window.addEventListener("wr:explorer-search-clear", onClear as EventListener);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("wr:explorer-search", onSearch as EventListener);
+      window.removeEventListener("wr:explorer-search-clear", onClear as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (!data?.counts) {
@@ -274,6 +377,7 @@ export default function StudyExplorer({
 
   const filteredItems = useMemo(() => {
     const items = data?.items ?? [];
+    const normalizedQuery = normalizeStudySearch(searchQuery);
     return items.filter((item) => {
       if (viewedLevel !== null) {
         const itemLevel = item.wkLevel;
@@ -298,9 +402,13 @@ export default function StudyExplorer({
         return false;
       }
 
+      if (!itemMatchesStudyQuery(item, normalizedQuery)) {
+        return false;
+      }
+
       return true;
     });
-  }, [data?.items, queueMode, showLocked, srsFilter, typeFilter, viewedLevel]);
+  }, [data?.items, queueMode, searchQuery, showLocked, srsFilter, typeFilter, viewedLevel]);
 
   const typeCounts = useMemo(() => {
     const countsByType = {
@@ -657,10 +765,17 @@ export default function StudyExplorer({
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
       <header className="border-b border-line bg-surface-muted px-5 py-4">
-        <h2 className="text-xl font-black text-foreground">Study</h2>
-        <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
-          Reviews due now and available lessons across all levels
-        </p>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-black text-foreground">Study</h2>
+            <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
+              Reviews due now and available lessons across all levels
+            </p>
+          </div>
+          <div className="w-full lg:max-w-[38rem]">
+            <ExplorerSearchBar scope="study" />
+          </div>
+        </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" onClick={selectAllLevels} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(allLevelsSelected)}`}>

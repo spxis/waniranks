@@ -17,6 +17,7 @@ import {
   typeCardClass,
   typeGlyphBoxClass,
 } from "../lib/levelExplorerDisplay";
+import ExplorerSearchBar from "../../ExplorerSearchBar";
 import type { JlptFilter, ReviewTimingFilter, TypeFilter, TypeVisibility } from "../lib/levelExplorerState";
 import type { SrsFilter } from "../../explorerTypes";
 import type {
@@ -195,9 +196,14 @@ export default function LevelExplorerContent({
       className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]"
     >
       <header className="flex flex-col gap-3 border-b border-line bg-surface-muted px-5 py-4">
-        <div>
-          <h2 className="text-xl font-black text-foreground">WaniKani Explorer</h2>
-          <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">Select one level at a time</p>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-black text-foreground">WaniKani Explorer</h2>
+            <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">Select one level at a time</p>
+          </div>
+          <div className="w-full lg:max-w-[38rem]">
+            <ExplorerSearchBar scope="level" />
+          </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">

@@ -9,6 +9,7 @@ import {
   readingLabelFromList,
   stripReadingSeparators,
 } from "../lib/jlptDisplay";
+import ExplorerSearchBar from "../../ExplorerSearchBar";
 import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
 
 type JlptWordExample = {
@@ -165,11 +166,16 @@ export default function JlptExplorerContent({
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
       <header className="border-b border-line bg-surface-muted px-5 py-4">
-        <div>
-          <h2 className="text-xl font-black text-foreground">JLPT Explorer</h2>
-          <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
-            Browse all N1-N5 kanji ({formatNumber(items.length)} total)
-          </p>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-black text-foreground">JLPT Explorer</h2>
+            <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
+              Browse all N1-N5 kanji ({formatNumber(items.length)} total)
+            </p>
+          </div>
+          <div className="w-full lg:max-w-[38rem]">
+            <ExplorerSearchBar scope="jlpt" />
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
