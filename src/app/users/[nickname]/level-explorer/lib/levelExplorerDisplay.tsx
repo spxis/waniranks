@@ -24,9 +24,9 @@ export function statusClass(status: LevelItem["status"]): string {
 export function statusShortLabel(status: LevelItem["status"]): string {
   switch (status) {
     case "apprentice":
-      return "APPR.";
+      return "APPR";
     case "enlightened":
-      return "ENGLIGHT.";
+      return "ENLIGHT";
     default:
       return status.toUpperCase();
   }
@@ -75,7 +75,7 @@ export function formatNextReviewBadge(input: string | null | undefined): NextRev
   if (deltaMs <= 0) {
     if (absMs < 15 * 60 * 1000) {
       return {
-        label: "Due now",
+        label: "Late now",
         className: "border-orange-300 bg-orange-50 text-orange-700",
       };
     }
@@ -83,14 +83,14 @@ export function formatNextReviewBadge(input: string | null | undefined): NextRev
     if (absMs < 24 * 60 * 60 * 1000) {
       const hours = Math.max(1, Math.round(absMs / (60 * 60 * 1000)));
       return {
-        label: `Due ${hours}h`,
+        label: `Late ${hours}h`,
         className: "border-orange-300 bg-orange-50 text-orange-700",
       };
     }
 
     const days = Math.max(1, Math.round(absMs / (24 * 60 * 60 * 1000)));
     return {
-      label: `Due ${days}d`,
+      label: `Late ${days}d`,
       className: "border-red-300 bg-red-50 text-red-700",
     };
   }

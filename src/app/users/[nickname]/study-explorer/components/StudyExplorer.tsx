@@ -108,6 +108,22 @@ function queueModeButtonClass(mode: "review" | "lesson", activeMode: "review" | 
     : "border-sky-500 bg-sky-500 text-white";
 }
 
+function shortSubjectTypeLabel(type: StudyQueueItem["subjectType"]): string {
+  if (type === "vocabulary") {
+    return "VOCAB";
+  }
+
+  if (type === "radical") {
+    return "RADICAL";
+  }
+
+  if (type === "kanji") {
+    return "KANJI";
+  }
+
+  return "ITEM";
+}
+
 export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyMode }: Props) {
   const PAGE_SIZE = 40;
   const modeStorageKey = `wr:study-queue-mode:${accountId}`;
@@ -505,7 +521,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
         <div className="mt-2 flex flex-wrap gap-2">
           {(["all", "radical", "kanji", "vocabulary"] as const).map((type) => (
             <button key={type} type="button" onClick={() => setTypeFilter(type)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(typeFilter === type)}`}>
-              {type}
+              {type === "vocabulary" ? "vocab" : type}
             </button>
           ))}
           {(["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const).map((status) => (
@@ -545,7 +561,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                 <div className="flex min-h-[2.35rem] items-start justify-between gap-2">
                   <span className="text-[10px] font-semibold text-foreground/45">#{index + 1}</span>
                   <div className="flex min-h-[2.2rem] flex-wrap content-start items-start justify-end gap-1">
-                    <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
+                    <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
                     {typeof item.wkLevel === "number" ? (
                       <span className="subject-pill border-line bg-surface text-foreground">WK{item.wkLevel}</span>
                     ) : null}
@@ -620,7 +636,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                   {prevItem ? (
                     <>
                       <span className="subject-pill border-line bg-surface text-foreground">{prevItem.characters}</span>
-                      <span className={subjectTypePillClass(prevItem.subjectType)}>{navTypeLabel(prevItem)}</span>
+                      <span className={subjectTypePillClass(prevItem.subjectType)}>{shortSubjectTypeLabel(prevItem.subjectType)}</span>
                     </>
                   ) : null}
                 </div>
@@ -639,7 +655,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                   {nextItem ? (
                     <>
                       <span className="subject-pill border-line bg-surface text-foreground">{nextItem.characters}</span>
-                      <span className={subjectTypePillClass(nextItem.subjectType)}>{navTypeLabel(nextItem)}</span>
+                      <span className={subjectTypePillClass(nextItem.subjectType)}>{shortSubjectTypeLabel(nextItem.subjectType)}</span>
                     </>
                   ) : null}
                 </div>
