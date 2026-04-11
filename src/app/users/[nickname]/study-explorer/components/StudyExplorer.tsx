@@ -581,9 +581,9 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                 </div>
                 <div className={`mt-3 rounded-xl border ${typeGlyphBoxClass(item.subjectType)} px-3 py-2`}>
                   <p className={`${glyphTextSizeClass(item.characters)} text-center font-black leading-none`}>{item.characters}</p>
-                  {!studyMode && glyphSubtitleForDisplay(item) ? (
-                    <p className="mt-1 text-center text-sm font-semibold text-foreground/70">{glyphSubtitleForDisplay(item)}</p>
-                  ) : null}
+                  <p className="mt-1 min-h-[1.25rem] text-center text-sm font-semibold text-foreground/70">
+                    {studyMode ? <span className="text-foreground/45">...</span> : (glyphSubtitleForDisplay(item) ?? "")}
+                  </p>
                 </div>
                 <div className="mt-3 grid grid-cols-3 items-center gap-2">
                   <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${statusClass(item.status)}`}>
