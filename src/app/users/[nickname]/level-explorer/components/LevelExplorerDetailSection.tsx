@@ -235,7 +235,8 @@ export default function LevelExplorerDetailSection({
   onJumpToRelatedSubject,
   onJumpToKanji,
 }: Props) {
-  const canShowReadings = !studyMode || revealStudyReading;
+  const isStudyHidden = studyMode && !revealStudyReading;
+  const canShowReadings = !isStudyHidden;
 
   return (
     <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
@@ -244,14 +245,20 @@ export default function LevelExplorerDetailSection({
           <div
             className={`inline-flex rounded-2xl border ${
               glyphHasReading(selectedItem)
-                ? "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
-                : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
+                ? isStudyHidden
+                  ? "min-h-[8.5rem] min-w-[8.5rem] flex-col items-center justify-center px-6 py-5"
+                  : "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
+                : isStudyHidden
+                  ? "min-h-[8.5rem] min-w-[8.5rem] items-center justify-center px-6 py-5"
+                  : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
             } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
           >
             <div>
-              <h3 className="text-center text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
+              <h3 className={`text-center font-black leading-none text-current ${isStudyHidden ? "text-6xl sm:text-7xl" : "text-4xl"}`}>
+                {selectedItem.characters}
+              </h3>
               {(() => {
-                if (studyMode && !canShowReadings) {
+                if (isStudyHidden) {
                   return null;
                 }
 
@@ -271,30 +278,39 @@ export default function LevelExplorerDetailSection({
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
-          <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{selectedItem.status}</span>
-          <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
-          {typeof selectedItem.wkLevel === "number" ? (
-            <span className="subject-pill border-line bg-surface text-foreground">WK{selectedItem.wkLevel}</span>
-          ) : null}
-          {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
-            <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span>
-          ) : null}
-        </div>
-        <div className="min-w-0">
-          <p className="text-3xl font-black leading-tight text-foreground">
-            {studyMode
-              ? selectedItem.subjectType === "kanji"
-                ? "Kanji"
-                : selectedItem.subjectType === "radical"
-                  ? "Radical"
-                  : "Vocabulary"
-              : titleForDisplay(selectedItem, showEnglish)}
-          </p>
-        </div>
+        {isStudyHidden ? (
+          <div className="min-w-0">
+            <p className="text-base font-black uppercase tracking-[0.08em] text-foreground/80">Blind Review</p>
+            <p className="mt-1 text-sm font-semibold text-foreground/65">Recall meaning and reading, then reveal answer.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
+              <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{selectedItem.status}</span>
+              <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
+              {typeof selectedItem.wkLevel === "number" ? (
+                <span className="subject-pill border-line bg-surface text-foreground">WK{selectedItem.wkLevel}</span>
+              ) : null}
+              {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
+                <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span>
+              ) : null}
+            </div>
+            <div className="min-w-0">
+              <p className="text-3xl font-black leading-tight text-foreground">
+                {studyMode
+                  ? selectedItem.subjectType === "kanji"
+                    ? "Kanji"
+                    : selectedItem.subjectType === "radical"
+                      ? "Radical"
+                      : "Vocabulary"
+                  : titleForDisplay(selectedItem, showEnglish)}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={`mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isStudyHidden ? "hidden" : ""}`}>
         {canShowReadings ? (
           <>
         <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">

@@ -598,21 +598,21 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
       {selectedItem ? (
         <div className="fixed inset-0 z-50 bg-[rgba(8,16,36,0.72)] p-3 backdrop-blur-[2px] sm:p-6">
           <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-[1.8rem] border border-line bg-surface shadow-[0_26px_75px_rgba(0,0,0,0.35)]">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-muted px-4 py-3 sm:px-6">
+            <div className="flex flex-col gap-2 border-b border-line bg-surface-muted px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
-                className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+                className="self-start rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
               >
                 Back To List
               </button>
-              <div className="flex items-center gap-2">
+              <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => moveSelection(-1)}
                     disabled={selectedIndex <= 0}
-                    className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-full border border-line bg-surface px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-xs"
                   >
                     Prev
                   </button>
@@ -623,7 +623,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                     </>
                   ) : null}
                 </div>
-                <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/70">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/70 sm:text-xs">
                   #{selectedIndex + 1} of {filteredItems.length}
                 </p>
                 <div className="flex items-center gap-1">
@@ -631,7 +631,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                     type="button"
                     onClick={() => moveSelection(1)}
                     disabled={selectedIndex >= filteredItems.length - 1}
-                    className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-full border border-line bg-surface px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-xs"
                   >
                     Next
                   </button>
