@@ -250,7 +250,7 @@ export default function LevelExplorerContent({
                 false,
               )}`}
             >
-              {type} ({formatNumber(count)})
+              {type === "vocabulary" ? "vocab" : type} ({formatNumber(count)})
             </button>
           ))}
         </div>

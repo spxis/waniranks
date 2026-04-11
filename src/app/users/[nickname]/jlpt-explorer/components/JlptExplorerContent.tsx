@@ -84,6 +84,16 @@ function badgeClass(active: boolean): string {
     : "border-line bg-surface text-foreground hover:bg-surface-muted";
 }
 
+function wkFilterBadgeClass(filter: JlptFilter, active: boolean): string {
+  if (filter === "kanji") {
+    return active
+      ? "border-kanji bg-kanji text-white"
+      : "border-kanji/50 bg-kanji/10 text-kanji hover:bg-kanji/20";
+  }
+
+  return badgeClass(active);
+}
+
 function statusClass(
   status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | undefined,
 ): string {
@@ -221,7 +231,8 @@ export default function JlptExplorerContent({
             <button
               type="button"
               onClick={() => onSetWkFilter("kanji")}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${wkFilterBadgeClass(
+                "kanji",
                 wkFilter === "kanji",
               )}`}
             >

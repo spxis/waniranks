@@ -18,6 +18,7 @@ import {
   statusShortLabel,
   subjectTypePillClass,
   titleForDisplay,
+  typeBadgeClass,
   typeCardClass,
   typeGlyphBoxClass,
 } from "../../level-explorer/lib/levelExplorerDisplay";
@@ -822,7 +823,11 @@ export default function StudyExplorer({
                 disabled={isDisabled}
                 onClick={() => setTypeFilter(type)}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-                  isDisabled ? disabledBadgeClass() : badgeClass(typeFilter === type)
+                  isDisabled
+                    ? disabledBadgeClass()
+                    : type === "all"
+                      ? badgeClass(typeFilter === type)
+                      : typeBadgeClass(type, typeFilter === type, false)
                 }`}
               >
                 {label}
