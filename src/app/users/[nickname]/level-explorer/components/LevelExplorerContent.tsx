@@ -380,6 +380,9 @@ export default function LevelExplorerContent({
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
+                      {typeof item.wkLevel === "number" ? (
+                        <span className="subject-pill border-line bg-surface text-foreground">WK{item.wkLevel}</span>
+                      ) : null}
                       {item.subjectType === "kanji" && item.jlptLevel ? (
                         <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span>
                       ) : null}

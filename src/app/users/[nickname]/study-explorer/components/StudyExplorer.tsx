@@ -222,6 +222,9 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                 <span className="text-[10px] font-semibold text-foreground/45">#{item.subjectId}</span>
                 <div className="flex flex-wrap items-center justify-end gap-1">
                   <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
+                  {typeof item.wkLevel === "number" ? (
+                    <span className="subject-pill border-line bg-surface text-foreground">WK{item.wkLevel}</span>
+                  ) : null}
                   <span className="subject-pill border-line bg-surface text-foreground">{item.queueType}</span>
                 </div>
               </div>

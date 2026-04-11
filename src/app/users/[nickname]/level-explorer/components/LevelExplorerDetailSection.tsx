@@ -270,7 +270,9 @@ export default function LevelExplorerDetailSection({
         <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
           <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{selectedItem.status}</span>
           <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
-          <span className="subject-pill border-line bg-surface text-foreground">WK {selectedItem.wkLevel}</span>
+          {typeof selectedItem.wkLevel === "number" ? (
+            <span className="subject-pill border-line bg-surface text-foreground">WK{selectedItem.wkLevel}</span>
+          ) : null}
           {selectedItem.subjectType === "kanji" && selectedItem.jlptLevel ? (
             <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span>
           ) : null}
