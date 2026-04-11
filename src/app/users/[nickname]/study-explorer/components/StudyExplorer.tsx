@@ -438,7 +438,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
         return;
       }
 
-      if (studyMode && selectedItem.queueType === "review" && !isAnswerRevealed) {
+      if (!isAnswerRevealed) {
         if (event.key === "Enter" || key === "r") {
           event.preventDefault();
           revealAnswer(selectedItem.assignmentId);
@@ -648,7 +648,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
             <div className="overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/60">
                 Shortcuts: Left/Right/Up/Down or W/A/S/D (prev/next), Home/End (first/last), Esc (back)
-                {studyMode && selectedItem.queueType === "review" && !isAnswerRevealed
+                {!isAnswerRevealed
                   ? ", Enter/R=show answer"
                   : selectedItem.queueType === "review"
                     ? ", 1=wrong, 2=correct"
@@ -658,8 +658,8 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
               <LevelExplorerDetailSection
                 selectedItem={selectedItem}
                 showEnglish={showEnglish}
-                studyMode={studyMode}
-                revealStudyReading={!(studyMode && selectedItem.queueType === "review" && !isAnswerRevealed)}
+                studyMode
+                revealStudyReading={isAnswerRevealed}
                 selectedMeaningExplanation={selectedMeaningExplanation}
                 selectedReadingExplanationRaw={selectedReadingExplanationRaw}
                 showReadingExplanation={showReadingExplanation}
@@ -674,7 +674,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
 
               {selectedItem.queueType === "review" ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {studyMode && !isAnswerRevealed ? (
+                  {!isAnswerRevealed ? (
                     <button
                       type="button"
                       onClick={() => revealAnswer(selectedItem.assignmentId)}
@@ -702,6 +702,20 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                       </button>
                     </>
                   )}
+                </div>
+              ) : null}
+
+              {selectedItem.queueType !== "review" ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {!isAnswerRevealed ? (
+                    <button
+                      type="button"
+                      onClick={() => revealAnswer(selectedItem.assignmentId)}
+                      className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-black uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+                    >
+                      Show Answer
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>
