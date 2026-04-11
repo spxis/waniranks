@@ -37,22 +37,6 @@ function normalizeSubjectType(input: string): "radical" | "kanji" | "vocabulary"
   return "vocabulary";
 }
 
-function normalizeQueueType(assignment: AssignmentData, nowMs: number): "review" | "lesson" | null {
-  if (assignment.srs_stage > 0) {
-    const availableMs = assignment.available_at ? new Date(assignment.available_at).getTime() : Number.NaN;
-    if (!Number.isNaN(availableMs) && availableMs <= nowMs) {
-      return "review";
-    }
-    return null;
-  }
-
-  if (assignment.unlocked_at && !assignment.started_at) {
-    return "lesson";
-  }
-
-  return null;
-}
-
 export async function GET(request: Request, context: RouteContext) {
   try {
     const url = new URL(request.url);
@@ -85,16 +69,22 @@ export async function GET(request: Request, context: RouteContext) {
       tag: account.tokenTag,
     });
 
-    const assignmentsResponse = await fetchAllCollectionPages("/assignments", token);
-    const assignments = assignmentsResponse.data.map((row) => ({
+    const [reviewAssignmentsResponse, lessonAssignmentsResponse] = await Promise.all([
+      fetchAllCollectionPages("/assignments?immediately_available_for_review=true", token),
+      fetchAllCollectionPages("/assignments?immediately_available_for_lessons=true", token),
+    ]);
+
+    const reviewAssignments = reviewAssignmentsResponse.data.map((row) => ({
       assignmentId: row.id,
       data: row.data as AssignmentData,
+      queueType: "review" as const,
     }));
-
-    const nowMs = Date.now();
-    const queued = assignments
-      .map((row) => ({ ...row, queueType: normalizeQueueType(row.data, nowMs) }))
-      .filter((row): row is typeof row & { queueType: "review" | "lesson" } => Boolean(row.queueType));
+    const lessonAssignments = lessonAssignmentsResponse.data.map((row) => ({
+      assignmentId: row.id,
+      data: row.data as AssignmentData,
+      queueType: "lesson" as const,
+    }));
+    const queued = [...reviewAssignments, ...lessonAssignments];
 
     const subjectIds = Array.from(new Set(queued.map((row) => row.data.subject_id)));
     const subjectById = new Map<number, { object: string; data: SubjectData }>();

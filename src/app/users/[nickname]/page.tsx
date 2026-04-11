@@ -11,7 +11,7 @@ import UserDashboardTabs from "./UserDashboardTabs";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
-  searchParams: Promise<{ srs?: string }>;
+  searchParams: Promise<{ srs?: string; tab?: string }>;
 };
 
 type LevelKanjiItem = {
@@ -48,6 +48,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const { nickname } = await params;
   const userKey = decodeURIComponent(nickname);
   const query = await searchParams;
+  const initialTab = query.tab === "jlpt" ? "jlpt" : query.tab === "level" ? "level" : "study";
+  const shouldLoadJlptData = initialTab === "jlpt";
   const allowedSrs = new Set([
     "all",
     "apprentice",
@@ -106,32 +108,37 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   const levelKanjiItems = (account.levelKanjiItems ?? []) as LevelKanjiItem[];
   const itemSpread = isItemSpread(account.itemSpread) ? account.itemSpread : EMPTY_ITEM_SPREAD;
-  const token = decryptToken({
-    encrypted: account.tokenEncrypted,
-    iv: account.tokenIv,
-    tag: account.tokenTag,
-  });
-  const userKanjiIndex = await getUserKanjiIndex(token);
-  const jlptKanjiRows = await prisma.jlptKanji.findMany({
-    orderBy: [{ nLevel: "asc" }, { kanji: "asc" }],
-    select: {
-      kanji: true,
-      nLevel: true,
-      strokeCount: true,
-      frequencyRank: true,
-      schoolGrade: true,
-      heisigKeyword: true,
-      unicodeHex: true,
-      sourceJlpt: true,
-      primaryMeaning: true,
-      meanings: true,
-      onReadings: true,
-      kunReadings: true,
-      nanoriReadings: true,
-      notes: true,
-      wordExamples: true,
-    },
-  }) as JlptKanjiRow[];
+  const userKanjiIndex = shouldLoadJlptData
+    ? await getUserKanjiIndex(
+        decryptToken({
+          encrypted: account.tokenEncrypted,
+          iv: account.tokenIv,
+          tag: account.tokenTag,
+        }),
+      )
+    : [];
+  const jlptKanjiRows = shouldLoadJlptData
+    ? ((await prisma.jlptKanji.findMany({
+        orderBy: [{ nLevel: "asc" }, { kanji: "asc" }],
+        select: {
+          kanji: true,
+          nLevel: true,
+          strokeCount: true,
+          frequencyRank: true,
+          schoolGrade: true,
+          heisigKeyword: true,
+          unicodeHex: true,
+          sourceJlpt: true,
+          primaryMeaning: true,
+          meanings: true,
+          onReadings: true,
+          kunReadings: true,
+          nanoriReadings: true,
+          notes: true,
+          wordExamples: true,
+        },
+      })) as JlptKanjiRow[])
+    : [];
 
   const rankedAccounts = await prisma.account.findMany({
     orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],

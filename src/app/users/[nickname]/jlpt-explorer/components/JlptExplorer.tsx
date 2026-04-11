@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 import { toRomaji } from "wanakana";
 
 import jlptReadings from "@/data/jlptReadings.json";
@@ -13,6 +14,8 @@ import {
 import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
 
 type Props = {
+  accountId: string;
+  isActive: boolean;
   items: JlptItem[];
   showEnglish?: boolean;
   studyMode?: boolean;
@@ -24,11 +27,29 @@ type JlptReadingsRecord = Record<string, { nLevel: number; readings: string[]; m
 type JlptFilter = "all" | "kanji" | "none";
 
 export default function JlptExplorer({
+  accountId,
+  isActive,
   items,
   showEnglish = false,
   studyMode = false,
   userKanjiItems = [],
 }: Props) {
+  const needsLazyLoad = items.length === 0 || userKanjiItems.length === 0;
+  const { data: lazyData } = useSWR<{ jlptItems: JlptItem[]; userKanjiItems: UserKanjiItem[] }>(
+    isActive && needsLazyLoad ? `/api/accounts/${accountId}/jlpt` : null,
+    async (url: string) => {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Could not load JLPT explorer data.");
+      }
+      return (await response.json()) as { jlptItems: JlptItem[]; userKanjiItems: UserKanjiItem[] };
+    },
+    { revalidateOnFocus: false },
+  );
+
+  const effectiveItems = lazyData?.jlptItems ?? items;
+  const effectiveUserKanjiItems = lazyData?.userKanjiItems ?? userKanjiItems;
+
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
   const [stickyLevels, setStickyLevels] = useState(false);
   const [wkFilter, setWkFilter] = useState<JlptFilter>("all");
@@ -54,7 +75,7 @@ export default function JlptExplorer({
       wkLevel?: number | null;
     }>();
 
-    for (const item of userKanjiItems) {
+    for (const item of effectiveUserKanjiItems) {
       const current = map.get(item.characters);
       if (!current || (item.srsStage ?? 0) >= (current.srsStage ?? 0)) {
         map.set(item.characters, item);
@@ -62,27 +83,27 @@ export default function JlptExplorer({
     }
 
     return map;
-  }, [userKanjiItems]);
+  }, [effectiveUserKanjiItems]);
 
   const counts = useMemo(() => {
-    const noneCount = items.filter((item) => !userKanjiByChar.has(item.kanji)).length;
+    const noneCount = effectiveItems.filter((item) => !userKanjiByChar.has(item.kanji)).length;
     return {
-      all: items.length,
-      kanji: items.length - noneCount,
+      all: effectiveItems.length,
+      kanji: effectiveItems.length - noneCount,
       none: noneCount,
-      n5: items.filter((item) => item.nLevel === 5).length,
-      n4: items.filter((item) => item.nLevel === 4).length,
-      n3: items.filter((item) => item.nLevel === 3).length,
-      n2: items.filter((item) => item.nLevel === 2).length,
-      n1: items.filter((item) => item.nLevel === 1).length,
+      n5: effectiveItems.filter((item) => item.nLevel === 5).length,
+      n4: effectiveItems.filter((item) => item.nLevel === 4).length,
+      n3: effectiveItems.filter((item) => item.nLevel === 3).length,
+      n2: effectiveItems.filter((item) => item.nLevel === 2).length,
+      n1: effectiveItems.filter((item) => item.nLevel === 1).length,
     };
-  }, [items, userKanjiByChar]);
+  }, [effectiveItems, userKanjiByChar]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = normalizeSearch(query);
     const records = jlptReadings as JlptReadingsRecord;
 
-    return items.filter((item) => {
+    return effectiveItems.filter((item) => {
       const levelPass = selectedLevels.has(item.nLevel);
 
       if (!levelPass) {
@@ -137,7 +158,7 @@ export default function JlptExplorer({
         meanings.some((meaning) => normalizeSearch(meaning).includes(normalizedQuery))
       );
     });
-  }, [items, query, selectedLevels, userKanjiByChar, wkFilter]);
+  }, [effectiveItems, query, selectedLevels, userKanjiByChar, wkFilter]);
 
   useEffect(() => {
     const computeColumns = () => {
@@ -224,7 +245,7 @@ export default function JlptExplorer({
       setQuery(nextQuery);
 
       const normalizedQuery = normalizeSearch(nextQuery);
-      const matchedCount = items.filter((item) => {
+      const matchedCount = effectiveItems.filter((item) => {
         const levelPass =
           selectedLevels.has(item.nLevel);
 
@@ -292,7 +313,7 @@ export default function JlptExplorer({
       window.removeEventListener("wr:explorer-search", onSearch as EventListener);
       window.removeEventListener("popstate", onPopState);
     };
-  }, [items, selectedLevels]);
+  }, [effectiveItems, selectedLevels]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -342,7 +363,7 @@ export default function JlptExplorer({
 
   return (
     <JlptExplorerContent
-      items={items}
+      items={effectiveItems}
       showEnglish={showEnglish}
       studyMode={studyMode}
       counts={counts}

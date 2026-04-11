@@ -188,6 +188,8 @@ export default function ExplorerTabs({
 
       <div className={activeTab === "jlpt" ? "block" : "hidden"}>
         <JlptExplorer
+          accountId={accountId}
+          isActive={activeTab === "jlpt"}
           items={jlptItems}
           showEnglish={showEnglish}
           studyMode={studyMode}
