@@ -233,7 +233,9 @@ export default function LevelExplorerContent({
               visibleTypes.radical && visibleTypes.kanji && visibleTypes.vocabulary,
             )}`}
           >
-            All ({formatNumber(counts.all)})
+            {selectedLevelList.length === 1
+              ? `All L${selectedLevelList[0]} (${formatNumber(counts.all)})`
+              : `All (${formatNumber(counts.all)})`}
           </button>
           {([
             ["radical", counts.radical],

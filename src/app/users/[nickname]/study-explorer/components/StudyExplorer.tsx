@@ -815,7 +815,9 @@ export default function StudyExplorer({
                   ? `radical (${formatNumber(count)})`
                   : type === "kanji"
                     ? `kanji (${formatNumber(count)})`
-                    : `all (${formatNumber(count)})`;
+                    : viewedLevel !== null
+                      ? `all L${viewedLevel} (${formatNumber(count)})`
+                      : `all (${formatNumber(count)})`;
 
             return (
               type === "all" ? (
