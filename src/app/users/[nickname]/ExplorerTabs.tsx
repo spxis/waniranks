@@ -171,7 +171,7 @@ export default function ExplorerTabs({
       </div>
 
       <div className={activeTab === "study" ? "block" : "hidden"}>
-        <StudyExplorer accountId={accountId} showEnglish={showEnglish} studyMode={studyMode} />
+        <StudyExplorer accountId={accountId} maxLevel={maxLevel} showEnglish={showEnglish} studyMode={studyMode} />
       </div>
 
       <div className={activeTab === "level" ? "block" : "hidden"}>

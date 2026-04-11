@@ -33,6 +33,7 @@ type QueueResponse = {
 
 type Props = {
   accountId: string;
+  maxLevel: number;
   showEnglish: boolean;
   studyMode: boolean;
 };
@@ -52,12 +53,17 @@ function badgeClass(active: boolean): string {
     : "border-line bg-surface text-foreground hover:bg-surface-muted";
 }
 
-export default function StudyExplorer({ accountId, showEnglish, studyMode }: Props) {
+export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyMode }: Props) {
   const { data, error, mutate, isLoading } = useSWR(`/api/study/${accountId}/queue`, fetcher, {
     refreshInterval: 30_000,
     revalidateOnFocus: true,
   });
 
+  const levelOptions = useMemo(
+    () => Array.from({ length: Math.max(1, maxLevel) }, (_, index) => index + 1),
+    [maxLevel],
+  );
+  const [selectedLevels, setSelectedLevels] = useState<Set<number>>(() => new Set(levelOptions));
   const [queueFilter, setQueueFilter] = useState<"all" | "review" | "lesson">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "radical" | "kanji" | "vocabulary">("all");
   const [srsFilter, setSrsFilter] = useState<SrsFilter>("all");
@@ -66,9 +72,18 @@ export default function StudyExplorer({ accountId, showEnglish, studyMode }: Pro
 
   const counts = data?.counts ?? { all: 0, reviews: 0, lessons: 0 };
 
+  const allLevelsSelected = selectedLevels.size === levelOptions.length;
+
   const filteredItems = useMemo(() => {
     const items = data?.items ?? [];
     return items.filter((item) => {
+      if (!allLevelsSelected) {
+        const itemLevel = item.wkLevel;
+        if (typeof itemLevel !== "number" || !selectedLevels.has(itemLevel)) {
+          return false;
+        }
+      }
+
       if (queueFilter !== "all" && item.queueType !== queueFilter) {
         return false;
       }
@@ -83,7 +98,7 @@ export default function StudyExplorer({ accountId, showEnglish, studyMode }: Pro
 
       return true;
     });
-  }, [data?.items, queueFilter, srsFilter, typeFilter]);
+  }, [allLevelsSelected, data?.items, queueFilter, selectedLevels, srsFilter, typeFilter]);
 
   const selectedItem = filteredItems.find((item) => item.subjectId === selectedId) ?? null;
   const selectedMeaningExplanation = selectedItem?.meaningExplanation ?? "-";
@@ -118,6 +133,26 @@ export default function StudyExplorer({ accountId, showEnglish, studyMode }: Pro
     }
   }
 
+  function toggleLevel(level: number) {
+    setSelectedLevels((prev) => {
+      const next = new Set(prev);
+      if (next.has(level)) {
+        if (next.size === 1) {
+          return next;
+        }
+        next.delete(level);
+        return next;
+      }
+
+      next.add(level);
+      return next;
+    });
+  }
+
+  function selectAllLevels() {
+    setSelectedLevels(new Set(levelOptions));
+  }
+
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
       <header className="border-b border-line bg-surface-muted px-5 py-4">
@@ -127,6 +162,22 @@ export default function StudyExplorer({ accountId, showEnglish, studyMode }: Pro
         </p>
 
         <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" onClick={selectAllLevels} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(allLevelsSelected)}`}>
+            All Levels
+          </button>
+          {levelOptions.map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => toggleLevel(level)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(selectedLevels.has(level))}`}
+            >
+              L{level}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-2 flex flex-wrap gap-2">
           <button type="button" onClick={() => setQueueFilter("all")} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(queueFilter === "all")}`}>
             All ({formatNumber(counts.all)})
           </button>
