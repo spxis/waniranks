@@ -2,26 +2,23 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import AdminAccountsSection, { type AdminAccount } from "./AdminAccountsSection";
+import AdminStatusBadge from "./AdminStatusBadge";
 
 type Status = {
   type: "idle" | "ok" | "error";
   message: string;
 };
-
-type AdminAccount = {
-  id: string;
-  nickname: string;
-  wkUsername: string;
-  wkLevel: number;
-  pendingReviews: number;
-  lastSyncedAt: string;
-  lastSyncStatus: string;
+type AdminSessionStatus = {
+  authorized?: boolean;
+  googleConfigured?: boolean;
+  signedIn?: boolean;
+  emailAllowed?: boolean;
+  user?: {
+    name?: string | null;
+    email?: string | null;
+  } | null;
 };
-
-function isManualRefreshOnCooldown(lastSyncedAt: string): boolean {
-  const last = new Date(lastSyncedAt).getTime();
-  return Date.now() - last < 60_000;
-}
 
 export default function AdminPage() {
   const [nickname, setNickname] = useState("");
@@ -31,6 +28,10 @@ export default function AdminPage() {
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [googleConfigured, setGoogleConfigured] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [emailAllowed, setEmailAllowed] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
   const [loading, setLoading] = useState(false);
   const [jlptRefreshing, setJlptRefreshing] = useState(false);
@@ -40,9 +41,19 @@ export default function AdminPage() {
   async function getAdminSessionStatus() {
     try {
       const response = await fetch("/api/admin/session", { cache: "no-store" });
-      const data = (await response.json()) as { authorized?: boolean; googleConfigured?: boolean };
+      const data = (await response.json()) as AdminSessionStatus;
       setSessionAuthorized(Boolean(data.authorized));
       setGoogleConfigured(Boolean(data.googleConfigured));
+      setSignedIn(Boolean(data.signedIn));
+      setEmailAllowed(Boolean(data.emailAllowed));
+      setUserName(data.user?.name ?? null);
+      setUserEmail(data.user?.email ?? null);
+
+      if (data.authorized) {
+        await loadAccounts();
+      } else {
+        setAccounts([]);
+      }
     } finally {
       setCheckingSession(false);
     }
@@ -83,6 +94,11 @@ export default function AdminPage() {
       }
 
       setSessionAuthorized(false);
+      setSignedIn(false);
+      setEmailAllowed(false);
+      setUserName(null);
+      setUserEmail(null);
+      setAccounts([]);
       setStatus({ type: "ok", message: "This device is no longer remembered." });
     } catch (error) {
       setStatus({
@@ -99,16 +115,18 @@ export default function AdminPage() {
   }
 
   async function loadAccounts() {
-    const response = await fetch("/api/accounts", { cache: "no-store" });
-    const data = (await response.json()) as { accounts?: AdminAccount[] };
+    const response = await fetch("/api/accounts", {
+      cache: "no-store",
+      headers: adminAuthHeaders(),
+    });
+    const data = (await response.json()) as { accounts?: AdminAccount[]; error?: string };
+    if (!response.ok) {
+      throw new Error(data.error ?? "Could not load account list.");
+    }
     setAccounts(data.accounts ?? []);
   }
 
   useEffect(() => {
-    loadAccounts().catch(() => {
-      setStatus({ type: "error", message: "Could not load account list." });
-    });
-
     getAdminSessionStatus().catch(() => {
       setCheckingSession(false);
     });
@@ -292,7 +310,15 @@ export default function AdminPage() {
 
         <section className="animate-enter rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] backdrop-blur sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Control room</p>
-          <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">Admin Panel</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl leading-[0.95] text-foreground sm:text-5xl">Admin Panel</h1>
+            <AdminStatusBadge
+              checkingSession={checkingSession}
+              sessionAuthorized={sessionAuthorized}
+              signedIn={signedIn}
+              emailAllowed={emailAllowed}
+            />
+          </div>
           <p className="mt-3 text-sm text-slate-700 sm:text-base">
             Manage family accounts, rotate tokens, and push fresh stats to the leaderboard.
           </p>
@@ -314,7 +340,18 @@ export default function AdminPage() {
             </div>
           ) : null}
 
-          <form onSubmit={addAccount} className="mt-7 space-y-4">
+          <div className="mt-4 rounded-2xl border border-line bg-surface-muted px-4 py-3 text-sm text-slate-700">
+            <p className="font-semibold">{signedIn ? `Signed in: ${userName ?? "Google user"}` : "Not signed in"}</p>
+            <p className="mt-1 text-xs">{userEmail ?? "No Google account in session."}</p>
+            {!checkingSession && signedIn && !emailAllowed ? (
+              <p className="mt-2 text-xs font-semibold text-amber-700">
+                This Google account is not on admin allowlist.
+              </p>
+            ) : null}
+          </div>
+
+          {sessionAuthorized ? (
+            <form onSubmit={addAccount} className="mt-7 space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
                 Admin API key
@@ -420,7 +457,12 @@ export default function AdminPage() {
             >
               Forget this device
             </button>
-          </form>
+            </form>
+          ) : (
+            <div className="mt-7 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">
+              Admin tools hidden. Sign in with allowlisted Google account, or use admin API key.
+            </div>
+          )}
 
           {status.message ? (
             <p
@@ -435,41 +477,12 @@ export default function AdminPage() {
           ) : null}
         </section>
 
-        <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.08)] sm:p-8">
-          <h2 className="text-2xl font-black text-foreground">Accounts</h2>
-          <div className="mt-4 space-y-3">
-            {accounts.length === 0 ? (
-              <p className="text-sm text-slate-600">No accounts yet.</p>
-            ) : (
-              accounts.map((account) => (
-                <article
-                  key={account.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-line bg-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="text-lg font-black text-foreground">{account.nickname}</p>
-                    <p className="text-sm text-slate-600">
-                      @{account.wkUsername} · Lv {account.wkLevel} · Due {account.pendingReviews}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">
-                      Last sync {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(account.lastSyncedAt))} · {account.lastSyncStatus}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={loading || isManualRefreshOnCooldown(account.lastSyncedAt)}
-                    onClick={() => refreshOne(account.id)}
-                    className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isManualRefreshOnCooldown(account.lastSyncedAt)
-                      ? "Wait 1 minute"
-                      : "Refresh user"}
-                  </button>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
+        <AdminAccountsSection
+          sessionAuthorized={sessionAuthorized}
+          accounts={accounts}
+          loading={loading}
+          onRefreshOne={refreshOne}
+        />
       </main>
     </div>
   );

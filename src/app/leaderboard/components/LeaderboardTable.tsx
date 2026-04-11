@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import LeaderboardDesktop from "./LeaderboardDesktop";
@@ -27,6 +28,7 @@ type Props = {
 };
 
 export default function LeaderboardTable({ rows }: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(() => {
     if (typeof window === "undefined") {
       return "overall";
@@ -143,6 +145,24 @@ export default function LeaderboardTable({ rows }: Props) {
   });
 
   const validRowIds = useMemo(() => new Set(rows.map((row) => row.id)), [rows]);
+  const [adminAuthorized, setAdminAuthorized] = useState(false);
+  const [refreshingRowIds, setRefreshingRowIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    async function loadAdminStatus() {
+      try {
+        const response = await fetch("/api/admin/session", { cache: "no-store" });
+        const data = (await response.json()) as { authorized?: boolean };
+        setAdminAuthorized(Boolean(data.authorized));
+      } catch {
+        setAdminAuthorized(false);
+      }
+    }
+
+    loadAdminStatus().catch(() => {
+      setAdminAuthorized(false);
+    });
+  }, []);
   const filteredExpanded = useMemo(
     () => new Set(Array.from(expanded).filter((id) => validRowIds.has(id))),
     [expanded, validRowIds],
@@ -301,6 +321,25 @@ export default function LeaderboardTable({ rows }: Props) {
     }));
   };
 
+  const refreshUser = async (id: string) => {
+    setRefreshingRowIds((prev) => new Set(prev).add(id));
+    try {
+      const response = await fetch(`/api/accounts/${id}/refresh`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Refresh failed");
+      }
+      router.refresh();
+    } catch {
+      // Keep UI stable even if one manual refresh fails.
+    } finally {
+      setRefreshingRowIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 px-4 pt-4 sm:px-6">
@@ -336,6 +375,9 @@ export default function LeaderboardTable({ rows }: Props) {
         showLevelProgressPanel={showLevelProgressPanel}
         onRequestSort={requestSort}
         onToggleRow={toggle}
+        canRefreshAdmin={adminAuthorized}
+        refreshingRowIds={refreshingRowIds}
+        onRefreshUser={refreshUser}
         onToggleItemSpreadPanel={() =>
           persistPanelState("wr:leaderboard:item-spread-open", !showItemSpreadPanel, setShowItemSpreadPanel)
         }
@@ -344,7 +386,15 @@ export default function LeaderboardTable({ rows }: Props) {
         }
       />
 
-      <LeaderboardMobile sortedRows={sortedRows} filteredExpanded={filteredExpanded} onToggleRow={toggle} />
+      <LeaderboardMobile
+        activeTab={activeTab}
+        sortedRows={sortedRows}
+        filteredExpanded={filteredExpanded}
+        onToggleRow={toggle}
+        canRefreshAdmin={adminAuthorized}
+        refreshingRowIds={refreshingRowIds}
+        onRefreshUser={refreshUser}
+      />
     </div>
   );
 }

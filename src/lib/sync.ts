@@ -2,7 +2,7 @@ import { decryptToken } from "@/lib/crypto";
 import { upsertDailySnapshot } from "@/lib/dailySnapshot";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { LEADERBOARD_REFRESH_INTERVAL_MS, LEADERBOARD_REQUEST_GAP_MS } from "@/lib/refreshPolicy";
+import { LEADERBOARD_REFRESH_INTERVAL_MS } from "@/lib/refreshPolicy";
 import { getLeaderboardStats } from "@/lib/wanikani";
 
 const SYNC_LOCK_MS = 5 * 60 * 1000;
@@ -23,14 +23,23 @@ function nowPlus(ms: number): Date {
   return new Date(Date.now() + ms);
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+export async function clearExpiredSyncLocks(now: Date = new Date()): Promise<void> {
+  await prisma.account.updateMany({
+    where: {
+      isSyncing: true,
+      syncLockUntil: { lt: now },
+    },
+    data: {
+      isSyncing: false,
+      syncLockUntil: null,
+      lastSyncStatus: "idle",
+    },
   });
 }
 
 export async function refreshDueAccounts(maxAccounts = 2): Promise<RefreshBatchResult> {
   const now = new Date();
+  await clearExpiredSyncLocks(now);
   const staleBefore = new Date(Date.now() - LEADERBOARD_REFRESH_INTERVAL_MS);
 
   const due = await prisma.account.findMany({
@@ -56,10 +65,6 @@ export async function refreshDueAccounts(maxAccounts = 2): Promise<RefreshBatchR
     if (result.refreshed) {
       refreshed += 1;
     }
-
-    if (index < due.length - 1) {
-      await sleep(LEADERBOARD_REQUEST_GAP_MS);
-    }
   }
 
   return {
@@ -68,8 +73,9 @@ export async function refreshDueAccounts(maxAccounts = 2): Promise<RefreshBatchR
   };
 }
 
-export async function refreshAccountById(accountId: string, force: boolean): Promise<SyncResult> {
+export async function refreshAccountById(accountId: string, force: boolean, ignoreManualCooldown = false): Promise<SyncResult> {
   const now = new Date();
+  await clearExpiredSyncLocks(now);
   const staleBefore = new Date(Date.now() - LEADERBOARD_REFRESH_INTERVAL_MS);
   const manualThreshold = new Date(Date.now() - MANUAL_REFRESH_COOLDOWN_MS);
 
@@ -77,7 +83,7 @@ export async function refreshAccountById(accountId: string, force: boolean): Pro
     where: {
       id: accountId,
       ...(force
-        ? { lastSyncedAt: { lt: manualThreshold } }
+        ? (ignoreManualCooldown ? {} : { lastSyncedAt: { lt: manualThreshold } })
         : {
             AND: [{ nextSyncAllowedAt: { lte: now } }, { lastSyncedAt: { lt: staleBefore } }],
           }),

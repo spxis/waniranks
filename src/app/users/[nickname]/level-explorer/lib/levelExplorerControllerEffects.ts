@@ -48,11 +48,15 @@ export function useLevelExplorerUrlHydration({
       return;
     }
 
-    const applyFromUrl = () => {
+    const applyFromUrl = async () => {
       applyingUrlStateRef.current = true;
       const parsed = parseLevelExplorerUrlState(window.location.search, maxLevel, initialLevel);
+      const levelsArray = Array.from(parsed.levels.values()).sort((a, b) => a - b);
+      const normalizedLevels = parsed.stickyMerge
+        ? new Set(levelsArray)
+        : new Set([levelsArray[levelsArray.length - 1] ?? initialLevel]);
 
-      setters.setSelectedLevels(parsed.levels);
+      setters.setSelectedLevels(normalizedLevels);
       setters.setSelectedSubjectId(parsed.subjectId);
       setters.setSrsFilter(parsed.srs);
       setters.setTypeFilter(parsed.type);
@@ -60,19 +64,19 @@ export function useLevelExplorerUrlHydration({
       setters.setReviewTimingFilter(parsed.review);
       setters.setStickyMerge(parsed.stickyMerge);
 
-      for (const level of parsed.levels.values()) {
-        void ensureLevelLoaded(level);
+      for (const level of normalizedLevels.values()) {
+        await ensureLevelLoaded(level);
       }
 
-      window.setTimeout(() => {
-        applyingUrlStateRef.current = false;
-      }, 0);
+      applyingUrlStateRef.current = false;
     };
 
-    applyFromUrl();
+    void applyFromUrl();
     hasHydratedUrlStateRef.current = true;
 
-    const onPopState = () => applyFromUrl();
+    const onPopState = () => {
+      void applyFromUrl();
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);

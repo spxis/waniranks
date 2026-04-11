@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
-import { isGoogleAuthConfigured } from "@/lib/auth";
+import { authOptions, isAdminEmail, isGoogleAuthConfigured } from "@/lib/auth";
 import {
   ADMIN_SESSION_COOKIE_NAME,
   ADMIN_SESSION_MAX_AGE_SECONDS,
@@ -11,13 +12,25 @@ import {
 
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    const userEmail = session?.user?.email ?? null;
+
     return NextResponse.json({
       authorized: await isAuthorizedAdmin(request),
       googleConfigured: isGoogleAuthConfigured(),
+      signedIn: Boolean(userEmail),
+      emailAllowed: isAdminEmail(userEmail),
+      user: {
+        name: session?.user?.name ?? null,
+        email: userEmail,
+      },
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ authorized: false, googleConfigured: false }, { status: 500 });
+    return NextResponse.json(
+      { authorized: false, googleConfigured: false, signedIn: false, emailAllowed: false, user: null },
+      { status: 500 },
+    );
   }
 }
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 import { refreshDueAccounts } from "@/lib/sync";
 import LeaderboardAdminActions from "./LeaderboardAdminActions";
 import LeaderboardTable from "./leaderboard/components/LeaderboardTable";
@@ -198,7 +199,15 @@ export default async function Home() {
                 and flex daily review grind.
               </p>
             </div>
-            <LeaderboardAdminActions />
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
+              <Link
+                href="/join"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-6 text-sm font-bold uppercase tracking-[0.14em] text-foreground transition hover:bg-surface-muted"
+              >
+                Join Board
+              </Link>
+              <LeaderboardAdminActions />
+            </div>
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3 sm:gap-4">

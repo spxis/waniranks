@@ -36,12 +36,12 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    signIn({ user, account }) {
+    signIn({ account }) {
       if (account?.provider !== "google") {
         return false;
       }
 
-      return isAdminEmail(user.email);
+      return true;
     },
   },
   secret: process.env.AUTH_SECRET,

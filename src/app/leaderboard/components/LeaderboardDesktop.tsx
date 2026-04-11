@@ -26,10 +26,13 @@ type Props = {
   activeSort: SortState;
   sortedRows: LeaderboardRow[];
   filteredExpanded: Set<string>;
+  canRefreshAdmin: boolean;
+  refreshingRowIds: Set<string>;
   showItemSpreadPanel: boolean;
   showLevelProgressPanel: boolean;
   onRequestSort: (key: SortKey) => void;
   onToggleRow: (id: string) => void;
+  onRefreshUser: (id: string) => Promise<void>;
   onToggleItemSpreadPanel: () => void;
   onToggleLevelProgressPanel: () => void;
 };
@@ -50,10 +53,13 @@ export default function LeaderboardDesktop({
   activeSort,
   sortedRows,
   filteredExpanded,
+  canRefreshAdmin,
+  refreshingRowIds,
   showItemSpreadPanel,
   showLevelProgressPanel,
   onRequestSort,
   onToggleRow,
+  onRefreshUser,
   onToggleItemSpreadPanel,
   onToggleLevelProgressPanel,
 }: Props) {
@@ -73,11 +79,13 @@ export default function LeaderboardDesktop({
                 Level <span className="text-[10px]">{sortIcon(activeSort, "wkLevel")}</span>
               </button>
             </th>
-            <th className="px-4 py-3">
-              <button type="button" onClick={() => onRequestSort("reviewCount")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "reviewCount")}`}>
-                Reviewed <span className="text-[10px]">{sortIcon(activeSort, "reviewCount")}</span>
-              </button>
-            </th>
+            {activeTab === "overall" ? (
+              <th className="px-4 py-3">
+                <button type="button" onClick={() => onRequestSort("reviewCount")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "reviewCount")}`}>
+                  Reviewed <span className="text-[10px]">{sortIcon(activeSort, "reviewCount")}</span>
+                </button>
+              </th>
+            ) : null}
             {activeTab === "overall" ? (
               <>
                 <th className="px-4 py-3"><button type="button" onClick={() => onRequestSort("radicalPercent")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "radicalPercent")}`}>Radicals (G+) <span className="text-[10px]">{sortIcon(activeSort, "radicalPercent")}</span></button></th>
@@ -105,8 +113,12 @@ export default function LeaderboardDesktop({
                 <th className="px-4 py-3"><button type="button" onClick={() => onRequestSort("subjectLastGuruedAt")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "subjectLastGuruedAt")}`}>Last Passed Guru <span className="text-[10px]">{sortIcon(activeSort, "subjectLastGuruedAt")}</span></button></th>
               </>
             )}
-            <th className="px-4 py-3"><button type="button" onClick={() => onRequestSort("score")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "score")}`}>Score <span className="text-[10px]">{sortIcon(activeSort, "score")}</span></button></th>
-            <th className="px-4 py-3"><button type="button" onClick={() => onRequestSort("lastActivityAt")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "lastActivityAt")}`}>Last Activity <span className="text-[10px]">{sortIcon(activeSort, "lastActivityAt")}</span></button></th>
+            {activeTab === "overall" ? (
+              <>
+                <th className="px-4 py-3"><button type="button" onClick={() => onRequestSort("score")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "score")}`}>Score <span className="text-[10px]">{sortIcon(activeSort, "score")}</span></button></th>
+                <th className="px-4 py-3"><button type="button" onClick={() => onRequestSort("lastActivityAt")} className={`inline-flex items-center gap-1 ${headerClassFor(activeSort, "lastActivityAt")}`}>Last Activity <span className="text-[10px]">{sortIcon(activeSort, "lastActivityAt")}</span></button></th>
+              </>
+            ) : null}
             <th className="px-4 py-3">More</th>
           </tr>
         </thead>
@@ -116,11 +128,13 @@ export default function LeaderboardDesktop({
               <tr className="transition hover:bg-surface-muted/80">
                 <td className="px-4 py-3 font-black">#{index + 1}</td>
                 <td className="px-4 py-3 text-lg font-black text-foreground">
-                  <Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">{row.nickname}</Link>
-                  <p className="text-xs font-semibold text-foreground/60"><Link href={`/users/${encodeURIComponent(row.nickname)}`} className="hover:text-accent">@{row.wkUsername}</Link></p>
+                  <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">{row.nickname}</Link>
+                  <p className="text-xs font-semibold text-foreground/60"><Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">@{row.wkUsername}</Link></p>
                 </td>
                 <td className="px-4 py-3 text-lg font-black text-accent"><p>{row.wkLevel}</p><p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.wkLevel)}`}>{formatDelta(row.dailyDelta?.wkLevel)}</p></td>
-                <td className="px-4 py-3 font-semibold"><p>{formatNumber(row.reviewCount)}</p><p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.reviewCount)}`}>{formatDelta(row.dailyDelta?.reviewCount)}</p></td>
+                {activeTab === "overall" ? (
+                  <td className="px-4 py-3 font-semibold"><p>{formatNumber(row.reviewCount)}</p><p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.reviewCount)}`}>{formatDelta(row.dailyDelta?.reviewCount)}</p></td>
+                ) : null}
                 {activeTab === "overall" ? (
                   <>
                     <td className="px-4 py-3"><span className="subject-pill subject-pill--radical">{formatNumber(learnedRadicalsFromRow(row))}</span><p className="mt-1 text-[10px] font-semibold text-foreground/60">/ {formatNumber(row.radicalCount)} ({learnedPercent(learnedRadicalsFromRow(row), row.radicalCount)}%)</p></td>
@@ -147,15 +161,32 @@ export default function LeaderboardDesktop({
                     );
                   })()
                 )}
-                <td className="px-4 py-3 text-lg font-black text-hot"><p>{formatNumber(row.score)}</p><p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.score)}`}>{formatDelta(row.dailyDelta?.score)}</p></td>
-                <td className="px-4 py-3 text-xs uppercase tracking-[0.08em] text-foreground/60"><p>{row.lastActivityAt ? formatDate(row.lastActivityAt) : "-"}</p><p className="mt-1 text-[10px] font-semibold normal-case tracking-normal text-foreground/50">{formatSince(row.lastActivityAt)}</p></td>
-                <td className="px-4 py-3"><button type="button" onClick={() => onToggleRow(row.id)} className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground">{filteredExpanded.has(row.id) ? "Hide" : "Expand"}</button></td>
+                {activeTab === "overall" ? (
+                  <>
+                    <td className="px-4 py-3 text-lg font-black text-hot"><p>{formatNumber(row.score)}</p><p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.score)}`}>{formatDelta(row.dailyDelta?.score)}</p></td>
+                    <td className="px-4 py-3 text-xs uppercase tracking-[0.08em] text-foreground/60"><p>{row.lastActivityAt ? formatDate(row.lastActivityAt) : "-"}</p><p className="mt-1 text-[10px] font-semibold normal-case tracking-normal text-foreground/50">{formatSince(row.lastActivityAt)}</p></td>
+                  </>
+                ) : null}
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => onToggleRow(row.id)}
+                    aria-label={filteredExpanded.has(row.id) ? "Collapse row" : "Expand row"}
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-sm font-black text-foreground"
+                  >
+                    {filteredExpanded.has(row.id) ? "▾" : "▸"}
+                  </button>
+                </td>
               </tr>
               {filteredExpanded.has(row.id) ? (
                 <tr className="bg-surface-muted/40">
-                  <td colSpan={activeTab === "overall" ? 11 : 14} className="px-4 py-4">
+                  <td colSpan={activeTab === "overall" ? 10 : 11} className="px-4 py-4">
                     <LeaderboardExpandedRow
                       row={row}
+                      activeTab={activeTab}
+                      canRefreshAdmin={canRefreshAdmin}
+                      isRefreshing={refreshingRowIds.has(row.id)}
+                      onRefreshUser={() => onRefreshUser(row.id)}
                       showItemSpreadPanel={showItemSpreadPanel}
                       showLevelProgressPanel={showLevelProgressPanel}
                       onToggleItemSpreadPanel={onToggleItemSpreadPanel}

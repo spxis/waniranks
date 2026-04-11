@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
+import { saveAccountFromToken } from "@/lib/accountUpsert";
 import { isAuthorizedAdmin } from "@/lib/admin";
-import { encryptToken } from "@/lib/crypto";
-import { upsertDailySnapshot } from "@/lib/dailySnapshot";
 import { prisma } from "@/lib/prisma";
-import { getLeaderboardStats } from "@/lib/wanikani";
+import { clearExpiredSyncLocks } from "@/lib/sync";
 
 const createAccountSchema = z.object({
   nickname: z.string().trim().min(2).max(32),
@@ -27,177 +25,9 @@ export async function POST(request: Request) {
     }
 
     const { nickname, token } = parsed.data;
-    const existingAccount = await prisma.account.findUnique({
-      where: { nickname },
-      select: {
-        wkUserId: true,
-        wkUsername: true,
-        wkLevel: true,
-        reviewCount: true,
-        burnedCount: true,
-        reviewsUpdatedAt: true,
-        lastRadicalGuruedAt: true,
-        lastKanjiGuruedAt: true,
-        lastVocabularyGuruedAt: true,
-        lastRadicalGuruedItem: true,
-        lastKanjiGuruedItem: true,
-        lastVocabularyGuruedItem: true,
-        assignmentCache: true,
-        assignmentCacheUpdatedAt: true,
-        wkHttpCache: true,
-      },
-    });
-
-    const stats = await getLeaderboardStats(token, {
-      wkUserId: existingAccount?.wkUserId ?? "",
-      wkUsername: existingAccount?.wkUsername ?? "",
-      wkLevel: existingAccount?.wkLevel ?? 1,
-      reviewCount: existingAccount?.reviewCount ?? 0,
-      burnedCount: existingAccount?.burnedCount ?? 0,
-      reviewsUpdatedAt: existingAccount?.reviewsUpdatedAt ?? null,
-      lastRadicalGuruedAt: existingAccount?.lastRadicalGuruedAt ?? null,
-      lastKanjiGuruedAt: existingAccount?.lastKanjiGuruedAt ?? null,
-      lastVocabularyGuruedAt: existingAccount?.lastVocabularyGuruedAt ?? null,
-      lastRadicalGuruedItem: existingAccount?.lastRadicalGuruedItem ?? null,
-      lastKanjiGuruedItem: existingAccount?.lastKanjiGuruedItem ?? null,
-      lastVocabularyGuruedItem: existingAccount?.lastVocabularyGuruedItem ?? null,
-      assignmentCache: existingAccount?.assignmentCache ?? null,
-      assignmentCacheUpdatedAt: existingAccount?.assignmentCacheUpdatedAt ?? null,
-      wkHttpCache: existingAccount?.wkHttpCache ?? null,
-    });
-    const encrypted = encryptToken(token);
-
-    const syncedAt = new Date();
-
-    const account = await prisma.account.upsert({
-      where: { nickname },
-      update: {
-        tokenEncrypted: encrypted.encrypted,
-        tokenIv: encrypted.iv,
-        tokenTag: encrypted.tag,
-        wkUserId: stats.wkUserId,
-        wkUsername: stats.wkUsername,
-        wkLevel: stats.wkLevel,
-        reviewCount: stats.reviewCount,
-        burnedCount: stats.burnedCount,
-        pendingReviews: stats.pendingReviews,
-        radicalCount: stats.radicalCount,
-        vocabularyCount: stats.vocabularyCount,
-        apprenticeCount: stats.apprenticeCount,
-        guruCount: stats.guruCount,
-        masterCount: stats.masterCount,
-        enlightenedCount: stats.enlightenedCount,
-        levelKanjiTotal: stats.levelKanjiTotal,
-        levelKanjiLearned: stats.levelKanjiLearned,
-        levelKanjiGuruPlus: stats.levelKanjiGuruPlus,
-        levelKanjiLocked: stats.levelKanjiLocked,
-        estimatedHoursRemaining: stats.estimatedHoursRemaining,
-        lastActivityAt: stats.lastActivityAt,
-        levelKanjiItems: stats.levelKanjiItems,
-        itemSpread: stats.itemSpread,
-        jlptCounts: stats.jlptCounts,
-        assignmentCache: stats.cache.assignmentCache as Prisma.InputJsonValue,
-        assignmentCacheUpdatedAt: stats.cache.assignmentCacheUpdatedAt,
-        reviewsUpdatedAt: stats.cache.reviewsUpdatedAt,
-        lastRadicalGuruedAt: stats.lastRadicalGuruedAt,
-        lastKanjiGuruedAt: stats.lastKanjiGuruedAt,
-        lastVocabularyGuruedAt: stats.lastVocabularyGuruedAt,
-        lastRadicalGuruedItem: stats.lastRadicalGuruedItem as Prisma.InputJsonValue,
-        lastKanjiGuruedItem: stats.lastKanjiGuruedItem as Prisma.InputJsonValue,
-        lastVocabularyGuruedItem: stats.lastVocabularyGuruedItem as Prisma.InputJsonValue,
-        wkHttpCache: stats.cache.wkHttpCache as Prisma.InputJsonValue,
-        lastSyncStatus: "ok",
-        lastSyncError: null,
-        isSyncing: false,
-        syncLockUntil: null,
-        score: stats.score,
-        lastSyncedAt: syncedAt,
-      },
-      create: {
-        nickname,
-        tokenEncrypted: encrypted.encrypted,
-        tokenIv: encrypted.iv,
-        tokenTag: encrypted.tag,
-        wkUserId: stats.wkUserId,
-        wkUsername: stats.wkUsername,
-        wkLevel: stats.wkLevel,
-        reviewCount: stats.reviewCount,
-        burnedCount: stats.burnedCount,
-        pendingReviews: stats.pendingReviews,
-        radicalCount: stats.radicalCount,
-        vocabularyCount: stats.vocabularyCount,
-        apprenticeCount: stats.apprenticeCount,
-        guruCount: stats.guruCount,
-        masterCount: stats.masterCount,
-        enlightenedCount: stats.enlightenedCount,
-        levelKanjiTotal: stats.levelKanjiTotal,
-        levelKanjiLearned: stats.levelKanjiLearned,
-        levelKanjiGuruPlus: stats.levelKanjiGuruPlus,
-        levelKanjiLocked: stats.levelKanjiLocked,
-        estimatedHoursRemaining: stats.estimatedHoursRemaining,
-        lastActivityAt: stats.lastActivityAt,
-        levelKanjiItems: stats.levelKanjiItems,
-        itemSpread: stats.itemSpread,
-        jlptCounts: stats.jlptCounts,
-        assignmentCache: stats.cache.assignmentCache as Prisma.InputJsonValue,
-        assignmentCacheUpdatedAt: stats.cache.assignmentCacheUpdatedAt,
-        reviewsUpdatedAt: stats.cache.reviewsUpdatedAt,
-        lastRadicalGuruedAt: stats.lastRadicalGuruedAt,
-        lastKanjiGuruedAt: stats.lastKanjiGuruedAt,
-        lastVocabularyGuruedAt: stats.lastVocabularyGuruedAt,
-        lastRadicalGuruedItem: stats.lastRadicalGuruedItem as Prisma.InputJsonValue,
-        lastKanjiGuruedItem: stats.lastKanjiGuruedItem as Prisma.InputJsonValue,
-        lastVocabularyGuruedItem: stats.lastVocabularyGuruedItem as Prisma.InputJsonValue,
-        wkHttpCache: stats.cache.wkHttpCache as Prisma.InputJsonValue,
-        lastSyncStatus: "ok",
-        lastSyncError: null,
-        isSyncing: false,
-        syncLockUntil: null,
-        score: stats.score,
-        lastSyncedAt: syncedAt,
-      },
-      select: {
-        id: true,
-        nickname: true,
-        wkUsername: true,
-        wkLevel: true,
-        reviewCount: true,
-        burnedCount: true,
-        pendingReviews: true,
-        radicalCount: true,
-        vocabularyCount: true,
-        apprenticeCount: true,
-        guruCount: true,
-        masterCount: true,
-        enlightenedCount: true,
-        levelKanjiTotal: true,
-        levelKanjiLearned: true,
-        levelKanjiGuruPlus: true,
-        levelKanjiLocked: true,
-        estimatedHoursRemaining: true,
-        lastActivityAt: true,
-        score: true,
-        lastSyncedAt: true,
-      },
-    });
-
-    await upsertDailySnapshot({
-      accountId: account.id,
-      wkLevel: stats.wkLevel,
-      reviewCount: stats.reviewCount,
-      burnedCount: stats.burnedCount,
-      pendingReviews: stats.pendingReviews,
-      radicalCount: stats.radicalCount,
-      vocabularyCount: stats.vocabularyCount,
-      apprenticeCount: stats.apprenticeCount,
-      guruCount: stats.guruCount,
-      masterCount: stats.masterCount,
-      enlightenedCount: stats.enlightenedCount,
-      levelKanjiLearned: stats.levelKanjiLearned,
-      levelKanjiTotal: stats.levelKanjiTotal,
-      score: stats.score,
-      lastActivityAt: stats.lastActivityAt,
-      lastSyncedAt: syncedAt,
+    const account = await saveAccountFromToken({
+      token,
+      nickname,
     });
 
     return NextResponse.json({ account }, { status: 201 });
@@ -210,8 +40,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    if (!(await isAuthorizedAdmin(request))) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    await clearExpiredSyncLocks();
+
     const accounts = await prisma.account.findMany({
       orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
       select: {
@@ -237,6 +73,11 @@ export async function GET() {
         score: true,
         lastSyncedAt: true,
         lastSyncStatus: true,
+        isSyncing: true,
+        syncLockUntil: true,
+        joinedByName: true,
+        joinedByEmail: true,
+        createdAt: true,
       },
     });
 

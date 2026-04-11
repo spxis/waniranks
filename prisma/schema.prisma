@@ -11,7 +11,9 @@ datasource db {
 
 model Account {
   id             String   @id @default(cuid())
-  nickname       String   @unique
+  nickname       String
+  joinedByEmail  String?
+  joinedByName   String?
   tokenEncrypted String
   tokenIv        String
   tokenTag       String

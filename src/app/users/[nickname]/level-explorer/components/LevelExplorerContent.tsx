@@ -42,6 +42,8 @@ type Props = {
   counts: LevelItemCounts;
   jlptCounts: LevelJlptCounts;
   reviewTimingCounts: ReviewTimingCounts;
+  accountPendingReviews: number;
+  overdueOutsideSelectedLevels: number;
   combinedItemLength: number;
   combinedKanjiLearned: number;
   combinedKanjiLocked: number;
@@ -51,6 +53,7 @@ type Props = {
   jlptFilter: JlptFilter;
   reviewTimingFilter: ReviewTimingFilter;
   showEnglish: boolean;
+  studyMode: boolean;
   loading: boolean;
   searchMatchedSubjectIds: Set<number> | null;
   error: string;
@@ -97,6 +100,8 @@ export default function LevelExplorerContent({
   counts,
   jlptCounts,
   reviewTimingCounts,
+  accountPendingReviews,
+  overdueOutsideSelectedLevels,
   combinedItemLength,
   combinedKanjiLearned,
   combinedKanjiLocked,
@@ -106,6 +111,7 @@ export default function LevelExplorerContent({
   jlptFilter,
   reviewTimingFilter,
   showEnglish,
+  studyMode,
   loading,
   searchMatchedSubjectIds,
   error,
@@ -142,21 +148,10 @@ export default function LevelExplorerContent({
       <header className="flex flex-col gap-3 border-b border-line bg-surface-muted px-5 py-4">
         <div>
           <h2 className="text-xl font-black text-foreground">WaniKani Explorer</h2>
-          <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">Click one or more level badges to combine data</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">Select one level at a time</p>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                void onSelectAllLevelsAndClearSearch();
-              }}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
-                searchAvailableLevels === null && selectedLevels.size === levelOptions.length,
-              )}`}
-            >
-              All
-            </button>
             {levelOptions.map((level) => (
               <button
                 key={level}
@@ -173,16 +168,6 @@ export default function LevelExplorerContent({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => onSetStickyMerge(!stickyMerge)}
-            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-              stickyMerge ? "border-accent bg-accent text-white" : "border-line bg-surface text-foreground"
-            }`}
-            aria-pressed={stickyMerge}
-          >
-            Sticky {stickyMerge ? "On" : "Off"}
-          </button>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -333,6 +318,12 @@ export default function LevelExplorerContent({
                   );
                 })}
               </div>
+              {reviewTimingFilter === "overdue" && overdueOutsideSelectedLevels > 0 ? (
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/55">
+                  Showing {formatNumber(reviewTimingCounts.overdue)} overdue in selected levels, with {formatNumber(overdueOutsideSelectedLevels)} more overdue in other levels
+                  ({formatNumber(accountPendingReviews)} total pending reviews).
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -367,25 +358,26 @@ export default function LevelExplorerContent({
                   )} ${lockedCardStateClass(item)}`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    {selectedItem?.subjectId === item.subjectId ? (
-                      <span
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-accent/40 bg-accent/15 text-accent"
-                        title="Viewing details. Click this card to close."
-                        aria-label="Viewing details"
-                      >
-                        <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-                          <path
-                            d="M8.5 14a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11Zm0-1.7a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6Zm4.6 1.2 3.2 3.2"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                    ) : (
-                      <span />
-                    )}
+                    <div className="inline-flex items-center gap-1.5">
+                      <span className="text-[10px] font-semibold text-foreground/45">#{formatNumber(index + 1)}</span>
+                      {selectedItem?.subjectId === item.subjectId ? (
+                        <span
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-accent/40 bg-accent/15 text-accent"
+                          title="Viewing details. Click this card to close."
+                          aria-label="Viewing details"
+                        >
+                          <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                            <path
+                              d="M8.5 14a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11Zm0-1.7a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6Zm4.6 1.2 3.2 3.2"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {item.subjectType === "kanji" && item.jlptLevel ? (
@@ -398,7 +390,13 @@ export default function LevelExplorerContent({
                       item.status === "locked" || item.srsStage <= 0 ? "text-foreground/60" : "text-foreground"
                     }`}
                   >
-                    {titleForDisplay(item, showEnglish)}
+                    {studyMode
+                      ? item.subjectType === "kanji"
+                        ? "Kanji"
+                        : item.subjectType === "radical"
+                          ? "Radical"
+                          : "Vocabulary"
+                      : titleForDisplay(item, showEnglish)}
                   </p>
                   <div
                     className={`mt-3 rounded-xl border ${
@@ -412,18 +410,17 @@ export default function LevelExplorerContent({
                     <p className={`${glyphTextSizeClass(item.characters)} font-black leading-none whitespace-nowrap`}>
                       {item.characters}
                     </p>
-                    {(() => {
+                    {!studyMode ? (() => {
                       const subtitle = glyphSubtitleForDisplay(item);
                       if (!subtitle) {
                         return null;
                       }
-
                       return (
                         <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/70 whitespace-nowrap">
                           <ReadingWithPronunciation reading={subtitle} />
                         </p>
                       );
-                    })()}
+                    })() : null}
                   </div>
                   <div className="mt-3 grid grid-cols-3 items-center gap-2">
                     <span
@@ -437,7 +434,6 @@ export default function LevelExplorerContent({
                         if (!nextReviewBadge) {
                           return <span />;
                         }
-
                         return (
                           <span
                             className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.03em] ${nextReviewBadge.className}`}
@@ -459,6 +455,7 @@ export default function LevelExplorerContent({
                   <LevelExplorerDetailSection
                     selectedItem={selectedItem}
                     showEnglish={showEnglish}
+                    studyMode={studyMode}
                     selectedMeaningExplanation={selectedMeaningExplanation}
                     selectedReadingExplanationRaw={selectedReadingExplanationRaw}
                     showReadingExplanation={showReadingExplanation}

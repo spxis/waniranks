@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const JP_FONT_STORAGE_KEY = "wr:jp-font";
@@ -87,6 +88,12 @@ export default function AppFooter() {
           >
             {jpFontMode === "sans" ? "Sans" : "Serif"}
           </button>
+          <Link
+            href="/admin"
+            className="ml-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80"
+          >
+            Admin
+          </Link>
         </div>
       </div>
     </footer>

@@ -6,8 +6,12 @@ import type {
 } from "./types";
 
 const BASE_URL = "https://api.wanikani.com/v2";
-let requestChain: Promise<void> = Promise.resolve();
-let lastRequestStartedAt = 0;
+type TokenThrottleState = {
+  requestChain: Promise<void>;
+  lastRequestStartedAt: number;
+};
+
+const throttleByToken = new Map<string, TokenThrottleState>();
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -15,19 +19,35 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-async function runThrottledRequest<T>(work: () => Promise<T>): Promise<T> {
-  const run = requestChain.then(async () => {
+function getThrottleState(token: string): TokenThrottleState {
+  const existing = throttleByToken.get(token);
+  if (existing) {
+    return existing;
+  }
+
+  const created: TokenThrottleState = {
+    requestChain: Promise.resolve(),
+    lastRequestStartedAt: 0,
+  };
+  throttleByToken.set(token, created);
+  return created;
+}
+
+async function runThrottledRequest<T>(token: string, work: () => Promise<T>): Promise<T> {
+  const state = getThrottleState(token);
+
+  const run = state.requestChain.then(async () => {
     const now = Date.now();
-    const waitMs = Math.max(0, lastRequestStartedAt + LEADERBOARD_REQUEST_GAP_MS - now);
+    const waitMs = Math.max(0, state.lastRequestStartedAt + LEADERBOARD_REQUEST_GAP_MS - now);
     if (waitMs > 0) {
       await sleep(waitMs);
     }
 
-    lastRequestStartedAt = Date.now();
+    state.lastRequestStartedAt = Date.now();
     return work();
   });
 
-  requestChain = run.then(
+  state.requestChain = run.then(
     () => undefined,
     () => undefined,
   );
@@ -53,7 +73,7 @@ export async function fetchWaniKani<T>(
     headers["If-Modified-Since"] = conditionalHeaders.ifModifiedSince;
   }
 
-  const response = await runThrottledRequest(() =>
+  const response = await runThrottledRequest(token, () =>
     fetch(`${BASE_URL}${path}`, {
       headers,
       cache: "no-store",
@@ -115,4 +135,31 @@ export async function fetchAllCollectionPages(
     pages: { next_url: null },
     data: allData,
   };
+}
+
+export async function postWaniKani<TResponse>(
+  path: string,
+  token: string,
+  body: unknown,
+): Promise<TResponse> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    "Wanikani-Revision": "20170710",
+    "Content-Type": "application/json",
+  };
+
+  const response = await runThrottledRequest(token, () =>
+    fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      cache: "no-store",
+    }),
+  );
+
+  if (!response.ok) {
+    throw new Error(`WaniKani API error: ${response.status}`);
+  }
+
+  return (await response.json()) as TResponse;
 }

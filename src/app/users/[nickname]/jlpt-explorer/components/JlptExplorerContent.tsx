@@ -24,6 +24,7 @@ type JlptFilter = "all" | "kanji" | "none";
 type Props = {
   items: JlptItem[];
   showEnglish: boolean;
+  studyMode: boolean;
   counts: {
     all: number;
     kanji: number;
@@ -96,6 +97,7 @@ function statusClass(
 export default function JlptExplorerContent({
   items,
   showEnglish,
+  studyMode,
   counts,
   selectedLevels,
   stickyLevels,
@@ -226,14 +228,20 @@ export default function JlptExplorerContent({
                       <span className="subject-pill border-line bg-surface text-foreground">N{item.nLevel}</span>
                     </div>
                   </div>
-                  <p className="mt-2 text-xl font-black leading-tight text-foreground">{heading}</p>
+                  {studyMode ? (
+                    <p className="mt-2 text-xl font-black leading-tight text-foreground">Kanji</p>
+                  ) : (
+                    <p className="mt-2 text-xl font-black leading-tight text-foreground">{heading}</p>
+                  )}
                   <div className={`mt-3 rounded-xl border border-kanji/50 bg-kanji/10 px-3 py-2 ${userMatch ? "text-kanji" : "text-foreground"}`}>
                     <p className="text-center text-6xl font-black leading-none">{item.kanji}</p>
-                    <p className="mt-1 text-center text-sm font-semibold text-foreground/70">
-                      {primaryReading
-                        ? readingLabel(primaryReading, showEnglish)
-                        : readingLabelFromList(fallbackReadings, showEnglish)}
-                    </p>
+                    {!studyMode ? (
+                      <p className="mt-1 text-center text-sm font-semibold text-foreground/70">
+                        {primaryReading
+                          ? readingLabel(primaryReading, showEnglish)
+                          : readingLabelFromList(fallbackReadings, showEnglish)}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="mt-3 grid grid-cols-3 items-center gap-2">
                     <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(userMatch?.status)}`}>
@@ -282,19 +290,23 @@ export default function JlptExplorerContent({
                             </div>
                             <div className="min-w-0">
                               <p className="text-3xl font-black leading-tight text-foreground">
-                                {jlptHeading(
-                                  selectedItem.primaryMeaning,
-                                  selectedUserMatch?.meanings,
-                                  selectedItem.meanings.length > 0
-                                    ? selectedItem.meanings
-                                    : (selectedPreload?.meanings ?? []),
-                                  selectedItem.kanji,
-                                )}
+                                {studyMode
+                                  ? "Kanji"
+                                  : jlptHeading(
+                                      selectedItem.primaryMeaning,
+                                      selectedUserMatch?.meanings,
+                                      selectedItem.meanings.length > 0
+                                        ? selectedItem.meanings
+                                        : (selectedPreload?.meanings ?? []),
+                                      selectedItem.kanji,
+                                    )}
                               </p>
                             </div>
                           </div>
 
                           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
+                            {!studyMode ? (
+                              <>
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
                               <p className="mt-1 font-semibold text-foreground/90">{readingLabel(primary, showEnglish)}</p>
@@ -331,6 +343,8 @@ export default function JlptExplorerContent({
                               <p className="text-xs font-bold uppercase text-foreground/70">Main meaning</p>
                               <p className="mt-1 font-semibold text-foreground/90">{selectedItem.primaryMeaning ?? "-"}</p>
                             </div>
+                              </>
+                            ) : null}
                             <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                               <p className="text-xs font-bold uppercase text-foreground/70">Frequency rank</p>
                               <p className="mt-1 font-semibold text-foreground/90">{selectedItem.frequencyRank ?? "-"}</p>
@@ -372,22 +386,24 @@ export default function JlptExplorerContent({
                             </div>
                           ) : null}
 
-                          <div className="mt-4">
-                            <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-                              <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
-                              {jsonMeanings.length > 0 ? (
-                                <ul className="mt-2 space-y-1 text-foreground/90">
-                                  {jsonMeanings.map((meaning) => (
-                                    <li key={meaning}>- {meaning}</li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <p className="mt-2 text-foreground/90">-</p>
-                              )}
-                            </article>
-                          </div>
+                          {!studyMode ? (
+                            <div className="mt-4">
+                              <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+                                <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
+                                {jsonMeanings.length > 0 ? (
+                                  <ul className="mt-2 space-y-1 text-foreground/90">
+                                    {jsonMeanings.map((meaning) => (
+                                      <li key={meaning}>- {meaning}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="mt-2 text-foreground/90">-</p>
+                                )}
+                              </article>
+                            </div>
+                          ) : null}
 
-                          {selectedItem.notes.length > 0 ? (
+                          {!studyMode && selectedItem.notes.length > 0 ? (
                             <div className="mt-4">
                               <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                                 <p className="text-xs font-bold uppercase text-foreground/70">Dictionary notes</p>
@@ -400,7 +416,7 @@ export default function JlptExplorerContent({
                             </div>
                           ) : null}
 
-                          {wordExamples.length > 0 ? (
+                          {!studyMode && wordExamples.length > 0 ? (
                             <div className="mt-4">
                               <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
                                 <p className="text-xs font-bold uppercase text-foreground/70">Used in words</p>

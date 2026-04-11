@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -62,12 +61,6 @@ export default function LeaderboardAdminActions() {
           {refreshing ? "Refreshing..." : "Refresh"}
         </button>
       ) : null}
-      <Link
-        href="/admin"
-        className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-6 text-sm font-bold uppercase tracking-[0.14em] text-foreground transition hover:bg-surface-muted"
-      >
-        Open Admin
-      </Link>
     </div>
   );
 }

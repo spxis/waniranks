@@ -1,5 +1,5 @@
 const DEFAULT_LEADERBOARD_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-const DEFAULT_REQUEST_GAP_MS = 5 * 1000;
+const DEFAULT_REQUEST_GAP_MS = 1000;
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) {
@@ -22,7 +22,7 @@ export const LEADERBOARD_REFRESH_INTERVAL_MS = parsePositiveInt(
   DEFAULT_LEADERBOARD_REFRESH_INTERVAL_MS,
 );
 
-// Keep the default at 5s to stay safely under WaniKani's 60 req/min limit.
+// Aggressive default per product requirement. Increase if you hit API rate limits.
 export const LEADERBOARD_REQUEST_GAP_MS = parsePositiveInt(
   process.env.LEADERBOARD_REQUEST_GAP_MS,
   DEFAULT_REQUEST_GAP_MS,

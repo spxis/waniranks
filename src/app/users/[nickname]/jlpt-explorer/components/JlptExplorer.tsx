@@ -15,6 +15,7 @@ import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
 type Props = {
   items: JlptItem[];
   showEnglish?: boolean;
+  studyMode?: boolean;
   userKanjiItems?: UserKanjiItem[];
 };
 
@@ -25,6 +26,7 @@ type JlptFilter = "all" | "kanji" | "none";
 export default function JlptExplorer({
   items,
   showEnglish = false,
+  studyMode = false,
   userKanjiItems = [],
 }: Props) {
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
@@ -352,6 +354,7 @@ export default function JlptExplorer({
     <JlptExplorerContent
       items={items}
       showEnglish={showEnglish}
+      studyMode={studyMode}
       counts={counts}
       selectedLevels={selectedLevels}
       stickyLevels={stickyLevels}

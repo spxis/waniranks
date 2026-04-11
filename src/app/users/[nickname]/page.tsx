@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
 
+import { authOptions } from "@/lib/auth";
 import { decryptToken } from "@/lib/crypto";
 import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
 import { prisma } from "@/lib/prisma";
-import { refreshDueAccounts } from "@/lib/sync";
 import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserDashboardTabs from "./UserDashboardTabs";
@@ -42,7 +43,10 @@ type JlptKanjiRow = {
 };
 
 export default async function UserDetailPage({ params, searchParams }: PageProps) {
+  const session = await getServerSession(authOptions);
+  const viewerEmail = session?.user?.email?.trim().toLowerCase() ?? null;
   const { nickname } = await params;
+  const userKey = decodeURIComponent(nickname);
   const query = await searchParams;
   const allowedSrs = new Set([
     "all",
@@ -64,10 +68,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
         | "locked")
     : "all";
 
-  await refreshDueAccounts(1);
-
-  const account = await prisma.account.findUnique({
-    where: { nickname: decodeURIComponent(nickname) },
+  const account = await prisma.account.findFirst({
+    where: { wkUsername: userKey },
     select: {
       id: true,
       tokenEncrypted: true,
@@ -75,6 +77,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       tokenTag: true,
       nickname: true,
       wkUsername: true,
+      joinedByEmail: true,
       wkLevel: true,
       reviewCount: true,
       burnedCount: true,
@@ -92,6 +95,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       estimatedHoursRemaining: true,
       levelKanjiItems: true,
       itemSpread: true,
+      lastActivityAt: true,
       lastSyncedAt: true,
     },
   });
@@ -142,12 +146,13 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   function typeProgress(type: "radical" | "kanji" | "vocabulary") {
     const items = currentLevelItems.filter((item) => item.subjectType === type);
-    const guruOrHigher = items.filter((item) => item.srsStage >= 5).length;
+    const unlockedItems = items.filter((item) => item.srsStage > 0);
+    const guruOrHigher = unlockedItems.filter((item) => item.srsStage >= 5).length;
 
     return {
       guruOrHigher,
-      total: items.length,
-      percent: items.length === 0 ? 0 : Math.round((guruOrHigher / items.length) * 100),
+      total: unlockedItems.length,
+      percent: unlockedItems.length === 0 ? 0 : Math.round((guruOrHigher / unlockedItems.length) * 100),
     };
   }
 
@@ -163,6 +168,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const kanjiGuruGoal = Math.ceil(account.levelKanjiTotal * 0.9);
   const remainingToLevelUp = Math.max(0, kanjiGuruGoal - account.levelKanjiGuruPlus);
   const passedLevelUpGate = account.levelKanjiGuruPlus >= kanjiGuruGoal;
+  const linkedEmail = account.joinedByEmail?.trim().toLowerCase() ?? null;
+  const viewerMatchesAccount = Boolean(viewerEmail && linkedEmail && viewerEmail === linkedEmail);
 
   return (
     <div className="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
@@ -171,6 +178,11 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           accountId={account.id}
           nickname={account.nickname}
           wkUsername={account.wkUsername}
+          linkedEmail={account.joinedByEmail}
+          viewerSignedIn={Boolean(viewerEmail)}
+          viewerMatchesAccount={viewerMatchesAccount}
+          lastSyncedAt={account.lastSyncedAt.toISOString()}
+          lastActivityAt={account.lastActivityAt ? account.lastActivityAt.toISOString() : null}
           globalRank={globalRank}
           totalPlayers={totalPlayers}
           wkLevel={account.wkLevel}
@@ -198,6 +210,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
         <ExplorerTabs
           accountId={account.id}
           maxLevel={account.wkLevel}
+          accountPendingReviews={account.pendingReviews}
           initialSnapshot={{
             level: account.wkLevel,
             kanjiTotal: account.levelKanjiTotal,

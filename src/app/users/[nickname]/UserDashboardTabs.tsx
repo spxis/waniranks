@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
 
 import UserAdminRefreshButton from "./UserAdminRefreshButton";
 
@@ -33,6 +34,11 @@ type Props = {
   accountId: string;
   nickname: string;
   wkUsername: string;
+  linkedEmail: string | null;
+  viewerSignedIn: boolean;
+  viewerMatchesAccount: boolean;
+  lastSyncedAt: string;
+  lastActivityAt: string | null;
   globalRank: number;
   totalPlayers: number;
   wkLevel: number;
@@ -57,6 +63,11 @@ type Props = {
   passedLevelUpGate: boolean;
 };
 
+type LiveData = {
+  lastSyncedAt: string;
+  lastActivityAt: string | null;
+};
+
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
@@ -65,6 +76,11 @@ export default function UserDashboardTabs({
   accountId,
   nickname,
   wkUsername,
+  linkedEmail,
+  viewerSignedIn,
+  viewerMatchesAccount,
+  lastSyncedAt,
+  lastActivityAt,
   globalRank,
   totalPlayers,
   wkLevel,
@@ -103,8 +119,93 @@ export default function UserDashboardTabs({
       return "main";
     }
   });
+
   const actionButtonBaseClass =
     "inline-flex h-10 min-w-[9.5rem] items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const { data: liveData, mutate } = useSWR<LiveData>(
+    `/api/accounts/${accountId}/live`,
+    async (url: string) => {
+      const response = await fetch(url, { cache: "no-store" });
+      const payload = (await response.json()) as LiveData;
+      if (!response.ok) {
+        throw new Error("Could not fetch live account data.");
+      }
+      return payload;
+    },
+    { refreshInterval: 15_000, revalidateOnFocus: true },
+  );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 30_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onUserRefreshed = (event: Event) => {
+      const custom = event as CustomEvent<{ accountId?: string }>;
+      if (custom.detail?.accountId !== accountId) {
+        return;
+      }
+
+      void mutate();
+    };
+
+    window.addEventListener("wr:user-refreshed", onUserRefreshed as EventListener);
+    return () => {
+      window.removeEventListener("wr:user-refreshed", onUserRefreshed as EventListener);
+    };
+  }, [accountId, mutate]);
+
+  const liveLastSyncedMs = new Date(liveData?.lastSyncedAt ?? lastSyncedAt).getTime();
+  const liveLastActivityMs = new Date(liveData?.lastActivityAt ?? lastActivityAt ?? "").getTime();
+
+  function formatRelativeTime(timestampMs: number): string {
+    if (Number.isNaN(timestampMs)) {
+      return "unknown";
+    }
+
+    const deltaMs = nowMs - timestampMs;
+    if (deltaMs < 30_000) {
+      return "just now";
+    }
+
+    const minuteMs = 60_000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+
+    if (deltaMs < hourMs) {
+      const minutes = Math.max(1, Math.round(deltaMs / minuteMs));
+      return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+    }
+
+    if (deltaMs < dayMs) {
+      const hours = Math.max(1, Math.round(deltaMs / hourMs));
+      return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+
+    const days = Math.max(1, Math.round(deltaMs / dayMs));
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }
+
+  function formatAbsoluteTime(timestampMs: number): string {
+    if (Number.isNaN(timestampMs)) {
+      return "Unknown";
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(timestampMs));
+  }
 
   function switchTab(next: TabId) {
     setActiveTab(next);
@@ -136,7 +237,26 @@ export default function UserDashboardTabs({
             </Link>
           </div>
           <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
-          <p className="mt-2 text-sm text-foreground/70">@{wkUsername}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-foreground/70">
+            <p>@{wkUsername}</p>
+            {linkedEmail ? <p className="text-foreground/55">· {linkedEmail}</p> : null}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {viewerMatchesAccount ? (
+              <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-emerald-800">
+                You
+              </span>
+            ) : null}
+            {viewerMatchesAccount ? (
+              <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-blue-800">
+                Google Linked · Reviews Enabled
+              </span>
+            ) : viewerSignedIn ? (
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-amber-800">
+                Signed In · Not Linked To This User
+              </span>
+            ) : null}
+          </div>
           <p className="mt-1 inline-flex rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80">
             Global Rank #{globalRank} of {formatNumber(totalPlayers)}
           </p>
@@ -181,6 +301,13 @@ export default function UserDashboardTabs({
           />
         </div>
       </div>
+
+      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
+        Last refresh {formatAbsoluteTime(liveLastSyncedMs)} ({formatRelativeTime(liveLastSyncedMs)})
+      </p>
+      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
+        Last activity {lastActivityAt || liveData?.lastActivityAt ? `${formatAbsoluteTime(liveLastActivityMs)} (${formatRelativeTime(liveLastActivityMs)})` : "Unknown"}
+      </p>
 
       {activeTab === "main" ? (
         <div className="mt-4" role="tabpanel">

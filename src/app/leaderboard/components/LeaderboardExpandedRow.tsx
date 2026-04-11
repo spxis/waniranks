@@ -1,17 +1,22 @@
 import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
 
-import type { LeaderboardRow } from "../lib/leaderboardTypes";
+import type { LeaderboardRow, LeaderboardTab } from "../lib/leaderboardTypes";
 import {
   deltaClass,
   formatDate,
   formatDelta,
   formatNumber,
+  formatSince,
   jlptCompletionClass,
   jlptCountsFromRow,
 } from "../lib/leaderboardUtils";
 
 type Props = {
   row: LeaderboardRow;
+  activeTab: LeaderboardTab;
+  canRefreshAdmin: boolean;
+  isRefreshing: boolean;
+  onRefreshUser: () => Promise<void>;
   showItemSpreadPanel: boolean;
   showLevelProgressPanel: boolean;
   onToggleItemSpreadPanel: () => void;
@@ -20,6 +25,10 @@ type Props = {
 
 export default function LeaderboardExpandedRow({
   row,
+  activeTab,
+  canRefreshAdmin,
+  isRefreshing,
+  onRefreshUser,
   showItemSpreadPanel,
   showLevelProgressPanel,
   onToggleItemSpreadPanel,
@@ -36,6 +45,21 @@ export default function LeaderboardExpandedRow({
         <div className="rounded-2xl border border-accent/25 bg-surface p-4">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Due Now</p>
           <p className="mt-1 text-4xl font-black text-accent">{formatNumber(row.pendingReviews)}</p>
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/60">
+            Last updated {formatDate(row.lastSyncedAt)} ({formatSince(row.lastSyncedAt)})
+          </p>
+          {canRefreshAdmin ? (
+            <button
+              type="button"
+              disabled={isRefreshing}
+              onClick={() => {
+                void onRefreshUser();
+              }}
+              className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-line bg-white px-4 text-[11px] font-black uppercase tracking-[0.1em] text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh user"}
+            </button>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-line bg-surface p-4">
@@ -206,15 +230,34 @@ export default function LeaderboardExpandedRow({
       <div className="rounded-2xl border border-line bg-surface p-4">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">24h Change</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {([
-            ["Score", row.dailyDelta?.score],
-            ["Reviews", row.dailyDelta?.reviewCount],
-            ["Level", row.dailyDelta?.wkLevel],
-            ["Radicals", row.dailyDelta?.radicalCount],
-            ["Vocab", row.dailyDelta?.vocabularyCount],
-            ["Burned", row.dailyDelta?.burnedCount],
-            ["Learned Kanji", row.dailyDelta?.levelKanjiLearned],
-          ] as const).map(([label, delta]) => (
+          {(
+            activeTab === "overall"
+              ? ([
+                  ["Score", row.dailyDelta?.score],
+                  ["Reviews", row.dailyDelta?.reviewCount],
+                  ["Level", row.dailyDelta?.wkLevel],
+                  ["Radicals", row.dailyDelta?.radicalCount],
+                  ["Vocab", row.dailyDelta?.vocabularyCount],
+                  ["Burned", row.dailyDelta?.burnedCount],
+                  ["Learned Kanji", row.dailyDelta?.levelKanjiLearned],
+                ] as const)
+              : ([
+                  ["Level", row.dailyDelta?.wkLevel],
+                  [
+                    activeTab === "radicals"
+                      ? "Radicals"
+                      : activeTab === "kanji"
+                        ? "Learned Kanji"
+                        : "Vocab",
+                    activeTab === "radicals"
+                      ? row.dailyDelta?.radicalCount
+                      : activeTab === "kanji"
+                        ? row.dailyDelta?.levelKanjiLearned
+                        : row.dailyDelta?.vocabularyCount,
+                  ],
+                  ["Burned", row.dailyDelta?.burnedCount],
+                ] as const)
+          ).map(([label, delta]) => (
             <div key={label} className="rounded-xl border border-line bg-surface-muted px-3 py-2">
               <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70">{label}</p>
               <p className={`mt-1 text-xl font-black ${deltaClass(delta)}`}>{formatDelta(delta)}</p>

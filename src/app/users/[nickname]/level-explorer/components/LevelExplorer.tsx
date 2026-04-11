@@ -6,9 +6,11 @@ import LevelExplorerScreen from "./LevelExplorerScreen";
 type Props = {
   accountId: string;
   maxLevel: number;
+  accountPendingReviews: number;
   initialSnapshot: Snapshot;
   initialSrsFilter?: SrsFilter;
   showEnglish?: boolean;
+  studyMode?: boolean;
 };
 
 export default function LevelExplorer(props: Props) {

@@ -47,7 +47,7 @@ Use [http://localhost:3000/admin](http://localhost:3000/admin) to add family acc
 
 ## WaniKani Sync Best Practices (Implemented)
 
-- Respect rate limits by serializing API requests with a minimum gap (`LEADERBOARD_REQUEST_GAP_MS`, default 5000).
+- Respect rate limits by serializing API requests with a minimum gap (`LEADERBOARD_REQUEST_GAP_MS`, default 1000).
 - Avoid unnecessary full re-fetches by using incremental assignment sync via `updated_after`.
 - Use conditional requests (`If-None-Match` / `If-Modified-Since`) for stable endpoints and reuse stored counts when unchanged.
 - Persist assignment cache and request metadata in `Account` JSON columns.
@@ -69,7 +69,7 @@ Required Vercel environment variables:
 - `AUTH_GOOGLE_SECRET` (Google OAuth client secret)
 - `ADMIN_GOOGLE_ALLOWED_EMAILS` (comma-separated admin emails, e.g. `you@gmail.com,partner@gmail.com`)
 - `LEADERBOARD_REFRESH_INTERVAL_MS` (optional, default `300000`)
-- `LEADERBOARD_REQUEST_GAP_MS` (optional, default `5000`)
+- `LEADERBOARD_REQUEST_GAP_MS` (optional, default `1000`)
 
 ## Admin Auth (Recommended)
 

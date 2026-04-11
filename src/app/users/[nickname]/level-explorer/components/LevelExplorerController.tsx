@@ -38,17 +38,21 @@ import {
 type Props = {
   accountId: string;
   maxLevel: number;
+  accountPendingReviews: number;
   initialSnapshot: Snapshot;
   initialSrsFilter?: SrsFilter;
   showEnglish?: boolean;
+  studyMode?: boolean;
 };
 
 export default function LevelExplorerController({
   accountId,
   maxLevel,
+  accountPendingReviews,
   initialSnapshot,
   initialSrsFilter = "all",
   showEnglish = false,
+  studyMode = false,
 }: Props) {
   const storageKeys = useMemo(() => buildLevelExplorerStorageKeys(accountId), [accountId]);
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([initialSnapshot.level]));
@@ -256,6 +260,7 @@ export default function LevelExplorerController({
     () => computeReviewTimingCounts(combinedSnapshot.items),
     [combinedSnapshot.items],
   );
+  const overdueOutsideSelectedLevels = Math.max(0, accountPendingReviews - reviewTimingCounts.overdue);
   const selectedLevelList = Array.from(selectedLevels.values()).sort((a, b) => a - b);
 
   const kanjiByCharacter = useMemo(
@@ -433,6 +438,8 @@ export default function LevelExplorerController({
       counts={counts}
       jlptCounts={jlptCounts}
       reviewTimingCounts={reviewTimingCounts}
+      accountPendingReviews={accountPendingReviews}
+      overdueOutsideSelectedLevels={overdueOutsideSelectedLevels}
       combinedItemLength={combinedSnapshot.items.length}
       combinedKanjiLearned={combinedSnapshot.kanjiLearned}
       combinedKanjiLocked={combinedSnapshot.kanjiLocked}
@@ -442,6 +449,7 @@ export default function LevelExplorerController({
       jlptFilter={jlptFilter}
       reviewTimingFilter={reviewTimingFilter}
       showEnglish={showEnglish}
+      studyMode={studyMode}
       loading={loading}
       searchMatchedSubjectIds={searchMatchedSubjectIds}
       error={error}

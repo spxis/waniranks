@@ -34,6 +34,7 @@ type VocabularyKanjiLink = {
 type Props = {
   selectedItem: LevelItem;
   showEnglish: boolean;
+  studyMode: boolean;
   selectedMeaningExplanation: string;
   selectedReadingExplanationRaw: string;
   showReadingExplanation: boolean;
@@ -220,6 +221,7 @@ function VocabularyKanjiCards({
 export default function LevelExplorerDetailSection({
   selectedItem,
   showEnglish,
+  studyMode,
   selectedMeaningExplanation,
   selectedReadingExplanationRaw,
   showReadingExplanation,
@@ -245,6 +247,10 @@ export default function LevelExplorerDetailSection({
             <div>
               <h3 className="text-center text-4xl font-black leading-none text-current">{selectedItem.characters}</h3>
               {(() => {
+                if (studyMode) {
+                  return null;
+                }
+
                 const subtitle = showEnglish
                   ? englishSubtitleForDisplay(selectedItem)
                   : glyphSubtitleForDisplay(selectedItem);
@@ -270,11 +276,21 @@ export default function LevelExplorerDetailSection({
           ) : null}
         </div>
         <div className="min-w-0">
-          <p className="text-3xl font-black leading-tight text-foreground">{titleForDisplay(selectedItem, showEnglish)}</p>
+          <p className="text-3xl font-black leading-tight text-foreground">
+            {studyMode
+              ? selectedItem.subjectType === "kanji"
+                ? "Kanji"
+                : selectedItem.subjectType === "radical"
+                  ? "Radical"
+                  : "Vocabulary"
+              : titleForDisplay(selectedItem, showEnglish)}
+          </p>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {!studyMode ? (
+          <>
         <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
           <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
           <p className="mt-1 font-semibold text-foreground/90">
@@ -301,6 +317,8 @@ export default function LevelExplorerDetailSection({
             )}
           </p>
         </div>
+          </>
+        ) : null}
         <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
           <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
           <p className="mt-1 font-semibold text-foreground/90">{formatDate(selectedItem.startedAt)}</p>
@@ -315,6 +333,7 @@ export default function LevelExplorerDetailSection({
         </div>
       </div>
 
+      {!studyMode ? (
       <div className={`mt-4 grid gap-3 ${showReadingExplanation ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
         <article className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
           <p className="text-xs font-bold uppercase text-foreground/70">Meaning explanation</p>
@@ -327,7 +346,9 @@ export default function LevelExplorerDetailSection({
           </article>
         ) : null}
       </div>
+      ) : null}
 
+      {!studyMode ? (
       <LevelRelatedPanels
         hasPrimary={hasPrimaryRelatedPanel}
         hasVisuallySimilar={hasVisuallySimilarPanel}
@@ -370,6 +391,7 @@ export default function LevelExplorerDetailSection({
           />
         }
       />
+      ) : null}
     </section>
   );
 }

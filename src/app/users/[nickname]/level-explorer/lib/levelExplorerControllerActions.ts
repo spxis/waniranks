@@ -62,25 +62,7 @@ export function buildLevelExplorerActions({
       return;
     }
 
-    if (!stickyMerge) {
-      setSelectedLevels(new Set([level]));
-      await ensureLevelLoaded(level);
-      return;
-    }
-
-    const next = new Set(selectedLevels);
-    if (next.has(level)) {
-      if (next.size === 1) {
-        return;
-      }
-
-      next.delete(level);
-      setSelectedLevels(next);
-      return;
-    }
-
-    next.add(level);
-    setSelectedLevels(next);
+    setSelectedLevels(new Set([level]));
     await ensureLevelLoaded(level);
   };
 
@@ -88,7 +70,7 @@ export function buildLevelExplorerActions({
     markHistoryPush();
 
     setSelectedSubjectId(null);
-    setSelectedLevels(new Set(levelOptions));
+    setSelectedLevels(new Set([initialLevel]));
     setSearchMatchedSubjectIds(null);
     setSearchAvailableLevels(null);
 
@@ -101,7 +83,7 @@ export function buildLevelExplorerActions({
       window.dispatchEvent(new CustomEvent("wr:explorer-search-clear", { detail: { scope: "all" } }));
     }
 
-    await Promise.all(levelOptions.map((level) => ensureLevelLoaded(level)));
+    await ensureLevelLoaded(initialLevel);
   };
 
   const jumpToKanji = async (subjectId: number, wkLevel: number | null) => {
