@@ -17,6 +17,7 @@ import {
   typeCardClass,
   typeGlyphBoxClass,
 } from "../lib/levelExplorerDisplay";
+import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import type { JlptFilter, ReviewTimingFilter, TypeFilter, TypeVisibility } from "../lib/levelExplorerState";
 import type { SrsFilter } from "../../explorerTypes";
@@ -405,8 +406,7 @@ export default function LevelExplorerContent({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {visibleItems.map((item, index) => (
               <Fragment key={`${item.subjectType}-${item.subjectId}`}>
-                <button
-                  type="button"
+                <UnifiedExplorerCard
                   onClick={() => {
                     onMarkHistoryPush();
                     onSetSelectedSubjectId((prev) => (prev === item.subjectId ? null : item.subjectId));
@@ -415,29 +415,9 @@ export default function LevelExplorerContent({
                     item.subjectType,
                     selectedItem?.subjectId === item.subjectId,
                   )} ${lockedCardStateClass(item)}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="inline-flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-foreground/45">#{formatNumber(index + 1)}</span>
-                      {selectedItem?.subjectId === item.subjectId ? (
-                        <span
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-accent/40 bg-accent/15 text-accent"
-                          title="Viewing details. Click this card to close."
-                          aria-label="Viewing details"
-                        >
-                          <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-                            <path
-                              d="M8.5 14a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11Zm0-1.7a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6Zm4.6 1.2 3.2 3.2"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-1">
+                  indexLabel={`#${formatNumber(index + 1)}`}
+                  topRight={
+                    <>
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {typeof item.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span>
@@ -447,73 +427,61 @@ export default function LevelExplorerContent({
                       {item.subjectType === "kanji" && item.jlptLevel ? (
                         <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span>
                       ) : null}
-                    </div>
-                  </div>
-                  <p
-                    className={`mt-2 text-xl font-black leading-tight ${
-                      item.status === "locked" || item.srsStage <= 0 ? "text-foreground/60" : "text-foreground"
-                    }`}
-                  >
-                    {studyMode
+                    </>
+                  }
+                  title={
+                    studyMode
                       ? item.subjectType === "kanji"
                         ? "Kanji"
                         : item.subjectType === "radical"
                           ? "Radical"
                           : "Vocabulary"
-                      : titleForDisplay(item, showEnglish)}
-                  </p>
-                  <div
-                    className={`mt-3 rounded-xl border ${
-                      glyphHasReading(item)
-                        ? "flex min-h-[6rem] w-full flex-col items-center justify-center px-3 py-2"
-                        : "flex min-h-[6rem] w-full items-center justify-center px-3 py-3"
-                    } ${typeGlyphBoxClass(item.subjectType)} ${
-                      item.status === "locked" || item.srsStage <= 0 ? "opacity-60" : ""
-                    }`}
-                  >
-                    <p className={`${glyphTextSizeClass(item.characters)} font-black leading-none whitespace-nowrap`}>
-                      {item.characters}
-                    </p>
-                    {!studyMode ? (() => {
-                      const subtitle = glyphSubtitleForDisplay(item);
-                      if (!subtitle) {
-                        return null;
-                      }
-                      return (
-                        <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/70 whitespace-nowrap">
-                          <ReadingWithPronunciation reading={subtitle} />
-                        </p>
-                      );
-                    })() : null}
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 items-center gap-2">
-                    <span
-                      className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}
-                    >
+                      : titleForDisplay(item, showEnglish)
+                  }
+                  titleTooltip={titleForDisplay(item, showEnglish)}
+                  titleClassName={item.status === "locked" || item.srsStage <= 0 ? "text-foreground/60" : ""}
+                  glyphClassName={`${typeGlyphBoxClass(item.subjectType)} ${item.status === "locked" || item.srsStage <= 0 ? "opacity-60" : ""}`}
+                  glyphText={item.characters}
+                  glyphTextClassName={`${glyphTextSizeClass(item.characters)} whitespace-nowrap`}
+                  glyphSubtitle={
+                    !studyMode
+                      ? (() => {
+                          const subtitle = glyphSubtitleForDisplay(item);
+                          if (!subtitle) {
+                            return null;
+                          }
+                          return <ReadingWithPronunciation reading={subtitle} />;
+                        })()
+                      : undefined
+                  }
+                  statusChip={
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
                       {item.status}
                     </span>
-                    {item.status !== "burned" ? (
-                      (() => {
-                        const nextReviewBadge = formatNextReviewBadge(item.availableAt);
-                        if (!nextReviewBadge) {
-                          return <span />;
-                        }
-                        return (
-                          <span
-                            className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.03em] ${nextReviewBadge.className}`}
-                          >
-                            {nextReviewBadge.label}
-                          </span>
-                        );
-                      })()
-                    ) : (
-                      <span />
-                    )}
-                    <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
+                  }
+                  middleChip={
+                    item.status !== "burned"
+                      ? (() => {
+                          const nextReviewBadge = formatNextReviewBadge(item.availableAt);
+                          if (!nextReviewBadge) {
+                            return undefined;
+                          }
+                          return (
+                            <span
+                              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.03em] ${nextReviewBadge.className}`}
+                            >
+                              {nextReviewBadge.label}
+                            </span>
+                          );
+                        })()
+                      : undefined
+                  }
+                  rightChip={
+                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
                       SRS {item.srsStage}
                     </span>
-                  </div>
-                </button>
+                  }
+                />
 
                 {selectedItem && index === visibleDetailInsertIndex ? (
                   <LevelExplorerDetailSection

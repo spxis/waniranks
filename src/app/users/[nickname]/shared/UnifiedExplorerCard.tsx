@@ -49,7 +49,7 @@ export default function UnifiedExplorerCard({
         </p>
       </div>
 
-      <div className={`mt-3 flex h-[9.75rem] flex-col justify-center rounded-xl border px-3 py-2 ${glyphClassName}`}>
+      <div className={`mt-3 flex h-[8.5rem] flex-col justify-center rounded-xl border px-3 py-2 ${glyphClassName}`}>
         <p className={`${glyphTextClassName} text-center font-black leading-none`}>{glyphText}</p>
         <p className="mt-1 min-h-[1.25rem] text-center text-sm font-semibold text-foreground/70">{glyphSubtitle ?? ""}</p>
       </div>

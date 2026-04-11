@@ -453,13 +453,18 @@ export default function StudyExplorer({
   }, [data?.items, queueMode, showLocked, srsFilter, viewedLevel]);
 
   const srsCounts = useMemo(() => {
-    const countsBySrs: Record<Exclude<SrsFilter, "locked">, number> = {
+    const countsBySrs: {
+      all: number;
+      apprentice: number;
+      guru: number;
+      master: number;
+      enlightened: number;
+    } = {
       all: 0,
       apprentice: 0,
       guru: 0,
       master: 0,
       enlightened: 0,
-      burned: 0,
     };
 
     for (const item of data?.items ?? []) {
@@ -491,8 +496,6 @@ export default function StudyExplorer({
         countsBySrs.master += 1;
       } else if (item.status === "enlightened") {
         countsBySrs.enlightened += 1;
-      } else if (item.status === "burned") {
-        countsBySrs.burned += 1;
       }
     }
 
@@ -826,9 +829,13 @@ export default function StudyExplorer({
               </button>
             );
           })}
-          {(["all", "apprentice", "guru", "master", "enlightened", "burned"] as const).map((status) => (
+          {(["all", "apprentice", "guru", "master", "enlightened"] as const).map((status) => (
             <button key={status} type="button" onClick={() => setSrsFilter(status)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsFilter === status)}`}>
-              {status} ({formatNumber(srsCounts[status])})
+              {status === "apprentice"
+                ? `appr (${formatNumber(srsCounts.apprentice)})`
+                : status === "enlightened"
+                  ? `enlight (${formatNumber(srsCounts.enlightened)})`
+                  : `${status} (${formatNumber(srsCounts[status])})`}
             </button>
           ))}
         </div>
