@@ -32,6 +32,22 @@ export function statusShortLabel(status: LevelItem["status"]): string {
   }
 }
 
+export function shortSubjectTypeLabel(type: LevelItem["subjectType"]): string {
+  if (type === "vocabulary") {
+    return "VOCAB";
+  }
+
+  if (type === "radical") {
+    return "RADICAL";
+  }
+
+  if (type === "kanji") {
+    return "KANJI";
+  }
+
+  return "ITEM";
+}
+
 export function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }

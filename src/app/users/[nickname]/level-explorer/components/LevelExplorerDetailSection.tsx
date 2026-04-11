@@ -12,6 +12,8 @@ import {
   relatedReferenceCardClass,
   secondaryReadingsForDisplay,
   statusClass,
+  statusShortLabel,
+  shortSubjectTypeLabel,
   subjectTypePillClass,
   titleForDisplay,
   typeGlyphBoxClass,
@@ -292,8 +294,8 @@ export default function LevelExplorerDetailSection({
         </div>
         <>
           <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
-            <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{selectedItem.status}</span>
-            <span className={subjectTypePillClass(selectedItem.subjectType)}>{selectedItem.subjectType}</span>
+            <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{statusShortLabel(selectedItem.status)}</span>
+            <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
             {typeof selectedItem.wkLevel === "number" ? (
               <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span>
             ) : null}

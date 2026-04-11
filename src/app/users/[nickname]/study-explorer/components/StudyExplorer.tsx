@@ -15,6 +15,7 @@ import {
   formatNumber,
   glyphSubtitleForDisplay,
   glyphTextSizeClass,
+  shortSubjectTypeLabel,
   statusClass,
   statusShortLabel,
   subjectTypePillClass,
@@ -146,22 +147,6 @@ function queueBadgeClass(queueType: "review" | "lesson"): string {
   return queueType === "review"
     ? "border-amber-300 bg-amber-50 text-amber-800"
     : "border-sky-300 bg-sky-50 text-sky-800";
-}
-
-function shortSubjectTypeLabel(type: StudyQueueItem["subjectType"]): string {
-  if (type === "vocabulary") {
-    return "VOCAB";
-  }
-
-  if (type === "radical") {
-    return "RADICAL";
-  }
-
-  if (type === "kanji") {
-    return "KANJI";
-  }
-
-  return "ITEM";
 }
 
 function studyItemEnglishTitle(item: StudyQueueItem): string {

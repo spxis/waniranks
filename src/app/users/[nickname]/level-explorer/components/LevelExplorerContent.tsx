@@ -11,6 +11,8 @@ import {
   glyphSubtitleForDisplay,
   glyphTextSizeClass,
   statusClass,
+  statusShortLabel,
+  shortSubjectTypeLabel,
   subjectTypePillClass,
   titleForDisplay,
   typeCardClass,
@@ -416,7 +418,7 @@ export default function LevelExplorerContent({
                   indexLabel={`#${formatNumber(index + 1)}`}
                   topRight={
                     <>
-                      <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
+                      <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
                       {typeof item.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span>
                       ) : typeof selectedLevelList[selectedLevelList.length - 1] === "number" ? (
@@ -454,7 +456,7 @@ export default function LevelExplorerContent({
                   }
                   statusChip={
                     <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
-                      {item.status}
+                      {statusShortLabel(item.status)}
                     </span>
                   }
                   middleChip={
