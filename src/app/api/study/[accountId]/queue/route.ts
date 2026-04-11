@@ -55,6 +55,12 @@ function normalizeQueueType(assignment: AssignmentData, nowMs: number): "review"
 
 export async function GET(request: Request, context: RouteContext) {
   try {
+    const url = new URL(request.url);
+    const limitParam = Number(url.searchParams.get("limit") ?? "");
+    const offsetParam = Number(url.searchParams.get("offset") ?? "");
+    const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
+    const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
+
     const { accountId } = await context.params;
     if (!(await canAccessAccount(request, accountId))) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -170,12 +176,20 @@ export async function GET(request: Request, context: RouteContext) {
         return a.subjectId - b.subjectId;
       });
 
+    const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
+
     return NextResponse.json({
-      items,
+      items: pagedItems,
       counts: {
         all: items.length,
         reviews: items.filter((item) => item.queueType === "review").length,
         lessons: items.filter((item) => item.queueType === "lesson").length,
+      },
+      pagination: {
+        offset,
+        limit: limit ?? items.length,
+        total: items.length,
+        hasMore: limit === null ? false : offset + limit < items.length,
       },
     });
   } catch (error) {

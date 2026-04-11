@@ -118,8 +118,14 @@ function snapshotHasDrilldownFields(items: unknown): boolean {
   return true;
 }
 
-export async function GET(_: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const url = new URL(request.url);
+    const limitParam = Number(url.searchParams.get("limit") ?? "");
+    const offsetParam = Number(url.searchParams.get("offset") ?? "");
+    const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
+    const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
+
     const { id, level: rawLevel } = await context.params;
     const level = Number(rawLevel);
 
@@ -152,6 +158,9 @@ export async function GET(_: Request, context: RouteContext) {
       now - cached.syncedAt.getTime() < LEVEL_CACHE_MS &&
       snapshotHasDrilldownFields(cached.items)
     ) {
+      const items = cached.items as unknown[];
+      const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
+
       return NextResponse.json({
         snapshot: {
           level: cached.level,
@@ -160,9 +169,15 @@ export async function GET(_: Request, context: RouteContext) {
           kanjiGuruPlus: cached.kanjiGuruPlus,
           kanjiLocked: cached.kanjiLocked,
           estimatedHoursRemaining: cached.estimatedHoursRemaining,
-          items: cached.items,
+          items: pagedItems,
           syncedAt: cached.syncedAt,
           fromCache: true,
+        },
+        pagination: {
+          offset,
+          limit: limit ?? items.length,
+          total: items.length,
+          hasMore: limit === null ? false : offset + limit < items.length,
         },
       });
     }
@@ -228,6 +243,9 @@ export async function GET(_: Request, context: RouteContext) {
       },
     });
 
+    const savedItems = saved.items as unknown[];
+    const pagedItems = limit === null ? savedItems : savedItems.slice(offset, offset + limit);
+
     return NextResponse.json({
       snapshot: {
         level: saved.level,
@@ -236,9 +254,15 @@ export async function GET(_: Request, context: RouteContext) {
         kanjiGuruPlus: saved.kanjiGuruPlus,
         kanjiLocked: saved.kanjiLocked,
         estimatedHoursRemaining: saved.estimatedHoursRemaining,
-        items: saved.items,
+        items: pagedItems,
         syncedAt: saved.syncedAt,
         fromCache: false,
+      },
+      pagination: {
+        offset,
+        limit: limit ?? savedItems.length,
+        total: savedItems.length,
+        hasMore: limit === null ? false : offset + limit < savedItems.length,
       },
     });
   } catch (error) {

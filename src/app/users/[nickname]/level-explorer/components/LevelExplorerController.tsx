@@ -246,13 +246,6 @@ export default function LevelExplorerController({
   const selectedItem = filteredItems.find((item) => item.subjectId === selectedSubjectId) ?? null;
   const selectedItemFromAll =
     selectedSubjectId === null ? null : combinedSnapshot.items.find((item) => item.subjectId === selectedSubjectId) ?? null;
-  const selectedItemIndex = selectedItem
-    ? filteredItems.findIndex((item) => item.subjectId === selectedItem.subjectId)
-    : -1;
-  const detailInsertIndex =
-    selectedItemIndex >= 0
-      ? Math.min(filteredItems.length - 1, Math.floor(selectedItemIndex / gridColumns) * gridColumns + (gridColumns - 1))
-      : -1;
 
   const counts = useMemo(() => computeLevelItemCounts(combinedSnapshot.items), [combinedSnapshot.items]);
   const jlptCounts = useMemo(() => computeJlptCounts(combinedSnapshot.items), [combinedSnapshot.items]);
@@ -451,11 +444,11 @@ export default function LevelExplorerController({
       showEnglish={showEnglish}
       studyMode={studyMode}
       loading={loading}
+      gridColumns={gridColumns}
       searchMatchedSubjectIds={searchMatchedSubjectIds}
       error={error}
       filteredItems={filteredItems}
       selectedItem={selectedItem}
-      detailInsertIndex={detailInsertIndex}
       selectedMeaningExplanation={selectedMeaningExplanation}
       selectedReadingExplanationRaw={selectedReadingExplanationRaw}
       showReadingExplanation={showReadingExplanation}

@@ -339,16 +339,6 @@ export default function JlptExplorer({
   const selectedItem = selectedKanji
     ? filteredItems.find((item) => item.kanji === selectedKanji) ?? null
     : null;
-  const selectedItemIndex = selectedItem
-    ? filteredItems.findIndex((item) => item.kanji === selectedItem.kanji)
-    : -1;
-  const detailInsertIndex =
-    selectedItemIndex >= 0
-      ? Math.min(
-          filteredItems.length - 1,
-          Math.floor(selectedItemIndex / gridColumns) * gridColumns + (gridColumns - 1),
-        )
-      : -1;
 
   return (
     <JlptExplorerContent
@@ -362,7 +352,7 @@ export default function JlptExplorer({
       filteredItems={filteredItems}
       selectedKanji={selectedKanji}
       selectedItem={selectedItem}
-      detailInsertIndex={detailInsertIndex}
+      gridColumns={gridColumns}
       userKanjiByChar={userKanjiByChar}
       onSetSelectedLevels={setSelectedLevels}
       onToggleNLevel={toggleNLevel}

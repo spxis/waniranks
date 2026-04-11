@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import type { LevelItem } from "../../explorerTypes";
 import {
@@ -55,11 +55,11 @@ type Props = {
   showEnglish: boolean;
   studyMode: boolean;
   loading: boolean;
+  gridColumns: number;
   searchMatchedSubjectIds: Set<number> | null;
   error: string;
   filteredItems: LevelItem[];
   selectedItem: LevelItem | null;
-  detailInsertIndex: number;
   selectedMeaningExplanation: string;
   selectedReadingExplanationRaw: string;
   showReadingExplanation: boolean;
@@ -113,11 +113,11 @@ export default function LevelExplorerContent({
   showEnglish,
   studyMode,
   loading,
+  gridColumns,
   searchMatchedSubjectIds,
   error,
   filteredItems,
   selectedItem,
-  detailInsertIndex,
   selectedMeaningExplanation,
   selectedReadingExplanationRaw,
   showReadingExplanation,
@@ -140,6 +140,55 @@ export default function LevelExplorerContent({
   onJumpToKanji,
   onMarkHistoryPush,
 }: Props) {
+  const PAGE_SIZE = 40;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const selectedItemIndex = selectedItem
+    ? filteredItems.findIndex((item) => item.subjectId === selectedItem.subjectId)
+    : -1;
+  const effectiveVisibleCount = Math.min(
+    filteredItems.length,
+    Math.max(PAGE_SIZE, visibleCount, selectedItemIndex + 1),
+  );
+
+  useEffect(() => {
+    if (!sentinelRef.current) {
+      return;
+    }
+
+    if (effectiveVisibleCount >= filteredItems.length) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        setVisibleCount((prev) => Math.min(filteredItems.length, prev + PAGE_SIZE));
+      },
+      { rootMargin: "600px 0px" },
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [effectiveVisibleCount, filteredItems.length]);
+
+  const visibleItems = filteredItems.slice(0, effectiveVisibleCount);
+  const selectedVisibleIndex = selectedItem
+    ? visibleItems.findIndex((item) => item.subjectId === selectedItem.subjectId)
+    : -1;
+  const visibleDetailInsertIndex =
+    selectedVisibleIndex >= 0
+      ? Math.min(
+          visibleItems.length - 1,
+          Math.floor(selectedVisibleIndex / gridColumns) * gridColumns + (gridColumns - 1),
+        )
+      : -1;
+
   return (
     <section
       id="explorer"
@@ -343,8 +392,12 @@ export default function LevelExplorerContent({
             No items visible. Expand one or more types above.
           </div>
         ) : (
+          <>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
+            Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} items
+          </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {filteredItems.map((item, index) => (
+            {visibleItems.map((item, index) => (
               <Fragment key={`${item.subjectType}-${item.subjectId}`}>
                 <button
                   type="button"
@@ -456,7 +509,7 @@ export default function LevelExplorerContent({
                   </div>
                 </button>
 
-                {selectedItem && index === detailInsertIndex ? (
+                {selectedItem && index === visibleDetailInsertIndex ? (
                   <LevelExplorerDetailSection
                     selectedItem={selectedItem}
                     showEnglish={showEnglish}
@@ -476,6 +529,12 @@ export default function LevelExplorerContent({
               </Fragment>
             ))}
           </div>
+          {visibleItems.length < filteredItems.length ? (
+            <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
+              Loading more...
+            </div>
+          ) : null}
+          </>
         )}
       </div>
     </section>

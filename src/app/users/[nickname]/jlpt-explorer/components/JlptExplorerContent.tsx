@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import jlptReadings from "@/data/jlptReadings.json";
 import {
@@ -41,7 +41,7 @@ type Props = {
   filteredItems: JlptItem[];
   selectedKanji: string | null;
   selectedItem: JlptItem | null;
-  detailInsertIndex: number;
+  gridColumns: number;
   userKanjiByChar: Map<string, UserKanjiItem>;
   onSetSelectedLevels: (next: Set<number>) => void;
   onToggleNLevel: (level: number) => void;
@@ -105,7 +105,7 @@ export default function JlptExplorerContent({
   filteredItems,
   selectedKanji,
   selectedItem,
-  detailInsertIndex,
+  gridColumns,
   userKanjiByChar,
   onSetSelectedLevels,
   onToggleNLevel,
@@ -113,6 +113,55 @@ export default function JlptExplorerContent({
   onSetStickyLevels,
   onSetSelectedKanji,
 }: Props) {
+  const PAGE_SIZE = 40;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const selectedIndex = selectedItem
+    ? filteredItems.findIndex((item) => item.kanji === selectedItem.kanji)
+    : -1;
+  const effectiveVisibleCount = Math.min(
+    filteredItems.length,
+    Math.max(PAGE_SIZE, visibleCount, selectedIndex + 1),
+  );
+
+  useEffect(() => {
+    if (!sentinelRef.current) {
+      return;
+    }
+
+    if (effectiveVisibleCount >= filteredItems.length) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        setVisibleCount((prev) => Math.min(filteredItems.length, prev + PAGE_SIZE));
+      },
+      { rootMargin: "600px 0px" },
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [effectiveVisibleCount, filteredItems.length]);
+
+  const visibleItems = filteredItems.slice(0, effectiveVisibleCount);
+  const selectedVisibleIndex = selectedItem
+    ? visibleItems.findIndex((item) => item.kanji === selectedItem.kanji)
+    : -1;
+  const visibleDetailInsertIndex =
+    selectedVisibleIndex >= 0
+      ? Math.min(
+          visibleItems.length - 1,
+          Math.floor(selectedVisibleIndex / gridColumns) * gridColumns + (gridColumns - 1),
+        )
+      : -1;
+
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
       <header className="border-b border-line bg-surface-muted px-5 py-4">
@@ -195,14 +244,14 @@ export default function JlptExplorerContent({
 
       <div className="p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/70">
-          Showing {formatNumber(filteredItems.length)} results
+          Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} results
         </p>
         <p className="mt-1 text-xs text-foreground/60">
           WaniKani-specific SRS stats are shown only where subject mappings exist.
         </p>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredItems.map((item, index) => {
+          {visibleItems.map((item, index) => {
             const userMatch = userKanjiByChar.get(item.kanji);
             const preload = (jlptReadings as JlptReadingsRecord)[item.kanji];
             const dbReadings = [...item.kunReadings, ...item.onReadings, ...item.nanoriReadings];
@@ -257,7 +306,7 @@ export default function JlptExplorerContent({
                   </div>
                 </button>
 
-                {selectedItem && index === detailInsertIndex ? (
+                {selectedItem && index === visibleDetailInsertIndex ? (
                   <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
                     {(() => {
                       const selectedUserMatch = userKanjiByChar.get(selectedItem.kanji);
@@ -450,6 +499,11 @@ export default function JlptExplorerContent({
             );
           })}
         </div>
+        {visibleItems.length < filteredItems.length ? (
+          <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
+            Loading more...
+          </div>
+        ) : null}
       </div>
     </section>
   );

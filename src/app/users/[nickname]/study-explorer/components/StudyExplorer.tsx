@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
 
 import type { LevelItem, SrsFilter } from "../../explorerTypes";
 import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
@@ -54,6 +55,8 @@ function badgeClass(active: boolean): string {
 }
 
 export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyMode }: Props) {
+  const PAGE_SIZE = 40;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const { data, error, mutate, isLoading } = useSWR(`/api/study/${accountId}/queue`, fetcher, {
     refreshInterval: 30_000,
     revalidateOnFocus: true,
@@ -68,6 +71,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
   const [typeFilter, setTypeFilter] = useState<"all" | "radical" | "kanji" | "vocabulary">("all");
   const [srsFilter, setSrsFilter] = useState<SrsFilter>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
 
   const counts = data?.counts ?? { all: 0, reviews: 0, lessons: 0 };
@@ -107,6 +111,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
   const selectedMeaningExplanation = selectedItem?.meaningExplanation ?? "-";
   const selectedReadingExplanationRaw = selectedItem?.readingExplanation ?? "";
   const showReadingExplanation = selectedReadingExplanationRaw.trim().length > 0;
+  const visibleItems = filteredItems.slice(0, visibleCount);
 
   useEffect(() => {
     if (selectedId === null) {
@@ -118,6 +123,35 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
       setSelectedId(null);
     }
   }, [filteredItems, selectedId]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filteredItems]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || selectedItem) {
+      return;
+    }
+
+    if (visibleCount >= filteredItems.length) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        setVisibleCount((prev) => Math.min(filteredItems.length, prev + PAGE_SIZE));
+      },
+      { rootMargin: "600px 0px" },
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [filteredItems.length, selectedItem, visibleCount]);
 
   async function submitReview(assignmentId: number, result: "correct" | "wrong") {
     setSubmittingByAssignmentId((prev) => new Set(prev).add(assignmentId));
@@ -311,8 +345,12 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
         ) : null}
 
         {filteredItems.length > 0 && !selectedItem ? (
+          <>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
+            Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} items
+          </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {filteredItems.map((item, index) => (
+            {visibleItems.map((item, index) => (
               <button
                 key={`${item.queueType}-${item.subjectId}`}
                 type="button"
@@ -367,6 +405,12 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
               </button>
             ))}
           </div>
+          {visibleItems.length < filteredItems.length ? (
+            <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
+              Loading more...
+            </div>
+          ) : null}
+          </>
         ) : null}
 
         {selectedItem ? (
