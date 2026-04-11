@@ -4,6 +4,7 @@ import { z } from "zod";
 import { canAccessAccount } from "@/lib/accountAccess";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
+import { clearStudyQueueCache } from "@/lib/studyQueueCache";
 import { refreshAccountById } from "@/lib/sync";
 import { postWaniKani } from "@/lib/wanikani/http";
 
@@ -58,6 +59,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     await refreshAccountById(accountId, true, true);
+    clearStudyQueueCache(accountId);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

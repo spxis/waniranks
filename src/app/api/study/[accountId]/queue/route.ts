@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { canAccessAccount } from "@/lib/accountAccess";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
+import { getCachedStudyQueue, setCachedStudyQueue } from "@/lib/studyQueueCache";
 import { srsLabel } from "@/lib/wanikani/helpers";
-import { fetchAllCollectionPages } from "@/lib/wanikani/http";
+import { fetchAllCollectionPages, fetchWaniKani } from "@/lib/wanikani/http";
+import type { WaniKaniCollectionResponse } from "@/lib/wanikani/types";
 
 type RouteContext = {
   params: Promise<{ accountId: string }>;
@@ -37,9 +39,16 @@ function normalizeSubjectType(input: string): "radical" | "kanji" | "vocabulary"
   return "vocabulary";
 }
 
+async function fetchAssignmentCount(path: string, token: string): Promise<number> {
+  const response = await fetchWaniKani<WaniKaniCollectionResponse>(path, token);
+  return response.data?.total_count ?? 0;
+}
+
 export async function GET(request: Request, context: RouteContext) {
   try {
     const url = new URL(request.url);
+    const modeParam = url.searchParams.get("mode");
+    const mode = modeParam === "lesson" ? "lesson" : modeParam === "all" ? "all" : "review";
     const limitParam = Number(url.searchParams.get("limit") ?? "");
     const offsetParam = Number(url.searchParams.get("offset") ?? "");
     const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
@@ -69,17 +78,49 @@ export async function GET(request: Request, context: RouteContext) {
       tag: account.tokenTag,
     });
 
-    const [reviewAssignmentsResponse, lessonAssignmentsResponse] = await Promise.all([
-      fetchAllCollectionPages("/assignments?immediately_available_for_review=true", token),
-      fetchAllCollectionPages("/assignments?immediately_available_for_lessons=true", token),
-    ]);
+    const cached = getCachedStudyQueue(accountId, mode);
+    if (cached) {
+      const cachedItems = cached.items as Array<{
+        queueType: "review" | "lesson";
+      }>;
+      const pagedItems = limit === null ? cachedItems : cachedItems.slice(offset, offset + limit);
 
-    const reviewAssignments = reviewAssignmentsResponse.data.map((row) => ({
+      return NextResponse.json(
+        {
+          items: pagedItems,
+          counts: cached.counts,
+          pagination: {
+            offset,
+            limit: limit ?? cachedItems.length,
+            total: cachedItems.length,
+            hasMore: limit === null ? false : offset + limit < cachedItems.length,
+          },
+          cached: true,
+        },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=20, stale-while-revalidate=40",
+          },
+        },
+      );
+    }
+
+    const [reviewAssignmentsResponse, lessonAssignmentsResponse] =
+      mode === "all"
+        ? await Promise.all([
+            fetchAllCollectionPages("/assignments?immediately_available_for_review=true", token),
+            fetchAllCollectionPages("/assignments?immediately_available_for_lessons=true", token),
+          ])
+        : mode === "lesson"
+          ? [null, await fetchAllCollectionPages("/assignments?immediately_available_for_lessons=true", token)]
+          : [await fetchAllCollectionPages("/assignments?immediately_available_for_review=true", token), null];
+
+    const reviewAssignments = (reviewAssignmentsResponse?.data ?? []).map((row) => ({
       assignmentId: row.id,
       data: row.data as AssignmentData,
       queueType: "review" as const,
     }));
-    const lessonAssignments = lessonAssignmentsResponse.data.map((row) => ({
+    const lessonAssignments = (lessonAssignmentsResponse?.data ?? []).map((row) => ({
       assignmentId: row.id,
       data: row.data as AssignmentData,
       queueType: "lesson" as const,
@@ -166,22 +207,49 @@ export async function GET(request: Request, context: RouteContext) {
         return a.subjectId - b.subjectId;
       });
 
+    const counts =
+      mode === "all"
+        ? {
+            all: items.length,
+            reviews: reviewAssignments.length,
+            lessons: lessonAssignments.length,
+          }
+        : mode === "lesson"
+          ? {
+              lessons: items.length,
+              reviews: await fetchAssignmentCount("/assignments?immediately_available_for_review=true", token),
+              all: 0,
+            }
+          : {
+              reviews: items.length,
+              lessons: await fetchAssignmentCount("/assignments?immediately_available_for_lessons=true", token),
+              all: 0,
+            };
+
+    counts.all = counts.reviews + counts.lessons;
+
+    setCachedStudyQueue(accountId, mode, items, counts);
+
     const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
 
-    return NextResponse.json({
-      items: pagedItems,
-      counts: {
-        all: items.length,
-        reviews: items.filter((item) => item.queueType === "review").length,
-        lessons: items.filter((item) => item.queueType === "lesson").length,
+    return NextResponse.json(
+      {
+        items: pagedItems,
+        counts,
+        pagination: {
+          offset,
+          limit: limit ?? items.length,
+          total: items.length,
+          hasMore: limit === null ? false : offset + limit < items.length,
+        },
+        cached: false,
       },
-      pagination: {
-        offset,
-        limit: limit ?? items.length,
-        total: items.length,
-        hasMore: limit === null ? false : offset + limit < items.length,
+      {
+        headers: {
+          "Cache-Control": "private, max-age=20, stale-while-revalidate=40",
+        },
       },
-    });
+    );
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Could not fetch study queue." }, { status: 500 });

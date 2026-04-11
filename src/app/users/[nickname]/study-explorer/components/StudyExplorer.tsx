@@ -73,8 +73,10 @@ function queueModeButtonClass(mode: "review" | "lesson", activeMode: "review" | 
 
 export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyMode }: Props) {
   const PAGE_SIZE = 40;
+  const modeStorageKey = `wr:study-queue-mode:${accountId}`;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const { data, error, mutate, isLoading } = useSWR(`/api/study/${accountId}/queue`, fetcher, {
+  const [queueMode, setQueueMode] = useState<"review" | "lesson">("review");
+  const { data, error, mutate, isLoading } = useSWR(`/api/study/${accountId}/queue?mode=${queueMode}`, fetcher, {
     refreshInterval: 30_000,
     revalidateOnFocus: true,
   });
@@ -84,7 +86,6 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
     [maxLevel],
   );
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(() => new Set(levelOptions));
-  const [queueMode, setQueueMode] = useState<"review" | "lesson">("review");
   const [typeFilter, setTypeFilter] = useState<"all" | "radical" | "kanji" | "vocabulary">("all");
   const [srsFilter, setSrsFilter] = useState<SrsFilter>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -92,6 +93,17 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
 
   const counts = data?.counts ?? { all: 0, reviews: 0, lessons: 0 };
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(modeStorageKey);
+    if (stored === "review" || stored === "lesson") {
+      setQueueMode(stored);
+    }
+  }, [modeStorageKey]);
+
+  useEffect(() => {
+    window.localStorage.setItem(modeStorageKey, queueMode);
+  }, [modeStorageKey, queueMode]);
 
   const allLevelsSelected = selectedLevels.size === levelOptions.length;
 

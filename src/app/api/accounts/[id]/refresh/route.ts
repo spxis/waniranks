@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
+import { clearStudyQueueCache } from "@/lib/studyQueueCache";
 import { refreshAccountById } from "@/lib/sync";
 
 type RouteContext = {
@@ -15,6 +16,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     const { id } = await context.params;
     const result = await refreshAccountById(id, true);
+    clearStudyQueueCache(id);
 
     return NextResponse.json(result, { status: result.refreshed ? 200 : 202 });
   } catch (error) {
