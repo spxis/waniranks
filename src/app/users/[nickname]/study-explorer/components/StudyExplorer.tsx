@@ -698,7 +698,7 @@ export default function StudyExplorer({
                       : titleForDisplay(item, showEnglish)}
                   </p>
                 </div>
-                <div className={`mt-3 rounded-xl border ${typeGlyphBoxClass(item.subjectType)} px-3 py-2`}>
+                <div className={`mt-3 flex h-[11.25rem] flex-col justify-center rounded-xl border ${typeGlyphBoxClass(item.subjectType)} px-3 py-2`}>
                   <p className={`${glyphTextSizeClass(item.characters)} text-center font-black leading-none`}>{item.characters}</p>
                   <p className="mt-1 min-h-[1.25rem] text-center text-sm font-semibold text-foreground/70">
                     {studyMode ? <span className="text-foreground/45">...</span> : (glyphSubtitleForDisplay(item) ?? "")}
