@@ -275,7 +275,7 @@ export default function JlptExplorerContent({
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       <span className="subject-pill subject-pill--kanji">kanji</span>
                       {typeof userMatch?.wkLevel === "number" ? (
-                        <span className="subject-pill border-line bg-surface text-foreground">WK{userMatch.wkLevel}</span>
+                        <span className="subject-pill border-line bg-surface text-foreground">L{userMatch.wkLevel}</span>
                       ) : null}
                       <span className="subject-pill border-line bg-surface text-foreground">N{item.nLevel}</span>
                     </div>
@@ -336,7 +336,7 @@ export default function JlptExplorerContent({
                             <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
                               <span className="subject-pill subject-pill--kanji">kanji</span>
                               {typeof selectedUserMatch?.wkLevel === "number" ? (
-                                <span className="subject-pill border-line bg-surface text-foreground">WK{selectedUserMatch.wkLevel}</span>
+                                <span className="subject-pill border-line bg-surface text-foreground">L{selectedUserMatch.wkLevel}</span>
                               ) : null}
                               <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.nLevel}</span>
                               <span className={`subject-pill ${statusClass(selectedUserMatch?.status)}`}>
