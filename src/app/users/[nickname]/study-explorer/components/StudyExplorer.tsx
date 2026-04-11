@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { LevelItem, SrsFilter } from "../../explorerTypes";
 import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
@@ -101,9 +101,23 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
   }, [allLevelsSelected, data?.items, queueFilter, selectedLevels, srsFilter, typeFilter]);
 
   const selectedItem = filteredItems.find((item) => item.subjectId === selectedId) ?? null;
+  const selectedIndex = selectedItem
+    ? filteredItems.findIndex((item) => item.subjectId === selectedItem.subjectId)
+    : -1;
   const selectedMeaningExplanation = selectedItem?.meaningExplanation ?? "-";
   const selectedReadingExplanationRaw = selectedItem?.readingExplanation ?? "";
   const showReadingExplanation = selectedReadingExplanationRaw.trim().length > 0;
+
+  useEffect(() => {
+    if (selectedId === null) {
+      return;
+    }
+
+    const stillVisible = filteredItems.some((item) => item.subjectId === selectedId);
+    if (!stillVisible) {
+      setSelectedId(null);
+    }
+  }, [filteredItems, selectedId]);
 
   async function submitReview(assignmentId: number, result: "correct" | "wrong") {
     setSubmittingByAssignmentId((prev) => new Set(prev).add(assignmentId));
@@ -151,6 +165,20 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
 
   function selectAllLevels() {
     setSelectedLevels(new Set(levelOptions));
+  }
+
+  function moveSelection(delta: -1 | 1) {
+    if (filteredItems.length === 0) {
+      return;
+    }
+
+    if (selectedIndex < 0) {
+      setSelectedId(filteredItems[0]?.subjectId ?? null);
+      return;
+    }
+
+    const nextIndex = Math.max(0, Math.min(filteredItems.length - 1, selectedIndex + delta));
+    setSelectedId(filteredItems[nextIndex]?.subjectId ?? null);
   }
 
   return (
@@ -207,65 +235,104 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
       {error ? <p className="px-5 py-4 text-sm text-red-700">{error.message}</p> : null}
 
       <div className="p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredItems.map((item) => (
-            <button
-              key={`${item.queueType}-${item.subjectId}`}
-              type="button"
-              onClick={() => setSelectedId((prev) => (prev === item.subjectId ? null : item.subjectId))}
-              className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
-                item.subjectType,
-                selectedItem?.subjectId === item.subjectId,
-              )}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-[10px] font-semibold text-foreground/45">#{item.subjectId}</span>
-                <div className="flex flex-wrap items-center justify-end gap-1">
-                  <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
-                  {typeof item.wkLevel === "number" ? (
-                    <span className="subject-pill border-line bg-surface text-foreground">WK{item.wkLevel}</span>
-                  ) : null}
-                  <span className="subject-pill border-line bg-surface text-foreground">{item.queueType}</span>
+        {filteredItems.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
+            No study items match the current filters.
+          </div>
+        ) : null}
+
+        {filteredItems.length > 0 && !selectedItem ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {filteredItems.map((item, index) => (
+              <button
+                key={`${item.queueType}-${item.subjectId}`}
+                type="button"
+                onClick={() => setSelectedId(item.subjectId)}
+                className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
+                  item.subjectType,
+                  false,
+                )}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[10px] font-semibold text-foreground/45">#{index + 1}</span>
+                  <div className="flex flex-wrap items-center justify-end gap-1">
+                    <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
+                    {typeof item.wkLevel === "number" ? (
+                      <span className="subject-pill border-line bg-surface text-foreground">WK{item.wkLevel}</span>
+                    ) : null}
+                    <span className="subject-pill border-line bg-surface text-foreground">{item.queueType}</span>
+                  </div>
                 </div>
-              </div>
-              <p className="mt-2 text-xl font-black leading-tight text-foreground">
-                {studyMode
-                  ? item.subjectType === "kanji"
-                    ? "Kanji"
-                    : item.subjectType === "radical"
-                      ? "Radical"
-                      : "Vocabulary"
-                  : titleForDisplay(item, showEnglish)}
-              </p>
-              <div className={`mt-3 rounded-xl border ${typeGlyphBoxClass(item.subjectType)} px-3 py-2`}>
-                <p className={`${glyphTextSizeClass(item.characters)} text-center font-black leading-none`}>{item.characters}</p>
-                {!studyMode && glyphSubtitleForDisplay(item) ? (
-                  <p className="mt-1 text-center text-sm font-semibold text-foreground/70">{glyphSubtitleForDisplay(item)}</p>
-                ) : null}
-              </div>
-              <div className="mt-3 grid grid-cols-3 items-center gap-2">
-                <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
-                  {item.status}
-                </span>
-                {item.queueType === "review" ? (
-                  (() => {
-                    const badge = formatNextReviewBadge(item.availableAt);
-                    if (!badge) return <span />;
-                    return <span className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase ${badge.className}`}>{badge.label}</span>;
-                  })()
-                ) : (
-                  <span />
-                )}
-                <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
-                  SRS {item.srsStage}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+                <p className="mt-2 text-xl font-black leading-tight text-foreground">
+                  {studyMode
+                    ? item.subjectType === "kanji"
+                      ? "Kanji"
+                      : item.subjectType === "radical"
+                        ? "Radical"
+                        : "Vocabulary"
+                    : titleForDisplay(item, showEnglish)}
+                </p>
+                <div className={`mt-3 rounded-xl border ${typeGlyphBoxClass(item.subjectType)} px-3 py-2`}>
+                  <p className={`${glyphTextSizeClass(item.characters)} text-center font-black leading-none`}>{item.characters}</p>
+                  {!studyMode && glyphSubtitleForDisplay(item) ? (
+                    <p className="mt-1 text-center text-sm font-semibold text-foreground/70">{glyphSubtitleForDisplay(item)}</p>
+                  ) : null}
+                </div>
+                <div className="mt-3 grid grid-cols-3 items-center gap-2">
+                  <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
+                    {item.status}
+                  </span>
+                  {item.queueType === "review" ? (
+                    (() => {
+                      const badge = formatNextReviewBadge(item.availableAt);
+                      if (!badge) return <span />;
+                      return <span className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase ${badge.className}`}>{badge.label}</span>;
+                    })()
+                  ) : (
+                    <span />
+                  )}
+                  <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
+                    SRS {item.srsStage}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {selectedItem ? (
           <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+              >
+                Back To List
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => moveSelection(-1)}
+                  disabled={selectedIndex <= 0}
+                  className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/70">
+                  #{selectedIndex + 1} of {filteredItems.length}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => moveSelection(1)}
+                  disabled={selectedIndex >= filteredItems.length - 1}
+                  className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+
             <LevelExplorerDetailSection
               selectedItem={selectedItem}
               showEnglish={showEnglish}
