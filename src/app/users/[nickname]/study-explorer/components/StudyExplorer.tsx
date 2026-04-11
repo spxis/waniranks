@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { toRomaji } from "wanakana";
 
 import ExplorerSearchBar from "../../ExplorerSearchBar";
+import SubjectTypeFilterButton from "../../shared/SubjectTypeFilterButton";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import type { LevelItem, SrsFilter } from "../../explorerTypes";
 import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
@@ -18,7 +19,6 @@ import {
   statusShortLabel,
   subjectTypePillClass,
   titleForDisplay,
-  typeBadgeClass,
   typeCardClass,
   typeGlyphBoxClass,
 } from "../../level-explorer/lib/levelExplorerDisplay";
@@ -818,21 +818,28 @@ export default function StudyExplorer({
                     : `all (${formatNumber(count)})`;
 
             return (
+              type === "all" ? (
               <button
                 key={type}
                 type="button"
                 disabled={isDisabled}
                 onClick={() => setTypeFilter(type)}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-                  isDisabled
-                    ? disabledBadgeClass()
-                    : type === "all"
-                      ? badgeClass(isTypeActive)
-                      : typeBadgeClass(type, isTypeActive, false)
+                  isDisabled ? disabledBadgeClass() : badgeClass(isTypeActive)
                 }`}
               >
                 {label}
               </button>
+              ) : (
+              <SubjectTypeFilterButton
+                key={type}
+                type={type}
+                count={count}
+                active={isTypeActive}
+                disabled={isDisabled}
+                onClick={() => setTypeFilter(type)}
+              />
+              )
             );
           })}
           {(["all", "apprentice", "guru", "master", "enlightened"] as const).map((status) => (

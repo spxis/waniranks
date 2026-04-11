@@ -13,10 +13,10 @@ import {
   statusClass,
   subjectTypePillClass,
   titleForDisplay,
-  typeBadgeClass,
   typeCardClass,
   typeGlyphBoxClass,
 } from "../lib/levelExplorerDisplay";
+import SubjectTypeFilterButton from "../../shared/SubjectTypeFilterButton";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import type { JlptFilter, ReviewTimingFilter, TypeFilter, TypeVisibility } from "../lib/levelExplorerState";
@@ -240,18 +240,14 @@ export default function LevelExplorerContent({
             ["kanji", counts.kanji],
             ["vocabulary", counts.vocabulary],
           ] as const).map(([type, count]) => (
-            <button
+            <SubjectTypeFilterButton
               key={type}
-              type="button"
+              type={type}
+              count={count}
+              active={visibleTypes[type]}
+              disabled={false}
               onClick={() => onToggleTypeVisibility(type)}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${typeBadgeClass(
-                type,
-                visibleTypes[type],
-                false,
-              )}`}
-            >
-              {type === "vocabulary" ? "vocab" : type} ({formatNumber(count)})
-            </button>
+            />
           ))}
         </div>
       </header>

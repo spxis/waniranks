@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import jlptReadings from "@/data/jlptReadings.json";
+import SubjectTypeFilterButton from "../../shared/SubjectTypeFilterButton";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
-import { badgeClass, typeBadgeClass } from "../../level-explorer/lib/levelExplorerDisplay";
+import { badgeClass } from "../../level-explorer/lib/levelExplorerDisplay";
 import {
   formatDate,
   formatNumber,
@@ -213,13 +214,12 @@ export default function JlptExplorerContent({
             >
               All ({formatNumber(counts.all)})
             </button>
-            <button
-              type="button"
+            <SubjectTypeFilterButton
+              type="kanji"
+              count={counts.kanji}
+              active={wkFilter === "kanji" || wkFilter === "all"}
               onClick={() => onSetWkFilter("kanji")}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${typeBadgeClass("kanji", wkFilter === "kanji", false)}`}
-            >
-              Kanji ({formatNumber(counts.kanji)})
-            </button>
+            />
             <button
               type="button"
               onClick={() => onSetWkFilter("none")}
