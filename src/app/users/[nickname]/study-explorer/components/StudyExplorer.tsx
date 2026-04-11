@@ -259,6 +259,47 @@ export default function StudyExplorer({
     });
   }, [data?.items, queueMode, showLocked, srsFilter, typeFilter, viewedLevel]);
 
+  const typeCounts = useMemo(() => {
+    const countsByType = {
+      all: 0,
+      radical: 0,
+      kanji: 0,
+      vocabulary: 0,
+    };
+
+    for (const item of data?.items ?? []) {
+      if (item.queueType !== queueMode) {
+        continue;
+      }
+
+      if (viewedLevel !== null) {
+        const itemLevel = item.wkLevel;
+        if (typeof itemLevel !== "number" || itemLevel !== viewedLevel) {
+          continue;
+        }
+      }
+
+      if (srsFilter !== "all" && item.status !== srsFilter) {
+        continue;
+      }
+
+      if (!showLocked && item.status === "locked") {
+        continue;
+      }
+
+      countsByType.all += 1;
+      if (item.subjectType === "radical") {
+        countsByType.radical += 1;
+      } else if (item.subjectType === "kanji") {
+        countsByType.kanji += 1;
+      } else {
+        countsByType.vocabulary += 1;
+      }
+    }
+
+    return countsByType;
+  }, [data?.items, queueMode, showLocked, srsFilter, viewedLevel]);
+
   useEffect(() => {
     setSelectedId(null);
   }, [queueMode]);
@@ -529,11 +570,22 @@ export default function StudyExplorer({
         </div>
 
         <div className="mt-2 flex flex-wrap gap-2">
-          {(["all", "radical", "kanji", "vocabulary"] as const).map((type) => (
-            <button key={type} type="button" onClick={() => setTypeFilter(type)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(typeFilter === type)}`}>
-              {type === "vocabulary" ? "vocab" : type}
-            </button>
-          ))}
+          {(["all", "radical", "kanji", "vocabulary"] as const).map((type) => {
+            const label =
+              type === "vocabulary"
+                ? `vocab (${formatNumber(typeCounts.vocabulary)})`
+                : type === "radical"
+                  ? `rad (${formatNumber(typeCounts.radical)})`
+                  : type === "kanji"
+                    ? `kan (${formatNumber(typeCounts.kanji)})`
+                    : `all (${formatNumber(typeCounts.all)})`;
+
+            return (
+              <button key={type} type="button" onClick={() => setTypeFilter(type)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(typeFilter === type)}`}>
+                {label}
+              </button>
+            );
+          })}
           {(["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const).map((status) => (
             <button key={status} type="button" onClick={() => setSrsFilter(status)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsFilter === status)}`}>
               {status}
