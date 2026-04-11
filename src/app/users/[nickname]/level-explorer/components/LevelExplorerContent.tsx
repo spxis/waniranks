@@ -382,6 +382,8 @@ export default function LevelExplorerContent({
                       <span className={subjectTypePillClass(item.subjectType)}>{item.subjectType}</span>
                       {typeof item.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">WK{item.wkLevel}</span>
+                      ) : typeof selectedLevelList[selectedLevelList.length - 1] === "number" ? (
+                        <span className="subject-pill border-line bg-surface text-foreground">WK{selectedLevelList[selectedLevelList.length - 1]}</span>
                       ) : null}
                       {item.subjectType === "kanji" && item.jlptLevel ? (
                         <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span>
