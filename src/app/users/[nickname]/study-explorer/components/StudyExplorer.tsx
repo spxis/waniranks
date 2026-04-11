@@ -343,6 +343,53 @@ export default function StudyExplorer({
     return countsByType;
   }, [data?.items, queueMode, showLocked, srsFilter, viewedLevel]);
 
+  const srsCounts = useMemo(() => {
+    const countsBySrs: Record<Exclude<SrsFilter, "locked">, number> = {
+      all: 0,
+      apprentice: 0,
+      guru: 0,
+      master: 0,
+      enlightened: 0,
+      burned: 0,
+    };
+
+    for (const item of data?.items ?? []) {
+      if (item.queueType !== queueMode) {
+        continue;
+      }
+
+      if (viewedLevel !== null) {
+        const itemLevel = item.wkLevel;
+        if (typeof itemLevel !== "number" || itemLevel !== viewedLevel) {
+          continue;
+        }
+      }
+
+      if (typeFilter !== "all" && item.subjectType !== typeFilter) {
+        continue;
+      }
+
+      if (!showLocked && item.status === "locked") {
+        continue;
+      }
+
+      countsBySrs.all += 1;
+      if (item.status === "apprentice") {
+        countsBySrs.apprentice += 1;
+      } else if (item.status === "guru") {
+        countsBySrs.guru += 1;
+      } else if (item.status === "master") {
+        countsBySrs.master += 1;
+      } else if (item.status === "enlightened") {
+        countsBySrs.enlightened += 1;
+      } else if (item.status === "burned") {
+        countsBySrs.burned += 1;
+      }
+    }
+
+    return countsBySrs;
+  }, [data?.items, queueMode, showLocked, typeFilter, viewedLevel]);
+
   useEffect(() => {
     if (typeFilter === "all") {
       return;
@@ -352,6 +399,12 @@ export default function StudyExplorer({
       setTypeFilter("all");
     }
   }, [typeCounts, typeFilter]);
+
+  useEffect(() => {
+    if (srsFilter === "locked") {
+      setSrsFilter("all");
+    }
+  }, [srsFilter]);
 
   useEffect(() => {
     window.localStorage.setItem(levelStorageKey, viewedLevel === null ? "all" : String(viewedLevel));
@@ -657,9 +710,9 @@ export default function StudyExplorer({
               </button>
             );
           })}
-          {(["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const).map((status) => (
+          {(["all", "apprentice", "guru", "master", "enlightened", "burned"] as const).map((status) => (
             <button key={status} type="button" onClick={() => setSrsFilter(status)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsFilter === status)}`}>
-              {status}
+              {status} ({formatNumber(srsCounts[status])})
             </button>
           ))}
         </div>
