@@ -366,13 +366,8 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
     return typeof value === "number" ? formatNumber(value) : "...";
   }
 
-  function navPreviewLabel(item: StudyQueueItem | null): string {
-    if (!item) {
-      return "-";
-    }
-
-    const typeLabel = (item.subjectType ?? "item").toUpperCase();
-    return `${item.characters} · ${typeLabel}`;
+  function navTypeLabel(item: StudyQueueItem | null): string {
+    return item?.subjectType ?? "item";
   }
 
   function moveSelection(delta: -1 | 1) {
@@ -612,31 +607,41 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                 Back To List
               </button>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => moveSelection(-1)}
-                  disabled={selectedIndex <= 0}
-                  className="rounded-full border border-line bg-surface px-4 py-2 text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <span className="block text-xs font-bold uppercase tracking-[0.1em]">Prev</span>
-                  <span className="block max-w-[11rem] truncate text-[10px] font-semibold uppercase tracking-[0.06em] text-foreground/60">
-                    {navPreviewLabel(prevItem)}
-                  </span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moveSelection(-1)}
+                    disabled={selectedIndex <= 0}
+                    className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+                  {prevItem ? (
+                    <>
+                      <span className="subject-pill border-line bg-surface text-foreground">{prevItem.characters}</span>
+                      <span className={subjectTypePillClass(prevItem.subjectType)}>{navTypeLabel(prevItem)}</span>
+                    </>
+                  ) : null}
+                </div>
                 <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/70">
                   #{selectedIndex + 1} of {filteredItems.length}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => moveSelection(1)}
-                  disabled={selectedIndex >= filteredItems.length - 1}
-                  className="rounded-full border border-line bg-surface px-4 py-2 text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <span className="block text-xs font-bold uppercase tracking-[0.1em]">Next</span>
-                  <span className="block max-w-[11rem] truncate text-[10px] font-semibold uppercase tracking-[0.06em] text-foreground/60">
-                    {navPreviewLabel(nextItem)}
-                  </span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moveSelection(1)}
+                    disabled={selectedIndex >= filteredItems.length - 1}
+                    className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                  {nextItem ? (
+                    <>
+                      <span className="subject-pill border-line bg-surface text-foreground">{nextItem.characters}</span>
+                      <span className={subjectTypePillClass(nextItem.subjectType)}>{navTypeLabel(nextItem)}</span>
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
 
