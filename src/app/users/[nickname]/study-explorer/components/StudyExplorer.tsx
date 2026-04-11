@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { toRomaji } from "wanakana";
 
 import ExplorerSearchBar from "../../ExplorerSearchBar";
+import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import type { LevelItem, SrsFilter } from "../../explorerTypes";
 import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
 import {
@@ -869,61 +870,60 @@ export default function StudyExplorer({
             </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleItems.map((item, index) => (
-              <button
-                key={`${item.queueType}-${item.subjectId}`}
-                type="button"
-                onClick={() => setSelectedId(item.subjectId)}
-                className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
-                  item.subjectType,
-                  false,
-                )}`}
-              >
-                <div className="flex min-h-[2.35rem] items-start justify-between gap-2">
-                  <span className="text-[10px] font-semibold text-foreground/45">#{index + 1}</span>
-                  <div className="flex min-h-[2.2rem] flex-wrap content-start items-start justify-end gap-1">
-                    <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
-                    {typeof item.wkLevel === "number" ? (
-                      <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="mt-2 min-h-[2rem]">
-                  <p className="truncate whitespace-nowrap text-xl font-black leading-none text-foreground" title={titleForDisplay(item, showEnglish)}>
-                    {studyMode
+            {visibleItems.map((item, index) => {
+              const reviewBadge = item.queueType === "review" ? formatNextReviewBadge(item.availableAt) : null;
+
+              return (
+                <UnifiedExplorerCard
+                  key={`${item.queueType}-${item.subjectId}`}
+                  onClick={() => setSelectedId(item.subjectId)}
+                  className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
+                    item.subjectType,
+                    false,
+                  )}`}
+                  indexLabel={`#${index + 1}`}
+                  topRight={
+                    <>
+                      <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
+                      {typeof item.wkLevel === "number" ? (
+                        <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span>
+                      ) : null}
+                    </>
+                  }
+                  title={
+                    studyMode
                       ? item.subjectType === "kanji"
                         ? "Kanji"
                         : item.subjectType === "radical"
                           ? "Radical"
                           : "Vocabulary"
-                      : titleForDisplay(item, showEnglish)}
-                  </p>
-                </div>
-                <div className={`mt-3 flex h-[9.75rem] flex-col justify-center rounded-xl border ${typeGlyphBoxClass(item.subjectType)} px-3 py-2`}>
-                  <p className={`${glyphTextSizeClass(item.characters)} text-center font-black leading-none`}>{item.characters}</p>
-                  <p className="mt-1 min-h-[1.25rem] text-center text-sm font-semibold text-foreground/70">
-                    {studyMode ? <span className="text-foreground/45">...</span> : (glyphSubtitleForDisplay(item) ?? "")}
-                  </p>
-                </div>
-                <div className="mt-3 grid grid-cols-3 items-center gap-2">
-                  <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${statusClass(item.status)}`}>
-                    {statusShortLabel(item.status)}
-                  </span>
-                  {item.queueType === "review" ? (
-                    (() => {
-                      const badge = formatNextReviewBadge(item.availableAt);
-                      if (!badge) return <span />;
-                      return <span className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${badge.className}`}>{badge.label}</span>;
-                    })()
-                  ) : (
-                    <span />
-                  )}
-                  <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
-                    SRS {item.srsStage}
-                  </span>
-                </div>
-              </button>
-            ))}
+                      : titleForDisplay(item, showEnglish)
+                  }
+                  titleTooltip={titleForDisplay(item, showEnglish)}
+                  glyphClassName={typeGlyphBoxClass(item.subjectType)}
+                  glyphText={item.characters}
+                  glyphTextClassName={glyphTextSizeClass(item.characters)}
+                  glyphSubtitle={studyMode ? <span className="text-foreground/45">...</span> : (glyphSubtitleForDisplay(item) ?? "")}
+                  statusChip={
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${statusClass(item.status)}`}>
+                      {statusShortLabel(item.status)}
+                    </span>
+                  }
+                  middleChip={
+                    reviewBadge ? (
+                      <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${reviewBadge.className}`}>
+                        {reviewBadge.label}
+                      </span>
+                    ) : undefined
+                  }
+                  rightChip={
+                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
+                      SRS {item.srsStage}
+                    </span>
+                  }
+                />
+              );
+            })}
           </div>
           {visibleItems.length < filteredItems.length ? (
             <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">

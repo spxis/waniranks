@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import jlptReadings from "@/data/jlptReadings.json";
+import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import {
   formatDate,
   formatNumber,
@@ -270,47 +271,43 @@ export default function JlptExplorerContent({
 
             return (
               <Fragment key={`${item.nLevel}-${item.kanji}`}>
-                <button
-                  type="button"
+                <UnifiedExplorerCard
                   onClick={() => onSetSelectedKanji((prev) => (prev === item.kanji ? null : item.kanji))}
                   className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${
                     userMatch ? "border-kanji/50 bg-surface text-foreground" : "border-line bg-surface text-foreground"
                   } ${selectedKanji === item.kanji ? "ring-2 ring-accent" : ""}`}
-                >
-                  <div className="flex items-start justify-end gap-1">
-                    <div className="flex flex-wrap items-center justify-end gap-1">
+                  indexLabel={`#${index + 1}`}
+                  topRight={
+                    <>
                       <span className="subject-pill subject-pill--kanji">kanji</span>
                       {typeof userMatch?.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">L{userMatch.wkLevel}</span>
                       ) : null}
                       <span className="subject-pill border-line bg-surface text-foreground">N{item.nLevel}</span>
-                    </div>
-                  </div>
-                  {studyMode ? (
-                    <p className="mt-2 text-xl font-black leading-tight text-foreground">Kanji</p>
-                  ) : (
-                    <p className="mt-2 text-xl font-black leading-tight text-foreground">{heading}</p>
-                  )}
-                  <div className={`mt-3 rounded-xl border border-kanji/50 bg-kanji/10 px-3 py-2 ${userMatch ? "text-kanji" : "text-foreground"}`}>
-                    <p className="text-center text-6xl font-black leading-none">{item.kanji}</p>
-                    {!studyMode ? (
-                      <p className="mt-1 text-center text-sm font-semibold text-foreground/70">
-                        {primaryReading
-                          ? readingLabel(primaryReading, showEnglish)
-                          : readingLabelFromList(fallbackReadings, showEnglish)}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 items-center gap-2">
-                    <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(userMatch?.status)}`}>
+                    </>
+                  }
+                  title={studyMode ? "Kanji" : heading}
+                  glyphClassName={`border-kanji/50 bg-kanji/10 ${userMatch ? "text-kanji" : "text-foreground"}`}
+                  glyphText={item.kanji}
+                  glyphTextClassName="text-6xl"
+                  glyphSubtitle={
+                    !studyMode
+                      ? primaryReading
+                        ? readingLabel(primaryReading, showEnglish)
+                        : readingLabelFromList(fallbackReadings, showEnglish)
+                      : undefined
+                  }
+                  statusChip={
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(userMatch?.status)}`}>
                       {userMatch?.status ?? "untracked"}
                     </span>
-                    <span />
-                    <span className="justify-self-end rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
+                  }
+                  rightChip={
+                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
                       {userMatch ? `SRS ${userMatch.srsStage ?? 0}` : "-"}
                     </span>
-                  </div>
-                </button>
+                  }
+                />
 
                 {selectedItem && index === visibleDetailInsertIndex ? (
                   <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
