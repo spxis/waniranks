@@ -127,6 +127,8 @@ export default function StudyExplorer({
 }: Props) {
   const PAGE_SIZE = 40;
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
+  const levelStorageKey = `wr:study-level:${accountId}`;
+  const typeStorageKey = `wr:study-type:${accountId}`;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [cachedQueueData, setCachedQueueData] = useState<QueueResponse | undefined>(() =>
     readStoredQueue(
@@ -146,8 +148,27 @@ export default function StudyExplorer({
     () => Array.from({ length: Math.max(1, maxLevel) }, (_, index) => index + 1),
     [maxLevel],
   );
-  const [viewedLevel, setViewedLevel] = useState<number | null>(null);
-  const [typeFilter, setTypeFilter] = useState<"all" | "radical" | "kanji" | "vocabulary">("all");
+  const [viewedLevel, setViewedLevel] = useState<number | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const raw = window.localStorage.getItem(`wr:study-level:${accountId}`);
+    if (!raw || raw === "all") {
+      return null;
+    }
+
+    const parsed = Number(raw);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  });
+  const [typeFilter, setTypeFilter] = useState<"all" | "radical" | "kanji" | "vocabulary">(() => {
+    if (typeof window === "undefined") {
+      return "all";
+    }
+
+    const raw = window.localStorage.getItem(`wr:study-type:${accountId}`);
+    return raw === "radical" || raw === "kanji" || raw === "vocabulary" ? raw : "all";
+  });
   const [srsFilter, setSrsFilter] = useState<SrsFilter>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -309,6 +330,14 @@ export default function StudyExplorer({
       setTypeFilter("all");
     }
   }, [typeCounts, typeFilter]);
+
+  useEffect(() => {
+    window.localStorage.setItem(levelStorageKey, viewedLevel === null ? "all" : String(viewedLevel));
+  }, [levelStorageKey, viewedLevel]);
+
+  useEffect(() => {
+    window.localStorage.setItem(typeStorageKey, typeFilter);
+  }, [typeFilter, typeStorageKey]);
 
   useEffect(() => {
     setSelectedId(null);
