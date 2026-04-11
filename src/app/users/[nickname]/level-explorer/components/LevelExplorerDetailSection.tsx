@@ -237,6 +237,15 @@ export default function LevelExplorerDetailSection({
 }: Props) {
   const isStudyHidden = studyMode && !revealStudyReading;
   const canShowReadings = !isStudyHidden;
+  const primaryMeaning = selectedItem.meanings.find((entry) => entry.trim().length > 0) ?? "";
+  const revealedStudyTitle =
+    primaryMeaning ||
+    titleForDisplay(selectedItem, true) ||
+    (selectedItem.subjectType === "kanji"
+      ? "Kanji"
+      : selectedItem.subjectType === "radical"
+        ? "Radical"
+        : "Vocabulary");
 
   return (
     <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
@@ -298,7 +307,7 @@ export default function LevelExplorerDetailSection({
               </>
             ) : studyMode ? (
               <>
-                <p className="text-3xl font-black leading-tight text-foreground">{titleForDisplay(selectedItem, true)}</p>
+                <p className="text-3xl font-black leading-tight text-foreground">{revealedStudyTitle}</p>
                 <p className="mt-1 text-base font-semibold text-foreground/75">{titleForDisplay(selectedItem, false)}</p>
               </>
             ) : (

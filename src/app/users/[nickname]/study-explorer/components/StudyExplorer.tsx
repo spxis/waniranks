@@ -48,6 +48,17 @@ type SubmitFeedback = {
   message: string;
 };
 
+type SubmitInFlight = {
+  assignmentId: number;
+  result: "correct" | "wrong";
+  itemLabel: string;
+};
+
+type ReviewTally = {
+  correct: number;
+  wrong: number;
+};
+
 type Props = {
   accountId: string;
   maxLevel: number;
@@ -153,6 +164,23 @@ function shortSubjectTypeLabel(type: StudyQueueItem["subjectType"]): string {
   return "ITEM";
 }
 
+function studyItemEnglishTitle(item: StudyQueueItem): string {
+  const meaning = item.meanings.find((entry) => entry.trim().length > 0) ?? "";
+  if (meaning) {
+    return meaning;
+  }
+
+  if (item.subjectType === "kanji") {
+    return "Kanji";
+  }
+
+  if (item.subjectType === "radical") {
+    return "Radical";
+  }
+
+  return "Vocabulary";
+}
+
 function StudySkeletonCards() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
@@ -252,6 +280,8 @@ export default function StudyExplorer({
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
   const [revealedAssignmentIds, setRevealedAssignmentIds] = useState<Set<number>>(new Set());
   const [submitFeedback, setSubmitFeedback] = useState<SubmitFeedback | null>(null);
+  const [submitInFlight, setSubmitInFlight] = useState<SubmitInFlight | null>(null);
+  const [reviewTally, setReviewTally] = useState<ReviewTally>({ correct: 0, wrong: 0 });
   const [showLocked, setShowLocked] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -563,6 +593,8 @@ export default function StudyExplorer({
   useEffect(() => {
     if (selectedId === null) {
       setSubmitFeedback(null);
+      setSubmitInFlight(null);
+      setReviewTally({ correct: 0, wrong: 0 });
     }
   }, [selectedId]);
 
@@ -633,6 +665,8 @@ export default function StudyExplorer({
   }, [filteredItems.length, selectedItem, visibleCount]);
 
   async function submitReview(assignmentId: number, result: "correct" | "wrong") {
+    const itemForSubmit =
+      filteredItems.find((item) => item.assignmentId === assignmentId) ?? selectedItem ?? null;
     const isSubmittingSelectedItem = selectedItem?.assignmentId === assignmentId;
     const currentSelectedIndex = isSubmittingSelectedItem ? selectedIndex : -1;
     const nextCandidate =
@@ -642,6 +676,11 @@ export default function StudyExplorer({
     const previousCandidate = currentSelectedIndex > 0 ? filteredItems[currentSelectedIndex - 1] : null;
     const nextSelectedSubjectId = nextCandidate?.subjectId ?? previousCandidate?.subjectId ?? null;
 
+    setSubmitInFlight({
+      assignmentId,
+      result,
+      itemLabel: itemForSubmit ? `${itemForSubmit.characters} (${studyItemEnglishTitle(itemForSubmit)})` : "item",
+    });
     setSubmittingByAssignmentId((prev) => new Set(prev).add(assignmentId));
 
     try {
@@ -682,8 +721,14 @@ export default function StudyExplorer({
 
       setSubmitFeedback({
         kind: "success",
-        message: `Submitted ${result === "correct" ? "Correct" : "Wrong"}.`,
+        message: `${result === "correct" ? "Correct" : "Wrong"} submitted for ${
+          itemForSubmit ? `${itemForSubmit.characters} (${studyItemEnglishTitle(itemForSubmit)})` : "item"
+        }.`,
       });
+      setReviewTally((prev) => ({
+        correct: prev.correct + (result === "correct" ? 1 : 0),
+        wrong: prev.wrong + (result === "wrong" ? 1 : 0),
+      }));
 
       void mutate();
       window.dispatchEvent(new CustomEvent("wr:user-refreshed", { detail: { accountId } }));
@@ -702,6 +747,7 @@ export default function StudyExplorer({
         next.delete(assignmentId);
         return next;
       });
+      setSubmitInFlight(null);
     }
   }
 
@@ -1072,12 +1118,14 @@ export default function StudyExplorer({
               </div>
             </div>
 
-            <div className="relative overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               {isSubmittingSelected ? (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-surface/80 backdrop-blur-[1px]">
                   <div className="inline-flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] text-foreground">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
-                    Submitting...
+                    {submitInFlight
+                      ? `Submitting ${submitInFlight.result.toUpperCase()} for ${submitInFlight.itemLabel}...`
+                      : "Submitting..."}
                   </div>
                 </div>
               ) : null}
@@ -1113,19 +1161,19 @@ export default function StudyExplorer({
                     <div className="grid w-full grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => submitReview(selectedItem.assignmentId, "correct")}
-                        disabled={submittingByAssignmentId.has(selectedItem.assignmentId)}
-                        className="w-full rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Correct (2)
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => submitReview(selectedItem.assignmentId, "wrong")}
                         disabled={submittingByAssignmentId.has(selectedItem.assignmentId)}
                         className="w-full rounded-xl border border-red-300 bg-red-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Wrong (1)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => submitReview(selectedItem.assignmentId, "correct")}
+                        disabled={submittingByAssignmentId.has(selectedItem.assignmentId)}
+                        className="w-full rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Correct (2)
                       </button>
                     </div>
                   )}
@@ -1146,19 +1194,22 @@ export default function StudyExplorer({
                 </div>
               ) : null}
 
-              <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/60">
-                Shortcuts: Left/Right/Up/Down or W/A/S/D (prev/next), Home/End (first/last), Esc (back)
-                {!isAnswerRevealed
-                  ? ", Enter/R/Space=show answer"
-                  : selectedItem.queueType === "review"
-                    ? ", 1=wrong, 2=correct"
-                    : ""}
-              </p>
+              <div className="mt-3 grid w-full grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-red-300 bg-red-50 p-4 text-center">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-red-700/80">Wrong</p>
+                  <p className="mt-1 text-3xl font-black leading-none text-red-800">{reviewTally.wrong}</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-center">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-emerald-700/80">Correct</p>
+                  <p className="mt-1 text-3xl font-black leading-none text-emerald-800">{reviewTally.correct}</p>
+                </div>
+              </div>
 
-              <div className="mt-2 min-h-[2.25rem]">
+              <div className="mt-auto pt-4">
+                <div className="min-h-[3.25rem]">
                 {submitFeedback ? (
                   <p
-                    className={`rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] ${
+                    className={`rounded-xl border px-4 py-3 text-sm font-black uppercase tracking-[0.08em] ${
                       submitFeedback.kind === "success"
                         ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                         : "border-red-300 bg-red-50 text-red-800"
@@ -1167,6 +1218,16 @@ export default function StudyExplorer({
                     {submitFeedback.message}
                   </p>
                 ) : null}
+                </div>
+
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/60">
+                  Shortcuts: Left/Right/Up/Down or W/A/S/D (prev/next), Home/End (first/last), Esc (back)
+                  {!isAnswerRevealed
+                    ? ", Enter/R/Space=show answer"
+                    : selectedItem.queueType === "review"
+                      ? ", 1=wrong, 2=correct"
+                      : ""}
+                </p>
               </div>
             </div>
           </div>
