@@ -21,6 +21,17 @@ export function statusClass(status: LevelItem["status"]): string {
   }
 }
 
+export function statusShortLabel(status: LevelItem["status"]): string {
+  switch (status) {
+    case "apprentice":
+      return "APPR.";
+    case "enlightened":
+      return "ENGLIGHT.";
+    default:
+      return status.toUpperCase();
+  }
+}
+
 export function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
@@ -72,14 +83,14 @@ export function formatNextReviewBadge(input: string | null | undefined): NextRev
     if (absMs < 24 * 60 * 60 * 1000) {
       const hours = Math.max(1, Math.round(absMs / (60 * 60 * 1000)));
       return {
-        label: `Overdue ${hours}h`,
+        label: `Due ${hours}h`,
         className: "border-orange-300 bg-orange-50 text-orange-700",
       };
     }
 
     const days = Math.max(1, Math.round(absMs / (24 * 60 * 60 * 1000)));
     return {
-      label: `Overdue ${days}d`,
+      label: `Due ${days}d`,
       className: "border-red-300 bg-red-50 text-red-700",
     };
   }

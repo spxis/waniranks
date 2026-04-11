@@ -12,6 +12,7 @@ import {
   glyphSubtitleForDisplay,
   glyphTextSizeClass,
   statusClass,
+  statusShortLabel,
   subjectTypePillClass,
   titleForDisplay,
   typeCardClass,
@@ -551,7 +552,7 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                     <span className={`subject-pill border ${queueBadgeClass(item.queueType)}`}>{item.queueType}</span>
                   </div>
                 </div>
-                <p className="mt-2 text-xl font-black leading-tight text-foreground">
+                <p className="mt-2 truncate whitespace-nowrap text-xl font-black leading-tight text-foreground" title={titleForDisplay(item, showEnglish)}>
                   {studyMode
                     ? item.subjectType === "kanji"
                       ? "Kanji"
@@ -567,14 +568,14 @@ export default function StudyExplorer({ accountId, maxLevel, showEnglish, studyM
                   ) : null}
                 </div>
                 <div className="mt-3 grid grid-cols-3 items-center gap-2">
-                  <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
-                    {item.status}
+                  <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${statusClass(item.status)}`}>
+                    {statusShortLabel(item.status)}
                   </span>
                   {item.queueType === "review" ? (
                     (() => {
                       const badge = formatNextReviewBadge(item.availableAt);
                       if (!badge) return <span />;
-                      return <span className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase ${badge.className}`}>{badge.label}</span>;
+                      return <span className={`justify-self-center rounded-full border px-3 py-1 text-xs font-bold uppercase whitespace-nowrap ${badge.className}`}>{badge.label}</span>;
                     })()
                   ) : (
                     <span />
