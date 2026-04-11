@@ -301,6 +301,16 @@ export default function StudyExplorer({
   }, [data?.items, queueMode, showLocked, srsFilter, viewedLevel]);
 
   useEffect(() => {
+    if (typeFilter === "all") {
+      return;
+    }
+
+    if (typeCounts[typeFilter] <= 0) {
+      setTypeFilter("all");
+    }
+  }, [typeCounts, typeFilter]);
+
+  useEffect(() => {
     setSelectedId(null);
   }, [queueMode]);
 
@@ -571,17 +581,27 @@ export default function StudyExplorer({
 
         <div className="mt-2 flex flex-wrap gap-2">
           {(["all", "radical", "kanji", "vocabulary"] as const).map((type) => {
+            const count = typeCounts[type];
+            const isDisabled = type !== "all" && count <= 0;
             const label =
               type === "vocabulary"
-                ? `vocab (${formatNumber(typeCounts.vocabulary)})`
+                ? `vocab (${formatNumber(count)})`
                 : type === "radical"
-                  ? `rad (${formatNumber(typeCounts.radical)})`
+                  ? `radical (${formatNumber(count)})`
                   : type === "kanji"
-                    ? `kan (${formatNumber(typeCounts.kanji)})`
-                    : `all (${formatNumber(typeCounts.all)})`;
+                    ? `kanji (${formatNumber(count)})`
+                    : `all (${formatNumber(count)})`;
 
             return (
-              <button key={type} type="button" onClick={() => setTypeFilter(type)} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(typeFilter === type)}`}>
+              <button
+                key={type}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => setTypeFilter(type)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
+                  isDisabled ? disabledBadgeClass() : badgeClass(typeFilter === type)
+                }`}
+              >
                 {label}
               </button>
             );
