@@ -98,6 +98,7 @@ export default function StudyExplorer({
   const [hasPendingStudySubmissions, setHasPendingStudySubmissions] = useState(false);
   const [showLocked, setShowLocked] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasHydratedTypeFilter, setHasHydratedTypeFilter] = useState(false);
 
   const { data, error, isLoading } = useSWR(
     `/api/study/${accountId}/queue?mode=${queueMode}&limit=${API_PAGE_SIZE}&offset=0`,
@@ -193,19 +194,25 @@ export default function StudyExplorer({
 
   useEffect(() => {
     const raw = window.localStorage.getItem(typeFilterStorageKey);
-    if (!raw) return;
+    if (!raw) {
+      setHasHydratedTypeFilter(true);
+      return;
+    }
 
     if (raw === "all" || raw === "radical" || raw === "kanji" || raw === "vocabulary") {
       setTypeFilter(raw);
+      setHasHydratedTypeFilter(true);
       return;
     }
 
     window.localStorage.removeItem(typeFilterStorageKey);
+    setHasHydratedTypeFilter(true);
   }, [typeFilterStorageKey]);
 
   useEffect(() => {
+    if (!hasHydratedTypeFilter) return;
     window.localStorage.setItem(typeFilterStorageKey, typeFilter);
-  }, [typeFilterStorageKey, typeFilter]);
+  }, [hasHydratedTypeFilter, typeFilterStorageKey, typeFilter]);
 
   useEffect(() => {
     if (!data?.counts) return;
