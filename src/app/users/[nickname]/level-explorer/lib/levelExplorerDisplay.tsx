@@ -48,6 +48,21 @@ export function shortSubjectTypeLabel(type: LevelItem["subjectType"]): string {
   return "ITEM";
 }
 
+export function srsFilterButtonLabel(
+  status: "all" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "locked",
+): string {
+  switch (status) {
+    case "all":
+      return "All";
+    case "apprentice":
+      return "Appr";
+    case "enlightened":
+      return "Enlight";
+    default:
+      return status;
+  }
+}
+
 export function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
