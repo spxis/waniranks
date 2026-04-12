@@ -349,6 +349,7 @@ export default function LevelExplorerContent({
                     selectedItem?.subjectId === item.subjectId,
                   )} ${lockedCardStateClass(item)}`}
                   indexLabel={`#${formatNumber(index + 1)}`}
+                  title={titleForDisplay(item, showEnglish)}
                   topRight={
                     <>
                       <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>

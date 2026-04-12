@@ -231,6 +231,7 @@ export default function JlptExplorerContent({
                     userMatch ? "border-kanji/50 bg-surface text-foreground" : "border-line bg-surface text-foreground"
                   } ${selectedKanji === item.kanji ? "ring-2 ring-accent" : ""}`}
                   indexLabel={`#${index + 1}`}
+                  title={heading}
                   topRight={
                     <>
                       <span className="subject-pill subject-pill--kanji">kanji</span>

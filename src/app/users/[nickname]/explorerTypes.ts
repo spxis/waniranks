@@ -11,6 +11,19 @@ export type RelatedReference = {
   label: string;
   wkLevel?: number | null;
   reading?: string | null;
+  meaning?: string | null;
+};
+
+export type JlptMeta = {
+  primaryMeaning?: string | null;
+  meanings: string[];
+  onReadings: string[];
+  kunReadings: string[];
+  strokeCount?: number | null;
+  frequencyRank?: number | null;
+  schoolGrade?: number | null;
+  heisigKeyword?: string | null;
+  wordExamples?: unknown;
 };
 
 export type LevelItem = {
@@ -28,6 +41,7 @@ export type LevelItem = {
   meaningExplanation?: string;
   readingExplanation?: string;
   jlptLevel?: number | null;
+  jlptMeta?: JlptMeta | null;
   srsStage: number;
   status: SubjectStatus;
   startedAt?: string | null;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { JSX } from "react";
 import { toHiragana, toKatakana } from "wanakana";
 
 import type {
