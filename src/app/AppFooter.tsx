@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 const JP_FONT_STORAGE_KEY = "wr:jp-font";
@@ -94,6 +95,15 @@ export default function AppFooter() {
           >
             Admin
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              void signIn("google", { callbackUrl: "/join" });
+            }}
+            className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80"
+          >
+            Login
+          </button>
         </div>
       </div>
     </footer>

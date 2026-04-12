@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
 
 type JoinStatus = {
@@ -97,12 +98,15 @@ export default function JoinPage() {
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/api/auth/signin/google?callbackUrl=/join"
+            <button
+              type="button"
+              onClick={() => {
+                void signIn("google", { callbackUrl: "/join" });
+              }}
               className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
             >
               Sign in with Google
-            </Link>
+            </button>
             <Link
               href="/api/auth/signout?callbackUrl=/join"
               className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
