@@ -145,16 +145,19 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
     select: { id: true, nickname: true, wkUsername: true },
   });
   const rankedIndex = rankedAccounts.findIndex((row) => row.id === account.id);
-  const safeRankedIndex = rankedAccounts.length > 0 ? (rankedIndex >= 0 ? rankedIndex : 0) : -1;
   const globalRank = Math.max(1, rankedIndex + 1);
   const totalPlayers = rankedAccounts.length;
+  const rankSlotIndex =
+    rankedAccounts.length > 0
+      ? Math.min(Math.max(globalRank - 1, 0), rankedAccounts.length - 1)
+      : -1;
   const previousRanked =
     rankedAccounts.length > 1
-      ? rankedAccounts[(safeRankedIndex - 1 + rankedAccounts.length) % rankedAccounts.length]
+      ? rankedAccounts[(rankSlotIndex - 1 + rankedAccounts.length) % rankedAccounts.length]
       : null;
   const nextRanked =
     rankedAccounts.length > 1
-      ? rankedAccounts[(safeRankedIndex + 1) % rankedAccounts.length]
+      ? rankedAccounts[(rankSlotIndex + 1) % rankedAccounts.length]
       : null;
 
   const currentLevelItems = levelKanjiItems.filter(
