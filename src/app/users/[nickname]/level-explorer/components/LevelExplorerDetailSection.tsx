@@ -232,7 +232,6 @@ export default function LevelExplorerDetailSection({
   onJumpToKanji,
 }: Props) {
   const isStudyHidden = studyMode && !revealStudyReading;
-  const useBlindHeaderLayout = studyMode;
   const canShowReadings = !isStudyHidden;
   const primaryMeaning = selectedItem.meanings.find((entry) => entry.trim().length > 0) ?? "";
   const nextReviewBadge = formatNextReviewBadge(selectedItem.availableAt);
@@ -240,6 +239,12 @@ export default function LevelExplorerDetailSection({
     primaryMeaning ||
     titleForDisplay(selectedItem, true) ||
     (selectedItem.subjectType === "kanji" ? "Kanji" : selectedItem.subjectType === "radical" ? "Radical" : "Vocabulary");
+  const headerTitle = studyMode ? revealedStudyTitle : titleForDisplay(selectedItem, showEnglish);
+  const headerSubtitle = studyMode
+    ? revealStudyReading
+      ? titleForDisplay(selectedItem, false)
+      : null
+    : null;
 
   return (
     <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
@@ -248,19 +253,17 @@ export default function LevelExplorerDetailSection({
           <div
             className={`inline-flex rounded-2xl border ${
               glyphHasReading(selectedItem)
-                ? useBlindHeaderLayout
-                  ? "min-h-[8.5rem] min-w-[8.5rem] flex-col items-center justify-center px-6 py-5"
-                  : "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
-                : useBlindHeaderLayout
-                  ? "min-h-[8.5rem] min-w-[8.5rem] items-center justify-center px-6 py-5"
-                  : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
+                ? "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
+                : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
             } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
           >
             <div>
-              <p className={`text-center font-black leading-none text-current ${useBlindHeaderLayout ? "text-6xl sm:text-7xl" : "text-4xl"}`}>
+              <p className="text-center text-4xl font-black leading-none text-current">
                 {selectedItem.characters}
               </p>
-              {!useBlindHeaderLayout ? (
+              {studyMode ? (
+                <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/55">...</p>
+              ) : (
                 (() => {
                   const subtitle = showEnglish
                     ? englishSubtitleForDisplay(selectedItem)
@@ -273,7 +276,7 @@ export default function LevelExplorerDetailSection({
                     </p>
                   );
                 })()
-              ) : null}
+              )}
             </div>
           </div>
         </div>
@@ -295,7 +298,7 @@ export default function LevelExplorerDetailSection({
             {nextReviewBadge ? <span className={`subject-pill ${nextReviewBadge.className}`}>{nextReviewBadge.label}</span> : null}
           </div>
           {studyMode && onTogglePeek ? (
-            <div className="mt-2 flex justify-start sm:justify-end">
+            <div className="mt-2 flex justify-end">
               <button
                 type="button"
                 onClick={onTogglePeek}
@@ -306,20 +309,8 @@ export default function LevelExplorerDetailSection({
             </div>
           ) : null}
           <div className="mt-2 min-w-0">
-            {studyMode ? (
-              <>
-                <p className="text-base font-black uppercase tracking-[0.08em] text-foreground/80">Blind Review</p>
-                <p className="mt-1 text-sm font-semibold text-foreground/65">Recall meaning and reading, then reveal answer.</p>
-                {!isStudyHidden ? (
-                  <>
-                    <p className="mt-2 text-2xl font-black leading-tight text-foreground">{revealedStudyTitle}</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground/75">{titleForDisplay(selectedItem, false)}</p>
-                  </>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-3xl font-black leading-tight text-foreground">{titleForDisplay(selectedItem, showEnglish)}</p>
-            )}
+            <p className="text-4xl font-black leading-tight text-foreground">{headerTitle}</p>
+            {headerSubtitle ? <p className="mt-1 text-2xl font-semibold text-foreground/85">{headerSubtitle}</p> : null}
           </div>
         </div>
       </div>
