@@ -537,7 +537,6 @@ export default function StudyReviewModal({
   const hasComponentKanji = hasRenderableRelatedItems(
     selectedItem.componentKanji as RelatedReference[] | undefined,
   );
-  const relatedCompanionCount = Number(hasRadicals) + Number(hasVisuallySimilar);
   const jlptOnReadings = selectedItem.jlptMeta?.onReadings ?? [];
   const jlptKunReadings = selectedItem.jlptMeta?.kunReadings ?? [];
 
@@ -948,29 +947,30 @@ export default function StudyReviewModal({
                 </div>
 
                 {hasRadicals || hasVisuallySimilar || hasUsedInVocabulary ? (
-                  <div className="mt-2 grid gap-2 lg:grid-cols-4">
-                    {hasRadicals ? (
-                      <div className="rounded-xl border border-line bg-surface px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Radicals</p>
-                        {relatedTiles(selectedItem.radicals as RelatedReference[] | undefined)}
-                      </div>
-                    ) : null}
-                    {hasVisuallySimilar ? (
-                      <div className="rounded-xl border border-line bg-surface px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Visually similar</p>
-                        {relatedTiles(selectedItem.visuallySimilar as RelatedReference[] | undefined)}
-                      </div>
-                    ) : null}
-                    {hasUsedInVocabulary ? (
+                  <div className="mt-2 space-y-2">
+                    {hasRadicals || hasVisuallySimilar ? (
                       <div
-                        className={`rounded-xl border border-line bg-surface px-3 py-2 ${
-                          relatedCompanionCount === 0
-                            ? "lg:col-span-4"
-                            : relatedCompanionCount === 1
-                              ? "lg:col-span-3"
-                              : "lg:col-span-2"
+                        className={`grid gap-2 ${
+                          hasRadicals && hasVisuallySimilar ? "lg:grid-cols-2" : "lg:grid-cols-1"
                         }`}
                       >
+                        {hasRadicals ? (
+                          <div className="rounded-xl border border-line bg-surface px-3 py-2">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Radicals</p>
+                            {relatedTiles(selectedItem.radicals as RelatedReference[] | undefined)}
+                          </div>
+                        ) : null}
+                        {hasVisuallySimilar ? (
+                          <div className="rounded-xl border border-line bg-surface px-3 py-2">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Visually similar</p>
+                            {relatedTiles(selectedItem.visuallySimilar as RelatedReference[] | undefined)}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {hasUsedInVocabulary ? (
+                      <div className="rounded-xl border border-line bg-surface px-3 py-2">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Used in vocabulary</p>
                         {relatedTiles(selectedItem.usedInVocabulary as RelatedReference[] | undefined)}
                       </div>
