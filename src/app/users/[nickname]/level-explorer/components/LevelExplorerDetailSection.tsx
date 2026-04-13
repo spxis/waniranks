@@ -411,7 +411,7 @@ export default function LevelExplorerDetailSection({
         />
       ) : null}
 
-      {!studyMode ? (
+      {!studyMode || isStudyHidden ? (
         <LevelExplorerReviewStatsCard
           accountId={accountId}
           subjectId={selectedItem.subjectId}
