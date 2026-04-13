@@ -231,6 +231,7 @@ export default function LevelExplorerDetailSection({
   onJumpToKanji,
 }: Props) {
   const isStudyHidden = studyMode && !revealStudyReading;
+  const useBlindHeaderLayout = studyMode;
   const canShowReadings = !isStudyHidden;
   const primaryMeaning = selectedItem.meanings.find((entry) => entry.trim().length > 0) ?? "";
   const nextReviewBadge = formatNextReviewBadge(selectedItem.availableAt);
@@ -241,24 +242,24 @@ export default function LevelExplorerDetailSection({
 
   return (
     <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
-      <div className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-x-3">
-        <div className="row-span-2 inline-flex">
+      <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-3">
+        <div className="inline-flex sm:self-start">
           <div
             className={`inline-flex rounded-2xl border ${
               glyphHasReading(selectedItem)
-                ? isStudyHidden
+                ? useBlindHeaderLayout
                   ? "min-h-[8.5rem] min-w-[8.5rem] flex-col items-center justify-center px-6 py-5"
                   : "min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center px-4 py-3"
-                : isStudyHidden
+                : useBlindHeaderLayout
                   ? "min-h-[8.5rem] min-w-[8.5rem] items-center justify-center px-6 py-5"
                   : "min-h-[5.75rem] min-w-[5.75rem] items-center justify-center px-4 py-3"
             } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
           >
             <div>
-              <p className={`text-center font-black leading-none text-current ${isStudyHidden ? "text-6xl sm:text-7xl" : "text-4xl"}`}>
+              <p className={`text-center font-black leading-none text-current ${useBlindHeaderLayout ? "text-6xl sm:text-7xl" : "text-4xl"}`}>
                 {selectedItem.characters}
               </p>
-              {!isStudyHidden ? (
+              {!useBlindHeaderLayout ? (
                 (() => {
                   const subtitle = showEnglish
                     ? englishSubtitleForDisplay(selectedItem)
@@ -276,7 +277,7 @@ export default function LevelExplorerDetailSection({
           </div>
         </div>
 
-        <>
+        <div className="min-w-0">
           <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
             <span className={`subject-pill ${statusClass(selectedItem.status)}`}>{statusShortLabel(selectedItem.status)}</span>
             <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
@@ -290,7 +291,7 @@ export default function LevelExplorerDetailSection({
             {nextReviewBadge ? <span className={`subject-pill ${nextReviewBadge.className}`}>{nextReviewBadge.label}</span> : null}
           </div>
           {studyMode && onTogglePeek ? (
-            <div className="mt-2 flex justify-end">
+            <div className="mt-2 flex justify-start sm:justify-end">
               <button
                 type="button"
                 onClick={onTogglePeek}
@@ -300,7 +301,7 @@ export default function LevelExplorerDetailSection({
               </button>
             </div>
           ) : null}
-          <div className="min-w-0">
+          <div className="mt-2 min-w-0">
             {studyMode ? (
               <>
                 <p className="text-base font-black uppercase tracking-[0.08em] text-foreground/80">Blind Review</p>
@@ -316,7 +317,7 @@ export default function LevelExplorerDetailSection({
               <p className="text-3xl font-black leading-tight text-foreground">{titleForDisplay(selectedItem, showEnglish)}</p>
             )}
           </div>
-        </>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
