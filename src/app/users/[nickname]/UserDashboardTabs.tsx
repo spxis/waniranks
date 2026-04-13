@@ -111,7 +111,7 @@ export default function UserDashboardTabs({
     }
   });
   const actionButtonBaseClass =
-    "inline-flex h-10 shrink-0 items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-10 shrink-0 select-none items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
   const [nowMs, setNowMs] = useState(() => Date.now());
   const { data: liveData, mutate } = useSWR<LiveData>(
     `/api/accounts/${accountId}/live`,
@@ -203,7 +203,7 @@ export default function UserDashboardTabs({
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
             <Link
               href="/"
-              className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition hover:bg-surface-muted"
+              className="inline-flex h-8 select-none items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition hover:bg-surface-muted"
             >
               Leaderboard
             </Link>
@@ -244,7 +244,7 @@ export default function UserDashboardTabs({
               ariaLabel="Refresh"
               iconOnly
               showMessage={false}
-              buttonClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+              buttonClassName="inline-flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
           <UserAdminRefreshButton
@@ -253,7 +253,7 @@ export default function UserDashboardTabs({
             ariaLabel="Refresh"
             iconOnly
             showMessage={false}
-            buttonClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
+            buttonClassName="inline-flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
           />
         </div>
         <div
@@ -310,24 +310,20 @@ export default function UserDashboardTabs({
             </p>
             {totalPlayers > 1 ? (
               <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold uppercase tracking-[0.08em] text-foreground/70">
-                {previousUser ? (
-                  <Link href={`/users/${encodeURIComponent(previousUser.wkUsername)}`} className="rounded-full border border-line bg-surface px-2 py-0.5 hover:bg-surface-muted" aria-label={`Previous user ${previousUser.nickname}`}>
-                    {"< "}{previousUser.nickname || "Prev"}
-                  </Link>
-                ) : (
-                  <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-foreground/50">
-                    {"< Prev"}
-                  </span>
-                )}
-                {nextUser ? (
-                  <Link href={`/users/${encodeURIComponent(nextUser.wkUsername)}`} className="rounded-full border border-line bg-surface px-2 py-0.5 hover:bg-surface-muted" aria-label={`Next user ${nextUser.nickname}`}>
-                    {nextUser.nickname || "Next"}{" >"}
-                  </Link>
-                ) : (
-                  <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-foreground/50">
-                    {"Next >"}
-                  </span>
-                )}
+                <Link
+                  href={`/users/${encodeURIComponent(previousUser?.wkUsername ?? wkUsername)}`}
+                  className="rounded-full border border-line bg-surface px-2 py-0.5 select-none hover:bg-surface-muted"
+                  aria-label={`Previous user ${previousUser?.nickname ?? nickname}`}
+                >
+                  {"< "}{previousUser?.nickname ?? nickname}
+                </Link>
+                <Link
+                  href={`/users/${encodeURIComponent(nextUser?.wkUsername ?? wkUsername)}`}
+                  className="rounded-full border border-line bg-surface px-2 py-0.5 select-none hover:bg-surface-muted"
+                  aria-label={`Next user ${nextUser?.nickname ?? nickname}`}
+                >
+                  {nextUser?.nickname ?? nickname}{" >"}
+                </Link>
               </div>
             ) : null}
           </div>
@@ -353,54 +349,54 @@ export default function UserDashboardTabs({
       </div>
       {activeTab === "main" ? (
         <div className="mt-4" role="tabpanel">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+            <article className="rounded-2xl border border-line bg-surface-muted p-3 text-center sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Level</p>
-              <p className="mt-2 text-4xl font-black text-accent">{wkLevel}</p>
+              <p className="mt-2 text-3xl font-black text-accent sm:text-4xl">{wkLevel}</p>
             </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
+            <article className="rounded-2xl border border-line bg-surface-muted p-3 text-center sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Learned Kanji</p>
-              <p className="mt-2 text-4xl font-black text-foreground">{formatNumber(levelKanjiLearned)}</p>
+              <p className="mt-2 text-3xl font-black text-foreground sm:text-4xl">{formatNumber(levelKanjiLearned)}</p>
               <p className="text-xs text-foreground/65">of {formatNumber(levelKanjiTotal)} in this level</p>
             </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
+            <article className="rounded-2xl border border-line bg-surface-muted p-3 text-center sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Remaining (Level)</p>
-              <p className="mt-2 text-4xl font-black text-hot">{formatNumber(Math.max(0, levelKanjiTotal - levelKanjiLearned))}</p>
+              <p className="mt-2 text-3xl font-black text-hot sm:text-4xl">{formatNumber(Math.max(0, levelKanjiTotal - levelKanjiLearned))}</p>
               <p className="text-xs text-foreground/65">locked: {formatNumber(levelKanjiLocked)}</p>
             </article>
-            <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-4 text-center">
+            <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-3 text-center sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-kanji">Total Learned</p>
-              <p className="mt-2 text-4xl font-black text-kanji">{formatNumber(totalLearnedKanji)}</p>
+              <p className="mt-2 text-3xl font-black text-kanji sm:text-4xl">{formatNumber(totalLearnedKanji)}</p>
               <p className="text-xs text-foreground/65">all kanji at Guru+</p>
             </article>
-            <article className="rounded-2xl border border-line bg-surface-muted p-4 text-center">
+            <article className="col-span-2 rounded-2xl border border-line bg-surface-muted p-3 text-center sm:col-span-1 sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Est. Time Remaining</p>
-              <p className="mt-2 text-3xl font-black text-foreground">
+              <p className="mt-2 text-2xl font-black text-foreground sm:text-3xl">
                 {estimatedHoursRemaining === null ? "Unknown" : `${estimatedHoursRemaining}h`}
               </p>
               <p className="text-xs text-foreground/65">Until 90% level kanji at Guru+</p>
             </article>
           </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
-            <Link href="?srs=apprentice#explorer" className="rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+            <Link href="?srs=apprentice#explorer" className="select-none rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
               <span className="block">Apprentice:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(apprenticeCount)}</span>
+              <span className="mt-0.5 block text-3xl leading-none sm:text-4xl">{formatNumber(apprenticeCount)}</span>
             </Link>
-            <Link href="?srs=guru#explorer" className="rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
+            <Link href="?srs=guru#explorer" className="select-none rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
               <span className="block">Guru:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(guruCount)}</span>
+              <span className="mt-0.5 block text-3xl leading-none sm:text-4xl">{formatNumber(guruCount)}</span>
             </Link>
-            <Link href="?srs=master#explorer" className="rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
+            <Link href="?srs=master#explorer" className="select-none rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
               <span className="block">Master:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(masterCount)}</span>
+              <span className="mt-0.5 block text-3xl leading-none sm:text-4xl">{formatNumber(masterCount)}</span>
             </Link>
-            <Link href="?srs=enlightened#explorer" className="rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
+            <Link href="?srs=enlightened#explorer" className="select-none rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
               <span className="block">Enlightened:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(enlightenedCount)}</span>
+              <span className="mt-0.5 block text-3xl leading-none sm:text-4xl">{formatNumber(enlightenedCount)}</span>
             </Link>
-            <Link href="?srs=burned#explorer" className="rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
+            <Link href="?srs=burned#explorer" className="select-none rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
               <span className="block">Burned:</span>
-              <span className="mt-0.5 block text-4xl leading-none">{formatNumber(burnedCount)}</span>
+              <span className="mt-0.5 block text-3xl leading-none sm:text-4xl">{formatNumber(burnedCount)}</span>
             </Link>
             <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-center text-sm font-semibold text-radical">
               <span className="block">Radicals:</span>

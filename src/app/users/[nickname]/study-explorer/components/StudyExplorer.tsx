@@ -96,12 +96,13 @@ export default function StudyExplorer({
   const [submitFeedback, setSubmitFeedback] = useState<SubmitFeedback | null>(null);
   const [submitInFlight, setSubmitInFlight] = useState<SubmitInFlight | null>(null);
   const [reviewOutcomeByAssignmentId, setReviewOutcomeByAssignmentId] = useState<Record<number, ReviewOutcome>>({});
+  const [hiddenSubmittedAssignmentIds, setHiddenSubmittedAssignmentIds] = useState<Set<number>>(new Set());
   const [hasPendingStudySubmissions, setHasPendingStudySubmissions] = useState(false);
   const [showLocked, setShowLocked] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasHydratedTypeFilter, setHasHydratedTypeFilter] = useState(false);
 
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate: mutateQueue } = useSWR(
     `/api/study/${accountId}/queue?mode=${queueMode}&limit=${API_PAGE_SIZE}&offset=0`,
     fetchStudyQueue,
     {
@@ -224,14 +225,16 @@ export default function StudyExplorer({
   useEffect(() => {
     if (!data?.items) return;
 
-    const fresh = data.items;
+    const fresh = data.items.filter((item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId));
     const freshIds = new Set(fresh.map((item) => item.assignmentId));
     setLoadedItems((prev) => {
-      if (prev.length === 0) return fresh;
-      return [...fresh, ...prev.filter((item) => !freshIds.has(item.assignmentId))];
+      const visiblePrev = prev.filter((item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId));
+      if (visiblePrev.length === 0) return fresh;
+      return [...fresh, ...visiblePrev.filter((item) => !freshIds.has(item.assignmentId))];
     });
-    setTotalItems(data.pagination?.total ?? fresh.length);
-  }, [data?.items, data?.pagination?.total]);
+    const nextTotalRaw = data.pagination?.total ?? fresh.length;
+    setTotalItems(Math.max(0, nextTotalRaw - hiddenSubmittedAssignmentIds.size));
+  }, [data?.items, data?.pagination?.total, hiddenSubmittedAssignmentIds]);
 
   useEffect(() => {
     persistQueue(accountId, queueMode, loadedItems, totalItems, counts ?? null);
@@ -289,19 +292,23 @@ export default function StudyExplorer({
       const payload = await fetchStudyQueue(
         `/api/study/${accountId}/queue?mode=${queueMode}&limit=${API_PAGE_SIZE}&offset=${loadedItems.length}`,
       );
+      const payloadVisibleItems = payload.items.filter(
+        (item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId),
+      );
 
       setLoadedItems((prev) => {
         const existing = new Set(prev.map((item) => item.assignmentId));
-        return [...prev, ...payload.items.filter((item) => !existing.has(item.assignmentId))];
+        return [...prev, ...payloadVisibleItems.filter((item) => !existing.has(item.assignmentId))];
       });
-      setTotalItems(payload.pagination?.total ?? totalItems);
+      const nextTotalRaw = payload.pagination?.total ?? totalItems;
+      setTotalItems(Math.max(0, nextTotalRaw - hiddenSubmittedAssignmentIds.size));
       if (payload.counts) setPersistedCounts(payload.counts);
     } catch (loadError) {
       setLoadMoreError(loadError instanceof Error ? loadError.message : "Could not load more study items.");
     } finally {
       setIsLoadingMore(false);
     }
-  }, [accountId, queueMode, loadedItems.length, hasMorePages, isLoadingMore, totalItems]);
+  }, [accountId, queueMode, loadedItems.length, hasMorePages, hiddenSubmittedAssignmentIds, isLoadingMore, totalItems]);
 
   useEffect(() => {
     if (!sentinelRef.current || selectedItem || !hasMorePages) return;
@@ -361,6 +368,11 @@ export default function StudyExplorer({
         );
       }
       setReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: result }));
+      setHiddenSubmittedAssignmentIds((prev) => {
+        const next = new Set(prev);
+        next.add(assignmentId);
+        return next;
+      });
       setHasPendingStudySubmissions(true);
       setSelectedId(nextFocusedItem?.subjectId ?? null);
     } catch (submitError) {
@@ -388,6 +400,7 @@ export default function StudyExplorer({
       void fetch(`/api/accounts/${accountId}/refresh`, { method: "POST" }).catch(() => {
         // Non-blocking best-effort refresh after review session closes.
       });
+      void mutateQueue();
       setHasPendingStudySubmissions(false);
     }
 
@@ -396,7 +409,7 @@ export default function StudyExplorer({
     setSubmitFeedback(null);
     setSubmitInFlight(null);
     setRevealedAssignmentIds(new Set());
-  }, [accountId, hasPendingStudySubmissions]);
+  }, [accountId, hasPendingStudySubmissions, mutateQueue]);
 
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
