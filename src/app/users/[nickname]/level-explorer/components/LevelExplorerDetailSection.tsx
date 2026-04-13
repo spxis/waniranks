@@ -239,7 +239,11 @@ export default function LevelExplorerDetailSection({
     primaryMeaning ||
     titleForDisplay(selectedItem, true) ||
     (selectedItem.subjectType === "kanji" ? "Kanji" : selectedItem.subjectType === "radical" ? "Radical" : "Vocabulary");
-  const headerTitle = studyMode ? revealedStudyTitle : titleForDisplay(selectedItem, showEnglish);
+  const headerTitle = studyMode
+    ? revealStudyReading
+      ? revealedStudyTitle
+      : null
+    : titleForDisplay(selectedItem, showEnglish);
   const headerSubtitle = studyMode
     ? revealStudyReading
       ? titleForDisplay(selectedItem, false)
@@ -261,22 +265,27 @@ export default function LevelExplorerDetailSection({
               <p className="text-center text-4xl font-black leading-none text-current">
                 {selectedItem.characters}
               </p>
-              {studyMode ? (
-                <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/55">...</p>
-              ) : (
-                (() => {
-                  const subtitle = showEnglish
+              {(() => {
+                if (studyMode && isStudyHidden) {
+                  return <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/55">...</p>;
+                }
+
+                const subtitle = studyMode
+                  ? glyphSubtitleForDisplay(selectedItem)
+                  : showEnglish
                     ? englishSubtitleForDisplay(selectedItem)
                     : glyphSubtitleForDisplay(selectedItem);
-                  if (!subtitle) return null;
 
-                  return (
-                    <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/85">
-                      <ReadingWithPronunciation reading={subtitle} />
-                    </p>
-                  );
-                })()
-              )}
+                if (!subtitle) {
+                  return null;
+                }
+
+                return (
+                  <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/85">
+                    <ReadingWithPronunciation reading={subtitle} />
+                  </p>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -309,8 +318,17 @@ export default function LevelExplorerDetailSection({
             </div>
           ) : null}
           <div className="mt-2 min-w-0">
-            <p className="text-4xl font-black leading-tight text-foreground">{headerTitle}</p>
-            {headerSubtitle ? <p className="mt-1 text-2xl font-semibold text-foreground/85">{headerSubtitle}</p> : null}
+            {studyMode && isStudyHidden ? (
+              <>
+                <p className="text-base font-black uppercase tracking-[0.08em] text-foreground/80">Blind Review</p>
+                <p className="mt-1 text-sm font-semibold text-foreground/65">Recall meaning and reading, then reveal answer.</p>
+              </>
+            ) : (
+              <>
+                {headerTitle ? <p className="text-4xl font-black leading-tight text-foreground">{headerTitle}</p> : null}
+                {headerSubtitle ? <p className="mt-1 text-2xl font-semibold text-foreground/85">{headerSubtitle}</p> : null}
+              </>
+            )}
           </div>
         </div>
       </div>
