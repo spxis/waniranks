@@ -125,3 +125,49 @@ model JlptKanji {
 
   @@index([nLevel])
 }
+
+enum StudyReviewResult {
+  correct
+  wrong
+  skipped
+}
+
+enum SubjectReviewSnapshotSource {
+  sync
+  ondemand
+  submit
+}
+
+model StudyReviewAttempt {
+  id           String            @id @default(cuid())
+  accountId    String
+  assignmentId Int
+  subjectId    Int
+  subjectType  String
+  result       StudyReviewResult
+  submittedAt  DateTime          @default(now())
+
+  @@index([accountId, subjectId, submittedAt])
+  @@index([accountId, submittedAt])
+}
+
+model SubjectReviewStatsSnapshot {
+  id                    String                      @id @default(cuid())
+  accountId             String
+  subjectId             Int
+  subjectType           String
+  meaningCorrect        Int
+  meaningIncorrect      Int
+  meaningCurrentStreak  Int
+  meaningMaxStreak      Int
+  readingCorrect        Int
+  readingIncorrect      Int
+  readingCurrentStreak  Int
+  readingMaxStreak      Int
+  percentageCorrect     Int
+  capturedAt            DateTime                    @default(now())
+  source                SubjectReviewSnapshotSource @default(ondemand)
+
+  @@index([accountId, subjectId, capturedAt])
+  @@index([accountId, capturedAt])
+}
