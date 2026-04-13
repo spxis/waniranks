@@ -98,7 +98,7 @@ export default function AppFooter() {
           <button
             type="button"
             onClick={() => {
-              void signIn("google", { callbackUrl: "/join" });
+              void signIn("google", { callbackUrl: "/join" }, { prompt: "select_account" });
             }}
             className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80"
           >

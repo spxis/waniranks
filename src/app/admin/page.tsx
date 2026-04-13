@@ -110,6 +110,21 @@ export default function AdminPage() {
     }
   }
 
+  async function completeGoogleSignOut() {
+    setLoading(true);
+    setStatus({ type: "idle", message: "" });
+
+    try {
+      await fetch("/api/admin/session", {
+        method: "DELETE",
+      });
+    } catch {
+      // Ignore cookie clear errors and continue with NextAuth sign out.
+    } finally {
+      window.location.href = "/api/auth/signout?callbackUrl=/admin";
+    }
+  }
+
   function adminAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
     return adminKey.trim() ? { ...extraHeaders, "x-admin-key": adminKey } : extraHeaders;
   }
@@ -326,17 +341,20 @@ export default function AdminPage() {
           {googleConfigured ? (
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
-                href="/api/auth/signin/google?callbackUrl=/admin"
+                href="/api/auth/signin/google?callbackUrl=/admin&prompt=select_account"
                 className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
               >
                 Sign in with Google
               </Link>
-              <Link
-                href="/api/auth/signout?callbackUrl=/admin"
+              <button
+                type="button"
+                onClick={() => {
+                  void completeGoogleSignOut();
+                }}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
               >
-                Sign out Google
-              </Link>
+                Sign out completely
+              </button>
             </div>
           ) : null}
 
