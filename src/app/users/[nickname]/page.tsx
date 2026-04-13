@@ -142,10 +142,19 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   const rankedAccounts = await prisma.account.findMany({
     orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
-    select: { id: true },
+    select: { id: true, nickname: true, wkUsername: true },
   });
-  const globalRank = Math.max(1, rankedAccounts.findIndex((row) => row.id === account.id) + 1);
+  const rankedIndex = rankedAccounts.findIndex((row) => row.id === account.id);
+  const globalRank = Math.max(1, rankedIndex + 1);
   const totalPlayers = rankedAccounts.length;
+  const previousRanked =
+    rankedAccounts.length > 1
+      ? rankedAccounts[(rankedIndex - 1 + rankedAccounts.length) % rankedAccounts.length]
+      : null;
+  const nextRanked =
+    rankedAccounts.length > 1
+      ? rankedAccounts[(rankedIndex + 1) % rankedAccounts.length]
+      : null;
 
   const currentLevelItems = levelKanjiItems.filter(
     (item) => item.subjectType === "radical" || item.subjectType === "kanji" || item.subjectType === "vocabulary",
@@ -191,6 +200,22 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           lastActivityAt={account.lastActivityAt ? account.lastActivityAt.toISOString() : null}
           globalRank={globalRank}
           totalPlayers={totalPlayers}
+          previousUser={
+            previousRanked
+              ? {
+                  nickname: previousRanked.nickname,
+                  wkUsername: previousRanked.wkUsername,
+                }
+              : null
+          }
+          nextUser={
+            nextRanked
+              ? {
+                  nickname: nextRanked.nickname,
+                  wkUsername: nextRanked.wkUsername,
+                }
+              : null
+          }
           wkLevel={account.wkLevel}
           levelKanjiLearned={account.levelKanjiLearned}
           levelKanjiTotal={account.levelKanjiTotal}

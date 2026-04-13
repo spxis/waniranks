@@ -1,18 +1,14 @@
 "use client";
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-
 import UserAdminRefreshButton from "./UserAdminRefreshButton";
-
 type ItemSpreadRow = {
   radical: number;
   kanji: number;
   vocabulary: number;
   total: number;
 };
-
 type ItemSpread = {
   apprentice: ItemSpreadRow;
   guru: ItemSpreadRow;
@@ -21,19 +17,18 @@ type ItemSpread = {
   burned: ItemSpreadRow;
   totals: ItemSpreadRow;
 };
-
 type TypeProgress = {
   guruOrHigher: number;
   total: number;
   percent: number;
 };
-
 type TabId = "main" | "item-spread" | "level-progress";
-
 type Props = {
   accountId: string;
   nickname: string;
   wkUsername: string;
+  previousUser: { nickname: string; wkUsername: string } | null;
+  nextUser: { nickname: string; wkUsername: string } | null;
   linkedEmail: string | null;
   viewerMatchesAccount: boolean;
   lastSyncedAt: string;
@@ -61,20 +56,19 @@ type Props = {
   remainingToLevelUp: number;
   passedLevelUpGate: boolean;
 };
-
 type LiveData = {
   lastSyncedAt: string;
   lastActivityAt: string | null;
 };
-
 function formatNumber(input: number): string {
   return new Intl.NumberFormat("en-US").format(input);
 }
-
 export default function UserDashboardTabs({
   accountId,
   nickname,
   wkUsername,
+  previousUser,
+  nextUser,
   linkedEmail,
   viewerMatchesAccount,
   lastSyncedAt,
@@ -107,7 +101,6 @@ export default function UserDashboardTabs({
     if (typeof window === "undefined") {
       return "main";
     }
-
     try {
       const stored = window.localStorage.getItem(tabStorageKey);
       return stored === "main" || stored === "item-spread" || stored === "level-progress"
@@ -117,11 +110,9 @@ export default function UserDashboardTabs({
       return "main";
     }
   });
-
   const actionButtonBaseClass =
     "inline-flex h-10 shrink-0 items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
   const [nowMs, setNowMs] = useState(() => Date.now());
-
   const { data: liveData, mutate } = useSWR<LiveData>(
     `/api/accounts/${accountId}/live`,
     async (url: string) => {
@@ -134,69 +125,55 @@ export default function UserDashboardTabs({
     },
     { refreshInterval: 15_000, revalidateOnFocus: true },
   );
-
   useEffect(() => {
     const timer = window.setInterval(() => {
       setNowMs(Date.now());
     }, 30_000);
-
     return () => {
       window.clearInterval(timer);
     };
   }, []);
-
   useEffect(() => {
     const onUserRefreshed = (event: Event) => {
       const custom = event as CustomEvent<{ accountId?: string }>;
       if (custom.detail?.accountId !== accountId) {
         return;
       }
-
       void mutate();
     };
-
     window.addEventListener("wr:user-refreshed", onUserRefreshed as EventListener);
     return () => {
       window.removeEventListener("wr:user-refreshed", onUserRefreshed as EventListener);
     };
   }, [accountId, mutate]);
-
   const liveLastSyncedMs = new Date(liveData?.lastSyncedAt ?? lastSyncedAt).getTime();
   const liveLastActivityMs = new Date(liveData?.lastActivityAt ?? lastActivityAt ?? "").getTime();
-
   function formatRelativeTime(timestampMs: number): string {
     if (Number.isNaN(timestampMs)) {
       return "unknown";
     }
-
     const deltaMs = nowMs - timestampMs;
     if (deltaMs < 30_000) {
       return "just now";
     }
-
     const minuteMs = 60_000;
     const hourMs = 60 * minuteMs;
     const dayMs = 24 * hourMs;
-
     if (deltaMs < hourMs) {
       const minutes = Math.max(1, Math.round(deltaMs / minuteMs));
       return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
     }
-
     if (deltaMs < dayMs) {
       const hours = Math.max(1, Math.round(deltaMs / hourMs));
       return `${hours} hour${hours === 1 ? "" : "s"} ago`;
     }
-
     const days = Math.max(1, Math.round(deltaMs / dayMs));
     return `${days} day${days === 1 ? "" : "s"} ago`;
   }
-
   function formatAbsoluteTime(timestampMs: number): string {
     if (Number.isNaN(timestampMs)) {
       return "Unknown";
     }
-
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
@@ -204,7 +181,6 @@ export default function UserDashboardTabs({
       minute: "2-digit",
     }).format(new Date(timestampMs));
   }
-
   function switchTab(next: TabId) {
     setActiveTab(next);
     try {
@@ -213,14 +189,12 @@ export default function UserDashboardTabs({
       // Ignore storage errors in restricted browsing modes.
     }
   }
-
   function tabClass(tab: TabId): string {
     const active = activeTab === tab;
     return active
       ? `${actionButtonBaseClass} border-accent bg-accent text-white`
       : `${actionButtonBaseClass} border-line bg-surface text-foreground hover:bg-surface-muted`;
   }
-
   return (
     <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
       <div className="flex flex-col gap-3">
@@ -234,7 +208,6 @@ export default function UserDashboardTabs({
               Leaderboard
             </Link>
           </div>
-
           <div className="ml-auto hidden items-center justify-end gap-2 sm:flex">
             <div className="flex flex-wrap gap-2" role="tablist" aria-label="User dashboard tabs">
               <button
@@ -265,7 +238,6 @@ export default function UserDashboardTabs({
                 Level Progress
               </button>
             </div>
-
             <UserAdminRefreshButton
               accountId={accountId}
               label={"\u21BB"}
@@ -275,7 +247,6 @@ export default function UserDashboardTabs({
               buttonClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
-
           <UserAdminRefreshButton
             accountId={accountId}
             label={"\u21BB"}
@@ -285,7 +256,6 @@ export default function UserDashboardTabs({
             buttonClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
           />
         </div>
-
         <div
           className="flex w-full items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:hidden"
           role="tablist"
@@ -322,7 +292,6 @@ export default function UserDashboardTabs({
             <span className="hidden sm:inline">Level Progress</span>
           </button>
         </div>
-
         <div className="flex w-full items-start gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <h1 className="truncate text-4xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
@@ -339,9 +308,18 @@ export default function UserDashboardTabs({
                 of {formatNumber(totalPlayers)}
               </span>
             </p>
+            {previousUser && nextUser ? (
+              <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold uppercase tracking-[0.08em] text-foreground/70">
+                <Link href={`/users/${encodeURIComponent(previousUser.wkUsername)}`} className="rounded-full border border-line bg-surface px-2 py-0.5 hover:bg-surface-muted" aria-label={`Previous user ${previousUser.nickname}`}>
+                  {"< "}{previousUser.nickname}
+                </Link>
+                <Link href={`/users/${encodeURIComponent(nextUser.wkUsername)}`} className="rounded-full border border-line bg-surface px-2 py-0.5 hover:bg-surface-muted" aria-label={`Next user ${nextUser.nickname}`}>
+                  {nextUser.nickname}{" >"}
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
-
         <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-sm text-foreground/70">
             @{wkUsername}
@@ -361,7 +339,6 @@ export default function UserDashboardTabs({
           </p>
         </div>
       </div>
-
       {activeTab === "main" ? (
         <div className="mt-4" role="tabpanel">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -392,7 +369,6 @@ export default function UserDashboardTabs({
               <p className="text-xs text-foreground/65">Until 90% level kanji at Guru+</p>
             </article>
           </div>
-
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
             <Link href="?srs=apprentice#explorer" className="rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted">
               <span className="block">Apprentice:</span>
@@ -429,7 +405,6 @@ export default function UserDashboardTabs({
           </div>
         </div>
       ) : null}
-
       {activeTab === "item-spread" ? (
         <div className="mt-4" role="tabpanel">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -440,7 +415,6 @@ export default function UserDashboardTabs({
               <span className="subject-pill subject-pill--vocabulary">Vocabulary</span>
             </div>
           </div>
-
           <div className="mt-4 space-y-2">
             {([
               ["Apprentice", itemSpread.apprentice],
@@ -465,16 +439,13 @@ export default function UserDashboardTabs({
           </div>
         </div>
       ) : null}
-
       {activeTab === "level-progress" ? (
         <div className="mt-4" role="tabpanel">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-3xl font-black text-foreground">Level Progress</h2>
             <p className="text-2xl font-semibold text-foreground/80">Level {wkLevel}</p>
           </div>
-
           <p className="mt-3 text-lg text-foreground/75">Number of items Guru&apos;d in this level.</p>
-
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {([
               ["Radicals", "radical", levelRadicalProgress],
@@ -508,7 +479,6 @@ export default function UserDashboardTabs({
               </article>
             ))}
           </div>
-
           <div className="mt-5 rounded-2xl border border-line bg-surface-muted px-4 py-4 text-lg text-foreground/85">
             {passedLevelUpGate
               ? "You have passed this level gate, but there are still items you have not Guru'd yet."
