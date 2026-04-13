@@ -178,6 +178,24 @@ export function formatRelativeFromNow(input: string | null | undefined): string 
   }
   return `in ${value} ${plural}`;
 }
+
+export function isNewGlyphWithinHours(
+  item: LevelItem,
+  hours: number = 72,
+  nowMs: number = Date.now(),
+): boolean {
+  const anchor = item.startedAt ?? item.availableAt;
+  if (!anchor) {
+    return false;
+  }
+
+  const anchorMs = Date.parse(anchor);
+  if (Number.isNaN(anchorMs) || anchorMs > nowMs) {
+    return false;
+  }
+
+  return nowMs - anchorMs <= hours * 60 * 60 * 1000;
+}
 export function stripHtml(input: string | undefined): string {
   if (!input) {
     return "";

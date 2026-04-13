@@ -9,6 +9,7 @@ import {
   formatNumber,
   glyphSubtitleForDisplay,
   glyphTextSizeClass,
+  isNewGlyphWithinHours,
   statusClass,
   statusShortLabel,
   shortSubjectTypeLabel,
@@ -150,7 +151,7 @@ export default function LevelExplorerContent({
     onSetJlptFilter("all");
     onSetReviewTimingFilter("all");
     onSetRecentOnly(false);
-    onSetShowLocked(true);
+    onSetShowLocked(false);
     onSetSelectedSubjectId(null);
   }, [
     onEnableAllTypes,
@@ -386,6 +387,9 @@ export default function LevelExplorerContent({
                       ) : null}
                       {item.subjectType === "kanji" && item.jlptLevel ? (
                         <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span>
+                      ) : null}
+                      {isNewGlyphWithinHours(item) ? (
+                        <span className="subject-pill border-emerald-300 bg-emerald-100 text-emerald-800">NEW</span>
                       ) : null}
                     </>
                   }

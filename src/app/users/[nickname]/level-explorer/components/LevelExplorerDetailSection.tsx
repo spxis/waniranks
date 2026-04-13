@@ -8,6 +8,7 @@ import {
   formatRelativeFromNow,
   glyphHasReading,
   glyphSubtitleForDisplay,
+  isNewGlyphWithinHours,
   pronunciationForReading,
   relatedReferenceCardClass,
   secondaryReadingsForDisplay,
@@ -288,6 +289,9 @@ export default function LevelExplorerDetailSection({
               <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span>
             ) : null}
             <span className="subject-pill border-line bg-surface text-foreground">SRS {selectedItem.srsStage}</span>
+            {isNewGlyphWithinHours(selectedItem) ? (
+              <span className="subject-pill border-emerald-300 bg-emerald-100 text-emerald-800">NEW</span>
+            ) : null}
             {nextReviewBadge ? <span className={`subject-pill ${nextReviewBadge.className}`}>{nextReviewBadge.label}</span> : null}
           </div>
           {studyMode && onTogglePeek ? (

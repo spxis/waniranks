@@ -69,7 +69,7 @@ export default function LevelExplorerController({
   const [jlptFilter, setJlptFilter] = useState<JlptFilter>("all");
   const [reviewTimingFilter, setReviewTimingFilter] = useState<ReviewTimingFilter>("all");
   const [recentOnly, setRecentOnly] = useState(false);
-  const [showLocked, setShowLocked] = useState(true);
+  const [showLocked, setShowLocked] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(
     initialSnapshot.items[0]?.subjectId ?? null,
   );
