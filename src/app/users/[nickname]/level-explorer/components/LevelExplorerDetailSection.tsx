@@ -289,37 +289,27 @@ export default function LevelExplorerDetailSection({
             <span className="subject-pill border-line bg-surface text-foreground">SRS {selectedItem.srsStage}</span>
             {nextReviewBadge ? <span className={`subject-pill ${nextReviewBadge.className}`}>{nextReviewBadge.label}</span> : null}
           </div>
+          {studyMode && onTogglePeek ? (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={onTogglePeek}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground"
+              >
+                {isStudyHidden ? "Peek" : "Hide Peek"}
+              </button>
+            </div>
+          ) : null}
           <div className="min-w-0">
-            {isStudyHidden ? (
+            {studyMode ? (
               <>
-                <div className="flex items-center gap-2">
-                  <p className="text-base font-black uppercase tracking-[0.08em] text-foreground/80">Blind Review</p>
-                  {onTogglePeek ? (
-                    <button
-                      type="button"
-                      onClick={onTogglePeek}
-                      className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground"
-                    >
-                      Peek
-                    </button>
-                  ) : null}
-                </div>
+                <p className="text-base font-black uppercase tracking-[0.08em] text-foreground/80">Blind Review</p>
                 <p className="mt-1 text-sm font-semibold text-foreground/65">Recall meaning and reading, then reveal answer.</p>
-              </>
-            ) : studyMode ? (
-              <>
-                <p className="text-3xl font-black leading-tight text-foreground">{revealedStudyTitle}</p>
-                <p className="mt-1 text-base font-semibold text-foreground/75">{titleForDisplay(selectedItem, false)}</p>
-                {onTogglePeek ? (
-                  <div className="mt-2">
-                    <button
-                      type="button"
-                      onClick={onTogglePeek}
-                      className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground"
-                    >
-                      Hide Peek
-                    </button>
-                  </div>
+                {!isStudyHidden ? (
+                  <>
+                    <p className="mt-2 text-2xl font-black leading-tight text-foreground">{revealedStudyTitle}</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground/75">{titleForDisplay(selectedItem, false)}</p>
+                  </>
                 ) : null}
               </>
             ) : (
