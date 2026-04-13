@@ -778,6 +778,7 @@ export default function StudyReviewModal({
                 </div>
               )
             ) : useStudyFlashLayout ? (
+              <>
               <div className="grid min-h-[68vh] gap-3 lg:grid-cols-2 lg:items-stretch">
                 <div className="flex min-h-[20rem] flex-col lg:h-full lg:min-h-0">
                   {!detailsRevealed ? (
@@ -900,6 +901,15 @@ export default function StudyReviewModal({
                   )}
                 </div>
               </div>
+              <div className="mt-3">
+                <LevelExplorerReviewStatsCard
+                  accountId={accountId}
+                  subjectId={selectedItem.subjectId}
+                  currentSrsStage={selectedItem.srsStage}
+                  startedAt={selectedItem.startedAt}
+                />
+              </div>
+              </>
             ) : requiresReveal && !isAnswerRevealed ? (
               <div className="grid min-h-[68vh] gap-3 lg:grid-cols-2 lg:items-stretch">
                 <div
