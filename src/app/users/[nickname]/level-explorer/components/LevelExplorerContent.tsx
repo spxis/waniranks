@@ -307,20 +307,6 @@ export default function LevelExplorerContent({
                     </button>
                   );
                 })}
-                <button
-                  type="button"
-                  onClick={() => onSetRecentOnly(!recentOnly)}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(recentOnly)}`}
-                >
-                  Recent Only
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSetShowLocked(!showLocked)}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted"
-                >
-                  {showLocked ? "Hide Locked" : "Show Locked"}
-                </button>
               </div>
               {reviewTimingFilter === "overdue" && overdueOutsideSelectedLevels > 0 ? (
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/55">
@@ -355,9 +341,27 @@ export default function LevelExplorerContent({
           </div>
         ) : (
           <>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
-            Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} items
-          </p>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
+              Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} items
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onSetRecentOnly(!recentOnly)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(recentOnly)}`}
+              >
+                Recent Only
+              </button>
+              <button
+                type="button"
+                onClick={() => onSetShowLocked(!showLocked)}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted"
+              >
+                {showLocked ? "Hide Locked" : "Show Locked"}
+              </button>
+            </div>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {visibleItems.map((item, index) => (
               <Fragment key={`${item.subjectType}-${item.subjectId}`}>
