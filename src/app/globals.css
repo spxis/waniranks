@@ -78,6 +78,16 @@ h3 {
   font-family: var(--font-display-sans), sans-serif;
 }
 
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .noise-overlay {
   background-image: linear-gradient(
     135deg,
