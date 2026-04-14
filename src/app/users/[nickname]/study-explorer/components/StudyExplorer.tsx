@@ -22,6 +22,7 @@ import {
   isRecentStudyItem,
   readStoredQueue,
 } from "../lib/studyExplorerUtils";
+import { useStudyExplorerStore } from "../lib/useStudyExplorerStore";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
 
@@ -57,6 +58,7 @@ export default function StudyExplorer({
   const viewedLevelStorageKey = `wr:study-viewed-level:${accountId}:${queueMode}`;
   const recentOnlyStorageKey = `wr:study-recent-only:${accountId}:${queueMode}`;
   const showLockedStorageKey = `wr:study-show-locked:${accountId}:${queueMode}`;
+  const uiStateKey = `${accountId}:${queueMode}`;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const lastHandledStudyQueryRef = useRef("");
 
@@ -71,10 +73,63 @@ export default function StudyExplorer({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
-  const [viewedLevel, setViewedLevel] = useState<number | null>(null);
-  const [typeFilter, setTypeFilter] = useState<StudyTypeFilter>("all");
-  const [srsFilter, setSrsFilter] = useState<StudySrsFilter>("all");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const ensureUiKey = useStudyExplorerStore((state) => state.ensureUiKey);
+  const uiSlice = useStudyExplorerStore((state) => state.uiByKey[uiStateKey]);
+  const setViewedLevelInStore = useStudyExplorerStore((state) => state.setViewedLevel);
+  const setTypeFilterInStore = useStudyExplorerStore((state) => state.setTypeFilter);
+  const setSrsFilterInStore = useStudyExplorerStore((state) => state.setSrsFilter);
+  const setSelectedIdInStore = useStudyExplorerStore((state) => state.setSelectedId);
+  const setShowLockedInStore = useStudyExplorerStore((state) => state.setShowLocked);
+  const setRecentOnlyInStore = useStudyExplorerStore((state) => state.setRecentOnly);
+  const setSearchQueryInStore = useStudyExplorerStore((state) => state.setSearchQuery);
+  const setHasHydratedTypeFilterInStore = useStudyExplorerStore((state) => state.setHasHydratedTypeFilter);
+
+  useEffect(() => {
+    ensureUiKey(uiStateKey);
+  }, [ensureUiKey, uiStateKey]);
+
+  const viewedLevel = uiSlice?.viewedLevel ?? null;
+  const typeFilter: StudyTypeFilter = uiSlice?.typeFilter ?? "all";
+  const srsFilter: StudySrsFilter = uiSlice?.srsFilter ?? "all";
+  const selectedId = uiSlice?.selectedId ?? null;
+  const showLocked = uiSlice?.showLocked ?? true;
+  const recentOnly = uiSlice?.recentOnly ?? false;
+  const searchQuery = uiSlice?.searchQuery ?? "";
+  const hasHydratedTypeFilter = uiSlice?.hasHydratedTypeFilter ?? false;
+
+  const setViewedLevel = useCallback<React.Dispatch<React.SetStateAction<number | null>>>(
+    (value) => setViewedLevelInStore(uiStateKey, value),
+    [setViewedLevelInStore, uiStateKey],
+  );
+  const setTypeFilter = useCallback<React.Dispatch<React.SetStateAction<StudyTypeFilter>>>(
+    (value) => setTypeFilterInStore(uiStateKey, value),
+    [setTypeFilterInStore, uiStateKey],
+  );
+  const setSrsFilter = useCallback<React.Dispatch<React.SetStateAction<StudySrsFilter>>>(
+    (value) => setSrsFilterInStore(uiStateKey, value),
+    [setSrsFilterInStore, uiStateKey],
+  );
+  const setSelectedId = useCallback<React.Dispatch<React.SetStateAction<number | null>>>(
+    (value) => setSelectedIdInStore(uiStateKey, value),
+    [setSelectedIdInStore, uiStateKey],
+  );
+  const setShowLocked = useCallback<React.Dispatch<React.SetStateAction<boolean>>>(
+    (value) => setShowLockedInStore(uiStateKey, value),
+    [setShowLockedInStore, uiStateKey],
+  );
+  const setRecentOnly = useCallback<React.Dispatch<React.SetStateAction<boolean>>>(
+    (value) => setRecentOnlyInStore(uiStateKey, value),
+    [setRecentOnlyInStore, uiStateKey],
+  );
+  const setSearchQuery = useCallback<React.Dispatch<React.SetStateAction<string>>>(
+    (value) => setSearchQueryInStore(uiStateKey, value),
+    [setSearchQueryInStore, uiStateKey],
+  );
+  const setHasHydratedTypeFilter = useCallback<React.Dispatch<React.SetStateAction<boolean>>>(
+    (value) => setHasHydratedTypeFilterInStore(uiStateKey, value),
+    [setHasHydratedTypeFilterInStore, uiStateKey],
+  );
+
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
   const [revealedAssignmentIds, setRevealedAssignmentIds] = useState<Set<number>>(new Set());
   const [submitFeedback, setSubmitFeedback] = useState<SubmitFeedback | null>(null);
@@ -84,10 +139,6 @@ export default function StudyExplorer({
   const [modalSessionItemByAssignmentId, setModalSessionItemByAssignmentId] = useState<Record<number, StudyQueueItem>>({});
   const [hiddenSubmittedAssignmentIds, setHiddenSubmittedAssignmentIds] = useState<Set<number>>(new Set());
   const [hasPendingStudySubmissions, setHasPendingStudySubmissions] = useState(false);
-  const [showLocked, setShowLocked] = useState(true);
-  const [recentOnly, setRecentOnly] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [hasHydratedTypeFilter, setHasHydratedTypeFilter] = useState(false);
   const isModalOpen = selectedId !== null;
   const effectiveSrsFilter: StudySrsFilter = queueMode === "lesson" ? "all" : srsFilter;
   const effectiveRecentOnly = queueMode === "lesson" ? false : recentOnly;
