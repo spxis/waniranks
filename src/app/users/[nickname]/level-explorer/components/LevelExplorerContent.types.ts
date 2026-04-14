@@ -27,6 +27,7 @@ export type LevelExplorerContentProps = {
   recentOnly: boolean;
   showLocked: boolean;
   showEnglish: boolean;
+  canToggleEnglish: boolean;
   studyMode: boolean;
   loading: boolean;
   gridColumns: number;
@@ -53,6 +54,7 @@ export type LevelExplorerContentProps = {
   onSetReviewTimingFilter: (next: ReviewTimingFilter) => void;
   onSetRecentOnly: (next: boolean) => void;
   onSetShowLocked: (next: boolean) => void;
+  onToggleShowEnglish: () => void;
   onSetSelectedSubjectId: (next: number | null | ((prev: number | null) => number | null)) => void;
   onJumpToRelatedSubject: (subjectId: number, targetLevel?: number | null) => Promise<void>;
   onJumpToKanji: (subjectId: number, wkLevel: number | null) => Promise<void>;

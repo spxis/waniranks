@@ -37,6 +37,7 @@ type Props = {
   selectedLevelList: number[];
   studyMode: boolean;
   showEnglish: boolean;
+  canToggleEnglish: boolean;
   isPeekRevealed: boolean;
   selectedMeaningExplanation: string;
   selectedReadingExplanationRaw: string;
@@ -54,6 +55,7 @@ type Props = {
   onTogglePeek: (subjectId: number) => void;
   onSetRecentOnly: (next: boolean) => void;
   onSetShowLocked: (next: boolean) => void;
+  onToggleShowEnglish: () => void;
   onJumpToRelatedSubject: (subjectId: number, targetLevel?: number | null) => Promise<void>;
   onJumpToKanji: (subjectId: number, wkLevel: number | null) => Promise<void>;
 };
@@ -67,6 +69,7 @@ export default function LevelExplorerItemsGrid({
   selectedLevelList,
   studyMode,
   showEnglish,
+  canToggleEnglish,
   isPeekRevealed,
   selectedMeaningExplanation,
   selectedReadingExplanationRaw,
@@ -84,6 +87,7 @@ export default function LevelExplorerItemsGrid({
   onTogglePeek,
   onSetRecentOnly,
   onSetShowLocked,
+  onToggleShowEnglish,
   onJumpToRelatedSubject,
   onJumpToKanji,
 }: Props) {
@@ -109,6 +113,14 @@ export default function LevelExplorerItemsGrid({
           Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} items
         </p>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleShowEnglish}
+            disabled={!canToggleEnglish}
+            className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+          </button>
           <button
             type="button"
             onClick={() => onSetRecentOnly(!recentOnly)}
@@ -159,12 +171,8 @@ export default function LevelExplorerItemsGrid({
               glyphSubtitle={
                 studyMode ? (
                   <span className="text-foreground/45">...</span>
-                ) : item.subjectType === "kanji" ? (
-                  showEnglish ? (
-                    titleForDisplay(item, true)
-                  ) : (
-                    glyphSubtitleForDisplay(item) ?? ""
-                  )
+                ) : showEnglish ? (
+                  titleForDisplay(item, true)
                 ) : (() => {
                   const subtitle = glyphSubtitleForDisplay(item);
                   if (!subtitle) {

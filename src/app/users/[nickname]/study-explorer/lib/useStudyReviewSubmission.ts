@@ -172,7 +172,7 @@ export function useStudyReviewSubmission({
       );
       onSetSubmitFeedback({
         kind: "success",
-        message: `Added ${itemForSubmit ? `${itemForSubmit.characters} (${studyItemEnglishTitle(itemForSubmit)})` : "item"} to lessons.`,
+        message: `Added ${itemForSubmit ? `${itemForSubmit.characters} (${studyItemEnglishTitle(itemForSubmit)})` : "item"} to reviews.`,
       });
 
       onSetHiddenSubmittedAssignmentIds((prev) => {

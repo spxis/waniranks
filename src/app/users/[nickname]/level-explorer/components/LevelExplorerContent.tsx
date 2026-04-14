@@ -30,6 +30,7 @@ export default function LevelExplorerContent({
   recentOnly,
   showLocked,
   showEnglish,
+  canToggleEnglish,
   studyMode,
   loading,
   gridColumns,
@@ -55,6 +56,7 @@ export default function LevelExplorerContent({
   onSetReviewTimingFilter,
   onSetRecentOnly,
   onSetShowLocked,
+  onToggleShowEnglish,
   onSetSelectedSubjectId,
   onJumpToRelatedSubject,
   onJumpToKanji,
@@ -316,6 +318,7 @@ export default function LevelExplorerContent({
           selectedLevelList={selectedLevelList}
           studyMode={studyMode}
           showEnglish={showEnglish}
+          canToggleEnglish={canToggleEnglish}
           isPeekRevealed={isPeekRevealed}
           selectedMeaningExplanation={selectedMeaningExplanation}
           selectedReadingExplanationRaw={selectedReadingExplanationRaw}
@@ -339,6 +342,7 @@ export default function LevelExplorerContent({
           }}
           onSetRecentOnly={onSetRecentOnly}
           onSetShowLocked={onSetShowLocked}
+          onToggleShowEnglish={onToggleShowEnglish}
           onJumpToRelatedSubject={onJumpToRelatedSubject}
           onJumpToKanji={onJumpToKanji}
         />

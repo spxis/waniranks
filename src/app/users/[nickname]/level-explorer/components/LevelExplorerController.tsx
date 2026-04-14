@@ -45,6 +45,8 @@ type Props = {
   initialSnapshot: Snapshot;
   initialSrsFilter?: SrsFilter;
   showEnglish?: boolean;
+  canToggleEnglish?: boolean;
+  onToggleShowEnglish?: () => void;
   studyMode?: boolean;
 };
 
@@ -55,6 +57,8 @@ export default function LevelExplorerController({
   initialSnapshot,
   initialSrsFilter = "all",
   showEnglish = false,
+  canToggleEnglish = false,
+  onToggleShowEnglish,
   studyMode = false,
 }: Props) {
   const storageKeys = useMemo(() => buildLevelExplorerStorageKeys(accountId), [accountId]);
@@ -311,6 +315,7 @@ export default function LevelExplorerController({
       recentOnly={recentOnly}
       showLocked={showLocked}
       showEnglish={showEnglish}
+      canToggleEnglish={canToggleEnglish}
       studyMode={studyMode}
       loading={loading}
       gridColumns={gridColumns}
@@ -355,6 +360,12 @@ export default function LevelExplorerController({
         markHistoryPush();
         setSelectedSubjectId(null);
         setShowLocked(next);
+      }}
+      onToggleShowEnglish={() => {
+        if (!canToggleEnglish) {
+          return;
+        }
+        onToggleShowEnglish?.();
       }}
       onSetSelectedSubjectId={setSelectedSubjectId}
       onJumpToRelatedSubject={actions.jumpToRelatedSubject}

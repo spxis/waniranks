@@ -277,6 +277,8 @@ export default function ExplorerTabs({
           initialSnapshot={initialSnapshot}
           initialSrsFilter={initialSrsFilter}
           showEnglish={showEnglish}
+          canToggleEnglish={!studyMode}
+          onToggleShowEnglish={() => setShowEnglish((prev) => !prev)}
           studyMode={studyMode}
         />
       </div>

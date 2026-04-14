@@ -10,6 +10,8 @@ type Props = {
   initialSnapshot: Snapshot;
   initialSrsFilter?: SrsFilter;
   showEnglish?: boolean;
+  canToggleEnglish?: boolean;
+  onToggleShowEnglish?: () => void;
   studyMode?: boolean;
 };
 
