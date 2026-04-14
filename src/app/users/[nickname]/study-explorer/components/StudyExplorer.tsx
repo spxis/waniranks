@@ -108,7 +108,7 @@ export default function StudyExplorer({
     fetchStudyQueue,
     {
       fallbackData: cachedQueueData,
-      keepPreviousData: true,
+      keepPreviousData: false,
       refreshInterval: isModalOpen ? 0 : 30_000,
       revalidateOnFocus: !isModalOpen,
     },
