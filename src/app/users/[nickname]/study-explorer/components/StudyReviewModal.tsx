@@ -4,6 +4,7 @@ import { toHiragana, toKatakana } from "wanakana";
 import type { RelatedReference, StudyReviewModalProps as Props } from "./StudyReviewModal.types";
 import StudyReviewModalSection from "./StudyReviewModalSection";
 import { hasRenderableRelatedItems } from "./StudyReviewModalHelpers";
+import { useStudyReviewModalKeyboard } from "../lib/useStudyReviewModalKeyboard";
 
 export default function StudyReviewModal({
   accountId,
@@ -156,89 +157,25 @@ export default function StudyReviewModal({
     };
   }, [selectedItem]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!selectedItem) return;
-
-      const requiresReveal = studyMode && selectedItem.queueType === "review";
-      const selectedOutcome = reviewOutcomeByAssignmentId[selectedItem.assignmentId];
-      const isOutcomeFinal = selectedOutcome === "correct" || selectedOutcome === "wrong";
-      const key = event.key;
-      const lowerKey = key.toLowerCase();
-
-      if (!studyMode && viewerMode === "flash" && !flashRevealed && key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        setFlashRevealKey(currentFlashKey);
-        return;
-      }
-
-      if (
-        key === "Escape" ||
-        key === "ArrowLeft" ||
-        key === "ArrowRight" ||
-        key === "ArrowUp" ||
-        key === "ArrowDown" ||
-        key === " " ||
-        key === "Enter" ||
-        lowerKey === "a" ||
-        lowerKey === "w" ||
-        lowerKey === "s" ||
-        lowerKey === "d" ||
-        lowerKey === "j" ||
-        lowerKey === "k" ||
-        key === "1" ||
-        key === "2"
-      ) {
-        event.preventDefault();
-      }
-
-      if (key === "Escape") return closeModal();
-      if ((key === "ArrowLeft" || key === "a" || key === "A" || key === "ArrowUp" || key === "w" || key === "W" || (key === "Enter" && event.shiftKey)) && onPrev) return goPrev();
-      if ((key === "ArrowRight" || key === "ArrowDown" || key === "d" || key === "D" || (key === "Enter" && !event.shiftKey)) && (onNext || canUseFlashCycleNext)) return advanceFlashOrNext();
-      if ((key === "s" || key === "S") && onNext) return goNextItem();
-
-      if (key === " ") {
-        if (!studyMode && viewerMode === "flash" && !flashRevealed && !event.shiftKey) {
-          setFlashRevealKey(currentFlashKey);
-          return;
-        }
-        if (requiresReveal && !isAnswerRevealed && selectedItem.queueType === "review") {
-          onReveal(selectedItem.assignmentId);
-          return;
-        }
-        if (event.shiftKey && onPrev) return goPrev();
-        if (onNext || canUseFlashCycleNext) return advanceFlashOrNext();
-      }
-
-      if ((key === "1" || key === "2" || key === "j" || key === "J" || key === "k" || key === "K") && selectedItem.queueType === "review") {
-        if (!studyMode || isOutcomeFinal) return;
-        const canSubmit = !requiresReveal || isAnswerRevealed;
-        if (!canSubmit) return;
-        const isWrong = key === "1" || key.toLowerCase() === "j";
-        onSubmit(selectedItem.assignmentId, isWrong ? "wrong" : "correct");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    advanceFlashOrNext,
-    canUseFlashCycleNext,
-    closeModal,
-    currentFlashKey,
-    flashRevealed,
-    goNextItem,
-    goPrev,
-    isAnswerRevealed,
-    onNext,
-    onPrev,
-    onReveal,
-    onSubmit,
-    reviewOutcomeByAssignmentId,
+  useStudyReviewModalKeyboard({
     selectedItem,
     studyMode,
     viewerMode,
-  ]);
+    flashRevealed,
+    currentFlashKey,
+    canUseFlashCycleNext,
+    isAnswerRevealed,
+    reviewOutcomeByAssignmentId,
+    onCloseModal: closeModal,
+    onGoPrev: goPrev,
+    onGoNextItem: goNextItem,
+    onAdvanceFlashOrNext: advanceFlashOrNext,
+    onReveal,
+    onSubmit,
+    onSetFlashRevealKey: setFlashRevealKey,
+    hasPrev: Boolean(onPrev),
+    hasNext: Boolean(onNext),
+  });
 
   if (!selectedItem) {
     return null;
