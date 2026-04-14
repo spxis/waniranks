@@ -16,6 +16,7 @@ export default function StudyReviewModal({
   filteredTotal,
   prevLabel,
   nextLabel,
+  isSelectedSubmitted,
   isAnswerRevealed,
   isSubmittingSelected,
   submitInFlight,
@@ -195,10 +196,11 @@ export default function StudyReviewModal({
   const requiresReveal = studyMode && selectedItem.queueType === "review";
   const isLessonItem = selectedItem.queueType === "lesson";
   const selectedOutcome = reviewOutcomeByAssignmentId[selectedItem.assignmentId];
+  const lessonAlreadySubmitted = isLessonItem && (isSelectedSubmitted || selectedOutcome === "lesson-started");
   const isOutcomeFinal =
     selectedOutcome === "correct" ||
     selectedOutcome === "wrong" ||
-    (isLessonItem && selectedOutcome === "lesson-started");
+    lessonAlreadySubmitted;
   const detailsRevealed = isOutcomeFinal || !requiresReveal || isAnswerRevealed;
   const useStudyFlashLayout = studyMode && selectedItem.queueType === "review";
 

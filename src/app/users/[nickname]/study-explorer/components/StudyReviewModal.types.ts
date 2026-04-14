@@ -21,6 +21,7 @@ export type StudyReviewModalProps = {
   filteredTotal: number;
   prevLabel: string | null;
   nextLabel: string | null;
+  isSelectedSubmitted: boolean;
   isAnswerRevealed: boolean;
   isSubmittingSelected: boolean;
   submitInFlight: SubmitInFlight | null;

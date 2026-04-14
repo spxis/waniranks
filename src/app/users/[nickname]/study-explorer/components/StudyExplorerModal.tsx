@@ -16,6 +16,7 @@ type Props = {
   prevItem: StudyQueueItem | null;
   nextItem: StudyQueueItem | null;
   filteredItems: StudyQueueItem[];
+  isSelectedSubmitted: boolean;
   isAnswerRevealed: boolean;
   isSubmittingSelected: boolean;
   submitInFlight: SubmitInFlight | null;
@@ -39,6 +40,7 @@ export default function StudyExplorerModal({
   prevItem,
   nextItem,
   filteredItems,
+  isSelectedSubmitted,
   isAnswerRevealed,
   isSubmittingSelected,
   submitInFlight,
@@ -64,6 +66,7 @@ export default function StudyExplorerModal({
       filteredTotal={modalItems.length}
       prevLabel={prevItem?.characters ?? null}
       nextLabel={nextItem?.characters ?? null}
+      isSelectedSubmitted={isSelectedSubmitted}
       isAnswerRevealed={isAnswerRevealed}
       isSubmittingSelected={isSubmittingSelected}
       submitInFlight={submitInFlight}

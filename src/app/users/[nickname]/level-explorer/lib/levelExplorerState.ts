@@ -48,6 +48,7 @@ export type LevelExplorerStorageKeys = {
   stickyMerge: string;
   filtersCollapsed: string;
   recentOnly: string;
+  showLocked: string;
   srsFilter: string;
   typeFilter: string;
   jlptFilter: string;
@@ -61,6 +62,7 @@ export function buildLevelExplorerStorageKeys(accountId: string): LevelExplorerS
     stickyMerge: `wr:explorer:${accountId}:sticky-merge`,
     filtersCollapsed: `wr:explorer:${accountId}:filters-collapsed`,
     recentOnly: `wr:explorer:${accountId}:recent-only`,
+    showLocked: `wr:explorer:${accountId}:show-locked`,
     srsFilter: `wr:explorer:${accountId}:srs-filter`,
     typeFilter: `wr:explorer:${accountId}:type-filter`,
     jlptFilter: `wr:explorer:${accountId}:jlpt-filter`,

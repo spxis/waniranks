@@ -251,6 +251,7 @@ export default function LevelExplorerController({
     setJlptFilter,
     setReviewTimingFilter,
     setRecentOnly,
+    setShowLocked,
   });
 
   useLevelExplorerGridColumns(setGridColumns);
@@ -262,6 +263,7 @@ export default function LevelExplorerController({
     jlptFilter,
     reviewTimingFilter,
     recentOnly,
+    showLocked,
     selectedSubjectId,
   });
 

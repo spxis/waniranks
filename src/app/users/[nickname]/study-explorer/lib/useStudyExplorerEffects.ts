@@ -10,8 +10,10 @@ type Args = {
   selectedSubjectStorageKey: string;
   typeFilterStorageKey: string;
   recentOnlyStorageKey: string;
+  showLockedStorageKey: string;
   typeFilter: StudyTypeFilter;
   recentOnly: boolean;
+  showLocked: boolean;
   hasHydratedTypeFilter: boolean;
   setHasHydratedTypeFilter: React.Dispatch<React.SetStateAction<boolean>>;
   hiddenSubmittedAssignmentIds: Set<number>;
@@ -57,8 +59,10 @@ export function useStudyExplorerEffects({
   selectedSubjectStorageKey,
   typeFilterStorageKey,
   recentOnlyStorageKey,
+  showLockedStorageKey,
   typeFilter,
   recentOnly,
+  showLocked,
   hasHydratedTypeFilter,
   setHasHydratedTypeFilter,
   hiddenSubmittedAssignmentIds,
@@ -124,6 +128,15 @@ export function useStudyExplorerEffects({
   }, [recentOnlyStorageKey, setRecentOnly]);
 
   useEffect(() => {
+    const raw = window.localStorage.getItem(showLockedStorageKey);
+    if (!raw) {
+      return;
+    }
+
+    setShowLocked(raw === "1");
+  }, [setShowLocked, showLockedStorageKey]);
+
+  useEffect(() => {
     if (!hasHydratedTypeFilter) return;
     window.localStorage.setItem(typeFilterStorageKey, typeFilter);
   }, [hasHydratedTypeFilter, typeFilter, typeFilterStorageKey]);
@@ -131,6 +144,10 @@ export function useStudyExplorerEffects({
   useEffect(() => {
     window.localStorage.setItem(recentOnlyStorageKey, recentOnly ? "1" : "0");
   }, [recentOnly, recentOnlyStorageKey]);
+
+  useEffect(() => {
+    window.localStorage.setItem(showLockedStorageKey, showLocked ? "1" : "0");
+  }, [showLocked, showLockedStorageKey]);
 
   useEffect(() => {
     if (!dataCounts) return;

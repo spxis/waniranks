@@ -96,6 +96,7 @@ export function useLevelExplorerStorageHydration({
   setJlptFilter,
   setReviewTimingFilter,
   setRecentOnly,
+  setShowLocked,
 }: {
   storageKeys: {
     typeVisibility: string;
@@ -103,6 +104,7 @@ export function useLevelExplorerStorageHydration({
     stickyMerge: string;
     filtersCollapsed: string;
     recentOnly: string;
+    showLocked: string;
     srsFilter: string;
     typeFilter: string;
     jlptFilter: string;
@@ -117,6 +119,7 @@ export function useLevelExplorerStorageHydration({
   setJlptFilter: Dispatch<SetStateAction<JlptFilter>>;
   setReviewTimingFilter: Dispatch<SetStateAction<ReviewTimingFilter>>;
   setRecentOnly: Dispatch<SetStateAction<boolean>>;
+  setShowLocked: Dispatch<SetStateAction<boolean>>;
 }) {
   useEffect(() => {
     try {
@@ -139,6 +142,10 @@ export function useLevelExplorerStorageHydration({
 
       if (!new URLSearchParams(window.location.search).has("recent") && readStoredFlag(window.localStorage, storageKeys.recentOnly)) {
         setRecentOnly(true);
+      }
+
+      if (readStoredFlag(window.localStorage, storageKeys.showLocked)) {
+        setShowLocked(true);
       }
 
       if (!new URLSearchParams(window.location.search).has("srs")) {
@@ -210,11 +217,13 @@ export function useLevelExplorerStoragePersistence({
   jlptFilter,
   reviewTimingFilter,
   recentOnly,
+  showLocked,
   selectedSubjectId,
 }: {
   storageKeys: {
     selectedSubject: string;
     recentOnly: string;
+    showLocked: string;
     srsFilter: string;
     typeFilter: string;
     jlptFilter: string;
@@ -225,6 +234,7 @@ export function useLevelExplorerStoragePersistence({
   jlptFilter: JlptFilter;
   reviewTimingFilter: ReviewTimingFilter;
   recentOnly: boolean;
+  showLocked: boolean;
   selectedSubjectId: number | null;
 }) {
   useEffect(() => {
@@ -234,11 +244,12 @@ export function useLevelExplorerStoragePersistence({
       persistEnum(window.localStorage, storageKeys.jlptFilter, jlptFilter);
       persistEnum(window.localStorage, storageKeys.reviewTimingFilter, reviewTimingFilter);
       persistFlag(window.localStorage, storageKeys.recentOnly, recentOnly);
+      persistFlag(window.localStorage, storageKeys.showLocked, showLocked);
       persistOptionalPositiveInteger(window.localStorage, storageKeys.selectedSubject, selectedSubjectId);
     } catch {
       // Ignore storage errors in restricted browsing modes.
     }
-  }, [srsFilter, typeFilter, jlptFilter, reviewTimingFilter, recentOnly, selectedSubjectId, storageKeys]);
+  }, [srsFilter, typeFilter, jlptFilter, reviewTimingFilter, recentOnly, showLocked, selectedSubjectId, storageKeys]);
 }
 
 export function useLevelExplorerSelectionReconcile({

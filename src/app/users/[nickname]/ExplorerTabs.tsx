@@ -27,6 +27,7 @@ export default function ExplorerTabs({
   userKanjiItems,
 }: Props) {
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
+  const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
   const [studyMode, setStudyMode] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -44,7 +45,17 @@ export default function ExplorerTabs({
     if (raw === "level") return "level";
     return "study";
   });
-  const [showEnglish, setShowEnglish] = useState(false);
+  const [showEnglish, setShowEnglish] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    try {
+      return window.localStorage.getItem(showEnglishStorageKey) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
   const [queueMode, setQueueMode] = useState<"review" | "lesson">(() => {
     if (typeof window === "undefined") {
@@ -139,6 +150,18 @@ export default function ExplorerTabs({
       window.history.replaceState(null, "", next);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(showEnglishStorageKey, showEnglish ? "1" : "0");
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [showEnglish, showEnglishStorageKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

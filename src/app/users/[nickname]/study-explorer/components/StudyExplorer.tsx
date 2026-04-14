@@ -54,6 +54,7 @@ export default function StudyExplorer({
   const selectedSubjectStorageKey = `wr:study-selected-subject:${accountId}:${queueMode}`;
   const typeFilterStorageKey = `wr:study-type-filter:${accountId}:${queueMode}`;
   const recentOnlyStorageKey = `wr:study-recent-only:${accountId}:${queueMode}`;
+  const showLockedStorageKey = `wr:study-show-locked:${accountId}:${queueMode}`;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const lastHandledStudyQueryRef = useRef("");
 
@@ -180,6 +181,7 @@ export default function StudyExplorer({
   }, [filteredItems, filteredItemByAssignmentId, modalSessionItemByAssignmentId, modalSessionOrderByAssignmentId, selectedId]);
 
   const selectedItem = modalItems.find((item) => item.subjectId === selectedId) ?? null;
+  const isSelectedSubmitted = selectedItem ? hiddenSubmittedAssignmentIds.has(selectedItem.assignmentId) : false;
   const selectedIndex = selectedItem
     ? modalItems.findIndex((item) => item.assignmentId === selectedItem.assignmentId)
     : -1;
@@ -225,8 +227,10 @@ export default function StudyExplorer({
     selectedSubjectStorageKey,
     typeFilterStorageKey,
     recentOnlyStorageKey,
+    showLockedStorageKey,
     typeFilter,
     recentOnly,
+    showLocked,
     hasHydratedTypeFilter,
     setHasHydratedTypeFilter,
     hiddenSubmittedAssignmentIds,
@@ -372,6 +376,7 @@ export default function StudyExplorer({
         prevItem={prevItem}
         nextItem={nextItem}
         filteredItems={filteredItems}
+        isSelectedSubmitted={isSelectedSubmitted}
         isAnswerRevealed={isAnswerRevealed}
         isSubmittingSelected={isSubmittingSelected}
         submitInFlight={submitInFlight}
