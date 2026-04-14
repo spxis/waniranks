@@ -128,6 +128,12 @@ export default function StudyExplorerPanel({
     .filter(([, count]) => count > 0)
     .sort((a, b) => a[0] - b[0]);
   const totalLessonsInVisibleLevels = lessonLevelOptions.reduce((sum, [, count]) => sum + count, 0);
+  const allTypeCount =
+    queueMode === "lesson"
+      ? viewedLevel === null
+        ? totalItems
+        : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)
+      : typeCounts.all;
 
   return (
     <>
@@ -181,6 +187,7 @@ export default function StudyExplorerPanel({
           <SubjectTypeFilterGroup
             counts={typeCounts}
             allLabel={viewedLevel === null ? "All Levels" : `All L${viewedLevel}`}
+            allCount={allTypeCount}
             allActive={typeFilter === "all"}
             activeTypes={{
               radical: typeFilter === "all" || typeFilter === "radical",

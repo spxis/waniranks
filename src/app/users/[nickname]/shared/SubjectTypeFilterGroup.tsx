@@ -12,6 +12,7 @@ type Props = {
     vocabulary: number;
   };
   allLabel: string;
+  allCount?: number;
   allActive: boolean;
   activeTypes: Record<SubjectType, boolean>;
   onClickAll: () => void;
@@ -22,6 +23,7 @@ type Props = {
 export default function SubjectTypeFilterGroup({
   counts,
   allLabel,
+  allCount,
   allActive,
   activeTypes,
   onClickAll,
@@ -37,7 +39,7 @@ export default function SubjectTypeFilterGroup({
           allActive,
         )}`}
       >
-        {allLabel} ({formatNumber(counts.all)})
+        {allLabel} ({formatNumber(allCount ?? counts.all)})
       </button>
       {(["radical", "kanji", "vocabulary"] as const).map((type) => (
         <SubjectTypeFilterButton
