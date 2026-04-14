@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
 import StudyExplorerModal from "./StudyExplorerModal";
@@ -93,6 +93,15 @@ export default function StudyExplorer({
   const effectiveRecentOnly = queueMode === "lesson" ? false : recentOnly;
   const effectiveShowLocked = queueMode === "lesson" ? true : showLocked;
   const initialPageSize = queueMode === "lesson" ? LESSON_API_PAGE_SIZE : REVIEW_API_PAGE_SIZE;
+
+  useLayoutEffect(() => {
+    const cached = readStoredQueue(accountId, queueMode);
+    setCachedQueueData(cached);
+    setLoadedItems(cached?.items ?? []);
+    setTotalItems(cached?.pagination?.total ?? cached?.items.length ?? 0);
+    setPersistedCounts(cached?.counts ?? null);
+    setLoadMoreError(null);
+  }, [accountId, queueMode]);
 
   const { data, error, isLoading, isValidating, mutate: mutateQueue } = useSWR(
     `/api/study/${accountId}/queue?mode=${queueMode}&limit=${initialPageSize}&offset=0`,
