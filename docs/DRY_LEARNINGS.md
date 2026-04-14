@@ -37,13 +37,34 @@ Date: 2026-04-13
 - `src/app/users/[nickname]/study-explorer/components/StudyExplorerPanel.tsx`
 - Added explicit loading indicator when queue fetch is ongoing and no items are yet renderable.
 
+4. Added shared client storage helpers.
+- File: `src/lib/clientStorage.ts`
+- Includes:
+  - `getLocalStorageItem`
+  - `setLocalStorageItem`
+  - `getStoredFlagOneIsTrue`
+  - `getStoredFlagZeroIsFalse`
+  - `setStoredBooleanFlag`
+  - `getStoredEnum`
+  - `setStoredEnum`
+  - `getStoredPositiveInt`
+  - `getStoredJson`
+  - `setStoredJson`
+
+5. Added reusable persisted boolean hook.
+- File: `src/lib/usePersistedBoolean.ts`
+- Used for collapse/expand toggles where repeated localStorage boilerplate existed.
+
+6. Migrated low-risk localStorage callsites.
+- `src/app/users/[nickname]/UserProgressPanels.tsx`
+- `src/app/users/[nickname]/level-explorer/components/LevelExplorerReviewStatsCard.tsx`
+- `src/app/users/[nickname]/study-explorer/components/StudyReviewModal.tsx`
+- `src/app/users/[nickname]/UserDashboardTabs.tsx`
+
 ## Next Safe DRY Targets
 
-1. Shared localStorage helpers/hooks:
-- `get/set` flag, enum, JSON, positive-int patterns.
-
-2. Shared persisted-toggle hook:
-- Collapse/open panel states across dashboard/leaderboard/study modal.
-
-3. Shared URL tab/query sync hook:
+1. Shared URL tab/query sync hook:
 - Tab state + query param + popstate behavior.
+
+2. Optional follow-up migrations to use storage helpers:
+- Remaining localStorage reads/writes in leaderboard and explorer components.

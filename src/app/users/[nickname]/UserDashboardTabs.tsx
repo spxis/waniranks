@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import { getStoredEnum, setStoredEnum } from "@/lib/clientStorage";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 import UserAdminRefreshButton from "./UserAdminRefreshButton";
 import {
@@ -48,17 +49,7 @@ export default function UserDashboardTabs({
 }: Props) {
   const tabStorageKey = `wr:user:${accountId}:dashboard-tab`;
   const [activeTab, setActiveTab] = useState<TabId>(() => {
-    if (typeof window === "undefined") {
-      return "main";
-    }
-    try {
-      const stored = window.localStorage.getItem(tabStorageKey);
-      return stored === "main" || stored === "item-spread" || stored === "level-progress"
-        ? stored
-        : "main";
-    } catch {
-      return "main";
-    }
+    return getStoredEnum(tabStorageKey, ["main", "item-spread", "level-progress"] as const, "main");
   });
   const actionButtonBaseClass =
     "inline-flex h-10 shrink-0 select-none items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
@@ -113,11 +104,7 @@ export default function UserDashboardTabs({
   }
   function switchTab(next: TabId) {
     setActiveTab(next);
-    try {
-      window.localStorage.setItem(tabStorageKey, next);
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
+    setStoredEnum(tabStorageKey, next);
   }
   function tabClass(tab: TabId): string {
     const active = activeTab === tab;

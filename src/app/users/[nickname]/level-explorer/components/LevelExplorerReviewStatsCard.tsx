@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { usePersistedBoolean } from "@/lib/usePersistedBoolean";
+
 import { formatDate } from "../lib/levelExplorerDisplay";
 import {
   CorrectWrongTrendChart,
@@ -101,13 +103,9 @@ export default function LevelExplorerReviewStatsCard({
 }) {
   const cacheKey = `${accountId}:${subjectId}`;
   const openStateStorageKey = `wr:review-stats-open:${accountId}`;
-  const [open, setOpen] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem(openStateStorageKey) === "1";
-    } catch {
-      return false;
-    }
+  const [open, setOpen] = usePersistedBoolean(openStateStorageKey, {
+    defaultValue: false,
+    mode: "one-is-true",
   });
 
   const [history, setHistory] = useState<SubjectHistory | null>(null);
@@ -156,15 +154,6 @@ export default function LevelExplorerReviewStatsCard({
         setLoading(false);
       });
   }, [accountId, subjectId, cacheKey, refreshNonce]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(openStateStorageKey, open ? "1" : "0");
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }, [open, openStateStorageKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

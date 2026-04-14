@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toHiragana, toKatakana } from "wanakana";
+import { getStoredEnum, setStoredEnum } from "@/lib/clientStorage";
+import { usePersistedBoolean } from "@/lib/usePersistedBoolean";
 
 import type { RelatedReference, StudyReviewModalProps as Props } from "./StudyReviewModal.types";
 import StudyReviewModalSection from "./StudyReviewModalSection";
@@ -31,31 +33,18 @@ export default function StudyReviewModal({
   const usedKanjiStorageKey = "wr:study-modal:used-kanji-collapsed";
   const viewerModeStorageKey = "wr:study-modal:viewer-mode";
 
-  const [usedInWordsCollapsed, setUsedInWordsCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem(usedInWordsStorageKey) === "1";
-    } catch {
-      return false;
-    }
+  const [usedInWordsCollapsed, setUsedInWordsCollapsed] = usePersistedBoolean(usedInWordsStorageKey, {
+    defaultValue: false,
+    mode: "one-is-true",
   });
 
-  const [usedKanjiCollapsed, setUsedKanjiCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem(usedKanjiStorageKey) === "1";
-    } catch {
-      return false;
-    }
+  const [usedKanjiCollapsed, setUsedKanjiCollapsed] = usePersistedBoolean(usedKanjiStorageKey, {
+    defaultValue: false,
+    mode: "one-is-true",
   });
 
   const [viewerMode, setViewerMode] = useState<"detail" | "flash">(() => {
-    if (typeof window === "undefined") return "detail";
-    try {
-      return window.localStorage.getItem(viewerModeStorageKey) === "flash" ? "flash" : "detail";
-    } catch {
-      return "detail";
-    }
+    return getStoredEnum(viewerModeStorageKey, ["detail", "flash"] as const, "detail");
   });
 
   const [flashRevealKey, setFlashRevealKey] = useState<string | null>(null);
@@ -255,11 +244,7 @@ export default function StudyReviewModal({
                   type="button"
                   onClick={() => {
                     setViewerMode("detail");
-                    try {
-                      window.localStorage.setItem(viewerModeStorageKey, "detail");
-                    } catch {
-                      // Ignore storage issues in restricted modes.
-                    }
+                    setStoredEnum(viewerModeStorageKey, "detail");
                   }}
                   className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${viewerMode === "detail" ? "bg-accent text-white" : "text-foreground hover:bg-surface-muted"}`}
                 >
@@ -269,11 +254,7 @@ export default function StudyReviewModal({
                   type="button"
                   onClick={() => {
                     setViewerMode("flash");
-                    try {
-                      window.localStorage.setItem(viewerModeStorageKey, "flash");
-                    } catch {
-                      // Ignore storage issues in restricted modes.
-                    }
+                    setStoredEnum(viewerModeStorageKey, "flash");
                   }}
                   className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${viewerMode === "flash" ? "bg-accent text-white" : "text-foreground hover:bg-surface-muted"}`}
                 >
@@ -330,26 +311,10 @@ export default function StudyReviewModal({
             onFlashTouchEnd={handleFlashTouchEnd}
             onSetFlashRevealKey={setFlashRevealKey}
             onToggleUsedKanjiCollapsed={() => {
-              setUsedKanjiCollapsed((prev) => {
-                const next = !prev;
-                try {
-                  window.localStorage.setItem(usedKanjiStorageKey, next ? "1" : "0");
-                } catch {
-                  // Ignore storage issues in restricted modes.
-                }
-                return next;
-              });
+              setUsedKanjiCollapsed((prev) => !prev);
             }}
             onToggleUsedInWordsCollapsed={() => {
-              setUsedInWordsCollapsed((prev) => {
-                const next = !prev;
-                try {
-                  window.localStorage.setItem(usedInWordsStorageKey, next ? "1" : "0");
-                } catch {
-                  // Ignore storage issues in restricted modes.
-                }
-                return next;
-              });
+              setUsedInWordsCollapsed((prev) => !prev);
             }}
           />
         </div>

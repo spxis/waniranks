@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { usePersistedBoolean } from "@/lib/usePersistedBoolean";
 
 type ItemSpreadRow = {
   radical: number;
@@ -49,37 +49,17 @@ export default function UserProgressPanels({
   passedLevelUpGate,
 }: Props) {
   const storagePrefix = `wr:user:${accountId}`;
-  const [showItemSpread, setShowItemSpread] = useState(() => {
-    if (typeof window === "undefined") {
-      return true;
-    }
-
-    try {
-      return window.localStorage.getItem(`${storagePrefix}:item-spread-open`) !== "0";
-    } catch {
-      return true;
-    }
+  const [showItemSpread, setShowItemSpread] = usePersistedBoolean(`${storagePrefix}:item-spread-open`, {
+    defaultValue: true,
+    mode: "zero-is-false",
   });
-  const [showLevelProgress, setShowLevelProgress] = useState(() => {
-    if (typeof window === "undefined") {
-      return true;
-    }
-
-    try {
-      return window.localStorage.getItem(`${storagePrefix}:level-progress-open`) !== "0";
-    } catch {
-      return true;
-    }
-  });
-
-  function setPersistedState(key: string, value: boolean, setter: (next: boolean) => void) {
-    setter(value);
-    try {
-      window.localStorage.setItem(key, value ? "1" : "0");
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }
+  const [showLevelProgress, setShowLevelProgress] = usePersistedBoolean(
+    `${storagePrefix}:level-progress-open`,
+    {
+      defaultValue: true,
+      mode: "zero-is-false",
+    },
+  );
 
   return (
     <>
@@ -94,13 +74,7 @@ export default function UserProgressPanels({
             </div>
             <button
               type="button"
-              onClick={() =>
-                setPersistedState(
-                  `${storagePrefix}:item-spread-open`,
-                  !showItemSpread,
-                  setShowItemSpread,
-                )
-              }
+              onClick={() => setShowItemSpread((prev) => !prev)}
               className="rounded-full border border-line bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-700"
             >
               {showItemSpread ? "Collapse" : "Expand"}
@@ -141,13 +115,7 @@ export default function UserProgressPanels({
             <p className="text-2xl font-semibold text-slate-700">Level {wkLevel}</p>
             <button
               type="button"
-              onClick={() =>
-                setPersistedState(
-                  `${storagePrefix}:level-progress-open`,
-                  !showLevelProgress,
-                  setShowLevelProgress,
-                )
-              }
+              onClick={() => setShowLevelProgress((prev) => !prev)}
               className="rounded-full border border-line bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-700"
             >
               {showLevelProgress ? "Collapse" : "Expand"}
