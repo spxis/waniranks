@@ -85,6 +85,7 @@ export default function StudyExplorer({
   const [recentOnly, setRecentOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasHydratedTypeFilter, setHasHydratedTypeFilter] = useState(false);
+  const isModalOpen = selectedId !== null;
 
   const { data, error, isLoading, isValidating, mutate: mutateQueue } = useSWR(
     `/api/study/${accountId}/queue?mode=${queueMode}&limit=${API_PAGE_SIZE}&offset=0`,
@@ -92,8 +93,8 @@ export default function StudyExplorer({
     {
       fallbackData: cachedQueueData,
       keepPreviousData: true,
-      refreshInterval: 30_000,
-      revalidateOnFocus: true,
+      refreshInterval: isModalOpen ? 0 : 30_000,
+      revalidateOnFocus: !isModalOpen,
     },
   );
   const isUnauthorized = Boolean(error && /unauthorized/i.test(error.message));
