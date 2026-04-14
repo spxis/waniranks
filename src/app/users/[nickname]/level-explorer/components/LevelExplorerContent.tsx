@@ -1,37 +1,15 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { LevelItem } from "../../explorerTypes";
 import {
-  ReadingWithPronunciation,
   badgeClass,
   disabledBadgeClass,
-  formatNextReviewBadge,
   formatNumber,
-  glyphSubtitleForDisplay,
-  glyphTextSizeClass,
-  isNewGlyphWithinHours,
-  statusClass,
-  statusShortLabel,
-  shortSubjectTypeLabel,
   srsFilterButtonLabel,
-  subjectTypePillClass,
-  titleForDisplay,
-  typeCardClass,
-  typeGlyphBoxClass,
 } from "../lib/levelExplorerDisplay";
 import SubjectTypeFilterGroup from "../../shared/SubjectTypeFilterGroup";
-import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
-import LevelExplorerDetailSection from "./LevelExplorerDetailSection";
+import LevelExplorerItemsGrid from "./LevelExplorerItemsGrid";
 import type { LevelExplorerContentProps as Props } from "./LevelExplorerContent.types";
-
-function lockedCardStateClass(item: LevelItem): string {
-  if (item.status !== "locked" && item.srsStage > 0) {
-    return "";
-  }
-
-  return "bg-surface-muted/90 text-foreground/60";
-}
 
 export default function LevelExplorerContent({
   accountId,
@@ -329,151 +307,41 @@ export default function LevelExplorerContent({
       {error ? <p className="px-5 py-4 text-sm text-red-700">{error}</p> : null}
 
       <div className="p-5">
-        {filteredItems.length === 0 ? (
-          <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
-            No items match the current filters. {" "}
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="font-bold text-accent underline underline-offset-2 hover:text-accent-2"
-            >
-              Clear filters
-            </button>
-          </div>
-        ) : (
-          <>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
-              Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} items
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onSetRecentOnly(!recentOnly)}
-                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(recentOnly)}`}
-              >
-                Recent Only
-              </button>
-              <button
-                type="button"
-                onClick={() => onSetShowLocked(!showLocked)}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted"
-              >
-                {showLocked ? "Hide Locked" : "Show Locked"}
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleItems.map((item, index) => (
-              <Fragment key={`${item.subjectType}-${item.subjectId}`}>
-                <UnifiedExplorerCard
-                  onClick={() => {
-                    onMarkHistoryPush();
-                    onSetSelectedSubjectId((prev) => (prev === item.subjectId ? null : item.subjectId));
-                    setPeekSubjectId(null);
-                  }}
-                  className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
-                    item.subjectType,
-                    selectedItem?.subjectId === item.subjectId,
-                  )} ${lockedCardStateClass(item)}`}
-                  indexLabel={`#${formatNumber(index + 1)}`}
-                  topRight={
-                    <>
-                      <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
-                      {typeof item.wkLevel === "number" ? (
-                        <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span>
-                      ) : typeof selectedLevelList[selectedLevelList.length - 1] === "number" ? (
-                        <span className="subject-pill border-line bg-surface text-foreground">L{selectedLevelList[selectedLevelList.length - 1]}</span>
-                      ) : null}
-                      {item.subjectType === "kanji" && item.jlptLevel ? (
-                        <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span>
-                      ) : null}
-                      {isNewGlyphWithinHours(item) ? (
-                        <span className="subject-pill border-emerald-300 bg-emerald-100 text-emerald-800">NEW</span>
-                      ) : null}
-                    </>
-                  }
-                  glyphClassName={`${typeGlyphBoxClass(item.subjectType)} ${item.status === "locked" || item.srsStage <= 0 ? "opacity-60" : ""}`}
-                  glyphText={item.characters}
-                  glyphTextClassName={`${glyphTextSizeClass(item.characters)} whitespace-nowrap`}
-                  glyphSubtitle={
-                      studyMode
-                        ? <span className="text-foreground/45">...</span>
-                        : item.subjectType === "kanji"
-                          ? (showEnglish ? titleForDisplay(item, true) : (glyphSubtitleForDisplay(item) ?? ""))
-                          : (() => {
-                              const subtitle = glyphSubtitleForDisplay(item);
-                              if (!subtitle) {
-                                return null;
-                              }
-                              return <ReadingWithPronunciation reading={subtitle} />;
-                            })()
-                  }
-                  statusChip={
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>
-                      {statusShortLabel(item.status)}
-                    </span>
-                  }
-                  middleChip={
-                    item.status !== "burned"
-                      ? (() => {
-                          const nextReviewBadge = formatNextReviewBadge(item.availableAt);
-                          if (!nextReviewBadge) {
-                            return undefined;
-                          }
-                          return (
-                            <span
-                              className={`rounded-full border px-2 py-1 text-[11px] font-bold uppercase tracking-[0.03em] whitespace-nowrap ${nextReviewBadge.className}`}
-                            >
-                              {nextReviewBadge.label}
-                            </span>
-                          );
-                        })()
-                      : undefined
-                  }
-                  rightChip={
-                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-xs font-bold text-foreground">
-                      SRS {item.srsStage}
-                    </span>
-                  }
-                />
-
-                {selectedItem && index === visibleDetailInsertIndex ? (
-                  <LevelExplorerDetailSection
-                    accountId={accountId}
-                    selectedItem={selectedItem}
-                    showEnglish={showEnglish}
-                    studyMode={studyMode}
-                    revealStudyReading={isPeekRevealed}
-                    onTogglePeek={
-                      studyMode
-                        ? () => {
-                            setPeekSubjectId((prev) => (prev === selectedItem.subjectId ? null : selectedItem.subjectId));
-                          }
-                        : null
-                    }
-                    selectedMeaningExplanation={selectedMeaningExplanation}
-                    selectedReadingExplanationRaw={selectedReadingExplanationRaw}
-                    showReadingExplanation={showReadingExplanation}
-                    hasPrimaryRelatedPanel={hasPrimaryRelatedPanel}
-                    hasVisuallySimilarPanel={hasVisuallySimilarPanel}
-                    hasUsedInVocabularyPanel={hasUsedInVocabularyPanel}
-                    vocabularyKanjiLinks={vocabularyKanjiLinks}
-                    subjectById={subjectById}
-                    onJumpToRelatedSubject={onJumpToRelatedSubject}
-                    onJumpToKanji={onJumpToKanji}
-                  />
-                ) : null}
-              </Fragment>
-            ))}
-          </div>
-          {visibleItems.length < filteredItems.length ? (
-            <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
-              Loading more...
-            </div>
-          ) : null}
-          </>
-        )}
+        <LevelExplorerItemsGrid
+          accountId={accountId}
+          filteredItems={filteredItems}
+          visibleItems={visibleItems}
+          selectedItem={selectedItem}
+          visibleDetailInsertIndex={visibleDetailInsertIndex}
+          selectedLevelList={selectedLevelList}
+          studyMode={studyMode}
+          showEnglish={showEnglish}
+          isPeekRevealed={isPeekRevealed}
+          selectedMeaningExplanation={selectedMeaningExplanation}
+          selectedReadingExplanationRaw={selectedReadingExplanationRaw}
+          showReadingExplanation={showReadingExplanation}
+          hasPrimaryRelatedPanel={hasPrimaryRelatedPanel}
+          hasVisuallySimilarPanel={hasVisuallySimilarPanel}
+          hasUsedInVocabularyPanel={hasUsedInVocabularyPanel}
+          vocabularyKanjiLinks={vocabularyKanjiLinks}
+          subjectById={subjectById}
+          recentOnly={recentOnly}
+          showLocked={showLocked}
+          sentinelRef={sentinelRef}
+          onClearFilters={clearAllFilters}
+          onSelectItem={(subjectId) => {
+            onMarkHistoryPush();
+            onSetSelectedSubjectId((prev) => (prev === subjectId ? null : subjectId));
+            setPeekSubjectId(null);
+          }}
+          onTogglePeek={(subjectId) => {
+            setPeekSubjectId((prev) => (prev === subjectId ? null : subjectId));
+          }}
+          onSetRecentOnly={onSetRecentOnly}
+          onSetShowLocked={onSetShowLocked}
+          onJumpToRelatedSubject={onJumpToRelatedSubject}
+          onJumpToKanji={onJumpToKanji}
+        />
       </div>
     </section>
   );
