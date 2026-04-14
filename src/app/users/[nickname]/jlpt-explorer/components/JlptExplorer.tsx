@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { toRomaji } from "wanakana";
 
@@ -26,6 +26,8 @@ type JlptReadingsRecord = Record<string, { nLevel: number; readings: string[]; m
 
 type JlptFilter = "all" | "kanji" | "none";
 
+const JLPT_REMOTE_PAGE_SIZE = 240;
+
 export default function JlptExplorer({
   accountId,
   isActive,
@@ -34,21 +36,90 @@ export default function JlptExplorer({
   studyMode = false,
   userKanjiItems = [],
 }: Props) {
-  const needsLazyLoad = items.length === 0 || userKanjiItems.length === 0;
-  const { data: lazyData } = useSWR<{ jlptItems: JlptItem[]; userKanjiItems: UserKanjiItem[] }>(
-    isActive && needsLazyLoad ? `/api/accounts/${accountId}/jlpt` : null,
+  const hasInitialItems = items.length > 0;
+  const hasInitialUserKanji = userKanjiItems.length > 0;
+  const [pagedItems, setPagedItems] = useState<JlptItem[]>(items);
+  const [remoteTotal, setRemoteTotal] = useState<number>(items.length);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const { data: firstPageData } = useSWR<{
+    jlptItems: JlptItem[];
+    pagination?: { offset: number; limit: number; total: number; hasMore: boolean };
+  }>(
+    isActive && !hasInitialItems
+      ? `/api/accounts/${accountId}/jlpt?offset=0&limit=${JLPT_REMOTE_PAGE_SIZE}&includeItems=1&includeUserIndex=0`
+      : null,
     async (url: string) => {
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
         throw new Error("Could not load JLPT explorer data.");
       }
-      return (await response.json()) as { jlptItems: JlptItem[]; userKanjiItems: UserKanjiItem[] };
+      return (await response.json()) as {
+        jlptItems: JlptItem[];
+        pagination?: { offset: number; limit: number; total: number; hasMore: boolean };
+      };
     },
     { revalidateOnFocus: false },
   );
 
-  const effectiveItems = lazyData?.jlptItems ?? items;
-  const effectiveUserKanjiItems = lazyData?.userKanjiItems ?? userKanjiItems;
+  const { data: userIndexData } = useSWR<{ userKanjiItems: UserKanjiItem[] }>(
+    isActive && !hasInitialUserKanji
+      ? `/api/accounts/${accountId}/jlpt?offset=0&limit=0&includeItems=0&includeUserIndex=1`
+      : null,
+    async (url: string) => {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Could not load JLPT user index.");
+      }
+      return (await response.json()) as { userKanjiItems: UserKanjiItem[] };
+    },
+    { revalidateOnFocus: false },
+  );
+
+  useEffect(() => {
+    if (!hasInitialItems && firstPageData?.jlptItems) {
+      setPagedItems(firstPageData.jlptItems);
+      setRemoteTotal(firstPageData.pagination?.total ?? firstPageData.jlptItems.length);
+    }
+  }, [firstPageData, hasInitialItems]);
+
+  const effectiveItems = hasInitialItems ? items : pagedItems;
+  const effectiveUserKanjiItems = hasInitialUserKanji ? userKanjiItems : (userIndexData?.userKanjiItems ?? []);
+  const isLoadingData = !hasInitialItems && !firstPageData;
+  const hasMoreRemote = !hasInitialItems && effectiveItems.length < remoteTotal;
+
+  const loadMoreRemote = useCallback(async () => {
+    if (!hasMoreRemote || isLoadingMore) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(
+        `/api/accounts/${accountId}/jlpt?offset=${effectiveItems.length}&limit=${JLPT_REMOTE_PAGE_SIZE}&includeItems=1&includeUserIndex=0`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) {
+        throw new Error("Could not load more JLPT data.");
+      }
+
+      const payload = (await response.json()) as {
+        jlptItems: JlptItem[];
+        pagination?: { total: number };
+      };
+
+      setPagedItems((prev) => {
+        const existing = new Set(prev.map((item) => item.kanji));
+        const merged = [...prev, ...payload.jlptItems.filter((item) => !existing.has(item.kanji))];
+        return merged;
+      });
+      if (payload.pagination?.total) {
+        setRemoteTotal(payload.pagination.total);
+      }
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [accountId, effectiveItems.length, hasMoreRemote, isLoadingMore]);
 
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
   const [stickyLevels, setStickyLevels] = useState(false);
@@ -375,6 +446,10 @@ export default function JlptExplorer({
       selectedItem={selectedItem}
       gridColumns={gridColumns}
       userKanjiByChar={userKanjiByChar}
+      isLoadingData={isLoadingData}
+      isLoadingMore={isLoadingMore}
+      hasMoreRemote={hasMoreRemote}
+      onLoadMoreRemote={loadMoreRemote}
       onSetSelectedLevels={setSelectedLevels}
       onToggleNLevel={toggleNLevel}
       onSetWkFilter={setWkFilter}

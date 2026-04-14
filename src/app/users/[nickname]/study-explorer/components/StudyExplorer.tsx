@@ -104,6 +104,28 @@ export default function StudyExplorer({
   const counts = data?.counts ?? persistedCounts;
   const hasMorePages = loadedItems.length < totalItems;
 
+  useEffect(() => {
+    if (!counts || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(countsStorageKey, JSON.stringify(counts));
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("wr:study-counts-updated", {
+        detail: {
+          accountId,
+          reviews: counts.reviews,
+          lessons: counts.lessons,
+        },
+      }),
+    );
+  }, [accountId, counts, countsStorageKey]);
+
   const levelOptions = useMemo(
     () => Array.from({ length: Math.max(1, maxLevel) }, (_, index) => index + 1),
     [maxLevel],

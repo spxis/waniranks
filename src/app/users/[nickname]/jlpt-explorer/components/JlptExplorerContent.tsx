@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import jlptReadings from "@/data/jlptReadings.json";
 import SubjectTypeFilterButton from "../../shared/SubjectTypeFilterButton";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
-import { badgeClass } from "../../level-explorer/lib/levelExplorerDisplay";
+import { badgeClass, jlptLevelPillClass } from "../../level-explorer/lib/levelExplorerDisplay";
 import {
   formatNumber,
   jlptHeading,
@@ -31,6 +31,10 @@ export default function JlptExplorerContent({
   selectedItem,
   gridColumns,
   userKanjiByChar,
+  isLoadingData,
+  isLoadingMore,
+  hasMoreRemote,
+  onLoadMoreRemote,
   onSetSelectedLevels,
   onToggleNLevel,
   onSetWkFilter,
@@ -150,9 +154,11 @@ export default function JlptExplorerContent({
                 key={level}
                 type="button"
                 onClick={() => onToggleNLevel(level)}
-                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
-                  selectedLevels.has(level),
-                )}`}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
+                  selectedLevels.has(level)
+                    ? "border-teal-500 bg-teal-500 text-white"
+                    : "border-teal-300 bg-teal-100 text-teal-800 hover:bg-teal-200"
+                }`}
               >
                 N{level} ({formatNumber(count)})
               </button>
@@ -194,6 +200,14 @@ export default function JlptExplorerContent({
         </div>
       </header>
       <div className="p-5">
+        {isLoadingData ? (
+          <div className="mb-3 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/75">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+              <span>Loading JLPT explorer...</span>
+            </div>
+          </div>
+        ) : null}
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/70">
           Showing {formatNumber(visibleItems.length)} of {formatNumber(filteredItems.length)} results
         </p>
@@ -225,7 +239,7 @@ export default function JlptExplorerContent({
                       {typeof userMatch?.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">L{userMatch.wkLevel}</span>
                       ) : null}
-                      <span className="subject-pill border-line bg-surface text-foreground">N{item.nLevel}</span>
+                      <span className={jlptLevelPillClass()}>N{item.nLevel}</span>
                     </>
                   }
                   glyphClassName={`border-kanji/50 bg-kanji/10 ${userMatch ? "text-kanji" : "text-foreground"}`}
@@ -272,6 +286,18 @@ export default function JlptExplorerContent({
           <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
             Loading more...
           </div>
+        ) : null}
+        {visibleItems.length >= filteredItems.length && hasMoreRemote ? (
+          <button
+            type="button"
+            onClick={() => {
+              void onLoadMoreRemote();
+            }}
+            disabled={isLoadingMore}
+            className="mt-3 w-full rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/70 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoadingMore ? "Loading more JLPT items..." : "Load more JLPT items"}
+          </button>
         ) : null}
       </div>
     </section>

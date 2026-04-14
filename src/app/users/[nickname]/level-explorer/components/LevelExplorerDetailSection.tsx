@@ -9,6 +9,7 @@ import {
   glyphHasReading,
   glyphSubtitleForDisplay,
   isNewGlyphWithinHours,
+  jlptLevelPillClass,
   secondaryReadingsForDisplay,
   shortSubjectTypeLabel,
   statusClass,
@@ -129,7 +130,7 @@ export default function LevelExplorerDetailSection({
               <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span>
             ) : null}
             {selectedItem.jlptLevel ? (
-              <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span>
+              <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span>
             ) : null}
             <span className="subject-pill border-line bg-surface text-foreground">SRS {selectedItem.srsStage}</span>
             {isNewGlyphWithinHours(selectedItem) ? (

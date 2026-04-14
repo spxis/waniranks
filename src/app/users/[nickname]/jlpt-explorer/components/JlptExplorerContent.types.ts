@@ -48,6 +48,10 @@ export type JlptExplorerContentProps = {
   selectedItem: JlptItem | null;
   gridColumns: number;
   userKanjiByChar: Map<string, UserKanjiItem>;
+  isLoadingData: boolean;
+  isLoadingMore: boolean;
+  hasMoreRemote: boolean;
+  onLoadMoreRemote: () => Promise<void>;
   onSetSelectedLevels: (next: Set<number>) => void;
   onToggleNLevel: (level: number) => void;
   onSetWkFilter: (next: JlptFilter) => void;

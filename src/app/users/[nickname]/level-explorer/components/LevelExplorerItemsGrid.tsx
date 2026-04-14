@@ -10,6 +10,7 @@ import {
   glyphSubtitleForDisplay,
   glyphTextSizeClass,
   isNewGlyphWithinHours,
+  jlptLevelPillClass,
   lockedCardStateClass,
   shortSubjectTypeLabel,
   statusClass,
@@ -158,7 +159,7 @@ export default function LevelExplorerItemsGrid({
                     </span>
                   ) : null}
                   {item.jlptLevel ? (
-                    <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span>
+                    <span className={jlptLevelPillClass()}>N{item.jlptLevel}</span>
                   ) : null}
                   {isNewGlyphWithinHours(item) ? (
                     <span className="subject-pill border-emerald-300 bg-emerald-100 text-emerald-800">NEW</span>

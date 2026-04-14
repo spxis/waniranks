@@ -6,6 +6,7 @@ import {
   formatNumber,
   glyphSubtitleForDisplay,
   glyphTextSizeClass,
+  jlptLevelPillClass,
   shortSubjectTypeLabel,
   srsFilterButtonLabel,
   statusClass,
@@ -275,7 +276,7 @@ export default function StudyExplorerPanel({
                       <>
                         <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
                         {typeof item.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span> : null}
-                        {item.jlptLevel ? <span className="subject-pill border-line bg-surface text-foreground">N{item.jlptLevel}</span> : null}
+                        {item.jlptLevel ? <span className={jlptLevelPillClass()}>N{item.jlptLevel}</span> : null}
                       </>
                     }
                     glyphClassName={typeGlyphBoxClass(item.subjectType)}

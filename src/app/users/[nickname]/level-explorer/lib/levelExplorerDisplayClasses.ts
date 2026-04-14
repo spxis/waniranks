@@ -98,6 +98,10 @@ export function subjectTypePillClass(type: LevelItem["subjectType"]): string {
   return "subject-pill";
 }
 
+export function jlptLevelPillClass(): string {
+  return "subject-pill border-teal-300 bg-teal-100 text-teal-800";
+}
+
 export function typeCardClass(type: LevelItem["subjectType"], selected: boolean): string {
   const selectedRing = selected ? "ring-2 ring-accent" : "";
   if (type === "radical") {

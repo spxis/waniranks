@@ -4,6 +4,7 @@ import type { RelatedReference } from "./StudyReviewModal.types";
 import LevelExplorerReviewStatsCard from "../../level-explorer/components/LevelExplorerReviewStatsCard";
 import {
   glyphTextSizeClass,
+  jlptLevelPillClass,
   shortSubjectTypeLabel,
   statusClass,
   statusShortLabel,
@@ -136,7 +137,7 @@ export default function StudyReviewModalSection({
                 <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1">
                   <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                   {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                  {selectedItem.jlptLevel ? <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span> : null}
+                  {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
                   {showStatusChip ? (
                     <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(selectedItem.status)}`}>
                       {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
@@ -214,7 +215,7 @@ export default function StudyReviewModalSection({
                     <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1">
                       <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                       {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                      {selectedItem.jlptLevel ? <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span> : null}
+                      {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
                       {showStatusChip ? (
                         <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(selectedItem.status)}`}>
                           {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
@@ -231,7 +232,7 @@ export default function StudyReviewModalSection({
                       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1">
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                         {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                        {selectedItem.jlptLevel ? <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span> : null}
+                        {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
                         {showStatusChip ? (
                           <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(selectedItem.status)}`}>
                             {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
@@ -313,7 +314,7 @@ export default function StudyReviewModalSection({
                 <div className="flex flex-nowrap justify-self-end gap-1">
                   <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                   {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                  {selectedItem.jlptLevel ? <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.jlptLevel}</span> : null}
+                  {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
                   {showStatusChip ? <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(selectedItem.status)}`}>{statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}</span> : null}
                 </div>
               </div>

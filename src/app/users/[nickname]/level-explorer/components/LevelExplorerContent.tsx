@@ -247,6 +247,11 @@ export default function LevelExplorerContent({
                 {(["all", "none", "n5", "n4", "n3", "n2", "n1"] as const).map((level) => {
                   const count = level === "all" ? counts.all : jlptCounts[level];
                   const disabled = level !== "all" && count === 0;
+                  const isJlptLevel = level !== "all" && level !== "none";
+                  const active = jlptFilter === level;
+                  const jlptStyle = active
+                    ? "border-teal-500 bg-teal-500 text-white"
+                    : "border-teal-300 bg-teal-100 text-teal-800 hover:bg-teal-200";
 
                   return (
                     <button
@@ -255,7 +260,7 @@ export default function LevelExplorerContent({
                       onClick={() => onSetJlptFilter(level)}
                       disabled={disabled}
                       className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
-                        disabled ? disabledBadgeClass() : badgeClass(jlptFilter === level)
+                        disabled ? disabledBadgeClass() : isJlptLevel ? jlptStyle : badgeClass(active)
                       }`}
                     >
                       {level === "all" ? "JLPT All" : level === "none" ? "No JLPT" : level.toUpperCase()} ({formatNumber(count)})

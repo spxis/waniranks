@@ -1,6 +1,7 @@
 import jlptReadings from "@/data/jlptReadings.json";
 
 import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
+import { jlptLevelPillClass } from "../../level-explorer/lib/levelExplorerDisplay";
 import { formatDate, jlptHeading, readingLabel, stripReadingSeparators } from "../lib/jlptDisplay";
 import { jlptStatusClass, parseWordExamples } from "../lib/jlptExplorerContentHelpers";
 import JlptExplorerStatsPanel from "./JlptExplorerStatsPanel";
@@ -58,7 +59,7 @@ export default function JlptExplorerDetailSection({
           {typeof selectedUserMatch?.wkLevel === "number" ? (
             <span className="subject-pill border-line bg-surface text-foreground">L{selectedUserMatch.wkLevel}</span>
           ) : null}
-          <span className="subject-pill border-line bg-surface text-foreground">N{selectedItem.nLevel}</span>
+          <span className={jlptLevelPillClass()}>N{selectedItem.nLevel}</span>
           <span className={`subject-pill ${jlptStatusClass(selectedUserMatch?.status)}`}>
             {selectedUserMatch?.status ?? "untracked"}
           </span>

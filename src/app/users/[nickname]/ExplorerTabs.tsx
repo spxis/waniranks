@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useSWR from "swr";
 
 import JlptExplorer from "./jlpt-explorer/components/JlptExplorer";
 import LevelExplorer from "./level-explorer/components/LevelExplorer";
@@ -66,6 +67,43 @@ export default function ExplorerTabs({
       ? "lesson"
       : "review";
   });
+
+  const { data: fetchedStudyCounts } = useSWR<{ reviews: number; lessons: number }>(
+    `/api/study/${accountId}/counts`,
+    async (url: string) => {
+      const response = await fetch(url, { cache: "no-store" });
+      const payload = (await response.json()) as { reviews?: number; lessons?: number; error?: string };
+      if (!response.ok || typeof payload.reviews !== "number" || typeof payload.lessons !== "number") {
+        throw new Error(payload.error ?? "Could not load study counts.");
+      }
+
+      return { reviews: payload.reviews, lessons: payload.lessons };
+    },
+    {
+      revalidateOnFocus: true,
+      refreshInterval: 30_000,
+    },
+  );
+
+  useEffect(() => {
+    if (!fetchedStudyCounts) {
+      return;
+    }
+
+    setStudyCounts(fetchedStudyCounts);
+    try {
+      window.localStorage.setItem(
+        countsStorageKey,
+        JSON.stringify({
+          reviews: fetchedStudyCounts.reviews,
+          lessons: fetchedStudyCounts.lessons,
+          all: fetchedStudyCounts.reviews + fetchedStudyCounts.lessons,
+        }),
+      );
+    } catch {
+      // Ignore storage errors in restricted browsing modes.
+    }
+  }, [countsStorageKey, fetchedStudyCounts]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
