@@ -102,6 +102,11 @@ export function persistQueue(
   totalItems: number,
   counts: StudyCounts | null,
   levelCounts?: Record<number, number>,
+  typeCounts?: { all: number; radical: number; kanji: number; vocabulary: number },
+  typeCountsByLevel?: Record<
+    number,
+    { all: number; radical: number; kanji: number; vocabulary: number }
+  >,
 ): void {
   if (typeof window === "undefined") {
     return;
@@ -117,6 +122,8 @@ export function persistQueue(
         lessons: items.filter((item) => item.queueType === "lesson").length,
       },
       levelCounts,
+      typeCounts,
+      typeCountsByLevel,
       pagination: {
         offset: 0,
         limit: items.length,

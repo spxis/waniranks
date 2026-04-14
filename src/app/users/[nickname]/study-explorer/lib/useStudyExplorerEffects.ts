@@ -21,6 +21,11 @@ type Args = {
   totalItems: number;
   counts: StudyCounts | null;
   levelCounts: Record<number, number>;
+  typeCounts: { all: number; radical: number; kanji: number; vocabulary: number };
+  typeCountsByLevel: Record<
+    number,
+    { all: number; radical: number; kanji: number; vocabulary: number }
+  >;
   dataItems: StudyQueueItem[] | undefined;
   dataPaginationTotal: number | undefined;
   dataCounts: StudyCounts | undefined;
@@ -73,6 +78,8 @@ export function useStudyExplorerEffects({
   totalItems,
   counts,
   levelCounts,
+  typeCounts,
+  typeCountsByLevel,
   dataItems,
   dataPaginationTotal,
   dataCounts,
@@ -177,14 +184,35 @@ export function useStudyExplorerEffects({
   }, [dataItems, dataPaginationTotal, hiddenSubmittedAssignmentIds, setLoadedItems, setTotalItems]);
 
   useEffect(() => {
-    persistQueue(accountId, queueMode, loadedItems, totalItems, counts ?? null, levelCounts);
+    persistQueue(
+      accountId,
+      queueMode,
+      loadedItems,
+      totalItems,
+      counts ?? null,
+      levelCounts,
+      typeCounts,
+      typeCountsByLevel,
+    );
     setCachedQueueData({
       items: loadedItems,
       counts: counts ?? { all: loadedItems.length, reviews: 0, lessons: 0 },
       levelCounts,
+      typeCounts,
+      typeCountsByLevel,
       pagination: { offset: 0, limit: loadedItems.length, total: totalItems, hasMore: loadedItems.length < totalItems },
     });
-  }, [accountId, counts, levelCounts, loadedItems, queueMode, setCachedQueueData, totalItems]);
+  }, [
+    accountId,
+    counts,
+    levelCounts,
+    loadedItems,
+    queueMode,
+    setCachedQueueData,
+    totalItems,
+    typeCounts,
+    typeCountsByLevel,
+  ]);
 
   useEffect(() => {
     setCachedQueueData(readStoredQueue(accountId, queueMode));

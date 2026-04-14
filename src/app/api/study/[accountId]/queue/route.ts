@@ -65,6 +65,8 @@ export async function GET(request: Request, context: RouteContext) {
           items: pagedItems,
           counts: cached.counts,
           levelCounts: cached.levelCounts ?? {},
+          typeCounts: cached.typeCounts ?? { all: 0, radical: 0, kanji: 0, vocabulary: 0 },
+          typeCountsByLevel: cached.typeCountsByLevel ?? {},
           pagination: {
             offset,
             limit: limit ?? cachedItems.length,
@@ -320,7 +322,40 @@ export async function GET(request: Request, context: RouteContext) {
       return acc;
     }, {});
 
-    setCachedStudyQueue(accountId, mode, items, counts, levelCounts);
+    const emptyTypeCounts = { all: 0, radical: 0, kanji: 0, vocabulary: 0 };
+    const typeCounts = items.reduce<typeof emptyTypeCounts>((acc, item) => {
+      acc.all += 1;
+      if (item.subjectType === "radical") {
+        acc.radical += 1;
+      } else if (item.subjectType === "kanji") {
+        acc.kanji += 1;
+      } else {
+        acc.vocabulary += 1;
+      }
+
+      return acc;
+    }, { ...emptyTypeCounts });
+
+    const typeCountsByLevel = items.reduce<Record<number, typeof emptyTypeCounts>>((acc, item) => {
+      if (typeof item.wkLevel !== "number") {
+        return acc;
+      }
+
+      const bucket = acc[item.wkLevel] ?? { ...emptyTypeCounts };
+      bucket.all += 1;
+      if (item.subjectType === "radical") {
+        bucket.radical += 1;
+      } else if (item.subjectType === "kanji") {
+        bucket.kanji += 1;
+      } else {
+        bucket.vocabulary += 1;
+      }
+
+      acc[item.wkLevel] = bucket;
+      return acc;
+    }, {});
+
+    setCachedStudyQueue(accountId, mode, items, counts, levelCounts, typeCounts, typeCountsByLevel);
 
     const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
 
@@ -329,6 +364,8 @@ export async function GET(request: Request, context: RouteContext) {
         items: pagedItems,
         counts,
         levelCounts,
+        typeCounts,
+        typeCountsByLevel,
         pagination: {
           offset,
           limit: limit ?? items.length,

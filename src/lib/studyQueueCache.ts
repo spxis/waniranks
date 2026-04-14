@@ -6,6 +6,21 @@ type CachedStudyQueue = {
     lessons: number;
   };
   levelCounts?: Record<number, number>;
+  typeCounts?: {
+    all: number;
+    radical: number;
+    kanji: number;
+    vocabulary: number;
+  };
+  typeCountsByLevel?: Record<
+    number,
+    {
+      all: number;
+      radical: number;
+      kanji: number;
+      vocabulary: number;
+    }
+  >;
   cachedAtMs: number;
 };
 
@@ -67,11 +82,18 @@ export function setCachedStudyQueue(
   items: unknown[],
   counts: { all: number; reviews: number; lessons: number },
   levelCounts?: Record<number, number>,
+  typeCounts?: { all: number; radical: number; kanji: number; vocabulary: number },
+  typeCountsByLevel?: Record<
+    number,
+    { all: number; radical: number; kanji: number; vocabulary: number }
+  >,
 ): void {
   cache.set(cacheKey(accountId, mode), {
     items,
     counts,
     levelCounts,
+    typeCounts,
+    typeCountsByLevel,
     cachedAtMs: Date.now(),
   });
   trimOldestEntries(cache, MAX_QUEUE_CACHE_KEYS);

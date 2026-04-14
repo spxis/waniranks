@@ -13,6 +13,21 @@ export type QueueResponse = {
     lessons: number;
   };
   levelCounts?: Record<number, number>;
+  typeCounts?: {
+    all: number;
+    radical: number;
+    kanji: number;
+    vocabulary: number;
+  };
+  typeCountsByLevel?: Record<
+    number,
+    {
+      all: number;
+      radical: number;
+      kanji: number;
+      vocabulary: number;
+    }
+  >;
   pagination?: {
     offset: number;
     limit: number;

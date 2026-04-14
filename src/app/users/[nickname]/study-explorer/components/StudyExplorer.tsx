@@ -213,6 +213,20 @@ export default function StudyExplorer({
       : lessonLevelCountsFromLoaded;
   }, [lessonLevelCountsFromLoaded, lessonLevelCountsFromServer, queueMode]);
 
+  const lessonTypeCountsFromServer = useMemo(() => {
+    const typeCounts = data?.typeCounts ?? cachedQueueData?.typeCounts;
+    const typeCountsByLevel = data?.typeCountsByLevel ?? cachedQueueData?.typeCountsByLevel;
+    if (!typeCounts) {
+      return null;
+    }
+
+    if (viewedLevel !== null && typeCountsByLevel?.[viewedLevel]) {
+      return typeCountsByLevel[viewedLevel];
+    }
+
+    return typeCounts;
+  }, [cachedQueueData?.typeCounts, cachedQueueData?.typeCountsByLevel, data?.typeCounts, data?.typeCountsByLevel, viewedLevel]);
+
   const filteredItemByAssignmentId = useMemo(() => {
     const map = new Map<number, StudyQueueItem>();
     for (const item of filteredItems) {
@@ -221,7 +235,7 @@ export default function StudyExplorer({
     return map;
   }, [filteredItems]);
 
-  const typeCounts = useMemo(() => {
+  const loadedTypeCounts = useMemo(() => {
     const out = { all: 0, radical: 0, kanji: 0, vocabulary: 0 };
     for (const item of loadedItems) {
       if (recentOnly && !isRecentStudyItem(item)) continue;
@@ -237,6 +251,10 @@ export default function StudyExplorer({
     }
     return out;
   }, [loadedItems, queueMode, recentOnly, viewedLevel, effectiveSrsFilter, showLocked]);
+
+  const typeCounts = queueMode === "lesson" && lessonTypeCountsFromServer
+    ? lessonTypeCountsFromServer
+    : loadedTypeCounts;
 
   const srsCounts = useMemo(() => {
     const out = { all: 0, locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0 };
@@ -325,6 +343,8 @@ export default function StudyExplorer({
     totalItems,
     counts,
     levelCounts: lessonLevelCountsFromServer,
+    typeCounts: data?.typeCounts ?? cachedQueueData?.typeCounts ?? loadedTypeCounts,
+    typeCountsByLevel: data?.typeCountsByLevel ?? cachedQueueData?.typeCountsByLevel ?? {},
     dataItems: data?.items,
     dataPaginationTotal: data?.pagination?.total,
     dataCounts: data?.counts,
