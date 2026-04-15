@@ -6,11 +6,6 @@ import useSWR from "swr";
 import JlptExplorer from "./jlpt-explorer/components/JlptExplorer";
 import LevelExplorer from "./level-explorer/components/LevelExplorer";
 import StudyExplorer from "./study-explorer/components/StudyExplorer";
-import {
-  STUDY_QUEUE_MODE_LESSON,
-  STUDY_QUEUE_MODE_REVIEW,
-} from "./study-explorer/lib/studyExplorerConstants";
-import type { StudyQueueMode } from "./study-explorer/lib/studyExplorerConstants";
 import type { JlptItem, Snapshot, SrsFilter, UserKanjiItem } from "./explorerTypes";
 
 type Props = {
@@ -63,14 +58,14 @@ export default function ExplorerTabs({
     }
   });
   const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
-  const [queueMode, setQueueMode] = useState<StudyQueueMode>(() => {
+  const [queueMode, setQueueMode] = useState<"review" | "lesson">(() => {
     if (typeof window === "undefined") {
-      return STUDY_QUEUE_MODE_REVIEW;
+      return "review";
     }
 
-    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === STUDY_QUEUE_MODE_LESSON
-      ? STUDY_QUEUE_MODE_LESSON
-      : STUDY_QUEUE_MODE_REVIEW;
+    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === "lesson"
+      ? "lesson"
+      : "review";
   });
 
   const { data: fetchedStudyCounts } = useSWR<{ reviews: number; lessons: number }>(
@@ -247,13 +242,13 @@ export default function ExplorerTabs({
       : "rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted";
   }
 
-  function queueModeSegmentClass(mode: StudyQueueMode, activeMode: StudyQueueMode): string {
+  function queueModeSegmentClass(mode: "review" | "lesson", activeMode: "review" | "lesson"): string {
     const active = mode === activeMode;
     if (!active) {
       return "inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted";
     }
 
-    return mode === STUDY_QUEUE_MODE_REVIEW
+    return mode === "review"
       ? "inline-flex h-8 items-center justify-center rounded-full border border-amber-500 bg-amber-500 px-4 text-xs font-bold uppercase tracking-[0.1em] text-white"
       : "inline-flex h-8 items-center justify-center rounded-full border border-sky-500 bg-sky-500 px-4 text-xs font-bold uppercase tracking-[0.1em] text-white";
   }
@@ -300,18 +295,18 @@ export default function ExplorerTabs({
               <button
                 type="button"
                 role="tab"
-                aria-selected={queueMode === STUDY_QUEUE_MODE_REVIEW}
-                onClick={() => setQueueMode(STUDY_QUEUE_MODE_REVIEW)}
-                className={queueModeSegmentClass(STUDY_QUEUE_MODE_REVIEW, queueMode)}
+                aria-selected={queueMode === "review"}
+                onClick={() => setQueueMode("review")}
+                className={queueModeSegmentClass("review", queueMode)}
               >
                 Reviews ({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})
               </button>
               <button
                 type="button"
                 role="tab"
-                aria-selected={queueMode === STUDY_QUEUE_MODE_LESSON}
-                onClick={() => setQueueMode(STUDY_QUEUE_MODE_LESSON)}
-                className={queueModeSegmentClass(STUDY_QUEUE_MODE_LESSON, queueMode)}
+                aria-selected={queueMode === "lesson"}
+                onClick={() => setQueueMode("lesson")}
+                className={queueModeSegmentClass("lesson", queueMode)}
               >
                 Lessons ({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})
               </button>

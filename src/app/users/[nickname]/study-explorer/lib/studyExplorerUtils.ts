@@ -8,12 +8,6 @@ import type {
   StudySrsFilter,
   StudyTypeFilter,
 } from "./studyExplorerTypes";
-import {
-  STUDY_QUEUE_MODE_LESSON,
-  STUDY_QUEUE_MODE_REVIEW,
-  STUDY_STATUS_LOCKED,
-} from "./studyExplorerConstants";
-import type { StudyQueueMode } from "./studyExplorerConstants";
 
 export const STUDY_QUEUE_STORAGE_TTL_MS = 90_000;
 export const STUDY_RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -73,7 +67,7 @@ export function itemMatchesStudyQuery(item: StudyQueueItem, normalizedQuery: str
   return romaji.includes(normalizedQuery);
 }
 
-export function readStoredQueue(accountId: string, mode: StudyQueueMode): QueueResponse | undefined {
+export function readStoredQueue(accountId: string, mode: "review" | "lesson"): QueueResponse | undefined {
   if (typeof window === "undefined") {
     return undefined;
   }
@@ -103,7 +97,7 @@ export function readStoredQueue(accountId: string, mode: StudyQueueMode): QueueR
 
 export function persistQueue(
   accountId: string,
-  queueMode: StudyQueueMode,
+  queueMode: "review" | "lesson",
   items: StudyQueueItem[],
   totalItems: number,
   counts: StudyCounts | null,
@@ -124,8 +118,8 @@ export function persistQueue(
       items,
       counts: counts ?? {
         all: items.length,
-        reviews: items.filter((item) => item.queueType === STUDY_QUEUE_MODE_REVIEW).length,
-        lessons: items.filter((item) => item.queueType === STUDY_QUEUE_MODE_LESSON).length,
+        reviews: items.filter((item) => item.queueType === "review").length,
+        lessons: items.filter((item) => item.queueType === "lesson").length,
       },
       levelCounts,
       typeCounts,
@@ -171,7 +165,7 @@ export function studyItemEnglishTitle(item: StudyQueueItem): string {
 
 export function filterStudyItems(
   items: StudyQueueItem[],
-  queueMode: StudyQueueMode,
+  queueMode: "review" | "lesson",
   viewedLevel: number | null,
   typeFilter: StudyTypeFilter,
   srsFilter: StudySrsFilter,
@@ -205,7 +199,7 @@ export function filterStudyItems(
       return false;
     }
 
-    if (!showLocked && item.status === STUDY_STATUS_LOCKED) {
+    if (!showLocked && item.status === "locked") {
       return false;
     }
 
