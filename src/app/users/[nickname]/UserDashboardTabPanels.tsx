@@ -263,7 +263,7 @@ function srsSegmentClass(stage: "locked" | "apprentice" | "guru" | "master" | "e
   if (stage === "guru") return "bg-accent";
   if (stage === "master") return "bg-sky-500";
   if (stage === "enlightened") return "bg-amber-500";
-  return "bg-foreground/45";
+  return "bg-emerald-500";
 }
 
 function srsSegmentTextClass(stage: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned"): string {
@@ -277,7 +277,7 @@ function srsBadgeClass(stage: "locked" | "apprentice" | "guru" | "master" | "enl
   if (stage === "guru") return "border-accent/40 bg-accent/10 text-accent";
   if (stage === "master") return "border-sky-500/40 bg-sky-500/10 text-sky-700";
   if (stage === "enlightened") return "border-amber-500/40 bg-amber-500/10 text-amber-800";
-  if (stage === "burned") return "border-foreground/30 bg-foreground/10 text-foreground";
+  if (stage === "burned") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-800";
   return "border-foreground/30 bg-foreground/10 text-foreground";
 }
 
