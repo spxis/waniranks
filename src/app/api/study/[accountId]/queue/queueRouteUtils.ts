@@ -120,6 +120,12 @@ export function queueRowsFromState(
   const rows: Array<{ assignmentId: number; data: AssignmentData; queueType: "review" | "lesson" }> = [];
 
   for (const assignment of state.assignmentById.values()) {
+    // "Lessons" in this UI means unstarted lessons. Once started, they should
+    // move out of the lesson queue (even if WK still reports srs_stage=0).
+    if (queueType === "lesson" && assignment.data.started_at) {
+      continue;
+    }
+
     rows.push({
       assignmentId: assignment.id,
       data: assignment.data,

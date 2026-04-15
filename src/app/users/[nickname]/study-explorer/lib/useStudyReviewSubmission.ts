@@ -181,7 +181,7 @@ export function useStudyReviewSubmission({
 
   const submitLessonStart = useCallback(
     async (assignmentId: number) => {
-      const { itemForSubmit, nextFocusedItem } = getSubmissionContext(assignmentId);
+      const { itemForSubmit } = getSubmissionContext(assignmentId);
 
       onSetSubmitInFlight({
         assignmentId,
@@ -205,13 +205,6 @@ export function useStudyReviewSubmission({
           onSetModalSessionItemByAssignmentId((prev) => ({ ...prev, [assignmentId]: itemForSubmit }));
         }
 
-        onSetLoadedItems((prev) => prev.filter((item) => item.assignmentId !== assignmentId));
-        onSetTotalItems((prev) => Math.max(0, prev - 1));
-        onSetPersistedCounts((prev) =>
-          prev
-            ? { ...prev, lessons: Math.max(0, prev.lessons - 1), all: Math.max(0, prev.all - 1) }
-            : prev,
-        );
         onSetSubmitFeedback({
           kind: "success",
           message: `Added ${
@@ -226,8 +219,6 @@ export function useStudyReviewSubmission({
         });
         onSetReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: "lesson-started" }));
         onSetHasPendingStudySubmissions(true);
-        onSetSelectedId(nextFocusedItem?.subjectId ?? null);
-        removeFromModalSession(assignmentId);
       } catch (submitError) {
         onSetSubmitFeedback({
           kind: "error",
@@ -252,17 +243,12 @@ export function useStudyReviewSubmission({
       getSubmissionContext,
       onSetHasPendingStudySubmissions,
       onSetHiddenSubmittedAssignmentIds,
-      onSetLoadedItems,
       onSetModalSessionItemByAssignmentId,
-      onSetPersistedCounts,
       onSetRevealedAssignmentIds,
       onSetReviewOutcomeByAssignmentId,
-      onSetSelectedId,
       onSetSubmitFeedback,
       onSetSubmitInFlight,
       onSetSubmittingByAssignmentId,
-      onSetTotalItems,
-      removeFromModalSession,
     ],
   );
 
