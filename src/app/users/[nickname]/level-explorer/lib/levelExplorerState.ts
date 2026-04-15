@@ -1,8 +1,49 @@
 import type { SrsFilter } from "../../explorerTypes";
 
-export type TypeFilter = "all" | "kanji" | "radical" | "vocabulary";
-export type JlptFilter = "all" | "none" | "n1" | "n2" | "n3" | "n4" | "n5";
-export type ReviewTimingFilter = "all" | "overdue" | "next1h" | "next8h" | "next24h" | "next72h";
+export const LEVEL_FILTER_ALL = "all" as const;
+export const LEVEL_TYPE_RADICAL = "radical" as const;
+export const LEVEL_TYPE_KANJI = "kanji" as const;
+export const LEVEL_TYPE_VOCABULARY = "vocabulary" as const;
+
+export const LEVEL_TYPE_FILTER_ALLOWED = [
+  LEVEL_FILTER_ALL,
+  LEVEL_TYPE_RADICAL,
+  LEVEL_TYPE_KANJI,
+  LEVEL_TYPE_VOCABULARY,
+] as const;
+export type TypeFilter = (typeof LEVEL_TYPE_FILTER_ALLOWED)[number];
+
+export const LEVEL_JLPT_NONE = "none" as const;
+export const LEVEL_JLPT_N5 = "n5" as const;
+export const LEVEL_JLPT_N4 = "n4" as const;
+export const LEVEL_JLPT_N3 = "n3" as const;
+export const LEVEL_JLPT_N2 = "n2" as const;
+export const LEVEL_JLPT_N1 = "n1" as const;
+export const LEVEL_JLPT_FILTER_ALLOWED = [
+  LEVEL_FILTER_ALL,
+  LEVEL_JLPT_NONE,
+  LEVEL_JLPT_N5,
+  LEVEL_JLPT_N4,
+  LEVEL_JLPT_N3,
+  LEVEL_JLPT_N2,
+  LEVEL_JLPT_N1,
+] as const;
+export type JlptFilter = (typeof LEVEL_JLPT_FILTER_ALLOWED)[number];
+
+export const LEVEL_REVIEW_OVERDUE = "overdue" as const;
+export const LEVEL_REVIEW_NEXT_1H = "next1h" as const;
+export const LEVEL_REVIEW_NEXT_8H = "next8h" as const;
+export const LEVEL_REVIEW_NEXT_24H = "next24h" as const;
+export const LEVEL_REVIEW_NEXT_72H = "next72h" as const;
+export const LEVEL_REVIEW_TIMING_ALLOWED = [
+  LEVEL_FILTER_ALL,
+  LEVEL_REVIEW_OVERDUE,
+  LEVEL_REVIEW_NEXT_1H,
+  LEVEL_REVIEW_NEXT_8H,
+  LEVEL_REVIEW_NEXT_24H,
+  LEVEL_REVIEW_NEXT_72H,
+] as const;
+export type ReviewTimingFilter = (typeof LEVEL_REVIEW_TIMING_ALLOWED)[number];
 
 export type ExplorerUrlState = {
   levels: Set<number>;
@@ -22,7 +63,7 @@ export type TypeVisibility = {
 };
 
 export const SRS_FILTER_ALLOWED: SrsFilter[] = [
-  "all",
+  LEVEL_FILTER_ALL,
   "apprentice",
   "guru",
   "master",
@@ -31,16 +72,9 @@ export const SRS_FILTER_ALLOWED: SrsFilter[] = [
   "locked",
 ];
 
-export const TYPE_FILTER_ALLOWED: TypeFilter[] = ["all", "radical", "kanji", "vocabulary"];
-export const JLPT_FILTER_ALLOWED: JlptFilter[] = ["all", "none", "n5", "n4", "n3", "n2", "n1"];
-export const REVIEW_TIMING_ALLOWED: ReviewTimingFilter[] = [
-  "all",
-  "overdue",
-  "next1h",
-  "next8h",
-  "next24h",
-  "next72h",
-];
+export const TYPE_FILTER_ALLOWED: TypeFilter[] = [...LEVEL_TYPE_FILTER_ALLOWED];
+export const JLPT_FILTER_ALLOWED: JlptFilter[] = [...LEVEL_JLPT_FILTER_ALLOWED];
+export const REVIEW_TIMING_ALLOWED: ReviewTimingFilter[] = [...LEVEL_REVIEW_TIMING_ALLOWED];
 
 export type LevelExplorerStorageKeys = {
   typeVisibility: string;
@@ -100,18 +134,18 @@ export function parseLevelExplorerUrlState(
   const subjectId = Number.isInteger(subjectRaw) && subjectRaw > 0 ? subjectRaw : null;
 
   const srsRaw = params.get("srs");
-  const srs = SRS_FILTER_ALLOWED.includes(srsRaw as SrsFilter) ? (srsRaw as SrsFilter) : "all";
+  const srs = SRS_FILTER_ALLOWED.includes(srsRaw as SrsFilter) ? (srsRaw as SrsFilter) : LEVEL_FILTER_ALL;
 
   const typeRaw = params.get("type");
-  const type = TYPE_FILTER_ALLOWED.includes(typeRaw as TypeFilter) ? (typeRaw as TypeFilter) : "all";
+  const type = TYPE_FILTER_ALLOWED.includes(typeRaw as TypeFilter) ? (typeRaw as TypeFilter) : LEVEL_FILTER_ALL;
 
   const jlptRaw = params.get("jlpt");
-  const jlpt = JLPT_FILTER_ALLOWED.includes(jlptRaw as JlptFilter) ? (jlptRaw as JlptFilter) : "all";
+  const jlpt = JLPT_FILTER_ALLOWED.includes(jlptRaw as JlptFilter) ? (jlptRaw as JlptFilter) : LEVEL_FILTER_ALL;
 
   const reviewRaw = params.get("review");
   const review = REVIEW_TIMING_ALLOWED.includes(reviewRaw as ReviewTimingFilter)
     ? (reviewRaw as ReviewTimingFilter)
-    : "all";
+    : LEVEL_FILTER_ALL;
 
   return {
     levels,
