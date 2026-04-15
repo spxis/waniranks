@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserDashboardTabs from "./UserDashboardTabs";
+import type { LevelProgressSnapshot, TypeProgress } from "./UserDashboardTabs.types";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
@@ -18,10 +19,16 @@ type LevelKanjiItem = {
   subjectId: number;
   characters: string;
   meanings: string[];
+  wkLevel: number;
   srsStage: number;
   status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
   availableAt: string | null;
   subjectType?: "kanji" | "radical" | "vocabulary";
+};
+
+type LevelSnapshotRow = {
+  level: number;
+  items: unknown;
 };
 
 type JlptKanjiRow = {
@@ -140,6 +147,15 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       })) as JlptKanjiRow[])
     : [];
 
+  const levelSnapshots = (await prisma.levelSnapshot.findMany({
+    where: { accountId: account.id },
+    orderBy: { level: "asc" },
+    select: {
+      level: true,
+      items: true,
+    },
+  })) as LevelSnapshotRow[];
+
   const rankedAccounts = await prisma.account.findMany({
     orderBy: [{ score: "desc" }, { wkLevel: "desc" }, { reviewCount: "desc" }],
     select: { id: true, nickname: true, wkUsername: true },
@@ -160,34 +176,96 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       ? rankedAccounts[(rankSlotIndex + 1) % rankedAccounts.length]
       : null;
 
-  const currentLevelItems = levelKanjiItems.filter(
-    (item) => item.subjectType === "radical" || item.subjectType === "kanji" || item.subjectType === "vocabulary",
-  );
+  const progressItemsByLevel = new Map<number, LevelKanjiItem[]>();
 
-  function typeProgress(type: "radical" | "kanji" | "vocabulary") {
-    const items = currentLevelItems.filter((item) => item.subjectType === type);
-    const unlockedItems = items.filter((item) => item.srsStage > 0);
-    const guruOrHigher = unlockedItems.filter((item) => item.srsStage >= 5).length;
+  for (const row of levelSnapshots) {
+    const rawItems = Array.isArray(row.items) ? row.items : [];
+    const items = rawItems.filter(
+      (item): item is LevelKanjiItem =>
+        typeof item === "object" &&
+        item !== null &&
+        (item as LevelKanjiItem).subjectType !== undefined &&
+        ((item as LevelKanjiItem).subjectType === "radical" ||
+          (item as LevelKanjiItem).subjectType === "kanji" ||
+          (item as LevelKanjiItem).subjectType === "vocabulary"),
+    );
+
+    progressItemsByLevel.set(row.level, items);
+  }
+
+  if (!progressItemsByLevel.has(account.wkLevel)) {
+    const fallbackItems = levelKanjiItems.filter(
+      (item) => item.subjectType === "radical" || item.subjectType === "kanji" || item.subjectType === "vocabulary",
+    );
+    progressItemsByLevel.set(account.wkLevel, fallbackItems);
+  }
+
+  function computeTypeProgress(itemsForLevel: LevelKanjiItem[], type: "radical" | "kanji" | "vocabulary"): TypeProgress {
+    const items = itemsForLevel.filter((item) => item.subjectType === type);
+    const locked = items.filter((item) => item.srsStage <= 0).length;
+    const apprentice = items.filter((item) => item.srsStage >= 1 && item.srsStage <= 4).length;
+    const guru = items.filter((item) => item.srsStage === 5 || item.srsStage === 6).length;
+    const master = items.filter((item) => item.srsStage === 7).length;
+    const enlightened = items.filter((item) => item.srsStage === 8).length;
+    const burned = items.filter((item) => item.srsStage >= 9).length;
+    const guruOrHigher = guru + master + enlightened + burned;
+    const total = items.length;
 
     return {
       guruOrHigher,
-      total: unlockedItems.length,
-      percent: unlockedItems.length === 0 ? 0 : Math.round((guruOrHigher / unlockedItems.length) * 100),
+      total,
+      percent: total === 0 ? 0 : Math.round((guruOrHigher / total) * 100),
+      locked,
+      apprentice,
+      guru,
+      master,
+      enlightened,
+      burned,
     };
   }
 
-  const levelRadicalProgress = typeProgress("radical");
-  const levelKanjiProgress = typeProgress("kanji");
-  const levelVocabularyProgress = typeProgress("vocabulary");
+  function computeLevelSnapshot(level: number): LevelProgressSnapshot {
+    const itemsForLevel = progressItemsByLevel.get(level) ?? [];
+    const radical = computeTypeProgress(itemsForLevel, "radical");
+    const kanji = computeTypeProgress(itemsForLevel, "kanji");
+    const vocabulary = computeTypeProgress(itemsForLevel, "vocabulary");
+    const remainingToLevelUp = Math.max(0, Math.ceil(kanji.total * 0.9) - kanji.guruOrHigher);
+
+    return {
+      radical,
+      kanji,
+      vocabulary,
+      remainingToLevelUp,
+      passedLevelUpGate: kanji.guruOrHigher >= Math.ceil(kanji.total * 0.9),
+    };
+  }
+
+  const higherStartedLevels = Array.from(progressItemsByLevel.entries())
+    .filter(([level, items]) => level > account.wkLevel && items.some((item) => item.srsStage > 0))
+    .map(([level]) => level)
+    .sort((a, b) => a - b);
+
+  const availableProgressLevels = [
+    ...Array.from({ length: Math.max(1, account.wkLevel) }, (_, index) => index + 1),
+    ...higherStartedLevels,
+  ];
+
+  const levelProgressByLevel = Object.fromEntries(
+    availableProgressLevels.map((level) => [level, computeLevelSnapshot(level)]),
+  ) as Record<number, LevelProgressSnapshot>;
+
+  const currentLevelProgress = levelProgressByLevel[account.wkLevel] ?? computeLevelSnapshot(account.wkLevel);
+  const levelRadicalProgress = currentLevelProgress.radical;
+  const levelKanjiProgress = currentLevelProgress.kanji;
+  const levelVocabularyProgress = currentLevelProgress.vocabulary;
   const totalLearnedKanji =
     itemSpread.guru.kanji +
     itemSpread.master.kanji +
     itemSpread.enlightened.kanji +
     itemSpread.burned.kanji;
 
-  const kanjiGuruGoal = Math.ceil(account.levelKanjiTotal * 0.9);
-  const remainingToLevelUp = Math.max(0, kanjiGuruGoal - account.levelKanjiGuruPlus);
-  const passedLevelUpGate = account.levelKanjiGuruPlus >= kanjiGuruGoal;
+  const remainingToLevelUp = currentLevelProgress.remainingToLevelUp;
+  const passedLevelUpGate = currentLevelProgress.passedLevelUpGate;
   const linkedEmail = account.joinedByEmail?.trim().toLowerCase() ?? null;
   const viewerMatchesAccount = Boolean(viewerEmail && linkedEmail && viewerEmail === linkedEmail);
 
@@ -240,6 +318,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           levelVocabularyProgress={levelVocabularyProgress}
           remainingToLevelUp={remainingToLevelUp}
           passedLevelUpGate={passedLevelUpGate}
+          availableProgressLevels={availableProgressLevels}
+          levelProgressByLevel={levelProgressByLevel}
         />
 
         <ExplorerTabs

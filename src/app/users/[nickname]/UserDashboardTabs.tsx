@@ -46,10 +46,33 @@ export default function UserDashboardTabs({
   levelVocabularyProgress,
   remainingToLevelUp,
   passedLevelUpGate,
+  availableProgressLevels = [],
+  levelProgressByLevel = {},
 }: Props) {
   const tabStorageKey = `wr:user:${accountId}:dashboard-tab`;
+  const baseProgressLevels = Array.from({ length: Math.max(1, wkLevel) }, (_, index) => index + 1);
+  const safeProgressLevels = Array.from(
+    new Set([
+      ...baseProgressLevels,
+      ...(Array.isArray(availableProgressLevels) ? availableProgressLevels : []),
+    ]),
+  ).sort((a, b) => a - b);
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     return getStoredEnum(tabStorageKey, ["main", "item-spread", "level-progress"] as const, "main");
+  });
+  const levelProgressStorageKey = `wr:user:${accountId}:level-progress-level`;
+  const [selectedProgressLevel, setSelectedProgressLevel] = useState<number>(() => {
+    const fallback = wkLevel;
+    if (typeof window === "undefined") {
+      return fallback;
+    }
+
+    const raw = window.localStorage.getItem(levelProgressStorageKey);
+    const parsed = Number(raw);
+    if (Number.isInteger(parsed) && safeProgressLevels.includes(parsed)) {
+      return parsed;
+    }
+    return fallback;
   });
   const actionButtonBaseClass =
     "inline-flex h-10 shrink-0 select-none items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
@@ -112,6 +135,41 @@ export default function UserDashboardTabs({
       ? `${actionButtonBaseClass} border-accent bg-accent text-white`
       : `${actionButtonBaseClass} border-line bg-surface text-foreground hover:bg-surface-muted`;
   }
+
+  useEffect(() => {
+    if (safeProgressLevels.length === 0) {
+      return;
+    }
+
+    if (safeProgressLevels.includes(selectedProgressLevel)) {
+      return;
+    }
+
+    const next = safeProgressLevels.includes(wkLevel)
+      ? wkLevel
+      : safeProgressLevels[safeProgressLevels.length - 1] ?? wkLevel;
+    setSelectedProgressLevel(next);
+  }, [safeProgressLevels, selectedProgressLevel, wkLevel]);
+
+  useEffect(() => {
+    if (!safeProgressLevels.includes(selectedProgressLevel)) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(levelProgressStorageKey, String(selectedProgressLevel));
+  }, [levelProgressStorageKey, safeProgressLevels, selectedProgressLevel]);
+
+  const selectedLevelProgress = levelProgressByLevel?.[selectedProgressLevel] ?? {
+    radical: levelRadicalProgress,
+    kanji: levelKanjiProgress,
+    vocabulary: levelVocabularyProgress,
+    remainingToLevelUp,
+    passedLevelUpGate,
+  };
   return (
     <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
       <div className="flex flex-col gap-3">
@@ -285,12 +343,14 @@ export default function UserDashboardTabs({
       {activeTab === "item-spread" ? <ItemSpreadTabPanel itemSpread={itemSpread} /> : null}
       {activeTab === "level-progress" ? (
         <LevelProgressTabPanel
-          wkLevel={wkLevel}
-          levelRadicalProgress={levelRadicalProgress}
-          levelKanjiProgress={levelKanjiProgress}
-          levelVocabularyProgress={levelVocabularyProgress}
-          remainingToLevelUp={remainingToLevelUp}
-          passedLevelUpGate={passedLevelUpGate}
+          wkLevel={selectedProgressLevel}
+          levelOptions={safeProgressLevels}
+          onSelectLevel={setSelectedProgressLevel}
+          levelRadicalProgress={selectedLevelProgress.radical}
+          levelKanjiProgress={selectedLevelProgress.kanji}
+          levelVocabularyProgress={selectedLevelProgress.vocabulary}
+          remainingToLevelUp={selectedLevelProgress.remainingToLevelUp}
+          passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
         />
       ) : null}
     </section>

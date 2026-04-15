@@ -201,17 +201,30 @@ export function useStudyExplorerEffects({
 
     const fresh = dataItems.filter((item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId));
     const freshIds = new Set(fresh.map((item) => item.assignmentId));
+    const visiblePrev = loadedItems.filter((item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId));
+    const mergedVisibleCount =
+      visiblePrev.length === 0
+        ? fresh.length
+        : fresh.length + visiblePrev.filter((item) => !freshIds.has(item.assignmentId)).length;
+
     setLoadedItems((prev) => {
-      const visiblePrev = prev.filter((item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId));
+      const priorVisible = prev.filter((item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId));
       const merged =
-        visiblePrev.length === 0 ? fresh : [...fresh, ...visiblePrev.filter((item) => !freshIds.has(item.assignmentId))];
+        priorVisible.length === 0 ? fresh : [...fresh, ...priorVisible.filter((item) => !freshIds.has(item.assignmentId))];
 
       return sameAssignmentList(prev, merged) ? prev : merged;
     });
 
     const nextTotalRaw = dataPaginationTotal ?? fresh.length;
-    setTotalItems(Math.max(0, nextTotalRaw - hiddenSubmittedAssignmentIds.size));
-  }, [dataItems, dataPaginationTotal, hiddenSubmittedAssignmentIds, setLoadedItems, setTotalItems]);
+    setTotalItems(Math.max(nextTotalRaw, mergedVisibleCount));
+  }, [
+    dataItems,
+    dataPaginationTotal,
+    hiddenSubmittedAssignmentIds,
+    loadedItems,
+    setLoadedItems,
+    setTotalItems,
+  ]);
 
   useEffect(() => {
     persistQueue(

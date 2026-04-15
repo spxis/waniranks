@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import useSWR from "swr";
 
 import StudyExplorerModal from "./StudyExplorerModal";
@@ -18,15 +18,15 @@ import type {
 } from "../lib/studyExplorerTypes";
 import {
   fetchStudyQueue,
-  filterStudyItems,
-  isRecentStudyItem,
   readStoredQueue,
 } from "../lib/studyExplorerUtils";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
+import { useStudyExplorerDerivedData } from "../lib/useStudyExplorerDerivedData";
 
 const REVIEW_API_PAGE_SIZE = 120;
 const LESSON_API_PAGE_SIZE = 200;
+const EMPTY_TYPE_COUNTS_BY_LEVEL: Record<number, { all: number; radical: number; kanji: number; vocabulary: number }> = {};
 
 function sameAssignmentList(a: StudyQueueItem[], b: StudyQueueItem[]): boolean {
   if (a.length !== b.length) {
@@ -117,6 +117,7 @@ export default function StudyExplorer({
 
   const counts = data?.counts ?? persistedCounts;
   const hasMorePages = loadedItems.length < totalItems;
+  const typeCountsByLevelForEffects = data?.typeCountsByLevel ?? cachedQueueData?.typeCountsByLevel ?? EMPTY_TYPE_COUNTS_BY_LEVEL;
 
   useEffect(() => {
     if (!counts || typeof window === "undefined") {
@@ -140,183 +141,42 @@ export default function StudyExplorer({
     );
   }, [accountId, counts, countsStorageKey]);
 
-  const levelOptions = useMemo(
-    () => Array.from({ length: Math.max(1, maxLevel) }, (_, index) => index + 1),
-    [maxLevel],
-  );
-
-  const availableLevels = useMemo(() => {
-    const output = new Set<number>();
-    for (const item of loadedItems) {
-      if (effectiveRecentOnly && !isRecentStudyItem(item)) {
-        continue;
-      }
-      if (item.queueType === queueMode && typeof item.wkLevel === "number") {
-        output.add(item.wkLevel);
-      }
-    }
-    return output;
-  }, [loadedItems, queueMode, effectiveRecentOnly]);
-
-  const filteredItems = useMemo(
-    () =>
-      filterStudyItems(
-        loadedItems,
-        queueMode,
-        viewedLevel,
-        typeFilter,
-        effectiveSrsFilter,
-        effectiveShowLocked,
-        effectiveRecentOnly,
-        searchQuery,
-      ),
-    [
-      loadedItems,
-      queueMode,
-      viewedLevel,
-      typeFilter,
-      effectiveSrsFilter,
-      effectiveShowLocked,
-      effectiveRecentOnly,
-      searchQuery,
-    ],
-  );
-
-  const lessonLevelCountsFromLoaded = useMemo(() => {
-    const countsByLevel: Record<number, number> = {};
-
-    for (const item of loadedItems) {
-      if (item.queueType !== "lesson") {
-        continue;
-      }
-      if (effectiveRecentOnly && !isRecentStudyItem(item)) {
-        continue;
-      }
-      if (typeFilter !== "all" && item.subjectType !== typeFilter) {
-        continue;
-      }
-      if (!effectiveShowLocked && item.status === "locked") {
-        continue;
-      }
-      if (typeof item.wkLevel !== "number") {
-        continue;
-      }
-
-      countsByLevel[item.wkLevel] = (countsByLevel[item.wkLevel] ?? 0) + 1;
-    }
-
-    return countsByLevel;
-  }, [loadedItems, effectiveRecentOnly, effectiveShowLocked, typeFilter]);
-
-  const lessonLevelCountsFromServer = useMemo(() => {
-    const raw = data?.levelCounts ?? cachedQueueData?.levelCounts;
-    if (!raw) {
-      return {} as Record<number, number>;
-    }
-
-    const normalized: Record<number, number> = {};
-    for (const [levelRaw, count] of Object.entries(raw)) {
-      const level = Number(levelRaw);
-      if (!Number.isInteger(level) || level <= 0 || typeof count !== "number" || count <= 0) {
-        continue;
-      }
-      normalized[level] = count;
-    }
-
-    return normalized;
-  }, [cachedQueueData?.levelCounts, data?.levelCounts]);
-
-  const lessonLevelCounts = useMemo(() => {
-    if (queueMode !== "lesson") {
-      return lessonLevelCountsFromLoaded;
-    }
-
-    return Object.keys(lessonLevelCountsFromServer).length > 0
-      ? lessonLevelCountsFromServer
-      : lessonLevelCountsFromLoaded;
-  }, [lessonLevelCountsFromLoaded, lessonLevelCountsFromServer, queueMode]);
-
-  const lessonTypeCountsFromServer = useMemo(() => {
-    const typeCounts = data?.typeCounts ?? cachedQueueData?.typeCounts;
-    const typeCountsByLevel = data?.typeCountsByLevel ?? cachedQueueData?.typeCountsByLevel;
-    if (!typeCounts) {
-      return null;
-    }
-
-    if (viewedLevel !== null && typeCountsByLevel?.[viewedLevel]) {
-      return typeCountsByLevel[viewedLevel];
-    }
-
-    return typeCounts;
-  }, [cachedQueueData?.typeCounts, cachedQueueData?.typeCountsByLevel, data?.typeCounts, data?.typeCountsByLevel, viewedLevel]);
-
-  const filteredItemByAssignmentId = useMemo(() => {
-    const map = new Map<number, StudyQueueItem>();
-    for (const item of filteredItems) {
-      map.set(item.assignmentId, item);
-    }
-    return map;
-  }, [filteredItems]);
-
-  const loadedTypeCounts = useMemo(() => {
-    const out = { all: 0, radical: 0, kanji: 0, vocabulary: 0 };
-    for (const item of loadedItems) {
-      if (effectiveRecentOnly && !isRecentStudyItem(item)) continue;
-      if (item.queueType !== queueMode) continue;
-      if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
-      if (effectiveSrsFilter !== "all" && item.status !== effectiveSrsFilter) continue;
-      if (!effectiveShowLocked && item.status === "locked") continue;
-
-      out.all += 1;
-      if (item.subjectType === "radical") out.radical += 1;
-      else if (item.subjectType === "kanji") out.kanji += 1;
-      else out.vocabulary += 1;
-    }
-    return out;
-  }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, effectiveSrsFilter, effectiveShowLocked]);
-
-  const typeCounts = queueMode === "lesson" && lessonTypeCountsFromServer
-    ? lessonTypeCountsFromServer
-    : loadedTypeCounts;
-
-  const srsCounts = useMemo(() => {
-    const out = { all: 0, locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0 };
-    for (const item of loadedItems) {
-      if (effectiveRecentOnly && !isRecentStudyItem(item)) continue;
-      if (item.queueType !== queueMode) continue;
-      if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
-      if (typeFilter !== "all" && item.subjectType !== typeFilter) continue;
-      if (!effectiveShowLocked && item.status === "locked") continue;
-
-      out.all += 1;
-      if (item.status === "locked") out.locked += 1;
-      if (item.status === "apprentice") out.apprentice += 1;
-      if (item.status === "guru") out.guru += 1;
-      if (item.status === "master") out.master += 1;
-      if (item.status === "enlightened") out.enlightened += 1;
-    }
-    return out;
-  }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, typeFilter, effectiveShowLocked]);
-
-  const modalItems = useMemo(() => {
-    if (!modalSessionOrderByAssignmentId || selectedId === null) {
-      return filteredItems;
-    }
-
-    return modalSessionOrderByAssignmentId
-      .map((assignmentId) => filteredItemByAssignmentId.get(assignmentId) ?? modalSessionItemByAssignmentId[assignmentId] ?? null)
-      .filter((item): item is StudyQueueItem => item !== null);
-  }, [filteredItems, filteredItemByAssignmentId, modalSessionItemByAssignmentId, modalSessionOrderByAssignmentId, selectedId]);
-
-  const selectedItem = modalItems.find((item) => item.subjectId === selectedId) ?? null;
-  const isSelectedSubmitted = selectedItem ? hiddenSubmittedAssignmentIds.has(selectedItem.assignmentId) : false;
-  const selectedIndex = selectedItem
-    ? modalItems.findIndex((item) => item.assignmentId === selectedItem.assignmentId)
-    : -1;
-  const prevItem = selectedIndex > 0 ? modalItems[selectedIndex - 1] : null;
-  const nextItem = selectedIndex >= 0 && selectedIndex < modalItems.length - 1 ? modalItems[selectedIndex + 1] : null;
-  const isAnswerRevealed = selectedItem ? revealedAssignmentIds.has(selectedItem.assignmentId) : false;
-  const isSubmittingSelected = selectedItem ? submittingByAssignmentId.has(selectedItem.assignmentId) : false;
+  const {
+    levelOptions,
+    availableLevels,
+    filteredItems,
+    lessonLevelCountsFromServer,
+    lessonLevelCounts,
+    loadedTypeCounts,
+    typeCounts,
+    srsCounts,
+    modalItems,
+    selectedItem,
+    isSelectedSubmitted,
+    selectedIndex,
+    prevItem,
+    nextItem,
+    isAnswerRevealed,
+    isSubmittingSelected,
+  } = useStudyExplorerDerivedData({
+    maxLevel,
+    loadedItems,
+    queueMode,
+    viewedLevel,
+    typeFilter,
+    effectiveSrsFilter,
+    effectiveShowLocked,
+    effectiveRecentOnly,
+    searchQuery,
+    data,
+    cachedQueueData,
+    modalSessionOrderByAssignmentId,
+    modalSessionItemByAssignmentId,
+    selectedId,
+    hiddenSubmittedAssignmentIds,
+    submittingByAssignmentId,
+    revealedAssignmentIds,
+  });
 
   useEffect(() => {
     if (selectedId === null) {
@@ -369,7 +229,7 @@ export default function StudyExplorer({
     counts,
     levelCounts: lessonLevelCountsFromServer,
     typeCounts: data?.typeCounts ?? cachedQueueData?.typeCounts ?? loadedTypeCounts,
-    typeCountsByLevel: data?.typeCountsByLevel ?? cachedQueueData?.typeCountsByLevel ?? {},
+    typeCountsByLevel: typeCountsByLevelForEffects,
     dataItems: data?.items,
     dataPaginationTotal: data?.pagination?.total,
     dataCounts: data?.counts,
@@ -413,6 +273,9 @@ export default function StudyExplorer({
       const payloadVisibleItems = payload.items.filter(
         (item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId),
       );
+      const existingIds = new Set(loadedItems.map((item) => item.assignmentId));
+      const uniquePayloadItems = payloadVisibleItems.filter((item) => !existingIds.has(item.assignmentId));
+      const mergedVisibleCount = loadedItems.length + uniquePayloadItems.length;
 
       setLoadedItems((prev) => {
         const existing = new Set(prev.map((item) => item.assignmentId));
@@ -420,7 +283,7 @@ export default function StudyExplorer({
         return sameAssignmentList(prev, merged) ? prev : merged;
       });
       const nextTotalRaw = payload.pagination?.total ?? totalItems;
-      setTotalItems(Math.max(0, nextTotalRaw - hiddenSubmittedAssignmentIds.size));
+      setTotalItems(Math.max(nextTotalRaw, mergedVisibleCount));
       if (payload.counts) setPersistedCounts(payload.counts);
     } catch (loadError) {
       setLoadMoreError(loadError instanceof Error ? loadError.message : "Could not load more study items.");

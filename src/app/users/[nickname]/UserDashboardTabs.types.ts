@@ -18,6 +18,20 @@ export type TypeProgress = {
   guruOrHigher: number;
   total: number;
   percent: number;
+  locked: number;
+  apprentice: number;
+  guru: number;
+  master: number;
+  enlightened: number;
+  burned: number;
+};
+
+export type LevelProgressSnapshot = {
+  radical: TypeProgress;
+  kanji: TypeProgress;
+  vocabulary: TypeProgress;
+  remainingToLevelUp: number;
+  passedLevelUpGate: boolean;
 };
 
 export type TabId = "main" | "item-spread" | "level-progress";
@@ -54,6 +68,8 @@ export type UserDashboardTabsProps = {
   levelVocabularyProgress: TypeProgress;
   remainingToLevelUp: number;
   passedLevelUpGate: boolean;
+  availableProgressLevels: number[];
+  levelProgressByLevel: Record<number, LevelProgressSnapshot>;
 };
 
 export type LiveData = {
