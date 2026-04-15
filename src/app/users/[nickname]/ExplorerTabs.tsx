@@ -331,7 +331,7 @@ export default function ExplorerTabs({
         </div>
       </div>
 
-      {activeTab === "study" ? (
+      <div className={activeTab === "study" ? "block" : "hidden"}>
         <StudyExplorer
           accountId={accountId}
           maxLevel={maxLevel}
@@ -341,9 +341,9 @@ export default function ExplorerTabs({
           studyMode={studyMode}
           queueMode={queueMode}
         />
-      ) : null}
+      </div>
 
-      {activeTab === "level" ? (
+      <div className={activeTab === "level" ? "block" : "hidden"}>
         <LevelExplorer
           accountId={accountId}
           maxLevel={maxLevel}
@@ -355,9 +355,9 @@ export default function ExplorerTabs({
           onToggleShowEnglish={() => setShowEnglish((prev) => !prev)}
           studyMode={studyMode}
         />
-      ) : null}
+      </div>
 
-      {activeTab === "jlpt" ? (
+      <div className={activeTab === "jlpt" ? "block" : "hidden"}>
         <JlptExplorer
           accountId={accountId}
           isActive={activeTab === "jlpt"}
@@ -366,7 +366,7 @@ export default function ExplorerTabs({
           studyMode={studyMode}
           userKanjiItems={userKanjiItems}
         />
-      ) : null}
+      </div>
     </section>
   );
 }
