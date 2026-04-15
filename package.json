@@ -10,6 +10,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:smoke:local": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 playwright test -c playwright.smoke.local.config.ts",
+    "test:smoke:build": "pnpm build && PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 playwright test -c playwright.smoke.build.config.ts",
+    "test:smoke:install": "playwright install chromium",
     "lint": "eslint",
     "loc:check": "node scripts/check-max-loc.mjs",
     "postinstall": "prisma generate",
@@ -30,6 +33,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
