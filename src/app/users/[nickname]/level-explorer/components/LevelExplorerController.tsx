@@ -17,6 +17,9 @@ import {
 } from "../lib/levelExplorerControllerEffects";
 import {
   buildLevelExplorerStorageKeys,
+  LEVEL_FILTER_ALL,
+  LEVEL_TYPE_KANJI,
+  LEVEL_TYPE_VOCABULARY,
   type JlptFilter,
   type ReviewTimingFilter,
   type TypeFilter,
@@ -55,7 +58,7 @@ export default function LevelExplorerController({
   maxLevel,
   accountPendingReviews,
   initialSnapshot,
-  initialSrsFilter = "all",
+  initialSrsFilter = LEVEL_FILTER_ALL,
   showEnglish = false,
   canToggleEnglish = false,
   onToggleShowEnglish,
@@ -67,9 +70,9 @@ export default function LevelExplorerController({
     new Map([[initialSnapshot.level, normalizeSnapshot(initialSnapshot)]]),
   );
   const [srsFilter, setSrsFilter] = useState<SrsFilter>(initialSrsFilter);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [jlptFilter, setJlptFilter] = useState<JlptFilter>("all");
-  const [reviewTimingFilter, setReviewTimingFilter] = useState<ReviewTimingFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(LEVEL_FILTER_ALL);
+  const [jlptFilter, setJlptFilter] = useState<JlptFilter>(LEVEL_FILTER_ALL);
+  const [reviewTimingFilter, setReviewTimingFilter] = useState<ReviewTimingFilter>(LEVEL_FILTER_ALL);
   const [recentOnly, setRecentOnly] = useState(false);
   const [showLocked, setShowLocked] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(
@@ -180,7 +183,7 @@ export default function LevelExplorerController({
   );
 
   const hasPrimaryRelatedPanel = selectedItem
-    ? selectedItem.subjectType === "vocabulary"
+    ? selectedItem.subjectType === LEVEL_TYPE_VOCABULARY
       ? vocabularyKanjiLinks.length > 0
       : (selectedItem.radicals?.length ?? 0) > 0
     : false;
@@ -344,8 +347,8 @@ export default function LevelExplorerController({
         markHistoryPush();
         setSelectedSubjectId(null);
         setJlptFilter(level);
-        if (level !== "all") {
-          setTypeFilterAndEnsureVisible("kanji");
+        if (level !== LEVEL_FILTER_ALL) {
+          setTypeFilterAndEnsureVisible(LEVEL_TYPE_KANJI);
         }
       }}
       onSetReviewTimingFilter={(timing) => {
