@@ -4,12 +4,6 @@ export const LEVEL_FILTER_ALL = "all" as const;
 export const LEVEL_TYPE_RADICAL = "radical" as const;
 export const LEVEL_TYPE_KANJI = "kanji" as const;
 export const LEVEL_TYPE_VOCABULARY = "vocabulary" as const;
-export const LEVEL_STATUS_APPRENTICE = "apprentice" as const;
-export const LEVEL_STATUS_GURU = "guru" as const;
-export const LEVEL_STATUS_MASTER = "master" as const;
-export const LEVEL_STATUS_ENLIGHTENED = "enlightened" as const;
-export const LEVEL_STATUS_BURNED = "burned" as const;
-export const LEVEL_STATUS_LOCKED = "locked" as const;
 
 export const LEVEL_TYPE_FILTER_ALLOWED = [
   LEVEL_FILTER_ALL,
@@ -68,17 +62,15 @@ export type TypeVisibility = {
   vocabulary: boolean;
 };
 
-export const LEVEL_SRS_FILTER_ALLOWED = [
+export const SRS_FILTER_ALLOWED: SrsFilter[] = [
   LEVEL_FILTER_ALL,
-  LEVEL_STATUS_APPRENTICE,
-  LEVEL_STATUS_GURU,
-  LEVEL_STATUS_MASTER,
-  LEVEL_STATUS_ENLIGHTENED,
-  LEVEL_STATUS_BURNED,
-  LEVEL_STATUS_LOCKED,
-] as const;
-
-export const SRS_FILTER_ALLOWED: SrsFilter[] = [...LEVEL_SRS_FILTER_ALLOWED];
+  "apprentice",
+  "guru",
+  "master",
+  "enlightened",
+  "burned",
+  "locked",
+];
 
 export const TYPE_FILTER_ALLOWED: TypeFilter[] = [...LEVEL_TYPE_FILTER_ALLOWED];
 export const JLPT_FILTER_ALLOWED: JlptFilter[] = [...LEVEL_JLPT_FILTER_ALLOWED];

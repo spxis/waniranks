@@ -1,10 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { LevelItem, Snapshot, SrsFilter } from "../../explorerTypes";
-import {
-  LEVEL_FILTER_ALL,
-  LEVEL_TYPE_KANJI,
-} from "./levelExplorerState";
+import type { LevelItem, Snapshot } from "../../explorerTypes";
 import type { JlptFilter, ReviewTimingFilter, TypeFilter } from "./levelExplorerState";
 import { itemMatchesLevelSearch } from "./levelExplorerSelectors";
 
@@ -29,7 +25,7 @@ type BuildActionsArgs = {
   setTypeFilterAndEnsureVisible: (next: TypeFilter) => void;
   setRecentOnly: Dispatch<SetStateAction<boolean>>;
   setTypeFilter: Dispatch<SetStateAction<TypeFilter>>;
-  setSrsFilter: (next: SrsFilter) => void;
+  setSrsFilter: (next: "all" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "locked") => void;
   setJlptFilter: Dispatch<SetStateAction<JlptFilter>>;
   setReviewTimingFilter: Dispatch<SetStateAction<ReviewTimingFilter>>;
 };
@@ -87,7 +83,7 @@ export function buildLevelExplorerActions({
       params.delete("findJlpt");
       const next = `${window.location.pathname}?${params.toString()}#explorer`;
       window.history.pushState(null, "", next);
-      window.dispatchEvent(new CustomEvent("wr:explorer-search-clear", { detail: { scope: LEVEL_FILTER_ALL } }));
+      window.dispatchEvent(new CustomEvent("wr:explorer-search-clear", { detail: { scope: "all" } }));
     }
 
     await ensureLevelLoaded(initialLevel);
@@ -109,10 +105,10 @@ export function buildLevelExplorerActions({
       });
     }
 
-    setTypeFilter(LEVEL_TYPE_KANJI);
-    setSrsFilter(LEVEL_FILTER_ALL);
-    setJlptFilter(LEVEL_FILTER_ALL);
-    setReviewTimingFilter(LEVEL_FILTER_ALL);
+    setTypeFilter("kanji");
+    setSrsFilter("all");
+    setJlptFilter("all");
+    setReviewTimingFilter("all");
     setSelectedSubjectId(subjectId);
   };
 
@@ -136,12 +132,12 @@ export function buildLevelExplorerActions({
     if (found?.subjectType) {
       setTypeFilterAndEnsureVisible(found.subjectType);
     } else {
-      setTypeFilter(LEVEL_FILTER_ALL);
+      setTypeFilter("all");
     }
 
-    setSrsFilter(LEVEL_FILTER_ALL);
-    setJlptFilter(LEVEL_FILTER_ALL);
-    setReviewTimingFilter(LEVEL_FILTER_ALL);
+    setSrsFilter("all");
+    setJlptFilter("all");
+    setReviewTimingFilter("all");
     setSelectedSubjectId(subjectId);
   };
 
@@ -202,10 +198,10 @@ export function buildLevelExplorerActions({
       setSelectedLevels(levelsWithMatches.size > 0 ? levelsWithMatches : new Set([initialLevel]));
       setSearchAvailableLevels(levelsWithMatches);
       setVisibleTypesAndPersist({ radical: true, kanji: true, vocabulary: true });
-      setTypeFilter(LEVEL_FILTER_ALL);
-      setSrsFilter(LEVEL_FILTER_ALL);
-      setJlptFilter(LEVEL_FILTER_ALL);
-      setReviewTimingFilter(LEVEL_FILTER_ALL);
+      setTypeFilter("all");
+      setSrsFilter("all");
+      setJlptFilter("all");
+      setReviewTimingFilter("all");
       setSelectedSubjectId(null);
       setSearchMatchedSubjectIds(new Set(matchedItems.map((item) => item.subjectId)));
 
