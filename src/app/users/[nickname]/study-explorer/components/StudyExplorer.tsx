@@ -22,16 +22,6 @@ import {
   isRecentStudyItem,
   readStoredQueue,
 } from "../lib/studyExplorerUtils";
-import {
-  STUDY_QUEUE_MODE_LESSON,
-  STUDY_SRS_FILTER_ALL,
-  STUDY_SRS_FILTERS,
-  STUDY_STATUS_APPRENTICE,
-  STUDY_STATUS_ENLIGHTENED,
-  STUDY_STATUS_GURU,
-  STUDY_STATUS_LOCKED,
-  STUDY_STATUS_MASTER,
-} from "../lib/studyExplorerConstants";
 import { useStudyExplorerStore } from "../lib/useStudyExplorerStore";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
@@ -83,31 +73,16 @@ export default function StudyExplorer({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
-  const {
-    ensureUiKey,
-    uiSlice,
-    setViewedLevelInStore,
-    setTypeFilterInStore,
-    setSrsFilterInStore,
-    setSelectedIdInStore,
-    setShowLockedInStore,
-    setRecentOnlyInStore,
-    setSearchQueryInStore,
-    setHasHydratedTypeFilterInStore,
-  } = useStudyExplorerStore(
-    (state) => ({
-      ensureUiKey: state.ensureUiKey,
-      uiSlice: state.uiByKey[uiStateKey],
-      setViewedLevelInStore: state.setViewedLevel,
-      setTypeFilterInStore: state.setTypeFilter,
-      setSrsFilterInStore: state.setSrsFilter,
-      setSelectedIdInStore: state.setSelectedId,
-      setShowLockedInStore: state.setShowLocked,
-      setRecentOnlyInStore: state.setRecentOnly,
-      setSearchQueryInStore: state.setSearchQuery,
-      setHasHydratedTypeFilterInStore: state.setHasHydratedTypeFilter,
-    }),
-  );
+  const ensureUiKey = useStudyExplorerStore((state) => state.ensureUiKey);
+  const uiSlice = useStudyExplorerStore((state) => state.uiByKey[uiStateKey]);
+  const setViewedLevelInStore = useStudyExplorerStore((state) => state.setViewedLevel);
+  const setTypeFilterInStore = useStudyExplorerStore((state) => state.setTypeFilter);
+  const setSrsFilterInStore = useStudyExplorerStore((state) => state.setSrsFilter);
+  const setSelectedIdInStore = useStudyExplorerStore((state) => state.setSelectedId);
+  const setShowLockedInStore = useStudyExplorerStore((state) => state.setShowLocked);
+  const setRecentOnlyInStore = useStudyExplorerStore((state) => state.setRecentOnly);
+  const setSearchQueryInStore = useStudyExplorerStore((state) => state.setSearchQuery);
+  const setHasHydratedTypeFilterInStore = useStudyExplorerStore((state) => state.setHasHydratedTypeFilter);
 
   useEffect(() => {
     ensureUiKey(uiStateKey);
@@ -115,7 +90,7 @@ export default function StudyExplorer({
 
   const viewedLevel = uiSlice?.viewedLevel ?? null;
   const typeFilter: StudyTypeFilter = uiSlice?.typeFilter ?? "all";
-  const srsFilter: StudySrsFilter = uiSlice?.srsFilter ?? STUDY_SRS_FILTER_ALL;
+  const srsFilter: StudySrsFilter = uiSlice?.srsFilter ?? "all";
   const selectedId = uiSlice?.selectedId ?? null;
   const showLocked = uiSlice?.showLocked ?? true;
   const recentOnly = uiSlice?.recentOnly ?? false;
@@ -165,10 +140,10 @@ export default function StudyExplorer({
   const [hiddenSubmittedAssignmentIds, setHiddenSubmittedAssignmentIds] = useState<Set<number>>(new Set());
   const [hasPendingStudySubmissions, setHasPendingStudySubmissions] = useState(false);
   const isModalOpen = selectedId !== null;
-  const effectiveSrsFilter: StudySrsFilter = queueMode === STUDY_QUEUE_MODE_LESSON ? STUDY_SRS_FILTER_ALL : srsFilter;
-  const effectiveRecentOnly = queueMode === STUDY_QUEUE_MODE_LESSON ? false : recentOnly;
-  const effectiveShowLocked = queueMode === STUDY_QUEUE_MODE_LESSON ? true : showLocked;
-  const initialPageSize = queueMode === STUDY_QUEUE_MODE_LESSON ? LESSON_API_PAGE_SIZE : REVIEW_API_PAGE_SIZE;
+  const effectiveSrsFilter: StudySrsFilter = queueMode === "lesson" ? "all" : srsFilter;
+  const effectiveRecentOnly = queueMode === "lesson" ? false : recentOnly;
+  const effectiveShowLocked = queueMode === "lesson" ? true : showLocked;
+  const initialPageSize = queueMode === "lesson" ? LESSON_API_PAGE_SIZE : REVIEW_API_PAGE_SIZE;
 
   useLayoutEffect(() => {
     const cached = readStoredQueue(accountId, queueMode);
@@ -262,7 +237,7 @@ export default function StudyExplorer({
     const countsByLevel: Record<number, number> = {};
 
     for (const item of loadedItems) {
-      if (item.queueType !== STUDY_QUEUE_MODE_LESSON) {
+      if (item.queueType !== "lesson") {
         continue;
       }
       if (effectiveRecentOnly && !isRecentStudyItem(item)) {
@@ -271,7 +246,7 @@ export default function StudyExplorer({
       if (typeFilter !== "all" && item.subjectType !== typeFilter) {
         continue;
       }
-      if (!effectiveShowLocked && item.status === STUDY_STATUS_LOCKED) {
+      if (!effectiveShowLocked && item.status === "locked") {
         continue;
       }
       if (typeof item.wkLevel !== "number") {
@@ -303,7 +278,7 @@ export default function StudyExplorer({
   }, [cachedQueueData?.levelCounts, data?.levelCounts]);
 
   const lessonLevelCounts = useMemo(() => {
-    if (queueMode !== STUDY_QUEUE_MODE_LESSON) {
+    if (queueMode !== "lesson") {
       return lessonLevelCountsFromLoaded;
     }
 
@@ -340,8 +315,8 @@ export default function StudyExplorer({
       if (effectiveRecentOnly && !isRecentStudyItem(item)) continue;
       if (item.queueType !== queueMode) continue;
       if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
-      if (effectiveSrsFilter !== STUDY_SRS_FILTER_ALL && item.status !== effectiveSrsFilter) continue;
-      if (!effectiveShowLocked && item.status === STUDY_STATUS_LOCKED) continue;
+      if (effectiveSrsFilter !== "all" && item.status !== effectiveSrsFilter) continue;
+      if (!effectiveShowLocked && item.status === "locked") continue;
 
       out.all += 1;
       if (item.subjectType === "radical") out.radical += 1;
@@ -351,36 +326,25 @@ export default function StudyExplorer({
     return out;
   }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, effectiveSrsFilter, effectiveShowLocked]);
 
-  const typeCounts = queueMode === STUDY_QUEUE_MODE_LESSON && lessonTypeCountsFromServer
+  const typeCounts = queueMode === "lesson" && lessonTypeCountsFromServer
     ? lessonTypeCountsFromServer
     : loadedTypeCounts;
 
   const srsCounts = useMemo(() => {
-    const out: Record<StudySrsFilter, number> = {
-      [STUDY_SRS_FILTER_ALL]: 0,
-      [STUDY_STATUS_LOCKED]: 0,
-      [STUDY_STATUS_APPRENTICE]: 0,
-      [STUDY_STATUS_GURU]: 0,
-      [STUDY_STATUS_MASTER]: 0,
-      [STUDY_STATUS_ENLIGHTENED]: 0,
-    };
+    const out = { all: 0, locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0 };
     for (const item of loadedItems) {
       if (effectiveRecentOnly && !isRecentStudyItem(item)) continue;
       if (item.queueType !== queueMode) continue;
       if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
       if (typeFilter !== "all" && item.subjectType !== typeFilter) continue;
-      if (!effectiveShowLocked && item.status === STUDY_STATUS_LOCKED) continue;
+      if (!effectiveShowLocked && item.status === "locked") continue;
 
-      out[STUDY_SRS_FILTER_ALL] += 1;
-      for (const status of STUDY_SRS_FILTERS) {
-        if (status === STUDY_SRS_FILTER_ALL) {
-          continue;
-        }
-        if (item.status === status) {
-          out[status] += 1;
-          break;
-        }
-      }
+      out.all += 1;
+      if (item.status === "locked") out.locked += 1;
+      if (item.status === "apprentice") out.apprentice += 1;
+      if (item.status === "guru") out.guru += 1;
+      if (item.status === "master") out.master += 1;
+      if (item.status === "enlightened") out.enlightened += 1;
     }
     return out;
   }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, typeFilter, effectiveShowLocked]);
@@ -539,7 +503,7 @@ export default function StudyExplorer({
   }, [selectedItem, hasMorePages, loadMorePage]);
 
   useEffect(() => {
-    if (queueMode !== STUDY_QUEUE_MODE_LESSON) {
+    if (queueMode !== "lesson") {
       return;
     }
     if (selectedItem || isLoadingMore || !hasMorePages) {
@@ -550,7 +514,7 @@ export default function StudyExplorer({
   }, [hasMorePages, isLoadingMore, loadMorePage, queueMode, selectedItem]);
 
   useEffect(() => {
-    if (queueMode !== STUDY_QUEUE_MODE_LESSON) {
+    if (queueMode !== "lesson") {
       return;
     }
     if (selectedItem || isLoadingMore || !hasMorePages) {

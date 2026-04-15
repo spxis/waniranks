@@ -1,13 +1,11 @@
 import { useCallback, useEffect } from "react";
 
-import type { QueueResponse, StudyCounts, StudyQueueItem, StudySrsFilter, StudyTypeFilter } from "./studyExplorerTypes";
-import { STUDY_SRS_FILTER_ALL } from "./studyExplorerConstants";
-import type { StudyQueueMode } from "./studyExplorerConstants";
+import type { QueueResponse, StudyCounts, StudyQueueItem, StudyTypeFilter } from "./studyExplorerTypes";
 import { persistQueue, readStoredQueue } from "./studyExplorerUtils";
 
 type Args = {
   accountId: string;
-  queueMode: StudyQueueMode;
+  queueMode: "review" | "lesson";
   countsStorageKey: string;
   selectedSubjectStorageKey: string;
   typeFilterStorageKey: string;
@@ -43,7 +41,9 @@ type Args = {
   setLoadMoreError: React.Dispatch<React.SetStateAction<string | null>>;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   setViewedLevel: React.Dispatch<React.SetStateAction<number | null>>;
-  setSrsFilter: React.Dispatch<React.SetStateAction<StudySrsFilter>>;
+  setSrsFilter: React.Dispatch<
+    React.SetStateAction<"all" | "locked" | "apprentice" | "guru" | "master" | "enlightened">
+  >;
   setShowLocked: React.Dispatch<React.SetStateAction<boolean>>;
   lastHandledStudyQueryRef: React.MutableRefObject<string>;
 };
@@ -273,8 +273,8 @@ export function useStudyExplorerEffects({
 
   const clearAllFilters = useCallback(() => {
     setViewedLevel(null);
-    setTypeFilter(STUDY_SRS_FILTER_ALL);
-    setSrsFilter(STUDY_SRS_FILTER_ALL);
+    setTypeFilter("all");
+    setSrsFilter("all");
     setShowLocked(true);
     setRecentOnly(false);
     setSelectedId(null);
