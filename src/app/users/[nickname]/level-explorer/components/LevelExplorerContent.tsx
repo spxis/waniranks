@@ -128,6 +128,12 @@ export default function LevelExplorerContent({
       }
 
       const key = event.key.toLowerCase();
+      if (key === "e" && canToggleEnglish) {
+        event.preventDefault();
+        onToggleShowEnglish();
+        return;
+      }
+
       if (key === " " || event.code === "Space") {
         event.preventDefault();
         if (document.activeElement instanceof HTMLElement) {

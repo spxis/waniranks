@@ -141,6 +141,41 @@ export default function StudyExplorer({
     );
   }, [accountId, counts, countsStorageKey]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key.toLowerCase() !== "e" || !canToggleEnglish) {
+        return;
+      }
+
+      event.preventDefault();
+      onToggleShowEnglish();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [canToggleEnglish, onToggleShowEnglish]);
+
   const {
     levelOptions,
     availableLevels,
