@@ -84,12 +84,70 @@ export function metricCard(label: string, value: string): JSX.Element {
   );
 }
 
-export function readingCard(label: string, value: string): JSX.Element {
+export function readingCard(label: string, value: JSX.Element): JSX.Element {
   return (
     <div className="rounded-xl border border-line bg-surface px-3 py-2">
       <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">{label}</p>
       <p className="mt-1 text-2xl font-black leading-tight text-foreground/95">{value}</p>
     </div>
+  );
+}
+
+function splitReadingSegments(reading: string): string[] {
+  const segments = reading
+    .split(/[.・]/)
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+
+  if (segments.length > 0) {
+    return segments;
+  }
+
+  const trimmed = reading.trim();
+  return trimmed ? [trimmed] : [reading];
+}
+
+function renderSegmentedReading(reading: string): JSX.Element {
+  const segments = splitReadingSegments(reading);
+
+  if (segments.length <= 1) {
+    return <>{segments[0] ?? reading}</>;
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1 align-middle">
+      {segments.map((segment, index) => (
+        <span
+          key={`${segment}-${index}`}
+          className="inline-flex items-center rounded-[0.35rem] border border-line/50 px-1.5 py-0.5 text-[0.72em] leading-none"
+        >
+          {segment}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function renderSegmentedReadingList(value: string): JSX.Element {
+  const normalized = value.trim();
+  if (!normalized || normalized === "-") {
+    return <>{value}</>;
+  }
+
+  const readings = normalized
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+
+  return (
+    <>
+      {readings.map((reading, index) => (
+        <span key={`${reading}-${index}`}>
+          {index > 0 ? <span className="text-foreground/65">, </span> : null}
+          {renderSegmentedReading(reading)}
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -99,37 +157,52 @@ function pronunciationForReading(reading: string): string | null {
     return null;
   }
 
-  const romaji = toRomaji(trimmed, { upcaseKatakana: false }).trim();
-  if (!romaji || romaji === trimmed) {
+  const normalized = trimmed.replace(/[.・]/g, "");
+  const romaji = toRomaji(normalized, { upcaseKatakana: false }).trim();
+  if (!romaji || romaji === normalized) {
     return null;
   }
 
   return romaji;
 }
 
-export function readingWithPronunciation(reading: string, showPronunciation: boolean): string {
+export function readingWithPronunciation(reading: string, showPronunciation: boolean): JSX.Element {
   if (!showPronunciation) {
-    return reading;
+    return renderSegmentedReading(reading);
   }
 
   const pronunciation = pronunciationForReading(reading);
-  return pronunciation ? `${reading} / ${pronunciation}` : reading;
+  return (
+    <span className="inline-flex items-center gap-1 align-middle">
+      {renderSegmentedReading(reading)}
+      {pronunciation ? <span className="text-base font-semibold text-foreground/70">/ {pronunciation}</span> : null}
+    </span>
+  );
 }
 
-export function readingsWithPronunciationList(value: string, showPronunciation: boolean): string {
-  if (!showPronunciation || !value || value === "-") {
-    return value;
+export function readingsWithPronunciationList(value: string, showPronunciation: boolean): JSX.Element {
+  if (!value || value === "-") {
+    return <>{value}</>;
   }
 
-  return value
+  const parts = value
     .split(",")
     .map((part) => part.trim())
-    .filter((part) => part.length > 0)
-    .map((part) => readingWithPronunciation(part, true))
-    .join(", ");
+    .filter((part) => part.length > 0);
+
+  return (
+    <>
+      {parts.map((part, index) => (
+        <span key={`${part}-${index}`}>
+          {index > 0 ? <span className="text-foreground/65">, </span> : null}
+          {readingWithPronunciation(part, showPronunciation)}
+        </span>
+      ))}
+    </>
+  );
 }
 
-export function readingDualScriptCard(label: string, hiraganaValue: string, katakanaValue: string): JSX.Element {
+export function readingDualScriptCard(label: string, hiraganaValue: JSX.Element, katakanaValue: JSX.Element): JSX.Element {
   return (
     <div className="rounded-xl border border-line bg-surface px-3 py-2">
       <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">{label}</p>
