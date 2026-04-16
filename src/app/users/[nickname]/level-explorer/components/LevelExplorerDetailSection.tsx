@@ -165,32 +165,32 @@ export default function LevelExplorerDetailSection({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {canShowReadings ? (
-          <>
-            <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-              <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
-              <p className="mt-1 font-semibold text-foreground/90">
-                {selectedItem.subjectType === "radical" ? (
-                  "Not applicable"
-                ) : (
-                  <ReadingListWithPronunciation readings={selectedItem.primaryReadings ?? []} mode={showEnglish ? "inline" : "plain"} />
-                )}
-              </p>
-            </div>
-            <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
-              <p className="text-xs font-bold uppercase text-foreground/70">Secondary readings</p>
-              <p className="mt-1 font-semibold text-foreground/90">
-                {selectedItem.subjectType === "radical" ? (
-                  "Not applicable"
-                ) : (
-                  <ReadingListWithPronunciation readings={secondaryReadingsForDisplay(selectedItem)} mode={showEnglish ? "inline" : "plain"} />
-                )}
-              </p>
-            </div>
-          </>
-        ) : null}
+      {canShowReadings ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+            <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
+            <p className="mt-1 font-semibold text-foreground/90">
+              {selectedItem.subjectType === "radical" ? (
+                "Not applicable"
+              ) : (
+                <ReadingListWithPronunciation readings={selectedItem.primaryReadings ?? []} mode={showEnglish ? "inline" : "plain"} />
+              )}
+            </p>
+          </div>
+          <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
+            <p className="text-xs font-bold uppercase text-foreground/70">Secondary readings</p>
+            <p className="mt-1 font-semibold text-foreground/90">
+              {selectedItem.subjectType === "radical" ? (
+                "Not applicable"
+              ) : (
+                <ReadingListWithPronunciation readings={secondaryReadingsForDisplay(selectedItem)} mode={showEnglish ? "inline" : "plain"} />
+              )}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
+      <div className={`${canShowReadings ? "mt-3" : "mt-4"} grid gap-3 sm:grid-cols-2 lg:grid-cols-3`}>
         <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
           <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
           <p className="mt-1 font-semibold text-foreground/90">

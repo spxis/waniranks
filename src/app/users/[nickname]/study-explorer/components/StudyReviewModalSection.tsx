@@ -122,7 +122,13 @@ export default function StudyReviewModalSection({
         ...selectedItem,
         radicals: sanitizedRelatedItems(selectedItem.radicals as RelatedReference[] | undefined),
         visuallySimilar: sanitizedRelatedItems(selectedItem.visuallySimilar as RelatedReference[] | undefined),
-        usedInVocabulary: sanitizedRelatedItems(selectedItem.usedInVocabulary as RelatedReference[] | undefined),
+        usedInVocabulary: sanitizedRelatedItems(
+          (selectedItem.usedInVocabulary as RelatedReference[] | undefined)?.length
+            ? (selectedItem.usedInVocabulary as RelatedReference[] | undefined)
+            : selectedItem.subjectType === "radical"
+              ? (selectedItem.componentKanji as RelatedReference[] | undefined)
+              : (selectedItem.usedInVocabulary as RelatedReference[] | undefined),
+        ),
         componentKanji: sanitizedRelatedItems(selectedItem.componentKanji as RelatedReference[] | undefined),
       }
     : selectedItem;

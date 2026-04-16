@@ -207,7 +207,10 @@ export default function StudyReviewModal({
 
   const hasRadicals = hasRenderableRelatedItems(selectedItem.radicals as RelatedReference[] | undefined);
   const hasVisuallySimilar = hasRenderableRelatedItems(selectedItem.visuallySimilar as RelatedReference[] | undefined);
-  const hasUsedInVocabulary = hasRenderableRelatedItems(selectedItem.usedInVocabulary as RelatedReference[] | undefined);
+  const hasUsedInVocabulary =
+    hasRenderableRelatedItems(selectedItem.usedInVocabulary as RelatedReference[] | undefined) ||
+    (selectedItem.subjectType === "radical" &&
+      hasRenderableRelatedItems(selectedItem.componentKanji as RelatedReference[] | undefined));
   const hasComponentKanji = hasRenderableRelatedItems(selectedItem.componentKanji as RelatedReference[] | undefined);
 
   const jlptOnReadings = selectedItem.jlptMeta?.onReadings ?? [];
