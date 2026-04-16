@@ -107,6 +107,63 @@ export default function LevelExplorerContent({
   const isPeekRevealed = studyMode && selectedItem !== null && peekSubjectId === selectedItem.subjectId;
 
   useEffect(() => {
+    if (!selectedItem) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      const isPrev = key === "l" || event.key === "ArrowLeft";
+      const isNext = key === "r" || event.key === "ArrowRight";
+      if (!isPrev && !isNext) {
+        return;
+      }
+
+      const currentIndex = filteredItems.findIndex((item) => item.subjectId === selectedItem.subjectId);
+      if (currentIndex < 0) {
+        return;
+      }
+
+      const nextIndex = isNext
+        ? Math.min(filteredItems.length - 1, currentIndex + 1)
+        : Math.max(0, currentIndex - 1);
+      if (nextIndex === currentIndex) {
+        return;
+      }
+
+      const nextItem = filteredItems[nextIndex];
+      if (!nextItem) {
+        return;
+      }
+
+      event.preventDefault();
+      onMarkHistoryPush();
+      onSetSelectedSubjectId(nextItem.subjectId);
+      setPeekSubjectId(null);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filteredItems, onMarkHistoryPush, onSetSelectedSubjectId, selectedItem]);
+
+  useEffect(() => {
     if (!studyMode || !selectedItem) {
       setPeekSubjectId(null);
       return;
