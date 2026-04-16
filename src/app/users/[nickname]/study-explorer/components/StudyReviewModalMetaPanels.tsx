@@ -24,6 +24,7 @@ type Props = {
   isSubmittingSelected: boolean;
   detailsRevealed: boolean;
   useStudyFlashLayout: boolean;
+  suppressDetails?: boolean;
   requiresReveal: boolean;
   isAnswerRevealed: boolean;
   isOutcomeFinal: boolean;
@@ -59,6 +60,7 @@ export default function StudyReviewModalMetaPanels({
   isSubmittingSelected,
   detailsRevealed,
   useStudyFlashLayout,
+  suppressDetails = false,
   requiresReveal,
   isAnswerRevealed,
   isOutcomeFinal,
@@ -93,7 +95,7 @@ export default function StudyReviewModalMetaPanels({
 
   return (
     <>
-      {(!studyMode && viewerMode === "flash") || useStudyFlashLayout ? null : detailsRevealed ? (
+      {!suppressDetails && ((!studyMode && viewerMode === "flash") || useStudyFlashLayout ? null : detailsRevealed ? (
         <>
           <div className="mt-3 grid gap-2 lg:grid-cols-2">
             {readingDualScriptCard(
@@ -234,7 +236,7 @@ export default function StudyReviewModalMetaPanels({
             />
           </div>
         </>
-      ) : null}
+      ) : null)}
 
       {selectedItem.queueType === "review" && studyMode && (!requiresReveal || isAnswerRevealed) && !useStudyFlashLayout && !isOutcomeFinal ? (
         <div className="mt-auto grid w-full grid-cols-2 gap-2 pt-3">

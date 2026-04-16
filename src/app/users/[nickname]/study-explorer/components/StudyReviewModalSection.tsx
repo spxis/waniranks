@@ -1,11 +1,14 @@
 import type { StudyQueueItem, SubmitInFlight } from "../lib/studyExplorerTypes";
 
 import type { RelatedReference } from "./StudyReviewModal.types";
+import type { LevelItem } from "../../explorerTypes";
 import LevelExplorerReviewStatsCard from "../../level-explorer/components/LevelExplorerReviewStatsCard";
+import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
 import {
   glyphTextSizeClass,
   jlptLevelPillClass,
   shortSubjectTypeLabel,
+  stripHtml,
   statusClass,
   statusShortLabel,
   subjectTypePillClass,
@@ -101,6 +104,28 @@ export default function StudyReviewModalSection({
   onToggleUsedInWordsCollapsed,
 }: Props) {
   const showStatusChip = !(selectedItem.queueType === "lesson" && selectedItem.status === "locked");
+  const shouldUseUnifiedLessonDetail =
+    selectedItem.queueType === "lesson" &&
+    viewerMode === "detail" &&
+    !useStudyFlashLayout &&
+    detailsRevealed;
+
+  const selectedMeaningExplanation = stripHtml(selectedItem.meaningExplanation) || "-";
+  const selectedReadingExplanationRaw = stripHtml(selectedItem.readingExplanation);
+  const showReadingExplanation = selectedReadingExplanationRaw.length > 0;
+
+  const sanitizedRelatedItems = (items: RelatedReference[] | undefined) =>
+    (items ?? []).map((item) => ({ ...item, wkLevel: null }));
+
+  const unifiedDetailItem: StudyQueueItem = shouldUseUnifiedLessonDetail
+    ? {
+        ...selectedItem,
+        radicals: sanitizedRelatedItems(selectedItem.radicals as RelatedReference[] | undefined),
+        visuallySimilar: sanitizedRelatedItems(selectedItem.visuallySimilar as RelatedReference[] | undefined),
+        usedInVocabulary: sanitizedRelatedItems(selectedItem.usedInVocabulary as RelatedReference[] | undefined),
+        componentKanji: sanitizedRelatedItems(selectedItem.componentKanji as RelatedReference[] | undefined),
+      }
+    : selectedItem;
 
   return (
     <>
@@ -303,31 +328,50 @@ export default function StudyReviewModalSection({
             </button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-start">
-            <div className={`inline-flex min-h-[5.75rem] min-w-[5.75rem] items-center justify-center rounded-2xl border px-4 py-3 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
-              <p className={`text-center font-black leading-none ${glyphTextSizeClass(selectedItem.characters)}`}>{selectedItem.characters}</p>
-            </div>
-            <div>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                <div className="min-w-0">
-                  <p className="text-3xl font-black text-foreground">{detailsRevealed ? (allMeanings[0] ?? selectedItem.characters) : "???"}</p>
-                  {detailsRevealed && allMeanings.length > 1 ? <p className="mt-1 hidden text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:block">Alt meanings: {allMeanings.slice(1).join(" • ")}</p> : null}
-                </div>
-                <div className="flex flex-nowrap justify-self-end gap-1">
-                  <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
-                  {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                  {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
-                  {showStatusChip ? <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(selectedItem.status)}`}>{statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}</span> : null}
-                </div>
+          shouldUseUnifiedLessonDetail ? (
+            <LevelExplorerDetailSection
+              accountId={accountId}
+              selectedItem={unifiedDetailItem}
+              showEnglish={showEnglish}
+              studyMode={false}
+              selectedMeaningExplanation={selectedMeaningExplanation}
+              selectedReadingExplanationRaw={selectedReadingExplanationRaw}
+              showReadingExplanation={showReadingExplanation}
+              hasPrimaryRelatedPanel={hasRadicals}
+              hasVisuallySimilarPanel={hasVisuallySimilar}
+              hasUsedInVocabularyPanel={hasUsedInVocabulary}
+              vocabularyKanjiLinks={[]}
+              subjectById={new Map<number, LevelItem>()}
+              onJumpToRelatedSubject={async () => {}}
+              onJumpToKanji={async () => {}}
+            />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-start">
+              <div className={`inline-flex min-h-[5.75rem] min-w-[5.75rem] items-center justify-center rounded-2xl border px-4 py-3 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
+                <p className={`text-center font-black leading-none ${glyphTextSizeClass(selectedItem.characters)}`}>{selectedItem.characters}</p>
               </div>
-              {detailsRevealed && allMeanings.length > 1 ? (
-                <div className="mt-2 rounded-xl border border-line bg-surface px-3 py-2 sm:hidden">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Alt meanings</p>
-                  <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/80">{allMeanings.slice(1).join(" • ")}</p>
+              <div>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                  <div className="min-w-0">
+                    <p className="text-3xl font-black text-foreground">{detailsRevealed ? (allMeanings[0] ?? selectedItem.characters) : "???"}</p>
+                    {detailsRevealed && allMeanings.length > 1 ? <p className="mt-1 hidden text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:block">Alt meanings: {allMeanings.slice(1).join(" • ")}</p> : null}
+                  </div>
+                  <div className="flex flex-nowrap justify-self-end gap-1">
+                    <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
+                    {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
+                    {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
+                    {showStatusChip ? <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(selectedItem.status)}`}>{statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}</span> : null}
+                  </div>
                 </div>
-              ) : null}
+                {detailsRevealed && allMeanings.length > 1 ? (
+                  <div className="mt-2 rounded-xl border border-line bg-surface px-3 py-2 sm:hidden">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Alt meanings</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/80">{allMeanings.slice(1).join(" • ")}</p>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
+          )
         )}
       </section>
 
@@ -341,6 +385,7 @@ export default function StudyReviewModalSection({
         isSubmittingSelected={isSubmittingSelected}
         detailsRevealed={detailsRevealed}
         useStudyFlashLayout={useStudyFlashLayout}
+        suppressDetails={shouldUseUnifiedLessonDetail}
         requiresReveal={requiresReveal}
         isAnswerRevealed={isAnswerRevealed}
         isOutcomeFinal={isOutcomeFinal}
