@@ -275,6 +275,16 @@ export default function StudyReviewModal({
                 </button>
               </div>
             ) : null}
+            {viewerMode === "detail" ? (
+              <button
+                type="button"
+                onClick={onToggleShowEnglish}
+                disabled={!canToggleEnglish}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+              </button>
+            ) : null}
           </div>
           <div className="flex items-center gap-2 sm:justify-self-end">
             <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Prev {prevLabel ?? "-"}</button>
