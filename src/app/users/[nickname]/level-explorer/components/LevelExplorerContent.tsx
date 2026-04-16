@@ -128,9 +128,18 @@ export default function LevelExplorerContent({
       }
 
       const key = event.key.toLowerCase();
-      const isPrev = key === "l" || event.key === "ArrowLeft";
-      const isNext = key === "r" || event.key === "ArrowRight";
-      if (!isPrev && !isNext) {
+      const columns = Math.max(1, gridColumns);
+      const delta =
+        key === "l" || key === "a" || event.key === "ArrowLeft"
+          ? -1
+          : key === "r" || key === "d" || event.key === "ArrowRight"
+            ? 1
+            : key === "w" || event.key === "ArrowUp"
+              ? -columns
+              : key === "s" || event.key === "ArrowDown"
+                ? columns
+                : null;
+      if (delta === null) {
         return;
       }
 
@@ -139,9 +148,10 @@ export default function LevelExplorerContent({
         return;
       }
 
-      const nextIndex = isNext
-        ? Math.min(filteredItems.length - 1, currentIndex + 1)
-        : Math.max(0, currentIndex - 1);
+      const nextIndex = currentIndex + delta;
+      if (nextIndex < 0 || nextIndex >= filteredItems.length) {
+        return;
+      }
       if (nextIndex === currentIndex) {
         return;
       }
@@ -151,8 +161,8 @@ export default function LevelExplorerContent({
         return;
       }
 
-      const currentRow = Math.floor(currentIndex / Math.max(1, gridColumns));
-      const nextRow = Math.floor(nextIndex / Math.max(1, gridColumns));
+      const currentRow = Math.floor(currentIndex / columns);
+      const nextRow = Math.floor(nextIndex / columns);
       const movedToDifferentRow = currentRow !== nextRow;
 
       event.preventDefault();
