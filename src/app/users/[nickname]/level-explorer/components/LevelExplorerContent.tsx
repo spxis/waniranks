@@ -128,6 +128,17 @@ export default function LevelExplorerContent({
       }
 
       const key = event.key.toLowerCase();
+      if (key === " " || event.code === "Space") {
+        event.preventDefault();
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        onMarkHistoryPush();
+        onSetSelectedSubjectId(null);
+        setPeekSubjectId(null);
+        return;
+      }
+
       if (key === "escape") {
         event.preventDefault();
         if (document.activeElement instanceof HTMLElement) {
