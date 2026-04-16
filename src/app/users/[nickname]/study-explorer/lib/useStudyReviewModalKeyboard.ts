@@ -50,6 +50,10 @@ export function useStudyReviewModalKeyboard({
       const isOutcomeFinal = selectedOutcome === "correct" || selectedOutcome === "wrong";
       const key = event.key;
       const lowerKey = key.toLowerCase();
+      const isPrevNav =
+        key === "ArrowLeft" || key === "ArrowUp" || lowerKey === "a" || lowerKey === "w" || (key === "Enter" && event.shiftKey);
+      const isNextNav =
+        key === "ArrowRight" || key === "ArrowDown" || lowerKey === "d" || lowerKey === "s" || (key === "Enter" && !event.shiftKey);
 
       if (!studyMode && viewerMode === "flash" && !flashRevealed && key === "Enter" && !event.shiftKey) {
         event.preventDefault();
@@ -59,16 +63,9 @@ export function useStudyReviewModalKeyboard({
 
       if (
         key === "Escape" ||
-        key === "ArrowLeft" ||
-        key === "ArrowRight" ||
-        key === "ArrowUp" ||
-        key === "ArrowDown" ||
+        isPrevNav ||
+        isNextNav ||
         key === " " ||
-        key === "Enter" ||
-        lowerKey === "a" ||
-        lowerKey === "w" ||
-        lowerKey === "s" ||
-        lowerKey === "d" ||
         lowerKey === "j" ||
         lowerKey === "k" ||
         key === "1" ||
@@ -78,9 +75,8 @@ export function useStudyReviewModalKeyboard({
       }
 
       if (key === "Escape") return onCloseModal();
-      if ((key === "ArrowLeft" || key === "a" || key === "A" || key === "ArrowUp" || key === "w" || key === "W" || (key === "Enter" && event.shiftKey)) && hasPrev) return onGoPrev();
-      if ((key === "ArrowRight" || key === "ArrowDown" || key === "d" || key === "D" || (key === "Enter" && !event.shiftKey)) && (hasNext || canUseFlashCycleNext)) return onAdvanceFlashOrNext();
-      if ((key === "s" || key === "S") && hasNext) return onGoNextItem();
+      if (isPrevNav && hasPrev) return onGoPrev();
+      if (isNextNav && (hasNext || canUseFlashCycleNext)) return onAdvanceFlashOrNext();
 
       if (key === " ") {
         if (!studyMode && viewerMode === "flash" && !flashRevealed && !event.shiftKey) {
