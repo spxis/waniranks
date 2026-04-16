@@ -30,6 +30,9 @@ type Props = {
   accountId: string;
   selectedItem: LevelItem;
   showEnglish: boolean;
+  canToggleEnglish?: boolean;
+  onToggleShowEnglish?: (() => void) | null;
+  hideTimeStats?: boolean;
   studyMode: boolean;
   revealStudyReading?: boolean;
   onTogglePeek?: (() => void) | null;
@@ -49,6 +52,9 @@ export default function LevelExplorerDetailSection({
   accountId,
   selectedItem,
   showEnglish,
+  canToggleEnglish = true,
+  onToggleShowEnglish = null,
+  hideTimeStats = false,
   studyMode,
   revealStudyReading = false,
   onTogglePeek = null,
@@ -149,6 +155,18 @@ export default function LevelExplorerDetailSection({
               </button>
             </div>
           ) : null}
+          {!studyMode && onToggleShowEnglish ? (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={onToggleShowEnglish}
+                disabled={!canToggleEnglish}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+              </button>
+            </div>
+          ) : null}
           <div className="mt-2 min-w-0">
             {studyMode && isStudyHidden ? (
               <>
@@ -190,7 +208,8 @@ export default function LevelExplorerDetailSection({
         </div>
       ) : null}
 
-      <div className={`${canShowReadings ? "mt-3" : "mt-4"} grid gap-3 sm:grid-cols-2 lg:grid-cols-3`}>
+      {!hideTimeStats ? (
+        <div className={`${canShowReadings ? "mt-3" : "mt-4"} grid gap-3 sm:grid-cols-2 lg:grid-cols-3`}>
         <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
           <p className="text-xs font-bold uppercase text-foreground/70">Started</p>
           <p className="mt-1 font-semibold text-foreground/90">
@@ -209,7 +228,8 @@ export default function LevelExplorerDetailSection({
             {formatRelativeFromNow(selectedItem.passedAt) ? ` (${formatRelativeFromNow(selectedItem.passedAt)})` : ""}
           </p>
         </div>
-      </div>
+        </div>
+      ) : null}
 
       {!studyMode || revealStudyReading ? (
         <div className={`mt-4 grid gap-3 ${showReadingExplanation ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>

@@ -9,6 +9,7 @@ import type {
 type Props = {
   accountId: string;
   showEnglish: boolean;
+  canToggleEnglish: boolean;
   isUnauthorized: boolean;
   studyMode: boolean;
   selectedItem: StudyQueueItem | null;
@@ -27,6 +28,7 @@ type Props = {
   onSetSelectedId: React.Dispatch<React.SetStateAction<number | null>>;
   onSetRevealedAssignmentIds: React.Dispatch<React.SetStateAction<Set<number>>>;
   onClose: () => void;
+  onToggleShowEnglish: () => void;
   onSubmit: (assignmentId: number, result: "correct" | "wrong") => Promise<void>;
   onStartLesson: (assignmentId: number) => Promise<void>;
 };
@@ -34,6 +36,7 @@ type Props = {
 export default function StudyExplorerModal({
   accountId,
   showEnglish,
+  canToggleEnglish,
   isUnauthorized,
   studyMode,
   selectedItem,
@@ -52,6 +55,7 @@ export default function StudyExplorerModal({
   onSetSelectedId,
   onSetRevealedAssignmentIds,
   onClose,
+  onToggleShowEnglish,
   onSubmit,
   onStartLesson,
 }: Props) {
@@ -63,6 +67,7 @@ export default function StudyExplorerModal({
     <StudyReviewModal
       accountId={accountId}
       showEnglish={showEnglish}
+      canToggleEnglish={canToggleEnglish}
       studyMode={studyMode}
       selectedItem={selectedItem}
       selectedIndex={selectedIndex}
@@ -86,6 +91,7 @@ export default function StudyExplorerModal({
         });
       }}
       onClose={onClose}
+      onToggleShowEnglish={onToggleShowEnglish}
       onPrev={
         prevItem
           ? () => {

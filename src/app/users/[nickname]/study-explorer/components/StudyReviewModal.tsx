@@ -11,6 +11,7 @@ import { useStudyReviewModalKeyboard } from "../lib/useStudyReviewModalKeyboard"
 export default function StudyReviewModal({
   accountId,
   showEnglish,
+  canToggleEnglish,
   studyMode,
   selectedItem,
   selectedIndex,
@@ -25,6 +26,7 @@ export default function StudyReviewModal({
   reviewOutcomeByAssignmentId,
   onMarkSkipped,
   onClose,
+  onToggleShowEnglish,
   onPrev,
   onNext,
   onRestartFromBeginning,
@@ -287,6 +289,7 @@ export default function StudyReviewModal({
             accountId={accountId}
             studyMode={studyMode}
             showEnglish={showEnglish}
+            canToggleEnglish={canToggleEnglish}
             viewerMode={viewerMode}
             selectedItem={selectedItem}
             selectedOutcome={selectedOutcome}
@@ -329,6 +332,7 @@ export default function StudyReviewModal({
             onToggleUsedInWordsCollapsed={() => {
               setUsedInWordsCollapsed((prev) => !prev);
             }}
+            onToggleShowEnglish={onToggleShowEnglish}
           />
         </div>
 

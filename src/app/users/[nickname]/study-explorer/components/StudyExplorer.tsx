@@ -418,6 +418,7 @@ export default function StudyExplorer({
       <StudyExplorerModal
         accountId={accountId}
         showEnglish={showEnglish}
+        canToggleEnglish={canToggleEnglish}
         isUnauthorized={isUnauthorized}
         studyMode={studyMode}
         selectedItem={selectedItem}
@@ -436,6 +437,7 @@ export default function StudyExplorer({
         onSetSelectedId={setSelectedId}
         onSetRevealedAssignmentIds={setRevealedAssignmentIds}
         onClose={closeReviewSession}
+        onToggleShowEnglish={onToggleShowEnglish}
         onSubmit={submitReview}
         onStartLesson={submitLessonStart}
       />

@@ -16,6 +16,7 @@ export type RelatedReference = {
 export type StudyReviewModalProps = {
   accountId: string;
   showEnglish: boolean;
+  canToggleEnglish: boolean;
   studyMode: boolean;
   selectedItem: StudyQueueItem | null;
   selectedIndex: number;
@@ -30,6 +31,7 @@ export type StudyReviewModalProps = {
   reviewOutcomeByAssignmentId: Record<number, ReviewOutcome>;
   onMarkSkipped: (assignmentId: number) => void;
   onClose: () => void;
+  onToggleShowEnglish: () => void;
   onPrev: (() => void) | null;
   onNext: (() => void) | null;
   onRestartFromBeginning: (() => void) | null;

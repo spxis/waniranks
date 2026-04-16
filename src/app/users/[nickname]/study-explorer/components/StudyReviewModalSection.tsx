@@ -20,6 +20,7 @@ type Props = {
   accountId: string;
   studyMode: boolean;
   showEnglish: boolean;
+  canToggleEnglish: boolean;
   viewerMode: "detail" | "flash";
   selectedItem: StudyQueueItem;
   selectedOutcome: "correct" | "wrong" | "skipped" | "lesson-started" | undefined;
@@ -58,12 +59,14 @@ type Props = {
   onSetFlashRevealKey: (value: string) => void;
   onToggleUsedKanjiCollapsed: () => void;
   onToggleUsedInWordsCollapsed: () => void;
+  onToggleShowEnglish: () => void;
 };
 
 export default function StudyReviewModalSection({
   accountId,
   studyMode,
   showEnglish,
+  canToggleEnglish,
   viewerMode,
   selectedItem,
   selectedOutcome,
@@ -102,6 +105,7 @@ export default function StudyReviewModalSection({
   onSetFlashRevealKey,
   onToggleUsedKanjiCollapsed,
   onToggleUsedInWordsCollapsed,
+  onToggleShowEnglish,
 }: Props) {
   const showStatusChip = !(selectedItem.queueType === "lesson" && selectedItem.status === "locked");
   const shouldUseUnifiedLessonDetail =
@@ -339,6 +343,9 @@ export default function StudyReviewModalSection({
               accountId={accountId}
               selectedItem={unifiedDetailItem}
               showEnglish={showEnglish}
+              canToggleEnglish={canToggleEnglish}
+              onToggleShowEnglish={onToggleShowEnglish}
+              hideTimeStats
               studyMode={false}
               selectedMeaningExplanation={selectedMeaningExplanation}
               selectedReadingExplanationRaw={selectedReadingExplanationRaw}
