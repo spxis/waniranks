@@ -143,6 +143,7 @@ export default function LevelExplorerItemsGrid({
           <Fragment key={`${item.subjectType}-${item.subjectId}`}>
             <UnifiedExplorerCard
               onClick={() => onSelectItem(item.subjectId)}
+              dataSubjectId={item.subjectId}
               className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
                 item.subjectType,
                 selectedItem?.subjectId === item.subjectId,

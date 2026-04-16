@@ -6,6 +6,7 @@ type Props = {
   indexLabel: string;
   topRight: ReactNode;
   glyphClassName: string;
+  dataSubjectId?: number; // Added optional dataSubjectId
   glyphText: string;
   glyphTextClassName: string;
   glyphSubtitle?: ReactNode;
@@ -20,6 +21,7 @@ export default function UnifiedExplorerCard({
   indexLabel,
   topRight,
   glyphClassName,
+  dataSubjectId, // Destructured dataSubjectId
   glyphText,
   glyphTextClassName,
   glyphSubtitle,
@@ -31,6 +33,7 @@ export default function UnifiedExplorerCard({
     <button
       type="button"
       onClick={onClick}
+      data-explorer-card-subject-id={dataSubjectId} // Added data-explorer-card-subject-id attribute
       className={`${className} focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70`}
     >
       <div className="flex min-h-[2.35rem] items-start justify-between gap-2">

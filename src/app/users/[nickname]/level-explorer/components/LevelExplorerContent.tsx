@@ -151,6 +151,10 @@ export default function LevelExplorerContent({
         return;
       }
 
+      const currentRow = Math.floor(currentIndex / Math.max(1, gridColumns));
+      const nextRow = Math.floor(nextIndex / Math.max(1, gridColumns));
+      const movedToDifferentRow = currentRow !== nextRow;
+
       event.preventDefault();
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
@@ -158,13 +162,28 @@ export default function LevelExplorerContent({
       onMarkHistoryPush();
       onSetSelectedSubjectId(nextItem.subjectId);
       setPeekSubjectId(null);
+
+      if (movedToDifferentRow) {
+        window.requestAnimationFrame(() => {
+          const nextCard = document.querySelector<HTMLElement>(
+            `[data-explorer-card-subject-id="${nextItem.subjectId}"]`,
+          );
+          if (!nextCard) {
+            return;
+          }
+
+          const topOffset = 112;
+          const targetTop = window.scrollY + nextCard.getBoundingClientRect().top - topOffset;
+          window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+        });
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [filteredItems, onMarkHistoryPush, onSetSelectedSubjectId, selectedItem]);
+  }, [filteredItems, gridColumns, onMarkHistoryPush, onSetSelectedSubjectId, selectedItem]);
 
   useEffect(() => {
     if (!studyMode || !selectedItem) {
