@@ -1,4 +1,4 @@
-import type { StudyQueueItem, SubmitInFlight } from "../lib/studyExplorerTypes";
+import type { ReviewOutcome, StudyQueueItem, SubmitInFlight } from "../lib/studyExplorerTypes";
 
 import type { RelatedReference } from "./StudyReviewModal.types";
 import type { LevelItem } from "../../explorerTypes";
@@ -23,7 +23,7 @@ type Props = {
   canToggleEnglish: boolean;
   viewerMode: "detail" | "flash";
   selectedItem: StudyQueueItem;
-  selectedOutcome: "correct" | "wrong" | "skipped" | "lesson-started" | undefined;
+  selectedOutcome: ReviewOutcome | undefined;
   isSubmittingSelected: boolean;
   submitInFlight: SubmitInFlight | null;
   submitFeedback: { kind: "success" | "error"; message: string } | null;

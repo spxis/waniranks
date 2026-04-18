@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
@@ -49,7 +50,7 @@ export async function POST(request: Request, context: RouteContext) {
     for (let attempt = 0; attempt < 8 && !chosenCode; attempt += 1) {
       const candidate = generateInviteCode();
       const existing = await prisma.account.findFirst({
-        where: { inviteCodeHash: hashInviteCode(candidate) },
+        where: ({ inviteCodeHash: hashInviteCode(candidate) } as unknown) as Prisma.AccountWhereInput,
         select: { id: true },
       });
       if (!existing) {
@@ -66,10 +67,10 @@ export async function POST(request: Request, context: RouteContext) {
 
     const chosenHash = hashInviteCode(chosenCode);
     const existingForCode = await prisma.account.findFirst({
-      where: {
+      where: ({
         inviteCodeHash: chosenHash,
         NOT: { id },
-      },
+      } as unknown) as Prisma.AccountWhereInput,
       select: { id: true },
     });
     if (existingForCode) {
@@ -78,10 +79,10 @@ export async function POST(request: Request, context: RouteContext) {
 
     await prisma.account.update({
       where: { id },
-      data: {
+      data: ({
         inviteCodeHash: chosenHash,
         inviteCodeUpdatedAt: new Date(),
-      },
+      } as unknown) as Prisma.AccountUpdateInput,
     });
 
     return NextResponse.json({ ok: true, inviteCode: chosenCode });
@@ -105,10 +106,10 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     await prisma.account.update({
       where: { id },
-      data: {
+      data: ({
         inviteCodeHash: null,
         inviteCodeUpdatedAt: null,
-      },
+      } as unknown) as Prisma.AccountUpdateInput,
     });
 
     return NextResponse.json({ ok: true });

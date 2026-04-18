@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { hashInviteCode, isValidInviteCodeShape, normalizeInviteCode } from "@/lib/inviteCode";
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
 
     const inviteCodeHash = hashInviteCode(normalized);
     const account = await prisma.account.findFirst({
-      where: { inviteCodeHash },
+      where: ({ inviteCodeHash } as unknown) as Prisma.AccountWhereInput,
       select: {
         id: true,
         nickname: true,

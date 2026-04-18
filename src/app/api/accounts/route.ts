@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { saveAccountFromToken } from "@/lib/accountUpsert";
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
     let accounts;
 
     try {
-      accounts = await prisma.account.findMany({
+      accounts = await prisma.account.findMany(({
         orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
         select: {
           id: true,
@@ -83,7 +84,7 @@ export async function GET(request: Request) {
           inviteCodeUpdatedAt: true,
           createdAt: true,
         },
-      });
+      } as unknown) as Prisma.AccountFindManyArgs);
     } catch (error) {
       // Fallback for environments where new invite-code columns are not yet migrated.
       const fallbackAccounts = await prisma.account.findMany({
