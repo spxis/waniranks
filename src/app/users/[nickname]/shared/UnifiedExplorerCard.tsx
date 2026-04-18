@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 type Props = {
-  onClick: () => void;
+  onClick: (meta?: { shiftKey: boolean }) => void;
   className: string;
   indexLabel: ReactNode;
   topRight: ReactNode;
@@ -32,7 +32,7 @@ export default function UnifiedExplorerCard({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => onClick({ shiftKey: event.shiftKey })}
       data-explorer-card-subject-id={dataSubjectId} // Added data-explorer-card-subject-id attribute
       className={`${className} focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70`}
     >

@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  badgeClass,
-  disabledBadgeClass,
-  formatNumber,
-  srsFilterButtonLabel,
-} from "../lib/levelExplorerDisplay";
+import { badgeClass, disabledBadgeClass, formatNumber, srsFilterButtonLabel } from "../lib/levelExplorerDisplay";
 import { useLevelExplorerResetSelection } from "../lib/useLevelExplorerResetSelection";
 import SubjectTypeFilterGroup from "../../shared/SubjectTypeFilterGroup";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
@@ -233,6 +228,7 @@ export default function LevelExplorerContent({
     isResetting,
     resetFeedback,
     toggleSubjectSelection,
+    selectSubjectIds,
     selectVisibleSubjects,
     clearSelection,
     resetSelected,
@@ -485,6 +481,7 @@ export default function LevelExplorerContent({
           onSetShowLocked={onSetShowLocked}
           onToggleShowEnglish={onToggleShowEnglish}
           onToggleSubjectSelection={toggleSubjectSelection}
+          onSelectSubjectIds={selectSubjectIds}
           onSelectVisibleSubjects={selectVisibleSubjects}
           onClearSelection={clearSelection}
           onResetSelected={resetSelected}

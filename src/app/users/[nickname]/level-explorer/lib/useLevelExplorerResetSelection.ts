@@ -106,6 +106,20 @@ export function useLevelExplorerResetSelection({
     });
   }, []);
 
+  const selectSubjectIds = useCallback((subjectIds: number[]) => {
+    if (subjectIds.length === 0) {
+      return;
+    }
+
+    setSelectedSubjectIds((prev) => {
+      const next = new Set(prev);
+      for (const subjectId of subjectIds) {
+        next.add(subjectId);
+      }
+      return next;
+    });
+  }, []);
+
   const selectVisibleSubjects = useCallback(() => {
     setSelectedSubjectIds((prev) => {
       const next = new Set(prev);
@@ -142,6 +156,7 @@ export function useLevelExplorerResetSelection({
     isResetting,
     resetFeedback,
     toggleSubjectSelection,
+    selectSubjectIds,
     selectVisibleSubjects,
     clearSelection,
     resetSelected,

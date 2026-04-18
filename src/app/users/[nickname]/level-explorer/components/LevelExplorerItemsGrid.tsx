@@ -3,24 +3,7 @@ import { Fragment, useMemo, useState } from "react";
 import type { LevelItem } from "../../explorerTypes";
 import ExplorerConfirmDialog from "../../shared/ExplorerConfirmDialog";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
-import {
-  ReadingWithPronunciation,
-  badgeClass,
-  formatNextReviewBadge,
-  formatNumber,
-  glyphSubtitleForDisplay,
-  glyphTextSizeClass,
-  isNewGlyphWithinHours,
-  jlptLevelPillClass,
-  lockedCardStateClass,
-  shortSubjectTypeLabel,
-  statusClass,
-  statusShortLabel,
-  subjectTypePillClass,
-  titleForDisplay,
-  typeCardClass,
-  typeGlyphBoxClass,
-} from "../lib/levelExplorerDisplay";
+import { ReadingWithPronunciation, badgeClass, formatNextReviewBadge, formatNumber, glyphSubtitleForDisplay, glyphTextSizeClass, isNewGlyphWithinHours, jlptLevelPillClass, lockedCardStateClass, shortSubjectTypeLabel, statusClass, statusShortLabel, subjectTypePillClass, titleForDisplay, typeCardClass, typeGlyphBoxClass } from "../lib/levelExplorerDisplay";
 import LevelExplorerDetailSection from "./LevelExplorerDetailSection";
 
 type VocabularyKanjiLink = {
@@ -62,6 +45,7 @@ type Props = {
   onSetShowLocked: (next: boolean) => void;
   onToggleShowEnglish: () => void;
   onToggleSubjectSelection: (subjectId: number) => void;
+  onSelectSubjectIds: (subjectIds: number[]) => void;
   onSelectVisibleSubjects: () => void;
   onClearSelection: () => void;
   onResetSelected: () => void;
@@ -102,6 +86,7 @@ export default function LevelExplorerItemsGrid({
   onSetShowLocked,
   onToggleShowEnglish,
   onToggleSubjectSelection,
+  onSelectSubjectIds,
   onSelectVisibleSubjects,
   onClearSelection,
   onResetSelected,
@@ -111,6 +96,8 @@ export default function LevelExplorerItemsGrid({
 }: Props) {
   const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
   const [pendingResetKind, setPendingResetKind] = useState<"single" | "bulk" | null>(null);
+  const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
+  const [showAllSelectedInBar, setShowAllSelectedInBar] = useState(false);
 
   const selectedItems = useMemo(
     () => filteredItems.filter((item) => selectedSubjectIds.has(item.subjectId)),
@@ -125,13 +112,37 @@ export default function LevelExplorerItemsGrid({
     return labels;
   }, [selectedItems]);
 
-  const selectedItemForReset = useMemo(() => {
-    if (pendingResetKind !== "single") {
-      return null;
+  const selectedDetails = useMemo(() => selectedItems.map((item) => `${item.characters} • ${shortSubjectTypeLabel(item.subjectType)} • ${typeof item.wkLevel === "number" ? `L${item.wkLevel}` : "L?"} • SRS ${item.srsStage}`), [selectedItems]);
+
+  const selectedItemForReset = useMemo(() => (pendingResetKind === "single" ? selectedItem : null), [pendingResetKind, selectedItem]);
+
+  const applyBulkSelection = ({
+    subjectId,
+    shiftKey,
+    sourceIndex,
+  }: {
+    subjectId: number;
+    shiftKey: boolean;
+    sourceIndex: number;
+  }) => {
+    if (!bulkModeEnabled) {
+      return false;
     }
 
-    return selectedItem;
-  }, [pendingResetKind, selectedItem]);
+    if (shiftKey && bulkAnchorIndex !== null) {
+      const start = Math.min(bulkAnchorIndex, sourceIndex);
+      const end = Math.max(bulkAnchorIndex, sourceIndex);
+      const rangeIds = visibleItems.slice(start, end + 1).map((item) => item.subjectId);
+      if (rangeIds.length > 0) {
+        onSelectSubjectIds(rangeIds);
+      }
+      return true;
+    }
+
+    onToggleSubjectSelection(subjectId);
+    setBulkAnchorIndex(sourceIndex);
+    return true;
+  };
 
   if (filteredItems.length === 0) {
     return (
@@ -184,6 +195,8 @@ export default function LevelExplorerItemsGrid({
                 const next = !previous;
                 if (!next) {
                   onClearSelection();
+                  setBulkAnchorIndex(null);
+                  setShowAllSelectedInBar(false);
                 }
                 return next;
               });
@@ -197,54 +210,65 @@ export default function LevelExplorerItemsGrid({
         </div>
       </div>
       {bulkModeEnabled ? (
-        <div className="sticky top-3 z-20 mb-3 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.12)] backdrop-blur-[2px]">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
-                Bulk Operations Active
-              </p>
-              <p className="mt-1 text-sm font-semibold text-foreground/85">
-                Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
-              </p>
-              {selectedPreview.length > 0 ? (
-                <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
-              ) : (
-                <p className="mt-1 text-xs text-foreground/70">Select cards to prepare reset.</p>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onSelectVisibleSubjects}
-                disabled={visibleItems.length === 0 || isResetting}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Select Visible
-              </button>
-              <button
-                type="button"
-                onClick={onClearSelection}
-                disabled={selectedSubjectIds.size === 0 || isResetting}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedSubjectIds.size === 0 || isResetting) {
-                    return;
-                  }
-                  setPendingResetKind("bulk");
-                }}
-                disabled={selectedSubjectIds.size === 0 || isResetting}
-                className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isResetting ? "Resetting..." : "Reset Selected"}
-              </button>
+        <>
+          <div className={`mb-3 ${showAllSelectedInBar ? "h-52 sm:h-44" : "h-28 sm:h-20"}`} aria-hidden="true"/>
+          <div className="fixed left-1/2 top-3 z-40 w-[min(96vw,1100px)] -translate-x-1/2 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.18)] backdrop-blur-[3px]">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
+                  Bulk Operations Active
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground/85">
+                  Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
+                </p>
+                {selectedSubjectIds.size > 0 ? <button type="button" onClick={() => setShowAllSelectedInBar((value) => !value)} className="mt-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/80 hover:bg-surface-muted">{showAllSelectedInBar ? "Hide Full List" : "View Full List"}</button> : null}
+                {selectedPreview.length > 0 ? (
+                  <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
+                )}
+                {showAllSelectedInBar && selectedDetails.length > 0 ? (
+                  <div className="mt-2 max-h-24 overflow-y-auto rounded-lg border border-line bg-surface px-2 py-1 text-xs text-foreground/80 sm:max-h-28">
+                    <ul className="space-y-1">
+                      {selectedDetails.map((detail, detailIndex) => <li key={`${detail}-${detailIndex}`}>{detail}</li>)}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onSelectVisibleSubjects}
+                  disabled={visibleItems.length === 0 || isResetting}
+                  className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Select Visible
+                </button>
+                <button
+                  type="button"
+                  onClick={onClearSelection}
+                  disabled={selectedSubjectIds.size === 0 || isResetting}
+                  className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedSubjectIds.size === 0 || isResetting) {
+                      return;
+                    }
+                    setPendingResetKind("bulk");
+                  }}
+                  disabled={selectedSubjectIds.size === 0 || isResetting}
+                  className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isResetting ? "Resetting..." : "Reset Selected"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       ) : null}
       {resetFeedback ? (
         <p
@@ -261,9 +285,14 @@ export default function LevelExplorerItemsGrid({
         {visibleItems.map((item, index) => (
           <Fragment key={`${item.subjectType}-${item.subjectId}`}>
             <UnifiedExplorerCard
-              onClick={() => {
-                if (bulkModeEnabled) {
-                  onToggleSubjectSelection(item.subjectId);
+              onClick={(meta) => {
+                if (
+                  applyBulkSelection({
+                    subjectId: item.subjectId,
+                    shiftKey: Boolean(meta?.shiftKey),
+                    sourceIndex: index,
+                  })
+                ) {
                   return;
                 }
 
@@ -284,7 +313,11 @@ export default function LevelExplorerItemsGrid({
                       onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
-                        onToggleSubjectSelection(item.subjectId);
+                        applyBulkSelection({
+                          subjectId: item.subjectId,
+                          shiftKey: event.shiftKey,
+                          sourceIndex: index,
+                        });
                       }}
                       onKeyDown={(event) => {
                         if (event.key === " " || event.key === "Enter") {
@@ -420,7 +453,8 @@ export default function LevelExplorerItemsGrid({
         title={`Reset ${formatNumber(selectedItems.length)} selected item${selectedItems.length === 1 ? "" : "s"} to lessons?`}
         description="This will move the selected assignments back to lessons. This action cannot be undone."
         confirmLabel="Reset Selected"
-        details={selectedPreview}
+        details={selectedDetails}
+        requirePhrase="RESET"
         busy={isResetting}
         onCancel={() => {
           if (!isResetting) {
@@ -442,6 +476,7 @@ export default function LevelExplorerItemsGrid({
         description="This will move this assignment back to lessons. This action cannot be undone."
         confirmLabel="Reset Item"
         details={selectedItemForReset ? [selectedItemForReset.characters] : undefined}
+        requirePhrase="RESET"
         busy={isResetting}
         onCancel={() => {
           if (!isResetting) {

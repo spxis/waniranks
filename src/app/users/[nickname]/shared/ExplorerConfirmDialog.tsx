@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Props = {
   open: boolean;
@@ -8,6 +8,8 @@ type Props = {
   cancelLabel?: string;
   tone?: "danger" | "neutral";
   details?: string[];
+  detailsTitle?: string;
+  requirePhrase?: string;
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -21,10 +23,29 @@ export default function ExplorerConfirmDialog({
   cancelLabel = "Cancel",
   tone = "danger",
   details,
+  detailsTitle = "Selected Items",
+  requirePhrase,
   busy = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const [typedPhrase, setTypedPhrase] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setTypedPhrase("");
+    }
+  }, [open]);
+
+  const requiresPhraseMatch = Boolean(requirePhrase);
+  const phraseMatches = useMemo(() => {
+    if (!requirePhrase) {
+      return true;
+    }
+
+    return typedPhrase.trim().toUpperCase() === requirePhrase.trim().toUpperCase();
+  }, [requirePhrase, typedPhrase]);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -66,8 +87,30 @@ export default function ExplorerConfirmDialog({
 
         {details && details.length > 0 ? (
           <div className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-foreground/65">Selected Items</p>
-            <p className="mt-1 text-sm font-semibold text-foreground/85">{details.join("  •  ")}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-foreground/65">{detailsTitle}</p>
+            <div className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-line bg-surface px-2 py-1">
+              <ul className="space-y-1 text-sm font-semibold text-foreground/85">
+                {details.map((detail, index) => (
+                  <li key={`${detail}-${index}`}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+
+        {requiresPhraseMatch ? (
+          <div className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-foreground/65">
+              Type {requirePhrase} To Confirm
+            </p>
+            <input
+              type="text"
+              value={typedPhrase}
+              onChange={(event) => setTypedPhrase(event.target.value)}
+              placeholder={requirePhrase}
+              autoComplete="off"
+              className="mt-2 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-foreground outline-none ring-accent/40 focus:ring-2"
+            />
           </div>
         ) : null}
 
@@ -83,7 +126,7 @@ export default function ExplorerConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={busy}
+              disabled={busy || !phraseMatches}
             className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-55 ${confirmButtonClass}`}
           >
             {busy ? "Working..." : confirmLabel}
