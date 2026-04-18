@@ -19,6 +19,30 @@ const bodySchema = z.object({
   code: z.string().trim().optional(),
 });
 
+function inviteCodeFailureMessage(error: unknown, action: "assign" | "reset"): string {
+  const fallback = action === "assign" ? "Could not assign invite code." : "Could not reset invite code.";
+
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = String((error as { code?: unknown }).code ?? "");
+    if (code === "P2022" || code === "P2010") {
+      return "Invite-code columns are missing in the database. Run the latest Prisma schema migration (inviteCodeHash/inviteCodeUpdatedAt) and retry.";
+    }
+  }
+
+  if (error instanceof Error) {
+    const message = error.message;
+    if (
+      /inviteCodeHash|inviteCodeUpdatedAt|column .* does not exist|Unknown arg `inviteCodeHash`|Unknown arg `inviteCodeUpdatedAt`/i.test(
+        message,
+      )
+    ) {
+      return "Invite-code columns are missing in the database. Run the latest Prisma schema migration (inviteCodeHash/inviteCodeUpdatedAt) and retry.";
+    }
+  }
+
+  return fallback;
+}
+
 export async function POST(request: Request, context: RouteContext) {
   try {
     if (!(await isAuthorizedAdmin(request))) {
@@ -88,7 +112,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true, inviteCode: chosenCode });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Could not assign invite code." }, { status: 500 });
+    return NextResponse.json({ error: inviteCodeFailureMessage(error, "assign") }, { status: 500 });
   }
 }
 
@@ -115,6 +139,6 @@ export async function DELETE(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Could not reset invite code." }, { status: 500 });
+    return NextResponse.json({ error: inviteCodeFailureMessage(error, "reset") }, { status: 500 });
   }
 }
