@@ -50,11 +50,11 @@ export type SubmitFeedback = {
 
 export type SubmitInFlight = {
   assignmentId: number;
-  result: "correct" | "wrong" | "start-lesson";
+  result: "correct" | "wrong" | "start-lesson" | "reset-to-lessons";
   itemLabel: string;
 };
 
-export type ReviewOutcome = "correct" | "wrong" | "skipped" | "lesson-started";
+export type ReviewOutcome = "correct" | "wrong" | "skipped" | "lesson-started" | "reset-to-lessons";
 
 export type StudyExplorerProps = {
   accountId: string;

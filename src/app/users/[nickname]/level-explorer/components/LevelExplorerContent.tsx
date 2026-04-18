@@ -6,6 +6,7 @@ import {
   formatNumber,
   srsFilterButtonLabel,
 } from "../lib/levelExplorerDisplay";
+import { useLevelExplorerResetSelection } from "../lib/useLevelExplorerResetSelection";
 import SubjectTypeFilterGroup from "../../shared/SubjectTypeFilterGroup";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import LevelExplorerItemsGrid from "./LevelExplorerItemsGrid";
@@ -66,7 +67,6 @@ export default function LevelExplorerContent({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [peekSubjectId, setPeekSubjectId] = useState<number | null>(null);
-
   const selectedItemIndex = selectedItem
     ? filteredItems.findIndex((item) => item.subjectId === selectedItem.subjectId)
     : -1;
@@ -79,23 +79,19 @@ export default function LevelExplorerContent({
     if (!sentinelRef.current) {
       return;
     }
-
     if (effectiveVisibleCount >= filteredItems.length) {
       return;
     }
-
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
         if (!entry?.isIntersecting) {
           return;
         }
-
         setVisibleCount((prev) => Math.min(filteredItems.length, prev + PAGE_SIZE));
       },
       { rootMargin: "600px 0px" },
     );
-
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [effectiveVisibleCount, filteredItems.length]);
@@ -110,12 +106,10 @@ export default function LevelExplorerContent({
     if (!selectedItem) {
       return;
     }
-
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
-
       const target = event.target as HTMLElement | null;
       if (
         target &&
@@ -233,6 +227,18 @@ export default function LevelExplorerContent({
       setPeekSubjectId(null);
     }
   }, [peekSubjectId, selectedItem, studyMode]);
+
+  const {
+    selectedSubjectIds,
+    isResetting,
+    resetFeedback,
+    toggleSubjectSelection,
+    selectVisibleSubjects,
+    clearSelection,
+    resetSelected,
+    resetSingle,
+  } = useLevelExplorerResetSelection({ accountId, filteredItems, visibleItems });
+
   const visibleDetailInsertIndex =
     selectedVisibleIndex >= 0
       ? Math.min(
@@ -460,6 +466,9 @@ export default function LevelExplorerContent({
           hasUsedInVocabularyPanel={hasUsedInVocabularyPanel}
           vocabularyKanjiLinks={vocabularyKanjiLinks}
           subjectById={subjectById}
+          selectedSubjectIds={selectedSubjectIds}
+          isResetting={isResetting}
+          resetFeedback={resetFeedback}
           recentOnly={recentOnly}
           showLocked={showLocked}
           sentinelRef={sentinelRef}
@@ -475,6 +484,11 @@ export default function LevelExplorerContent({
           onSetRecentOnly={onSetRecentOnly}
           onSetShowLocked={onSetShowLocked}
           onToggleShowEnglish={onToggleShowEnglish}
+          onToggleSubjectSelection={toggleSubjectSelection}
+          onSelectVisibleSubjects={selectVisibleSubjects}
+          onClearSelection={clearSelection}
+          onResetSelected={resetSelected}
+          onResetSingle={resetSingle}
           onJumpToRelatedSubject={onJumpToRelatedSubject}
           onJumpToKanji={onJumpToKanji}
         />

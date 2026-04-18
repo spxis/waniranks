@@ -48,6 +48,9 @@ type Props = {
   hasUsedInVocabularyPanel: boolean;
   vocabularyKanjiLinks: VocabularyKanjiLink[];
   subjectById: Map<number, LevelItem>;
+  selectedSubjectIds: Set<number>;
+  isResetting: boolean;
+  resetFeedback: { kind: "success" | "error"; message: string } | null;
   recentOnly: boolean;
   showLocked: boolean;
   sentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -57,6 +60,11 @@ type Props = {
   onSetRecentOnly: (next: boolean) => void;
   onSetShowLocked: (next: boolean) => void;
   onToggleShowEnglish: () => void;
+  onToggleSubjectSelection: (subjectId: number) => void;
+  onSelectVisibleSubjects: () => void;
+  onClearSelection: () => void;
+  onResetSelected: () => void;
+  onResetSingle: (subjectId: number) => void;
   onJumpToRelatedSubject: (subjectId: number, targetLevel?: number | null) => Promise<void>;
   onJumpToKanji: (subjectId: number, wkLevel: number | null) => Promise<void>;
 };
@@ -80,6 +88,9 @@ export default function LevelExplorerItemsGrid({
   hasUsedInVocabularyPanel,
   vocabularyKanjiLinks,
   subjectById,
+  selectedSubjectIds,
+  isResetting,
+  resetFeedback,
   recentOnly,
   showLocked,
   sentinelRef,
@@ -89,6 +100,11 @@ export default function LevelExplorerItemsGrid({
   onSetRecentOnly,
   onSetShowLocked,
   onToggleShowEnglish,
+  onToggleSubjectSelection,
+  onSelectVisibleSubjects,
+  onClearSelection,
+  onResetSelected,
+  onResetSingle,
   onJumpToRelatedSubject,
   onJumpToKanji,
 }: Props) {
@@ -138,6 +154,48 @@ export default function LevelExplorerItemsGrid({
           </button>
         </div>
       </div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface-muted px-3 py-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/75">
+          Selected {formatNumber(selectedSubjectIds.size)}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onSelectVisibleSubjects}
+            disabled={visibleItems.length === 0 || isResetting}
+            className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Select Visible
+          </button>
+          <button
+            type="button"
+            onClick={onClearSelection}
+            disabled={selectedSubjectIds.size === 0 || isResetting}
+            className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={onResetSelected}
+            disabled={selectedSubjectIds.size === 0 || isResetting}
+            className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isResetting ? "Resetting..." : "Reset Selected"}
+          </button>
+        </div>
+      </div>
+      {resetFeedback ? (
+        <p
+          className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] ${
+            resetFeedback.kind === "success"
+              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+              : "border-red-300 bg-red-50 text-red-800"
+          }`}
+        >
+          {resetFeedback.message}
+        </p>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {visibleItems.map((item, index) => (
           <Fragment key={`${item.subjectType}-${item.subjectId}`}>
@@ -148,7 +206,35 @@ export default function LevelExplorerItemsGrid({
                 item.subjectType,
                 selectedItem?.subjectId === item.subjectId,
               )} ${lockedCardStateClass(item)}`}
-              indexLabel={`#${formatNumber(index + 1)}`}
+              indexLabel={
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    role="checkbox"
+                    aria-checked={selectedSubjectIds.has(item.subjectId)}
+                    tabIndex={0}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onToggleSubjectSelection(item.subjectId);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === " " || event.key === "Enter") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onToggleSubjectSelection(item.subjectId);
+                      }
+                    }}
+                    className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
+                      selectedSubjectIds.has(item.subjectId)
+                        ? "border-accent bg-accent text-white"
+                        : "border-line bg-surface text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </span>
+                  <span>#{formatNumber(index + 1)}</span>
+                </span>
+              }
               topRight={
                 <>
                   <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
@@ -238,6 +324,11 @@ export default function LevelExplorerItemsGrid({
                 subjectById={subjectById}
                 onJumpToRelatedSubject={onJumpToRelatedSubject}
                 onJumpToKanji={onJumpToKanji}
+                onResetToLessons={() => {
+                  onResetSingle(selectedItem.subjectId);
+                }}
+                resetDisabled={isResetting}
+                resetBusy={isResetting}
               />
             ) : null}
           </Fragment>

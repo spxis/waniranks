@@ -46,6 +46,9 @@ type Props = {
   subjectById: Map<number, LevelItem>;
   onJumpToRelatedSubject: (subjectId: number, targetLevel?: number | null) => Promise<void>;
   onJumpToKanji: (subjectId: number, wkLevel: number | null) => Promise<void>;
+  onResetToLessons?: (() => void) | null;
+  resetDisabled?: boolean;
+  resetBusy?: boolean;
 };
 
 export default function LevelExplorerDetailSection({
@@ -68,6 +71,9 @@ export default function LevelExplorerDetailSection({
   subjectById,
   onJumpToRelatedSubject,
   onJumpToKanji,
+  onResetToLessons = null,
+  resetDisabled = false,
+  resetBusy = false,
 }: Props) {
   const isStudyHidden = studyMode && !revealStudyReading;
   const canShowReadings = !isStudyHidden;
@@ -164,6 +170,18 @@ export default function LevelExplorerDetailSection({
                 className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+              </button>
+            </div>
+          ) : null}
+          {onResetToLessons ? (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={onResetToLessons}
+                disabled={resetDisabled || resetBusy}
+                className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resetBusy ? "Resetting..." : "Reset To Lessons"}
               </button>
             </div>
           ) : null}

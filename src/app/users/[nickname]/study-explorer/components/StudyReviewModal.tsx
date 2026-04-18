@@ -33,6 +33,7 @@ export default function StudyReviewModal({
   onReveal,
   onSubmit,
   onStartLesson,
+  onResetToLessons,
 }: Props) {
   const usedInWordsStorageKey = "wr:study-modal:used-in-words-collapsed";
   const usedKanjiStorageKey = "wr:study-modal:used-kanji-collapsed";
@@ -332,6 +333,7 @@ export default function StudyReviewModal({
             onReveal={onReveal}
             onSubmit={onSubmit}
             onStartLesson={onStartLesson}
+            onResetToLessons={onResetToLessons}
             onAdvanceFlashOrNext={advanceFlashOrNext}
             onFlashTouchStart={handleFlashTouchStart}
             onFlashTouchEnd={handleFlashTouchEnd}

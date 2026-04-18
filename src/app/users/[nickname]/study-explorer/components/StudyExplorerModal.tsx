@@ -31,6 +31,7 @@ type Props = {
   onToggleShowEnglish: () => void;
   onSubmit: (assignmentId: number, result: "correct" | "wrong") => Promise<void>;
   onStartLesson: (assignmentId: number) => Promise<void>;
+  onResetToLessons: (assignmentId: number) => Promise<void>;
 };
 
 export default function StudyExplorerModal({
@@ -58,6 +59,7 @@ export default function StudyExplorerModal({
   onToggleShowEnglish,
   onSubmit,
   onStartLesson,
+  onResetToLessons,
 }: Props) {
   if (isUnauthorized) {
     return null;
@@ -118,6 +120,7 @@ export default function StudyExplorerModal({
       }}
       onSubmit={onSubmit}
       onStartLesson={onStartLesson}
+      onResetToLessons={onResetToLessons}
     />
   );
 }

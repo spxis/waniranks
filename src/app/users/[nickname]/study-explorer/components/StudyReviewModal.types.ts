@@ -38,4 +38,5 @@ export type StudyReviewModalProps = {
   onReveal: (assignmentId: number) => void;
   onSubmit: (assignmentId: number, result: "correct" | "wrong") => void;
   onStartLesson: (assignmentId: number) => void;
+  onResetToLessons: (assignmentId: number) => void;
 };

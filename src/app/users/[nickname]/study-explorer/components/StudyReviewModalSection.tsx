@@ -53,6 +53,7 @@ type Props = {
   onReveal: (assignmentId: number) => void;
   onSubmit: (assignmentId: number, result: "correct" | "wrong") => void;
   onStartLesson: (assignmentId: number) => void;
+  onResetToLessons: (assignmentId: number) => void;
   onAdvanceFlashOrNext: () => void;
   onFlashTouchStart: (event: React.TouchEvent) => void;
   onFlashTouchEnd: (event: React.TouchEvent) => void;
@@ -99,6 +100,7 @@ export default function StudyReviewModalSection({
   onReveal,
   onSubmit,
   onStartLesson,
+  onResetToLessons,
   onAdvanceFlashOrNext,
   onFlashTouchStart,
   onFlashTouchEnd,
@@ -420,6 +422,7 @@ export default function StudyReviewModalSection({
         correct={correct}
         onSubmit={onSubmit}
         onStartLesson={onStartLesson}
+        onResetToLessons={onResetToLessons}
         onToggleUsedKanjiCollapsed={onToggleUsedKanjiCollapsed}
         onToggleUsedInWordsCollapsed={onToggleUsedInWordsCollapsed}
       />

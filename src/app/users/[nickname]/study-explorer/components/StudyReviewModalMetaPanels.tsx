@@ -46,6 +46,7 @@ type Props = {
   correct: number;
   onSubmit: (assignmentId: number, result: "correct" | "wrong") => void;
   onStartLesson: (assignmentId: number) => void;
+  onResetToLessons: (assignmentId: number) => void;
   onToggleUsedKanjiCollapsed: () => void;
   onToggleUsedInWordsCollapsed: () => void;
 };
@@ -82,6 +83,7 @@ export default function StudyReviewModalMetaPanels({
   correct,
   onSubmit,
   onStartLesson,
+  onResetToLessons,
   onToggleUsedKanjiCollapsed,
   onToggleUsedInWordsCollapsed,
 }: Props) {
@@ -91,6 +93,8 @@ export default function StudyReviewModalMetaPanels({
       ? "CORRECT"
       : submitInFlight?.result === "wrong"
         ? "WRONG"
+        : submitInFlight?.result === "reset-to-lessons"
+          ? "RESET"
         : "LESSON";
 
   return (
@@ -281,6 +285,30 @@ export default function StudyReviewModalMetaPanels({
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700/80">Already submitted in this session</p>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {selectedItem.queueType === "review" && viewerMode === "detail" && !isOutcomeFinal ? (
+        <div className="mt-2 w-full">
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                typeof window !== "undefined" &&
+                !window.confirm(
+                  `Reset ${selectedItem.characters} to lessons? This cannot be undone.`,
+                )
+              ) {
+                return;
+              }
+
+              onResetToLessons(selectedItem.assignmentId);
+            }}
+            disabled={isSubmittingSelected}
+            className="min-h-[3.25rem] w-full rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black uppercase tracking-[0.1em] text-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Reset To Lessons
+          </button>
         </div>
       ) : null}
 

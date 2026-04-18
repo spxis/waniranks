@@ -407,7 +407,7 @@ export default function StudyExplorer({
     viewedLevel,
   ]);
 
-  const { submitReview, submitLessonStart, closeReviewSession } = useStudyReviewSubmission({
+  const { submitReview, submitLessonStart, submitResetToLessons, closeReviewSession } = useStudyReviewSubmission({
     accountId,
     modalItems,
     selectedItem,
@@ -491,6 +491,7 @@ export default function StudyExplorer({
         onToggleShowEnglish={onToggleShowEnglish}
         onSubmit={submitReview}
         onStartLesson={submitLessonStart}
+        onResetToLessons={submitResetToLessons}
       />
     </section>
   );

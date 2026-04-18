@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 type Props = {
   onClick: () => void;
   className: string;
-  indexLabel: string;
+  indexLabel: ReactNode;
   topRight: ReactNode;
   glyphClassName: string;
   dataSubjectId?: number; // Added optional dataSubjectId
