@@ -131,6 +131,9 @@ export default function StudyExplorerPanel({
     selectedItems,
     selectedDetails,
     selectedPreview,
+    toggleBulkSelection,
+    applyBulkSelection,
+    toggleBulkMode,
     setBulkModeEnabled,
     setSelectedSubjectIds,
     setPendingBulkReset,
@@ -155,18 +158,6 @@ export default function StudyExplorerPanel({
         ? totalItems
         : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)
       : typeCounts.all;
-
-  const toggleBulkSelection = (subjectId: number) => {
-    setSelectedSubjectIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(subjectId)) {
-        next.delete(subjectId);
-      } else {
-        next.add(subjectId);
-      }
-      return next;
-    });
-  };
 
   return (
     <>
@@ -284,19 +275,10 @@ export default function StudyExplorerPanel({
             ) : null}
             <button
               type="button"
-              onClick={() => {
-                setBulkModeEnabled((prev) => {
-                  const next = !prev;
-                  if (!next) {
-                    setSelectedSubjectIds(new Set());
-                    setPendingBulkReset(false);
-                  }
-                  return next;
-                });
-              }}
+              onClick={toggleBulkMode}
               className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(bulkModeEnabled)}`}
             >
-              {bulkModeEnabled ? "Done Bulk Ops" : "Bulk Reset"}
+              {bulkModeEnabled ? "Done Bulk Ops" : "Bulk Operations"}
             </button>
           </div>
         </div>
@@ -311,7 +293,9 @@ export default function StudyExplorerPanel({
                 </p>
                 {selectedPreview.length > 0 ? (
                   <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
-                ) : null}
+                ) : (
+                  <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -375,10 +359,13 @@ export default function StudyExplorerPanel({
                 return (
                   <UnifiedExplorerCard
                     key={`${item.queueType}-${item.subjectId}`}
-                    onClick={() => {
+                    onClick={(meta) => {
                       if (!isUnauthorized) {
-                        if (bulkModeEnabled) {
-                          toggleBulkSelection(item.subjectId);
+                        if (applyBulkSelection({
+                          subjectId: item.subjectId,
+                          sourceIndex: index,
+                          shiftKey: Boolean(meta?.shiftKey),
+                        })) {
                           return;
                         }
 
@@ -386,26 +373,29 @@ export default function StudyExplorerPanel({
                       }
                     }}
                     className={`rounded-2xl border p-3 text-left transition ${isUnauthorized ? "cursor-not-allowed opacity-65" : "hover:brightness-95"} ${typeCardClass(item.subjectType, false)} ${selectedSubjectIds.has(item.subjectId) ? "ring-2 ring-amber-400" : ""}`}
-                    indexLabel={`#${index + 1}`}
+                    indexLabel={
+                      bulkModeEnabled ? (
+                        <span className="inline-flex items-center gap-2 text-[10px] font-semibold text-foreground/60">
+                          <input
+                            type="checkbox"
+                            checked={selectedSubjectIds.has(item.subjectId)}
+                            onChange={() => {
+                              toggleBulkSelection(item.subjectId);
+                            }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
+                            className="h-4 w-4 rounded-sm border border-line bg-surface accent-accent"
+                            aria-label={`Select ${item.characters}`}
+                          />
+                          #{index + 1}
+                        </span>
+                      ) : (
+                        `#${index + 1}`
+                      )
+                    }
                     topRight={
                       <>
-                        {bulkModeEnabled ? (
-                          <label className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground">
-                            <input
-                              type="checkbox"
-                              checked={selectedSubjectIds.has(item.subjectId)}
-                              onChange={() => {
-                                toggleBulkSelection(item.subjectId);
-                              }}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                              }}
-                              className="h-3.5 w-3.5 rounded border-line text-amber-600 accent-amber-600"
-                              aria-label={`Select ${item.characters}`}
-                            />
-                            Pick
-                          </label>
-                        ) : null}
                         <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
                         {typeof item.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span> : null}
                         {item.jlptLevel ? <span className={jlptLevelPillClass()}>N{item.jlptLevel}</span> : null}

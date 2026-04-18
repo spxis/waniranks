@@ -19,6 +19,7 @@ export function useStudyBulkReset({ accountId, filteredItems }: Args) {
   const [pendingBulkReset, setPendingBulkReset] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<ResetFeedback>(null);
+  const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setSelectedSubjectIds((prev) => {
@@ -60,6 +61,64 @@ export function useStudyBulkReset({ accountId, filteredItems }: Args) {
     return labels;
   }, [selectedItems]);
 
+  const toggleBulkSelection = (subjectId: number) => {
+    setSelectedSubjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(subjectId)) {
+        next.delete(subjectId);
+      } else {
+        next.add(subjectId);
+      }
+      return next;
+    });
+  };
+
+  const applyBulkSelection = ({
+    subjectId,
+    sourceIndex,
+    shiftKey,
+  }: {
+    subjectId: number;
+    sourceIndex: number;
+    shiftKey: boolean;
+  }) => {
+    if (!bulkModeEnabled) {
+      return false;
+    }
+
+    if (shiftKey && bulkAnchorIndex !== null) {
+      const start = Math.min(bulkAnchorIndex, sourceIndex);
+      const end = Math.max(bulkAnchorIndex, sourceIndex);
+      const rangeSubjectIds = filteredItems.slice(start, end + 1).map((item) => item.subjectId);
+      if (rangeSubjectIds.length > 0) {
+        setSelectedSubjectIds((prev) => {
+          const next = new Set(prev);
+          for (const selectedSubjectId of rangeSubjectIds) {
+            next.add(selectedSubjectId);
+          }
+          return next;
+        });
+      }
+      return true;
+    }
+
+    toggleBulkSelection(subjectId);
+    setBulkAnchorIndex(sourceIndex);
+    return true;
+  };
+
+  const toggleBulkMode = () => {
+    setBulkModeEnabled((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSelectedSubjectIds(new Set());
+        setPendingBulkReset(false);
+        setBulkAnchorIndex(null);
+      }
+      return next;
+    });
+  };
+
   const resetSelectedItems = async () => {
     const subjectIds = Array.from(selectedSubjectIds.values());
     if (subjectIds.length === 0 || isResetting) {
@@ -98,6 +157,7 @@ export function useStudyBulkReset({ accountId, filteredItems }: Args) {
       setSelectedSubjectIds(new Set());
       setPendingBulkReset(false);
       setBulkModeEnabled(false);
+      setBulkAnchorIndex(null);
 
       window.dispatchEvent(new Event("focus"));
       void fetch(`/api/accounts/${accountId}/refresh`, { method: "POST" }).catch(() => {
@@ -122,6 +182,9 @@ export function useStudyBulkReset({ accountId, filteredItems }: Args) {
     selectedItems,
     selectedDetails,
     selectedPreview,
+    toggleBulkSelection,
+    applyBulkSelection,
+    toggleBulkMode,
     setBulkModeEnabled,
     setSelectedSubjectIds,
     setPendingBulkReset,
