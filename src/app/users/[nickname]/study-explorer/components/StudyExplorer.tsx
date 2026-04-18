@@ -23,6 +23,7 @@ import {
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
 import { useStudyExplorerDerivedData } from "../lib/useStudyExplorerDerivedData";
+import { useStudyQueueInfiniteLoad } from "../lib/useStudyQueueInfiniteLoad";
 
 const REVIEW_API_PAGE_SIZE = 120;
 const LESSON_API_PAGE_SIZE = 200;
@@ -352,60 +353,18 @@ export default function StudyExplorer({
     totalItems,
   ]);
 
-  useEffect(() => {
-    if (!sentinelRef.current || selectedItem || !hasMorePages) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) {
-        void loadMorePage();
-      }
-    }, { rootMargin: "600px 0px" });
-
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [selectedItem, hasMorePages, loadMorePage]);
-
-  useEffect(() => {
-    if (queueMode !== "lesson") {
-      return;
-    }
-    if (selectedItem || isLoadingMore || !hasMorePages) {
-      return;
-    }
-
-    void loadMorePage();
-  }, [hasMorePages, isLoadingMore, loadMorePage, queueMode, selectedItem]);
-
-  useEffect(() => {
-    if (queueMode !== "lesson") {
-      return;
-    }
-    if (selectedItem || isLoadingMore || !hasMorePages) {
-      return;
-    }
-    if (viewedLevel === null || typeFilter !== "all") {
-      return;
-    }
-
-    const expectedForLevel = lessonLevelCounts[viewedLevel] ?? 0;
-    if (expectedForLevel <= 0) {
-      return;
-    }
-
-    if (filteredItems.length < expectedForLevel) {
-      void loadMorePage();
-    }
-  }, [
-    filteredItems.length,
+  useStudyQueueInfiniteLoad({
+    sentinelRef,
+    selectedItem,
     hasMorePages,
     isLoadingMore,
-    lessonLevelCounts,
     loadMorePage,
     queueMode,
-    selectedItem,
-    typeFilter,
     viewedLevel,
-  ]);
+    typeFilter,
+    lessonLevelCounts,
+    filteredItemsLength: filteredItems.length,
+  });
 
   const { submitReview, submitLessonStart, submitResetToLessons, closeReviewSession } = useStudyReviewSubmission({
     accountId,
