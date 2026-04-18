@@ -119,6 +119,27 @@ input[type="reset"] {
   animation: enter-up 500ms ease-out both;
 }
 
+@keyframes score-flash {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  30% {
+    transform: scale(1.08);
+    filter: brightness(0.82);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.animate-score-flash {
+  animation: score-flash 350ms ease-out;
+}
+
 .animate-enter-delay-1 {
   animation-delay: 90ms;
 }

@@ -290,9 +290,9 @@ export default function StudyReviewModalMetaPanels({
 
       {studyMode && selectedItem.queueType === "review" ? (
         <div className="mt-2 grid w-full grid-cols-3 gap-2">
-          <div className="rounded-xl border border-red-200 bg-red-50/60 p-2 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-700/80">Wrong</p><p className="mt-1 text-2xl font-black leading-none text-red-800">{wrong}</p></div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-2 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700/80">Skipped</p><p className="mt-1 text-2xl font-black leading-none text-amber-800">{skipped}</p></div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-2 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700/80">Correct</p><p className="mt-1 text-2xl font-black leading-none text-emerald-800">{correct}</p></div>
+          <div key={wrong} className={`rounded-xl border border-red-200 bg-red-50/60 p-2 text-center${wrong > 0 ? " animate-score-flash" : ""}`}><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-700/80">Wrong</p><p className="mt-1 text-2xl font-black leading-none text-red-800">{wrong}</p></div>
+          <div key={skipped} className={`rounded-xl border border-amber-200 bg-amber-50/60 p-2 text-center${skipped > 0 ? " animate-score-flash" : ""}`}><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700/80">Skipped</p><p className="mt-1 text-2xl font-black leading-none text-amber-800">{skipped}</p></div>
+          <div key={correct} className={`rounded-xl border border-emerald-200 bg-emerald-50/60 p-2 text-center${correct > 0 ? " animate-score-flash" : ""}`}><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700/80">Correct</p><p className="mt-1 text-2xl font-black leading-none text-emerald-800">{correct}</p></div>
         </div>
       ) : null}
 
