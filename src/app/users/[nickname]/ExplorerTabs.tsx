@@ -320,7 +320,7 @@ export default function ExplorerTabs({
             JLPT Explorer
           </button>
         </div>
-          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
+        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
           {activeTab === "study" ? (
             <div
               className="inline-flex items-center rounded-full border border-line bg-surface p-1"
@@ -330,15 +330,6 @@ export default function ExplorerTabs({
               <button
                 type="button"
                 role="tab"
-          {activeTab === "study" ? (
-            <button
-              type="button"
-              onClick={() => setActiveTab("level")}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-amber-300 bg-amber-50 px-4 text-xs font-bold uppercase tracking-[0.1em] text-amber-900 transition hover:bg-amber-100"
-            >
-              Bulk Reset Tools
-            </button>
-          ) : null}
                 aria-selected={queueMode === "review"}
                 onClick={() => setQueueMode("review")}
                 className={queueModeSegmentClass("review", queueMode)}
