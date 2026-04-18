@@ -288,30 +288,6 @@ export default function StudyReviewModalMetaPanels({
         </div>
       ) : null}
 
-      {selectedItem.queueType === "review" && viewerMode === "detail" && !isOutcomeFinal ? (
-        <div className="mt-2 w-full">
-          <button
-            type="button"
-            onClick={() => {
-              if (
-                typeof window !== "undefined" &&
-                !window.confirm(
-                  `Reset ${selectedItem.characters} to lessons? This cannot be undone.`,
-                )
-              ) {
-                return;
-              }
-
-              onResetToLessons(selectedItem.assignmentId);
-            }}
-            disabled={isSubmittingSelected}
-            className="min-h-[3.25rem] w-full rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black uppercase tracking-[0.1em] text-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Reset To Lessons
-          </button>
-        </div>
-      ) : null}
-
       {studyMode && selectedItem.queueType === "review" ? (
         <div className="mt-2 grid w-full grid-cols-3 gap-2">
           <div className="rounded-xl border border-red-200 bg-red-50/60 p-2 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-700/80">Wrong</p><p className="mt-1 text-2xl font-black leading-none text-red-800">{wrong}</p></div>

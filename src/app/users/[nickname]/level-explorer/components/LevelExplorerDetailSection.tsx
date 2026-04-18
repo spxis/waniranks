@@ -173,18 +173,6 @@ export default function LevelExplorerDetailSection({
               </button>
             </div>
           ) : null}
-          {onResetToLessons ? (
-            <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={onResetToLessons}
-                disabled={resetDisabled || resetBusy}
-                className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {resetBusy ? "Resetting..." : "Reset To Lessons"}
-              </button>
-            </div>
-          ) : null}
           <div className="mt-2 min-w-0">
             {studyMode && isStudyHidden ? (
               <>
@@ -316,6 +304,27 @@ export default function LevelExplorerDetailSection({
           currentSrsStage={selectedItem.srsStage}
           startedAt={selectedItem.startedAt}
         />
+      ) : null}
+
+      {onResetToLessons ? (
+        <details className="mt-4 rounded-xl border border-line bg-surface-muted p-3">
+          <summary className="cursor-pointer list-none text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
+            Advanced Actions
+          </summary>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-foreground/70">
+              Reset sends this item back to lessons. Use only when you intentionally want to restart it.
+            </p>
+            <button
+              type="button"
+              onClick={onResetToLessons}
+              disabled={resetDisabled || resetBusy}
+              className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resetBusy ? "Resetting..." : "Reset To Lessons"}
+            </button>
+          </div>
+        </details>
       ) : null}
     </section>
   );

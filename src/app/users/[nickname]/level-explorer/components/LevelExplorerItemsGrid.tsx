@@ -1,6 +1,7 @@
-import { Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import type { LevelItem } from "../../explorerTypes";
+import ExplorerConfirmDialog from "../../shared/ExplorerConfirmDialog";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import {
   ReadingWithPronunciation,
@@ -108,6 +109,30 @@ export default function LevelExplorerItemsGrid({
   onJumpToRelatedSubject,
   onJumpToKanji,
 }: Props) {
+  const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
+  const [pendingResetKind, setPendingResetKind] = useState<"single" | "bulk" | null>(null);
+
+  const selectedItems = useMemo(
+    () => filteredItems.filter((item) => selectedSubjectIds.has(item.subjectId)),
+    [filteredItems, selectedSubjectIds],
+  );
+
+  const selectedPreview = useMemo(() => {
+    const labels = selectedItems.slice(0, 6).map((item) => item.characters);
+    if (selectedItems.length > 6) {
+      labels.push(`+${formatNumber(selectedItems.length - 6)} more`);
+    }
+    return labels;
+  }, [selectedItems]);
+
+  const selectedItemForReset = useMemo(() => {
+    if (pendingResetKind !== "single") {
+      return null;
+    }
+
+    return selectedItem;
+  }, [pendingResetKind, selectedItem]);
+
   if (filteredItems.length === 0) {
     return (
       <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
@@ -152,39 +177,75 @@ export default function LevelExplorerItemsGrid({
           >
             {showLocked ? "Hide Locked" : "Show Locked"}
           </button>
-        </div>
-      </div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface-muted px-3 py-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/75">
-          Selected {formatNumber(selectedSubjectIds.size)}
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={onSelectVisibleSubjects}
-            disabled={visibleItems.length === 0 || isResetting}
-            className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => {
+              setBulkModeEnabled((previous) => {
+                const next = !previous;
+                if (!next) {
+                  onClearSelection();
+                }
+                return next;
+              });
+            }}
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+              bulkModeEnabled,
+            )}`}
           >
-            Select Visible
-          </button>
-          <button
-            type="button"
-            onClick={onClearSelection}
-            disabled={selectedSubjectIds.size === 0 || isResetting}
-            className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={onResetSelected}
-            disabled={selectedSubjectIds.size === 0 || isResetting}
-            className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isResetting ? "Resetting..." : "Reset Selected"}
+            {bulkModeEnabled ? "Done Bulk Ops" : "Bulk Operations"}
           </button>
         </div>
       </div>
+      {bulkModeEnabled ? (
+        <div className="sticky top-3 z-20 mb-3 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.12)] backdrop-blur-[2px]">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
+                Bulk Operations Active
+              </p>
+              <p className="mt-1 text-sm font-semibold text-foreground/85">
+                Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
+              </p>
+              {selectedPreview.length > 0 ? (
+                <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
+              ) : (
+                <p className="mt-1 text-xs text-foreground/70">Select cards to prepare reset.</p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={onSelectVisibleSubjects}
+                disabled={visibleItems.length === 0 || isResetting}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Select Visible
+              </button>
+              <button
+                type="button"
+                onClick={onClearSelection}
+                disabled={selectedSubjectIds.size === 0 || isResetting}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedSubjectIds.size === 0 || isResetting) {
+                    return;
+                  }
+                  setPendingResetKind("bulk");
+                }}
+                disabled={selectedSubjectIds.size === 0 || isResetting}
+                className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isResetting ? "Resetting..." : "Reset Selected"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {resetFeedback ? (
         <p
           className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] ${
@@ -207,33 +268,37 @@ export default function LevelExplorerItemsGrid({
                 selectedItem?.subjectId === item.subjectId,
               )} ${lockedCardStateClass(item)}`}
               indexLabel={
-                <span className="inline-flex items-center gap-2">
-                  <span
-                    role="checkbox"
-                    aria-checked={selectedSubjectIds.has(item.subjectId)}
-                    tabIndex={0}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      onToggleSubjectSelection(item.subjectId);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === " " || event.key === "Enter") {
+                bulkModeEnabled ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      role="checkbox"
+                      aria-checked={selectedSubjectIds.has(item.subjectId)}
+                      tabIndex={0}
+                      onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
                         onToggleSubjectSelection(item.subjectId);
-                      }
-                    }}
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
-                      selectedSubjectIds.has(item.subjectId)
-                        ? "border-accent bg-accent text-white"
-                        : "border-line bg-surface text-transparent"
-                    }`}
-                  >
-                    ✓
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === " " || event.key === "Enter") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onToggleSubjectSelection(item.subjectId);
+                        }
+                      }}
+                      className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
+                        selectedSubjectIds.has(item.subjectId)
+                          ? "border-accent bg-accent text-white"
+                          : "border-line bg-surface text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span>#{formatNumber(index + 1)}</span>
                   </span>
-                  <span>#{formatNumber(index + 1)}</span>
-                </span>
+                ) : (
+                  `#${formatNumber(index + 1)}`
+                )
               }
               topRight={
                 <>
@@ -325,7 +390,7 @@ export default function LevelExplorerItemsGrid({
                 onJumpToRelatedSubject={onJumpToRelatedSubject}
                 onJumpToKanji={onJumpToKanji}
                 onResetToLessons={() => {
-                  onResetSingle(selectedItem.subjectId);
+                  setPendingResetKind("single");
                 }}
                 resetDisabled={isResetting}
                 resetBusy={isResetting}
@@ -342,6 +407,48 @@ export default function LevelExplorerItemsGrid({
           Loading more...
         </div>
       ) : null}
+
+      <ExplorerConfirmDialog
+        open={pendingResetKind === "bulk"}
+        title={`Reset ${formatNumber(selectedItems.length)} selected item${selectedItems.length === 1 ? "" : "s"} to lessons?`}
+        description="This will move the selected assignments back to lessons. This action cannot be undone."
+        confirmLabel="Reset Selected"
+        details={selectedPreview}
+        busy={isResetting}
+        onCancel={() => {
+          if (!isResetting) {
+            setPendingResetKind(null);
+          }
+        }}
+        onConfirm={() => {
+          if (isResetting || selectedSubjectIds.size === 0) {
+            return;
+          }
+          onResetSelected();
+          setPendingResetKind(null);
+        }}
+      />
+
+      <ExplorerConfirmDialog
+        open={pendingResetKind === "single" && Boolean(selectedItemForReset)}
+        title={`Reset ${selectedItemForReset?.characters ?? "this item"} to lessons?`}
+        description="This will move this assignment back to lessons. This action cannot be undone."
+        confirmLabel="Reset Item"
+        details={selectedItemForReset ? [selectedItemForReset.characters] : undefined}
+        busy={isResetting}
+        onCancel={() => {
+          if (!isResetting) {
+            setPendingResetKind(null);
+          }
+        }}
+        onConfirm={() => {
+          if (!selectedItemForReset || isResetting) {
+            return;
+          }
+          onResetSingle(selectedItemForReset.subjectId);
+          setPendingResetKind(null);
+        }}
+      />
     </>
   );
 }

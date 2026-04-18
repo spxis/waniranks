@@ -127,25 +127,11 @@ export function useLevelExplorerResetSelection({
       return;
     }
 
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(`Reset ${selected.length} selected item(s) to lessons? This cannot be undone.`)
-    ) {
-      return;
-    }
-
     void runReset(selected);
   }, [runReset, selectedSubjectIds]);
 
   const resetSingle = useCallback(
     (subjectId: number) => {
-      if (
-        typeof window !== "undefined" &&
-        !window.confirm("Reset this item to lessons? This cannot be undone.")
-      ) {
-        return;
-      }
-
       void runReset([subjectId]);
     },
     [runReset],
