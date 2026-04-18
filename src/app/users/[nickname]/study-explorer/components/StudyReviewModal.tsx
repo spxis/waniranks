@@ -249,8 +249,8 @@ export default function StudyReviewModal({
     <div className="fixed inset-0 z-50 bg-[rgba(8,16,36,0.72)] p-2 backdrop-blur-[2px] sm:p-6">
       <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-[1.8rem] border border-line bg-surface shadow-[0_26px_75px_rgba(0,0,0,0.35)]">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 border-b border-line bg-surface-muted px-2 py-2 sm:gap-2 sm:px-6 sm:py-3">
-          <button type="button" onClick={closeModal} className="justify-self-start whitespace-nowrap rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:px-4 sm:py-2 sm:text-xs">Back To List</button>
-          <div className="flex min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-hidden sm:gap-2">
+          <button type="button" onClick={closeModal} className="justify-self-start whitespace-nowrap rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:px-4 sm:py-2 sm:text-xs">Back</button>
+          <div className="flex min-w-0 flex-nowrap items-center justify-center gap-1 sm:gap-2">
             <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70 sm:text-xs sm:tracking-[0.1em]">#{displayIndex} of {displayTotal}</p>
             {!studyMode ? (
               <div className="inline-flex items-center rounded-full border border-line bg-surface p-1">
@@ -276,21 +276,29 @@ export default function StudyReviewModal({
                 </button>
               </div>
             ) : null}
-            {viewerMode === "detail" ? (
+            {viewerMode === "detail" && canToggleEnglish ? (
               <button
                 type="button"
                 onClick={onToggleShowEnglish}
                 disabled={!canToggleEnglish}
                 className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
               >
-                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+                {showEnglish ? "Hide English" : "Show English"}
               </button>
             ) : null}
           </div>
           <div className="flex items-center justify-self-end gap-1 sm:gap-2">
-            <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.1em]">Prev {prevLabel ?? "-"}</button>
-            <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.1em]">
-              {!onNext && canUseFlashCycleNext ? (flashCycleDone ? "Restart" : "Next") : `Next ${nextLabel ?? "-"}`}
+            <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[11px] font-bold text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:uppercase sm:tracking-[0.1em]">
+              <span className="sm:hidden" aria-hidden>
+                ←
+              </span>
+              <span className="hidden sm:inline">Prev {prevLabel ?? "-"}</span>
+            </button>
+            <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[11px] font-bold text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:uppercase sm:tracking-[0.1em]">
+              <span className="sm:hidden" aria-hidden>
+                {!onNext && canUseFlashCycleNext ? (flashCycleDone ? "↺" : "→") : "→"}
+              </span>
+              <span className="hidden sm:inline">{!onNext && canUseFlashCycleNext ? (flashCycleDone ? "Restart" : "Next") : `Next ${nextLabel ?? "-"}`}</span>
             </button>
           </div>
         </div>
