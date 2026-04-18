@@ -261,7 +261,14 @@ export default function LevelExplorerItemsGrid({
         {visibleItems.map((item, index) => (
           <Fragment key={`${item.subjectType}-${item.subjectId}`}>
             <UnifiedExplorerCard
-              onClick={() => onSelectItem(item.subjectId)}
+              onClick={() => {
+                if (bulkModeEnabled) {
+                  onToggleSubjectSelection(item.subjectId);
+                  return;
+                }
+
+                onSelectItem(item.subjectId);
+              }}
               dataSubjectId={item.subjectId}
               className={`rounded-2xl border p-3 text-left transition hover:brightness-95 ${typeCardClass(
                 item.subjectType,
@@ -363,7 +370,7 @@ export default function LevelExplorerItemsGrid({
               }
             />
 
-            {selectedItem && index === visibleDetailInsertIndex ? (
+            {selectedItem && !bulkModeEnabled && index === visibleDetailInsertIndex ? (
               <LevelExplorerDetailSection
                 accountId={accountId}
                 selectedItem={selectedItem}
