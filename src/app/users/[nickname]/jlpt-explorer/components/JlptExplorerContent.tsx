@@ -31,6 +31,7 @@ export default function JlptExplorerContent({
   availableWkLevels,
   gradeFilter,
   availableGrades,
+  gradeCounts,
   filteredItems,
   selectedKanji,
   selectedItem,
@@ -184,15 +185,17 @@ export default function JlptExplorerContent({
             >
               All Grades
             </button>
-            <button
-              type="button"
-              onClick={() => onSetGradeFilter(gradeFilter === "none" ? null : "none")}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
-                gradeFilter === "none",
-              )}`}
-            >
-              None
-            </button>
+            {gradeCounts.has("none") ? (
+              <button
+                type="button"
+                onClick={() => onSetGradeFilter(gradeFilter === "none" ? null : "none")}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                  gradeFilter === "none",
+                )}`}
+              >
+                None ({formatNumber(gradeCounts.get("none") ?? 0)})
+              </button>
+            ) : null}
             {availableGrades.map((grade) => (
               <button
                 key={grade}
@@ -202,7 +205,7 @@ export default function JlptExplorerContent({
                   gradeFilter === grade,
                 )}`}
               >
-                {grade <= 6 ? `G${grade}` : grade === 8 ? "HS" : `G${grade}`}
+                G{grade} ({formatNumber(gradeCounts.get(grade) ?? 0)})
               </button>
             ))}
           </div>

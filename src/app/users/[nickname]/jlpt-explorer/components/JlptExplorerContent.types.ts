@@ -49,6 +49,7 @@ export type JlptExplorerContentProps = {
   availableWkLevels: number[];
   gradeFilter: number | "none" | null;
   availableGrades: number[];
+  gradeCounts: Map<number | "none", number>;
   filteredItems: JlptItem[];
   selectedKanji: string | null;
   selectedItem: JlptItem | null;

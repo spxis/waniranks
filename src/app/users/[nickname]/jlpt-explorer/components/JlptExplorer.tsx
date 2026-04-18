@@ -442,12 +442,16 @@ export default function JlptExplorer({
     return Array.from(levels).sort((a, b) => a - b);
   }, [effectiveItems, userKanjiByChar]);
 
-  const availableGrades = useMemo(() => {
-    const grades = new Set<number>();
+  const { availableGrades, gradeCounts } = useMemo(() => {
+    const counts = new Map<number | "none", number>();
+    let noneCount = 0;
     for (const item of effectiveItems) {
-      if (typeof item.schoolGrade === "number") grades.add(item.schoolGrade);
+      if (item.schoolGrade == null) noneCount++;
+      else counts.set(item.schoolGrade, (counts.get(item.schoolGrade) ?? 0) + 1);
     }
-    return Array.from(grades).sort((a, b) => a - b);
+    if (noneCount > 0) counts.set("none", noneCount);
+    const grades = [...counts.keys()].filter((k): k is number => typeof k === "number").sort((a, b) => a - b);
+    return { availableGrades: grades, gradeCounts: counts };
   }, [effectiveItems]);
 
   return (
@@ -465,6 +469,7 @@ export default function JlptExplorer({
       availableWkLevels={availableWkLevels}
       gradeFilter={gradeFilter}
       availableGrades={availableGrades}
+      gradeCounts={gradeCounts}
       filteredItems={filteredItems}
       selectedKanji={selectedKanji}
       selectedItem={selectedItem}
