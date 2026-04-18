@@ -284,47 +284,50 @@ export default function StudyExplorerPanel({
         </div>
 
         {bulkModeEnabled ? (
-          <div className="mb-3 rounded-xl border border-line bg-surface-muted px-3 py-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Bulk Reset Active</p>
-                <p className="text-xs text-foreground/70">
-                  Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
-                </p>
-                {selectedPreview.length > 0 ? (
-                  <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
-                ) : (
-                  <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedSubjectIds(new Set(filteredItems.map((item) => item.subjectId)))}
-                  disabled={filteredItems.length === 0 || isResetting}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Select Visible
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSubjectIds(new Set())}
-                  disabled={selectedSubjectIds.size === 0 || isResetting}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingBulkReset(true)}
-                  disabled={selectedSubjectIds.size === 0 || isResetting}
-                  className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isResetting ? "Resetting..." : "Reset Selected"}
-                </button>
+          <>
+            <div className="mb-3 h-24 sm:h-20" aria-hidden="true" />
+            <div className="fixed left-1/2 top-3 z-40 w-[min(96vw,1100px)] -translate-x-1/2 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.18)] backdrop-blur-[3px]">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Bulk Reset Active</p>
+                  <p className="text-xs text-foreground/70">
+                    Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
+                  </p>
+                  {selectedPreview.length > 0 ? (
+                    <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubjectIds(new Set(filteredItems.map((item) => item.subjectId)))}
+                    disabled={filteredItems.length === 0 || isResetting}
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Select Visible
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubjectIds(new Set())}
+                    disabled={selectedSubjectIds.size === 0 || isResetting}
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingBulkReset(true)}
+                    disabled={selectedSubjectIds.size === 0 || isResetting}
+                    className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isResetting ? "Resetting..." : "Reset Selected"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         ) : null}
 
         {resetFeedback ? (
