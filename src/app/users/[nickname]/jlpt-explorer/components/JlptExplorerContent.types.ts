@@ -29,6 +29,8 @@ export type KanjiStats = {
 export type JlptExplorerContentProps = {
   items: JlptItem[];
   showEnglish: boolean;
+  canToggleEnglish?: boolean;
+  onToggleShowEnglish?: () => void;
   studyMode: boolean;
   counts: {
     all: number;
@@ -45,6 +47,8 @@ export type JlptExplorerContentProps = {
   wkFilter: JlptFilter;
   wkLevelFilter: number | "none" | null;
   availableWkLevels: number[];
+  gradeFilter: number | "none" | null;
+  availableGrades: number[];
   filteredItems: JlptItem[];
   selectedKanji: string | null;
   selectedItem: JlptItem | null;
@@ -58,6 +62,7 @@ export type JlptExplorerContentProps = {
   onToggleNLevel: (level: number) => void;
   onSetWkFilter: (next: JlptFilter) => void;
   onSetWkLevelFilter: (next: number | "none" | null) => void;
+  onSetGradeFilter: (next: number | "none" | null) => void;
   onSetStickyLevels: (next: boolean) => void;
   onSetSelectedKanji: (next: string | null | ((prev: string | null) => string | null)) => void;
 };

@@ -81,3 +81,36 @@ export function jlptHeading(
 
   return fallbackKanji;
 }
+
+type JlptSearchItem = {
+  kanji: string;
+  kunReadings: string[];
+  onReadings: string[];
+  nanoriReadings: string[];
+  primaryMeaning?: string | null;
+  meanings: string[];
+};
+
+type JlptReadingsEntry = { readings?: string[]; meanings?: string[] };
+
+export function matchesJlptSearch(
+  item: JlptSearchItem,
+  rawQuery: string,
+  normalizedQuery: string,
+  preload: JlptReadingsEntry | undefined,
+): boolean {
+  if (!normalizedQuery) return true;
+
+  const readings = [...item.kunReadings, ...item.onReadings, ...item.nanoriReadings, ...(preload?.readings ?? [])];
+  const meanings = [...(item.primaryMeaning ? [item.primaryMeaning] : []), ...item.meanings, ...(preload?.meanings ?? [])];
+  const romaji = normalizeSearch(toRomaji(item.kanji, { upcaseKatakana: false }));
+
+  return (
+    item.kanji.includes(rawQuery.trim()) ||
+    normalizeSearch(item.kanji).includes(normalizedQuery) ||
+    romaji.includes(normalizedQuery) ||
+    readings.some((r) => normalizeSearch(r).includes(normalizedQuery) || normalizeReadingForSearch(r).includes(normalizedQuery)) ||
+    readings.some((r) => normalizeSearch(toRomaji(stripReadingSeparators(r), { upcaseKatakana: false })).includes(normalizedQuery)) ||
+    meanings.some((m) => normalizeSearch(m).includes(normalizedQuery))
+  );
+}

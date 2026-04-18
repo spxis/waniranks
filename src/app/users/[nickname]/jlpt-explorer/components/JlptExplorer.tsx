@@ -2,14 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import { toRomaji } from "wanakana";
 
 import jlptReadings from "@/data/jlptReadings.json";
 import JlptExplorerContent from "./JlptExplorerContent";
 import {
-  normalizeReadingForSearch,
+  matchesJlptSearch,
   normalizeSearch,
-  stripReadingSeparators,
 } from "../lib/jlptDisplay";
 import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
 
@@ -18,6 +16,8 @@ type Props = {
   isActive: boolean;
   items: JlptItem[];
   showEnglish?: boolean;
+  canToggleEnglish?: boolean;
+  onToggleShowEnglish?: () => void;
   studyMode?: boolean;
   userKanjiItems?: UserKanjiItem[];
 };
@@ -33,6 +33,8 @@ export default function JlptExplorer({
   isActive,
   items,
   showEnglish = false,
+  canToggleEnglish = true,
+  onToggleShowEnglish,
   studyMode = false,
   userKanjiItems = [],
 }: Props) {
@@ -121,13 +123,69 @@ export default function JlptExplorer({
     }
   }, [accountId, effectiveItems.length, hasMoreRemote, isLoadingMore]);
 
-  const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
-  const [stickyLevels, setStickyLevels] = useState(false);
+  const [selectedLevels, setSelectedLevels] = useState<Set<number>>(() => {
+    if (typeof window === "undefined") return new Set([1, 2, 3, 4, 5]);
+    try {
+      const raw = window.localStorage.getItem(`wr:jlpt-selected-levels:${accountId}`);
+      if (raw) {
+        const parsed = raw.split(",").map(Number).filter((n) => n >= 1 && n <= 5);
+        if (parsed.length > 0) return new Set(parsed);
+      }
+    } catch { /* ignore */ }
+    return new Set([1, 2, 3, 4, 5]);
+  });
+  const [stickyLevels, setStickyLevels] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return window.localStorage.getItem(`wr:jlpt-sticky:${accountId}`) === "1"; } catch { return false; }
+  });
   const [wkFilter, setWkFilter] = useState<JlptFilter>("all");
-  const [wkLevelFilter, setWkLevelFilter] = useState<number | "none" | null>(null);
+  const [wkLevelFilter, setWkLevelFilter] = useState<number | "none" | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(`wr:jlpt-wk-level:${accountId}`);
+      if (raw === "none") return "none";
+      if (raw) { const n = Number(raw); if (Number.isFinite(n)) return n; }
+    } catch { /* ignore */ }
+    return null;
+  });
+  const [gradeFilter, setGradeFilter] = useState<number | "none" | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(`wr:jlpt-grade:${accountId}`);
+      if (raw === "none") return "none";
+      if (raw) { const n = Number(raw); if (Number.isFinite(n)) return n; }
+    } catch { /* ignore */ }
+    return null;
+  });
   const [query, setQuery] = useState("");
   const [selectedKanji, setSelectedKanji] = useState<string | null>(null);
   const [gridColumns, setGridColumns] = useState(1);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(`wr:jlpt-selected-levels:${accountId}`, Array.from(selectedLevels).join(",")); } catch { /* ignore */ }
+  }, [accountId, selectedLevels]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(`wr:jlpt-sticky:${accountId}`, stickyLevels ? "1" : "0"); } catch { /* ignore */ }
+  }, [accountId, stickyLevels]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (wkLevelFilter === null) window.localStorage.removeItem(`wr:jlpt-wk-level:${accountId}`);
+      else window.localStorage.setItem(`wr:jlpt-wk-level:${accountId}`, String(wkLevelFilter));
+    } catch { /* ignore */ }
+  }, [accountId, wkLevelFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (gradeFilter === null) window.localStorage.removeItem(`wr:jlpt-grade:${accountId}`);
+      else window.localStorage.setItem(`wr:jlpt-grade:${accountId}`, String(gradeFilter));
+    } catch { /* ignore */ }
+  }, [accountId, gradeFilter]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -191,70 +249,28 @@ export default function JlptExplorer({
     const records = jlptReadings as JlptReadingsRecord;
 
     return effectiveItems.filter((item) => {
-      const levelPass = selectedLevels.has(item.nLevel);
-
-      if (!levelPass) {
-        return false;
-      }
+      if (!selectedLevels.has(item.nLevel)) return false;
 
       const userMatch = userKanjiByChar.get(item.kanji);
-      const wkPass =
-        wkFilter === "all"
-          ? true
-          : wkFilter === "kanji"
-            ? Boolean(userMatch)
-            : !userMatch;
-
-      if (!wkPass) {
-        return false;
-      }
+      if (wkFilter === "kanji" && !userMatch) return false;
+      if (wkFilter === "none" && userMatch) return false;
 
       if (wkLevelFilter !== null) {
         const itemWkLevel = userMatch?.wkLevel ?? null;
         if (wkLevelFilter === "none") {
           if (itemWkLevel !== null && itemWkLevel !== undefined) return false;
-        } else {
-          if (itemWkLevel !== wkLevelFilter) return false;
-        }
+        } else if (itemWkLevel !== wkLevelFilter) return false;
       }
 
-      if (!normalizedQuery) {
-        return true;
+      if (gradeFilter !== null) {
+        if (gradeFilter === "none") {
+          if (item.schoolGrade !== null && item.schoolGrade !== undefined) return false;
+        } else if (item.schoolGrade !== gradeFilter) return false;
       }
 
-      const preload = records[item.kanji];
-      const readings = [
-        ...item.kunReadings,
-        ...item.onReadings,
-        ...item.nanoriReadings,
-        ...(preload?.readings ?? []),
-      ];
-      const meanings = [
-        ...(item.primaryMeaning ? [item.primaryMeaning] : []),
-        ...item.meanings,
-        ...(preload?.meanings ?? []),
-      ];
-      const romaji = normalizeSearch(toRomaji(item.kanji, { upcaseKatakana: false }));
-      const readingRomajiMatch = readings.some((reading) =>
-        normalizeSearch(toRomaji(stripReadingSeparators(reading), { upcaseKatakana: false })).includes(normalizedQuery),
-      );
-
-      const readingMatch = readings.some((reading) => {
-        const normalizedReading = normalizeSearch(reading);
-        const normalizedNoSeparator = normalizeReadingForSearch(reading);
-        return normalizedReading.includes(normalizedQuery) || normalizedNoSeparator.includes(normalizedQuery);
-      });
-
-      return (
-        item.kanji.includes(query.trim()) ||
-        normalizeSearch(item.kanji).includes(normalizedQuery) ||
-        romaji.includes(normalizedQuery) ||
-        readingMatch ||
-        readingRomajiMatch ||
-        meanings.some((meaning) => normalizeSearch(meaning).includes(normalizedQuery))
-      );
+      return matchesJlptSearch(item, query, normalizedQuery, records[item.kanji]);
     });
-  }, [effectiveItems, query, selectedLevels, userKanjiByChar, wkFilter, wkLevelFilter]);
+  }, [effectiveItems, gradeFilter, query, selectedLevels, userKanjiByChar, wkFilter, wkLevelFilter]);
 
   useEffect(() => {
     const computeColumns = () => {
@@ -341,50 +357,10 @@ export default function JlptExplorer({
       setQuery(nextQuery);
 
       const normalizedQuery = normalizeSearch(nextQuery);
-      const matchedCount = effectiveItems.filter((item) => {
-        const levelPass =
-          selectedLevels.has(item.nLevel);
-
-        if (!levelPass) {
-          return false;
-        }
-
-        if (!normalizedQuery) {
-          return true;
-        }
-
-        const romaji = normalizeSearch(toRomaji(item.kanji, { upcaseKatakana: false }));
-        const preload = (jlptReadings as JlptReadingsRecord)[item.kanji];
-        const readings = [
-          ...item.kunReadings,
-          ...item.onReadings,
-          ...item.nanoriReadings,
-          ...(preload?.readings ?? []),
-        ];
-        const meanings = [
-          ...(item.primaryMeaning ? [item.primaryMeaning] : []),
-          ...item.meanings,
-          ...(preload?.meanings ?? []),
-        ];
-        const readingRomajiMatch = readings.some((reading) =>
-          normalizeSearch(toRomaji(stripReadingSeparators(reading), { upcaseKatakana: false })).includes(normalizedQuery),
-        );
-
-        const readingMatch = readings.some((reading) => {
-          const normalizedReading = normalizeSearch(reading);
-          const normalizedNoSeparator = normalizeReadingForSearch(reading);
-          return normalizedReading.includes(normalizedQuery) || normalizedNoSeparator.includes(normalizedQuery);
-        });
-
-        return (
-          item.kanji.includes(nextQuery) ||
-          normalizeSearch(item.kanji).includes(normalizedQuery) ||
-          romaji.includes(normalizedQuery) ||
-          readingMatch ||
-          readingRomajiMatch ||
-          meanings.some((meaning) => normalizeSearch(meaning).includes(normalizedQuery))
-        );
-      }).length;
+      const records = jlptReadings as JlptReadingsRecord;
+      const matchedCount = effectiveItems.filter((item) =>
+        selectedLevels.has(item.nLevel) && matchesJlptSearch(item, nextQuery, normalizedQuery, records[item.kanji]),
+      ).length;
 
       if (requestId) {
         window.dispatchEvent(
@@ -466,10 +442,20 @@ export default function JlptExplorer({
     return Array.from(levels).sort((a, b) => a - b);
   }, [effectiveItems, userKanjiByChar]);
 
+  const availableGrades = useMemo(() => {
+    const grades = new Set<number>();
+    for (const item of effectiveItems) {
+      if (typeof item.schoolGrade === "number") grades.add(item.schoolGrade);
+    }
+    return Array.from(grades).sort((a, b) => a - b);
+  }, [effectiveItems]);
+
   return (
     <JlptExplorerContent
       items={effectiveItems}
       showEnglish={showEnglish}
+      canToggleEnglish={canToggleEnglish}
+      onToggleShowEnglish={onToggleShowEnglish}
       studyMode={studyMode}
       counts={counts}
       selectedLevels={selectedLevels}
@@ -477,6 +463,8 @@ export default function JlptExplorer({
       wkFilter={wkFilter}
       wkLevelFilter={wkLevelFilter}
       availableWkLevels={availableWkLevels}
+      gradeFilter={gradeFilter}
+      availableGrades={availableGrades}
       filteredItems={filteredItems}
       selectedKanji={selectedKanji}
       selectedItem={selectedItem}
@@ -490,6 +478,7 @@ export default function JlptExplorer({
       onToggleNLevel={toggleNLevel}
       onSetWkFilter={setWkFilter}
       onSetWkLevelFilter={setWkLevelFilter}
+      onSetGradeFilter={setGradeFilter}
       onSetStickyLevels={setStickyLevels}
       onSetSelectedKanji={setSelectedKanji}
     />

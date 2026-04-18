@@ -20,6 +20,8 @@ import type {
 export default function JlptExplorerContent({
   items,
   showEnglish,
+  canToggleEnglish = true,
+  onToggleShowEnglish,
   studyMode,
   counts,
   selectedLevels,
@@ -27,6 +29,8 @@ export default function JlptExplorerContent({
   wkFilter,
   wkLevelFilter,
   availableWkLevels,
+  gradeFilter,
+  availableGrades,
   filteredItems,
   selectedKanji,
   selectedItem,
@@ -40,6 +44,7 @@ export default function JlptExplorerContent({
   onToggleNLevel,
   onSetWkFilter,
   onSetWkLevelFilter,
+  onSetGradeFilter,
   onSetStickyLevels,
   onSetSelectedKanji,
 }: Props) {
@@ -134,6 +139,74 @@ export default function JlptExplorerContent({
             <ExplorerSearchBar scope="jlpt" />
           </div>
         </div>
+        {availableWkLevels.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onSetWkLevelFilter(null)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                wkLevelFilter === null,
+              )}`}
+            >
+              All Levels
+            </button>
+            <button
+              type="button"
+              onClick={() => onSetWkLevelFilter(wkLevelFilter === "none" ? null : "none")}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                wkLevelFilter === "none",
+              )}`}
+            >
+              None
+            </button>
+            {availableWkLevels.map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => onSetWkLevelFilter(wkLevelFilter === level ? null : level)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                  wkLevelFilter === level,
+                )}`}
+              >
+                L{level}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {availableGrades.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onSetGradeFilter(null)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                gradeFilter === null,
+              )}`}
+            >
+              All Grades
+            </button>
+            <button
+              type="button"
+              onClick={() => onSetGradeFilter(gradeFilter === "none" ? null : "none")}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                gradeFilter === "none",
+              )}`}
+            >
+              None
+            </button>
+            {availableGrades.map((grade) => (
+              <button
+                key={grade}
+                type="button"
+                onClick={() => onSetGradeFilter(gradeFilter === grade ? null : grade)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+                  gradeFilter === grade,
+                )}`}
+              >
+                {grade <= 6 ? `G${grade}` : grade === 8 ? "HS" : `G${grade}`}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             <button
@@ -166,57 +239,28 @@ export default function JlptExplorerContent({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => onSetStickyLevels(!stickyLevels)}
-            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-              stickyLevels ? "border-accent bg-accent text-white" : "border-line bg-surface text-foreground"
-            }`}
-          >
-            Sticky {stickyLevels ? "On" : "Off"}
-          </button>
-        </div>
-        {availableWkLevels.length > 0 ? (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/60">WK Level:</span>
-            <button
-              type="button"
-              onClick={() => onSetWkLevelFilter(null)}
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
-                wkLevelFilter === null
-                  ? "border-accent bg-accent text-white"
-                  : "border-line bg-surface text-foreground hover:bg-surface-muted"
-              }`}
-            >
-              All
-            </button>
-            {availableWkLevels.map((level) => (
+          <div className="ml-auto flex items-center gap-2">
+            {onToggleShowEnglish ? (
               <button
-                key={level}
                 type="button"
-                onClick={() => onSetWkLevelFilter(wkLevelFilter === level ? null : level)}
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] transition ${
-                  wkLevelFilter === level
-                    ? "border-accent bg-accent text-white"
-                    : "border-line bg-surface text-foreground hover:bg-surface-muted"
-                }`}
+                onClick={onToggleShowEnglish}
+                disabled={!canToggleEnglish}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {level}
+                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
               </button>
-            ))}
+            ) : null}
             <button
               type="button"
-              onClick={() => onSetWkLevelFilter(wkLevelFilter === "none" ? null : "none")}
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
-                wkLevelFilter === "none"
-                  ? "border-accent bg-accent text-white"
-                  : "border-line bg-surface text-foreground hover:bg-surface-muted"
+              onClick={() => onSetStickyLevels(!stickyLevels)}
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
+                stickyLevels ? "border-accent bg-accent text-white" : "border-line bg-surface text-foreground"
               }`}
             >
-              None
+              Sticky {stickyLevels ? "On" : "Off"}
             </button>
           </div>
-        ) : null}
+        </div>
       </header>
       <div className="p-5">
         {isLoadingData ? (

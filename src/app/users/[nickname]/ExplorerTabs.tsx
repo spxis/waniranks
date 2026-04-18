@@ -408,6 +408,8 @@ export default function ExplorerTabs({
           isActive={activeTab === "jlpt"}
           items={jlptItems}
           showEnglish={showEnglish}
+          canToggleEnglish={!studyMode}
+          onToggleShowEnglish={() => setShowEnglish((prev) => !prev)}
           studyMode={studyMode}
           userKanjiItems={userKanjiItems}
         />
