@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 
 import type { LevelItem } from "../../explorerTypes";
-import ExplorerConfirmDialog from "../../shared/ExplorerConfirmDialog";
+import ExplorerBulkSelectionPanel from "../../shared/ExplorerBulkSelectionPanel";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import { ReadingWithPronunciation, badgeClass, formatNextReviewBadge, formatNumber, glyphSubtitleForDisplay, glyphTextSizeClass, isNewGlyphWithinHours, jlptLevelPillClass, lockedCardStateClass, shortSubjectTypeLabel, statusClass, statusShortLabel, subjectTypePillClass, titleForDisplay, typeCardClass, typeGlyphBoxClass } from "../lib/levelExplorerDisplay";
 import LevelExplorerDetailSection from "./LevelExplorerDetailSection";
@@ -95,7 +95,6 @@ export default function LevelExplorerItemsGrid({
   onJumpToKanji,
 }: Props) {
   const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
-  const [pendingResetKind, setPendingResetKind] = useState<"single" | "bulk" | null>(null);
   const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
   const [showAllSelectedInBar, setShowAllSelectedInBar] = useState(false);
 
@@ -113,8 +112,6 @@ export default function LevelExplorerItemsGrid({
   }, [selectedItems]);
 
   const selectedDetails = useMemo(() => selectedItems.map((item) => `${item.characters} • ${shortSubjectTypeLabel(item.subjectType)} • ${typeof item.wkLevel === "number" ? `L${item.wkLevel}` : "L?"} • SRS ${item.srsStage}`), [selectedItems]);
-
-  const selectedItemForReset = useMemo(() => (pendingResetKind === "single" ? selectedItem : null), [pendingResetKind, selectedItem]);
 
   const applyBulkSelection = ({
     subjectId,
@@ -190,81 +187,33 @@ export default function LevelExplorerItemsGrid({
               bulkModeEnabled,
             )}`}
           >
-            {bulkModeEnabled ? "Done Bulk Ops" : "Bulk Operations"}
+            {bulkModeEnabled ? "Bulk Ops Active" : "Bulk Operations"}
           </button>
         </div>
       </div>
       {bulkModeEnabled ? (
-        <>
-          <div className={`mb-3 ${showAllSelectedInBar ? "h-52 sm:h-44" : "h-28 sm:h-20"}`} aria-hidden="true"/>
-          <div className="fixed left-1/2 top-3 z-40 w-[min(96vw,1100px)] -translate-x-1/2 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.18)] backdrop-blur-[3px]">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
-                  Bulk Operations Active
-                </p>
-                <p className="mt-1 text-sm font-semibold text-foreground/85">
-                  Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
-                </p>
-                {selectedSubjectIds.size > 0 ? <button type="button" onClick={() => setShowAllSelectedInBar((value) => !value)} className="mt-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/80 hover:bg-surface-muted">{showAllSelectedInBar ? "Hide Full List" : "View Full List"}</button> : null}
-                {selectedPreview.length > 0 ? (
-                  <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
-                ) : (
-                  <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
-                )}
-                {showAllSelectedInBar && selectedDetails.length > 0 ? (
-                  <div className="mt-2 max-h-24 overflow-y-auto rounded-lg border border-line bg-surface px-2 py-1 text-xs text-foreground/80 sm:max-h-28">
-                    <ul className="space-y-1">
-                      {selectedDetails.map((detail, detailIndex) => <li key={`${detail}-${detailIndex}`}>{detail}</li>)}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onSelectVisibleSubjects}
-                  disabled={visibleItems.length === 0 || isResetting}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Select Visible
-                </button>
-                <button
-                  type="button"
-                  onClick={onClearSelection}
-                  disabled={selectedSubjectIds.size === 0 || isResetting}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isResetting) {
-                      return;
-                    }
-                    setPendingResetKind("bulk");
-                  }}
-                  disabled={isResetting}
-                  className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Unsupported
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : null}
-      {resetFeedback ? (
-        <p
-          className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] ${
-            resetFeedback.kind === "success"
-              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-              : "border-red-300 bg-red-50 text-red-800"
-          }`}
-        >
-          {resetFeedback.message}
-        </p>
+        <ExplorerBulkSelectionPanel
+          selectedCount={selectedSubjectIds.size}
+          preview={selectedPreview}
+          rows={selectedItems.map((item) => ({
+            subjectId: item.subjectId,
+            characters: item.characters,
+            subjectTypeLabel: shortSubjectTypeLabel(item.subjectType),
+            wkLevel: typeof item.wkLevel === "number" ? item.wkLevel : null,
+            srsStage: item.srsStage,
+          }))}
+          showFullList={showAllSelectedInBar}
+          isBusy={isResetting}
+          onToggleFullList={() => setShowAllSelectedInBar((value) => !value)}
+          onSelectVisible={onSelectVisibleSubjects}
+          onClearSelection={onClearSelection}
+          onDone={() => {
+            setBulkModeEnabled(false);
+            onClearSelection();
+            setBulkAnchorIndex(null);
+            setShowAllSelectedInBar(false);
+          }}
+        />
       ) : null}
       {filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
@@ -427,9 +376,7 @@ export default function LevelExplorerItemsGrid({
                 subjectById={subjectById}
                 onJumpToRelatedSubject={onJumpToRelatedSubject}
                 onJumpToKanji={onJumpToKanji}
-                onResetToLessons={() => {
-                  setPendingResetKind("single");
-                }}
+                onResetToLessons={() => {}}
                 resetDisabled
                 resetBusy={isResetting}
               />
@@ -447,50 +394,6 @@ export default function LevelExplorerItemsGrid({
           ) : null}
         </>
       )}
-
-      <ExplorerConfirmDialog
-        open={pendingResetKind === "bulk"}
-        title="Per-item reset is unavailable"
-        description="WaniKani API does not provide a per-item reset endpoint."
-        confirmLabel="Acknowledge"
-        details={selectedDetails}
-        requirePhrase="OK"
-        busy={isResetting}
-        onCancel={() => {
-          if (!isResetting) {
-            setPendingResetKind(null);
-          }
-        }}
-        onConfirm={() => {
-          if (isResetting || selectedSubjectIds.size === 0) {
-            return;
-          }
-          onResetSelected();
-          setPendingResetKind(null);
-        }}
-      />
-
-      <ExplorerConfirmDialog
-        open={pendingResetKind === "single" && Boolean(selectedItemForReset)}
-        title="Per-item reset is unavailable"
-        description="WaniKani API does not provide a per-item reset endpoint."
-        confirmLabel="Acknowledge"
-        details={selectedItemForReset ? [selectedItemForReset.characters] : undefined}
-        requirePhrase="OK"
-        busy={isResetting}
-        onCancel={() => {
-          if (!isResetting) {
-            setPendingResetKind(null);
-          }
-        }}
-        onConfirm={() => {
-          if (!selectedItemForReset || isResetting) {
-            return;
-          }
-          onResetSingle(selectedItemForReset.subjectId);
-          setPendingResetKind(null);
-        }}
-      />
     </>
   );
 }

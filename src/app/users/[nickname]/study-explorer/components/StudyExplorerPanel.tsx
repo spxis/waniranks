@@ -1,5 +1,7 @@
+import { useState } from "react";
+
 import SubjectTypeFilterGroup from "../../shared/SubjectTypeFilterGroup";
-import ExplorerConfirmDialog from "../../shared/ExplorerConfirmDialog";
+import ExplorerBulkSelectionPanel from "../../shared/ExplorerBulkSelectionPanel";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import {
@@ -123,20 +125,13 @@ export default function StudyExplorerPanel({
   const {
     bulkModeEnabled,
     selectedSubjectIds,
-    pendingBulkReset,
-    isResetting,
-    resetFeedback,
     selectedItems,
-    selectedDetails,
     selectedPreview,
-    toggleBulkSelection,
     applyBulkSelection,
     toggleBulkMode,
-    setBulkModeEnabled,
     setSelectedSubjectIds,
-    setPendingBulkReset,
-    resetSelectedItems,
   } = useStudyBulkReset({ filteredItems });
+  const [showAllSelectedInBar, setShowAllSelectedInBar] = useState(false);
 
   const showLoadingIndicator = (isLoading || isValidating || !hasData) && filteredItems.length === 0 && !errorMessage;
   const showFilterPagingState =
@@ -276,71 +271,28 @@ export default function StudyExplorerPanel({
               onClick={toggleBulkMode}
               className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(bulkModeEnabled)}`}
             >
-              {bulkModeEnabled ? "Done Bulk Ops" : "Bulk Operations"}
+              {bulkModeEnabled ? "Bulk Ops Active" : "Bulk Operations"}
             </button>
           </div>
         </div>
 
         {bulkModeEnabled ? (
-          <>
-            <div className="mb-3 h-24 sm:h-20" aria-hidden="true" />
-            <div className="fixed left-1/2 top-3 z-40 w-[min(96vw,1100px)] -translate-x-1/2 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.18)] backdrop-blur-[3px]">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Bulk Selection Active</p>
-                  <p className="text-xs text-foreground/70">
-                    Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
-                  </p>
-                  {selectedPreview.length > 0 ? (
-                    <p className="mt-1 text-xs text-foreground/70">{selectedPreview.join("  •  ")}</p>
-                  ) : (
-                    <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
-                  )}
-                  <p className="mt-1 text-xs text-amber-800/90">
-                    Per-item reset is not supported by the official WaniKani API.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSubjectIds(new Set(filteredItems.map((item) => item.subjectId)))}
-                    disabled={filteredItems.length === 0 || isResetting}
-                    className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Select Visible
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSubjectIds(new Set())}
-                    disabled={selectedSubjectIds.size === 0 || isResetting}
-                    className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPendingBulkReset(true)}
-                    disabled={isResetting}
-                    className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Unsupported
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : null}
-
-        {resetFeedback ? (
-          <p
-            className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] ${
-              resetFeedback.kind === "success"
-                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                : "border-red-300 bg-red-50 text-red-800"
-            }`}
-          >
-            {resetFeedback.message}
-          </p>
+          <ExplorerBulkSelectionPanel
+            selectedCount={selectedSubjectIds.size}
+            preview={selectedPreview}
+            rows={selectedItems.map((item) => ({
+              subjectId: item.subjectId,
+              characters: item.characters,
+              subjectTypeLabel: shortSubjectTypeLabel(item.subjectType),
+              wkLevel: typeof item.wkLevel === "number" ? item.wkLevel : null,
+              srsStage: item.srsStage,
+            }))}
+            showFullList={showAllSelectedInBar}
+            onToggleFullList={() => setShowAllSelectedInBar((value) => !value)}
+            onSelectVisible={() => setSelectedSubjectIds(new Set(filteredItems.map((item) => item.subjectId)))}
+            onClearSelection={() => setSelectedSubjectIds(new Set())}
+            onDone={toggleBulkMode}
+          />
         ) : null}
 
         {showLoadingIndicator || showFilterPagingState ? (
@@ -454,24 +406,6 @@ export default function StudyExplorerPanel({
             </button>
           </div>
         )}
-
-        <ExplorerConfirmDialog
-          open={pendingBulkReset}
-          title="Per-item reset is unavailable"
-          description="WaniKani API does not provide a per-item reset endpoint."
-          confirmLabel="Acknowledge"
-          details={selectedDetails}
-          requirePhrase="OK"
-          busy={isResetting}
-          onCancel={() => {
-            if (!isResetting) {
-              setPendingBulkReset(false);
-            }
-          }}
-          onConfirm={() => {
-            void resetSelectedItems();
-          }}
-        />
       </div>
     </>
   );

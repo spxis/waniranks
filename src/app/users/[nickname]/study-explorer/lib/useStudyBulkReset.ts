@@ -5,8 +5,6 @@ import {
 } from "../../level-explorer/lib/levelExplorerDisplay";
 import type { StudyQueueItem } from "./studyExplorerTypes";
 
-type ResetFeedback = { kind: "success" | "error"; message: string } | null;
-
 type Args = {
   filteredItems: StudyQueueItem[];
 };
@@ -14,9 +12,6 @@ type Args = {
 export function useStudyBulkReset({ filteredItems }: Args) {
   const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<number>>(new Set());
-  const [pendingBulkReset, setPendingBulkReset] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [resetFeedback, setResetFeedback] = useState<ResetFeedback>(null);
   const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -106,39 +101,15 @@ export function useStudyBulkReset({ filteredItems }: Args) {
       const next = !prev;
       if (!next) {
         setSelectedSubjectIds(new Set());
-        setPendingBulkReset(false);
         setBulkAnchorIndex(null);
       }
       return next;
     });
   };
 
-  const resetSelectedItems = async () => {
-    const subjectIds = Array.from(selectedSubjectIds.values());
-    if (subjectIds.length === 0 || isResetting) {
-      return;
-    }
-
-    setIsResetting(true);
-    setResetFeedback(null);
-
-    try {
-      setResetFeedback({
-        kind: "error",
-        message:
-          "Per-item reset is not available in the official WaniKani API. Use WaniKani account reset for level resets.",
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
   return {
     bulkModeEnabled,
     selectedSubjectIds,
-    pendingBulkReset,
-    isResetting,
-    resetFeedback,
     selectedItems,
     selectedDetails,
     selectedPreview,
@@ -147,7 +118,5 @@ export function useStudyBulkReset({ filteredItems }: Args) {
     toggleBulkMode,
     setBulkModeEnabled,
     setSelectedSubjectIds,
-    setPendingBulkReset,
-    resetSelectedItems,
   };
 }
