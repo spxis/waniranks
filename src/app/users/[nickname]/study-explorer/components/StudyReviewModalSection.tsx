@@ -251,34 +251,34 @@ export default function StudyReviewModalSection({
                       selectedItem.subjectType,
                     )}`}
                   >
-                    <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-x-auto px-1 max-[380px]:top-2">
+                    <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-hidden px-1 max-[380px]:top-2 sm:top-4">
                       <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                       {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
                       {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
                       {showStatusChip ? (
-                        <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusClass(selectedItem.status)}`}>
+                    <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase max-[380px]:hidden sm:px-3 sm:py-1 sm:text-xs ${statusClass(selectedItem.status)}`}>
                           {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-center text-[clamp(3.4rem,12vw,11rem)] font-black leading-none text-current max-[380px]:text-[clamp(3rem,11vw,8rem)]">
+                    <p className="text-center text-[clamp(3.1rem,10vw,6.5rem)] font-black leading-none text-current sm:text-[clamp(3.8rem,12vw,10rem)] lg:text-[clamp(3.8rem,6vw,7rem)] max-[380px]:text-[clamp(2.8rem,10.5vw,6rem)]">
                       {selectedItem.characters}
                     </p>
                   </div>
                 ) : (
                   <>
                     <div className={`relative flex min-h-[12rem] items-center justify-center rounded-2xl border p-4 max-[380px]:min-h-[10.5rem] max-[380px]:p-2 sm:p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
-                      <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-x-auto px-1 max-[380px]:top-2">
+                      <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-hidden px-1 max-[380px]:top-2 sm:top-4">
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                         {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
                         {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
                         {showStatusChip ? (
-                          <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusClass(selectedItem.status)}`}>
+                        <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase max-[380px]:hidden sm:px-3 sm:py-1 sm:text-xs ${statusClass(selectedItem.status)}`}>
                             {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-center text-[clamp(3.4rem,11vw,8rem)] font-black leading-none text-current max-[380px]:text-[clamp(2.8rem,10vw,6.5rem)]">{selectedItem.characters}</p>
+                      <p className="text-center text-[clamp(3rem,9.8vw,6.2rem)] font-black leading-none text-current sm:text-[clamp(3.6rem,11vw,8rem)] lg:text-[clamp(3.6rem,5.8vw,6.8rem)] max-[380px]:text-[clamp(2.6rem,9.8vw,5.8rem)]">{selectedItem.characters}</p>
                     </div>
 
                     <div className="mt-2 grid flex-1 gap-2 lg:mt-3 lg:gap-3 lg:grid-rows-2">
