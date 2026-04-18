@@ -182,6 +182,12 @@ export default function UserDashboardTabs({
             >
               Leaderboard
             </Link>
+            <Link
+              href={`/users/${encodeURIComponent(wkUsername)}/history`}
+              className="inline-flex h-8 select-none items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition hover:bg-surface-muted"
+            >
+              History
+            </Link>
           </div>
           <div className="ml-auto hidden items-center justify-end gap-2 sm:flex">
             <div className="flex flex-wrap gap-2" role="tablist" aria-label="User dashboard tabs">

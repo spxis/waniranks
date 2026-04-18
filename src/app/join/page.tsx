@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
+import InviteCodeAccessPanel from "../InviteCodeAccessPanel";
 
 type JoinStatus = {
   type: "idle" | "ok" | "error";
@@ -40,7 +41,7 @@ export default function JoinPage() {
       }
     }
 
-    loadSession().catch(() => {
+    void loadSession().catch(() => {
       setChecking(false);
     });
   }, []);
@@ -94,8 +95,12 @@ export default function JoinPage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Open signup</p>
           <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">Join WaniRanks</h1>
           <p className="mt-3 text-sm text-slate-700 sm:text-base">
-            Sign in with Google, then connect your WaniKani token.
+            First choose how to access your account. Invite code works without Google.
           </p>
+
+          <div className="mt-5">
+            <InviteCodeAccessPanel postLoginCallbackUrl="/join" />
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -116,7 +121,9 @@ export default function JoinPage() {
           </div>
 
           <div className="mt-4 rounded-2xl border border-line bg-surface-muted px-4 py-3 text-sm text-slate-700">
-            <p className="font-semibold">{checking ? "Checking session..." : signedIn ? `Signed in: ${userName ?? "Google user"}` : "Not signed in"}</p>
+            <p className="font-semibold">
+              {checking ? "Checking session..." : signedIn ? `Signed in: ${userName ?? "Google user"}` : "Not signed in"}
+            </p>
             <p className="mt-1 text-xs">{userEmail ?? "No Google account in session."}</p>
           </div>
 

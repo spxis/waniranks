@@ -48,39 +48,83 @@ export async function GET(request: Request) {
 
     await clearExpiredSyncLocks();
 
-    const accounts = await prisma.account.findMany({
-      orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
-      select: {
-        id: true,
-        nickname: true,
-        wkUsername: true,
-        wkLevel: true,
-        reviewCount: true,
-        burnedCount: true,
-        pendingReviews: true,
-        radicalCount: true,
-        vocabularyCount: true,
-        apprenticeCount: true,
-        guruCount: true,
-        masterCount: true,
-        enlightenedCount: true,
-        levelKanjiTotal: true,
-        levelKanjiLearned: true,
-        levelKanjiGuruPlus: true,
-        levelKanjiLocked: true,
-        estimatedHoursRemaining: true,
-        lastActivityAt: true,
-        score: true,
-        lastSyncedAt: true,
-        lastSyncStatus: true,
-        isSyncing: true,
-        syncLockUntil: true,
-        joinedByName: true,
-        joinedByEmail: true,
-        inviteCodeUpdatedAt: true,
-        createdAt: true,
-      },
-    });
+    let accounts;
+
+    try {
+      accounts = await prisma.account.findMany({
+        orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
+        select: {
+          id: true,
+          nickname: true,
+          wkUsername: true,
+          wkLevel: true,
+          reviewCount: true,
+          burnedCount: true,
+          pendingReviews: true,
+          radicalCount: true,
+          vocabularyCount: true,
+          apprenticeCount: true,
+          guruCount: true,
+          masterCount: true,
+          enlightenedCount: true,
+          levelKanjiTotal: true,
+          levelKanjiLearned: true,
+          levelKanjiGuruPlus: true,
+          levelKanjiLocked: true,
+          estimatedHoursRemaining: true,
+          lastActivityAt: true,
+          score: true,
+          lastSyncedAt: true,
+          lastSyncStatus: true,
+          isSyncing: true,
+          syncLockUntil: true,
+          joinedByName: true,
+          joinedByEmail: true,
+          inviteCodeUpdatedAt: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      // Fallback for environments where new invite-code columns are not yet migrated.
+      const fallbackAccounts = await prisma.account.findMany({
+        orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
+        select: {
+          id: true,
+          nickname: true,
+          wkUsername: true,
+          wkLevel: true,
+          reviewCount: true,
+          burnedCount: true,
+          pendingReviews: true,
+          radicalCount: true,
+          vocabularyCount: true,
+          apprenticeCount: true,
+          guruCount: true,
+          masterCount: true,
+          enlightenedCount: true,
+          levelKanjiTotal: true,
+          levelKanjiLearned: true,
+          levelKanjiGuruPlus: true,
+          levelKanjiLocked: true,
+          estimatedHoursRemaining: true,
+          lastActivityAt: true,
+          score: true,
+          lastSyncedAt: true,
+          lastSyncStatus: true,
+          isSyncing: true,
+          syncLockUntil: true,
+          createdAt: true,
+        },
+      });
+
+      accounts = fallbackAccounts.map((row) => ({
+        ...row,
+        joinedByName: null,
+        joinedByEmail: null,
+        inviteCodeUpdatedAt: null,
+      }));
+      console.warn("/api/accounts falling back due schema mismatch", error);
+    }
 
     return NextResponse.json({ accounts });
   } catch (error) {

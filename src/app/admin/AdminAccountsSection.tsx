@@ -151,6 +151,12 @@ export default function AdminAccountsSection({
                         >
                           Open As User
                         </Link>
+                        <Link
+                          href={`/admin/users/${encodeURIComponent(account.id)}/history`}
+                          className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-surface"
+                        >
+                          History
+                        </Link>
                       </div>
                     </td>
                   </tr>

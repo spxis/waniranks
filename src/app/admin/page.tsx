@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import AdminAccountsSection, { type AdminAccount } from "./AdminAccountsSection";
 import AdminControlRoom from "./AdminControlRoom";
-import AdminStudyHistory from "./AdminStudyHistory";
 import type { AdminSessionStatus, Status } from "./AdminPage.types";
 
 export default function AdminPage() {
@@ -348,7 +347,6 @@ export default function AdminPage() {
           onResetInviteCode={resetInviteCode}
         />
 
-        <AdminStudyHistory sessionAuthorized={sessionAuthorized} />
       </main>
     </div>
   );
