@@ -379,10 +379,13 @@ export default function StudyExplorerPanel({
                           <input
                             type="checkbox"
                             checked={selectedSubjectIds.has(item.subjectId)}
-                            onChange={() => {
-                              toggleBulkSelection(item.subjectId);
-                            }}
+                            readOnly
                             onClick={(event) => {
+                              applyBulkSelection({
+                                subjectId: item.subjectId,
+                                sourceIndex: index,
+                                shiftKey: event.shiftKey,
+                              });
                               event.stopPropagation();
                             }}
                             className="h-4 w-4 rounded-sm border border-line bg-surface accent-accent"
