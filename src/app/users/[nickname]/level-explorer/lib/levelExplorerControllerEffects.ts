@@ -260,6 +260,7 @@ export function useLevelExplorerSelectionReconcile({
   srsFilter,
   jlptFilter,
   reviewTimingFilter,
+  hasHydratedUrlStateRef,
   setTypeFilter,
   setVisibleTypesAndPersist,
   setSrsFilter,
@@ -273,6 +274,7 @@ export function useLevelExplorerSelectionReconcile({
   srsFilter: SrsFilter;
   jlptFilter: JlptFilter;
   reviewTimingFilter: ReviewTimingFilter;
+  hasHydratedUrlStateRef: MutableRefObject<boolean>;
   setTypeFilter: Dispatch<SetStateAction<TypeFilter>>;
   setVisibleTypesAndPersist: (next: { radical: boolean; kanji: boolean; vocabulary: boolean }) => void;
   setSrsFilter: Dispatch<SetStateAction<SrsFilter>>;
@@ -280,6 +282,10 @@ export function useLevelExplorerSelectionReconcile({
   setReviewTimingFilter: Dispatch<SetStateAction<ReviewTimingFilter>>;
 }) {
   useEffect(() => {
+    if (!hasHydratedUrlStateRef.current) {
+      return;
+    }
+
     if (!selectedItemFromAll || selectedItem) {
       return;
     }

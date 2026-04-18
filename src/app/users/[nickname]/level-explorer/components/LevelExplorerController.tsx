@@ -297,6 +297,7 @@ export default function LevelExplorerController({
     srsFilter,
     jlptFilter,
     reviewTimingFilter,
+    hasHydratedUrlStateRef,
     setTypeFilter,
     setVisibleTypesAndPersist,
     setSrsFilter,
