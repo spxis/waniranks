@@ -68,7 +68,14 @@ export function useLevelExplorerResetSelection({
         const skipped = payload.skipped ?? 0;
         const failed = payload.failed ?? 0;
         const kind = failed > 0 ? "error" : "success";
-        const message = `Reset ${formatNumber(reset)} • Skipped ${formatNumber(skipped)} • Failed ${formatNumber(failed)}`;
+        const summary = `Reset ${formatNumber(reset)} • Skipped ${formatNumber(skipped)} • Failed ${formatNumber(failed)}`;
+        const postResetNote =
+          reset > 0
+            ? " Reset items may now be locked and can be hidden by current filters (for example, Hide Locked)."
+            : skipped > 0 && failed === 0
+              ? " Selected items were already reset or unavailable."
+              : "";
+        const message = `${summary}${postResetNote}`;
 
         setResetFeedback({ kind, message });
         setSelectedSubjectIds((prev) => {
