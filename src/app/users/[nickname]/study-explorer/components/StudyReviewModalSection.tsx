@@ -316,7 +316,7 @@ export default function StudyReviewModalSection({
                     </div>
                   </div>
                 ) : (
-                  <div className="grid h-full grid-cols-2 gap-2 lg:grid-cols-1 lg:grid-rows-2 lg:gap-3">
+                  <div className="grid h-full grid-cols-2 gap-2 lg:row-span-2 lg:grid-cols-1 lg:grid-rows-2 lg:gap-3">
                     <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-red-800 sm:px-4 sm:py-4">Wrong</button>
                     <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 sm:px-4 sm:py-4">Correct</button>
                   </div>

@@ -248,10 +248,10 @@ export default function StudyReviewModal({
   return (
     <div className="fixed inset-0 z-50 bg-[rgba(8,16,36,0.72)] p-2 backdrop-blur-[2px] sm:p-6">
       <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-[1.8rem] border border-line bg-surface shadow-[0_26px_75px_rgba(0,0,0,0.35)]">
-        <div className="flex flex-col gap-1.5 border-b border-line bg-surface-muted px-3 py-2 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:px-6 sm:py-3">
-          <button type="button" onClick={closeModal} className="self-start rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:justify-self-start sm:px-4 sm:py-2 sm:text-xs">Back To List</button>
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-self-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/70 sm:text-xs">#{displayIndex} of {displayTotal}</p>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 border-b border-line bg-surface-muted px-2 py-2 sm:gap-2 sm:px-6 sm:py-3">
+          <button type="button" onClick={closeModal} className="justify-self-start whitespace-nowrap rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:px-4 sm:py-2 sm:text-xs">Back To List</button>
+          <div className="flex min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-hidden sm:gap-2">
+            <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70 sm:text-xs sm:tracking-[0.1em]">#{displayIndex} of {displayTotal}</p>
             {!studyMode ? (
               <div className="inline-flex items-center rounded-full border border-line bg-surface p-1">
                 <button
@@ -260,7 +260,7 @@ export default function StudyReviewModal({
                     setViewerMode("detail");
                     setStoredEnum(viewerModeStorageKey, "detail");
                   }}
-                  className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${viewerMode === "detail" ? "bg-accent text-white" : "text-foreground hover:bg-surface-muted"}`}
+                  className={`whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] sm:px-3 ${viewerMode === "detail" ? "bg-accent text-white" : "text-foreground hover:bg-surface-muted"}`}
                 >
                   Detail
                 </button>
@@ -270,7 +270,7 @@ export default function StudyReviewModal({
                     setViewerMode("flash");
                     setStoredEnum(viewerModeStorageKey, "flash");
                   }}
-                  className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${viewerMode === "flash" ? "bg-accent text-white" : "text-foreground hover:bg-surface-muted"}`}
+                  className={`whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] sm:px-3 ${viewerMode === "flash" ? "bg-accent text-white" : "text-foreground hover:bg-surface-muted"}`}
                 >
                   Flash
                 </button>
@@ -281,15 +281,15 @@ export default function StudyReviewModal({
                 type="button"
                 onClick={onToggleShowEnglish}
                 disabled={!canToggleEnglish}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
               >
                 {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
               </button>
             ) : null}
           </div>
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:justify-self-end">
-            <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs">Prev {prevLabel ?? "-"}</button>
-            <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs">
+          <div className="flex items-center justify-self-end gap-1 sm:gap-2">
+            <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.1em]">Prev {prevLabel ?? "-"}</button>
+            <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.1em]">
               {!onNext && canUseFlashCycleNext ? (flashCycleDone ? "Restart" : "Next") : `Next ${nextLabel ?? "-"}`}
             </button>
           </div>
