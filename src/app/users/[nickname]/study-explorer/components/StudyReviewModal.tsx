@@ -246,10 +246,10 @@ export default function StudyReviewModal({
   const jlptGradeLabel = typeof selectedItem.jlptMeta?.schoolGrade === "number" ? `Grade ${selectedItem.jlptMeta.schoolGrade}` : "-";
 
   return (
-    <div className="fixed inset-0 z-50 bg-[rgba(8,16,36,0.72)] p-3 backdrop-blur-[2px] sm:p-6">
+    <div className="fixed inset-0 z-50 bg-[rgba(8,16,36,0.72)] p-2 backdrop-blur-[2px] sm:p-6">
       <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-[1.8rem] border border-line bg-surface shadow-[0_26px_75px_rgba(0,0,0,0.35)]">
-        <div className="flex flex-col gap-2 border-b border-line bg-surface-muted px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:px-6">
-          <button type="button" onClick={closeModal} className="self-start rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:justify-self-start">Back To List</button>
+        <div className="flex flex-col gap-1.5 border-b border-line bg-surface-muted px-3 py-2 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:px-6 sm:py-3">
+          <button type="button" onClick={closeModal} className="self-start rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:justify-self-start sm:px-4 sm:py-2 sm:text-xs">Back To List</button>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-self-center">
             <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/70 sm:text-xs">#{displayIndex} of {displayTotal}</p>
             {!studyMode ? (
@@ -287,15 +287,15 @@ export default function StudyReviewModal({
               </button>
             ) : null}
           </div>
-          <div className="flex items-center gap-2 sm:justify-self-end">
-            <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Prev {prevLabel ?? "-"}</button>
-            <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:justify-self-end">
+            <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs">Prev {prevLabel ?? "-"}</button>
+            <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs">
               {!onNext && canUseFlashCycleNext ? (flashCycleDone ? "Restart" : "Next") : `Next ${nextLabel ?? "-"}`}
             </button>
           </div>
         </div>
 
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
           <StudyReviewModalSection
             accountId={accountId}
             studyMode={studyMode}

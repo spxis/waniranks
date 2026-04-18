@@ -141,7 +141,7 @@ export default function StudyReviewModalSection({
 
   return (
     <>
-      <section className="rounded-2xl border-2 border-accent/35 bg-surface p-4 sm:p-5">
+      <section className="rounded-2xl border-2 border-accent/35 bg-surface p-3 sm:p-5">
         {!studyMode && viewerMode === "flash" ? (
           flashCycleDone ? (
             <button
@@ -243,11 +243,11 @@ export default function StudyReviewModalSection({
           )
         ) : useStudyFlashLayout ? (
           <>
-            <div className="grid min-h-[56vh] gap-3 lg:min-h-[68vh] lg:grid-cols-2 lg:items-stretch">
-              <div className="flex min-h-[14rem] flex-col lg:h-full lg:min-h-0">
+            <div className="grid min-h-[48vh] gap-2 lg:min-h-[68vh] lg:grid-cols-2 lg:items-stretch">
+              <div className="flex min-h-[12rem] flex-col lg:h-full lg:min-h-0">
                 {!detailsRevealed ? (
                   <div
-                    className={`relative flex min-h-[14rem] flex-1 select-none items-center justify-center rounded-2xl border p-4 sm:p-6 lg:h-full ${typeGlyphBoxClass(
+                    className={`relative flex min-h-[12rem] flex-1 select-none items-center justify-center rounded-2xl border p-3 sm:p-6 lg:h-full ${typeGlyphBoxClass(
                       selectedItem.subjectType,
                     )}`}
                   >
@@ -261,13 +261,13 @@ export default function StudyReviewModalSection({
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-center text-[clamp(5rem,14vw,11rem)] font-black leading-none text-current">
+                    <p className="text-center text-[clamp(4rem,13vw,11rem)] font-black leading-none text-current">
                       {selectedItem.characters}
                     </p>
                   </div>
                 ) : (
                   <>
-                    <div className={`relative flex min-h-[14rem] items-center justify-center rounded-2xl border p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
+                    <div className={`relative flex min-h-[12rem] items-center justify-center rounded-2xl border p-4 sm:p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
                       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1">
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                         {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
@@ -281,17 +281,17 @@ export default function StudyReviewModalSection({
                       <p className="text-center text-[clamp(4rem,12vw,8rem)] font-black leading-none text-current">{selectedItem.characters}</p>
                     </div>
 
-                    <div className="mt-3 grid flex-1 gap-3 lg:grid-rows-2">
-                      <div className="rounded-xl border border-line bg-surface-muted px-4 py-4">
+                    <div className="mt-2 grid flex-1 gap-2 lg:mt-3 lg:gap-3 lg:grid-rows-2">
+                      <div className="rounded-xl border border-line bg-surface-muted px-3 py-3 sm:px-4 sm:py-4">
                         <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Reading</p>
-                        <p className="mt-2 text-5xl font-black leading-tight text-foreground">
+                        <p className="mt-1.5 text-4xl font-black leading-tight text-foreground sm:mt-2 sm:text-5xl">
                           {primaryReadingHiragana === "-" && secondaryReadingValue !== "-" ? secondaryReadingValue : primaryReadingHiragana}
                         </p>
-                        {primaryReadingKatakana !== "-" ? <p className="mt-2 text-4xl font-black leading-tight text-foreground/75">{primaryReadingKatakana}</p> : null}
+                        {primaryReadingKatakana !== "-" ? <p className="mt-1 text-3xl font-black leading-tight text-foreground/75 sm:mt-2 sm:text-4xl">{primaryReadingKatakana}</p> : null}
                       </div>
-                      <div className="rounded-xl border border-line bg-surface-muted px-4 py-4">
+                      <div className="rounded-xl border border-line bg-surface-muted px-3 py-3 sm:px-4 sm:py-4">
                         <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Meaning</p>
-                        <p className="mt-2 text-4xl font-black leading-tight text-foreground">{allMeanings[0] ?? selectedItem.characters}</p>
+                        <p className="mt-1.5 text-3xl font-black leading-tight text-foreground sm:mt-2 sm:text-4xl">{allMeanings[0] ?? selectedItem.characters}</p>
                         {allMeanings.length > 1 ? <p className="mt-2 text-sm font-semibold uppercase tracking-[0.08em] text-foreground/70">{allMeanings.slice(1).join(" • ")}</p> : null}
                       </div>
                     </div>
@@ -299,16 +299,16 @@ export default function StudyReviewModalSection({
                 )}
               </div>
 
-              <div className="grid min-h-[12rem] grid-rows-2 gap-3 lg:h-full lg:min-h-0">
+              <div className="grid min-h-[9rem] gap-2 lg:h-full lg:min-h-0 lg:grid-rows-2 lg:gap-3">
                 {!detailsRevealed ? (
-                  <button type="button" onClick={() => onReveal(selectedItem.assignmentId)} className="row-span-2 h-full w-full rounded-2xl border border-line bg-surface-muted px-4 py-4 text-center hover:bg-surface sm:px-6 sm:py-6">
+                  <button type="button" onClick={() => onReveal(selectedItem.assignmentId)} className="h-full w-full rounded-2xl border border-line bg-surface-muted px-3 py-3 text-center hover:bg-surface sm:px-6 sm:py-6 lg:row-span-2">
                     <div>
-                      <p className="text-base font-black uppercase tracking-[0.12em] text-foreground/70">Show Answer</p>
+                      <p className="text-sm font-black uppercase tracking-[0.12em] text-foreground/70 sm:text-base">Show Answer</p>
                       <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground/55">Space To Reveal</p>
                     </div>
                   </button>
                 ) : isOutcomeFinal ? (
-                  <div className="row-span-2 flex h-full w-full items-center justify-center rounded-2xl border-2 border-line bg-surface px-4 py-4 text-center">
+                  <div className="flex h-full w-full items-center justify-center rounded-2xl border-2 border-line bg-surface px-3 py-3 text-center sm:px-4 sm:py-4 lg:row-span-2">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Answer locked</p>
                       <p className={`mt-2 text-2xl font-black uppercase ${selectedOutcome === "correct" ? "text-emerald-700" : "text-red-700"}`}>{selectedOutcome}</p>
@@ -316,10 +316,10 @@ export default function StudyReviewModalSection({
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-3 text-sm font-black uppercase tracking-[0.1em] text-red-800 sm:px-4 sm:py-4">Wrong</button>
-                    <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-3 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 sm:px-4 sm:py-4">Correct</button>
-                  </>
+                  <div className="grid h-full grid-cols-2 gap-2 lg:grid-cols-1 lg:grid-rows-2 lg:gap-3">
+                    <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-red-800 sm:px-4 sm:py-4">Wrong</button>
+                    <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 sm:px-4 sm:py-4">Correct</button>
+                  </div>
                 )}
               </div>
             </div>
