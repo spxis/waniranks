@@ -304,6 +304,9 @@ export default function JlptExplorerContent({
                       {typeof userMatch?.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">L{userMatch.wkLevel}</span>
                       ) : null}
+                      {typeof item.schoolGrade === "number" ? (
+                        <span className="subject-pill border-line bg-surface text-foreground">G{item.schoolGrade}</span>
+                      ) : null}
                       <span className={jlptLevelPillClass()}>N{item.nLevel}</span>
                     </>
                   }
