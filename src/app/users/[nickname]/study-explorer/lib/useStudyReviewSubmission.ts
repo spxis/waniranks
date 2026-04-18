@@ -247,7 +247,7 @@ export function useStudyReviewSubmission({
 
   const submitResetToLessons = useCallback(
     async (assignmentId: number) => {
-      const { itemForSubmit, nextFocusedItem } = getSubmissionContext(assignmentId);
+      const { itemForSubmit } = getSubmissionContext(assignmentId);
 
       onSetSubmitInFlight({
         assignmentId,
@@ -259,64 +259,11 @@ export function useStudyReviewSubmission({
       onSetSubmittingByAssignmentId((prev) => new Set(prev).add(assignmentId));
 
       try {
-        const response = await fetch(`/api/study/${accountId}/reset`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assignmentIds: [assignmentId] }),
-        });
-        const payload = (await response.json()) as {
-          error?: string;
-          reset?: number;
-          skipped?: number;
-          failed?: number;
-        };
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Could not reset item to lessons.");
-        }
-
-        if (itemForSubmit) {
-          onSetModalSessionItemByAssignmentId((prev) => ({ ...prev, [assignmentId]: itemForSubmit }));
-        }
-
-        const reset = payload.reset ?? 0;
-        const skipped = payload.skipped ?? 0;
-        const failed = payload.failed ?? 0;
-
-        if (reset <= 0 && skipped <= 0) {
-          throw new Error("Could not reset item to lessons.");
-        }
-
         onSetSubmitFeedback({
-          kind: failed > 0 ? "error" : "success",
-          message: failed > 0
-            ? "Reset completed with errors."
-            : `Moved ${
-                itemForSubmit ? `${itemForSubmit.characters} (${studyItemEnglishTitle(itemForSubmit)})` : "item"
-              } to lessons.`,
+          kind: "error",
+          message:
+            "Per-item reset is not available in the official WaniKani API. Use WaniKani account reset for level resets.",
         });
-
-        onSetHiddenSubmittedAssignmentIds((prev) => {
-          const next = new Set(prev);
-          next.add(assignmentId);
-          return next;
-        });
-        onSetLoadedItems((prev) => prev.filter((item) => item.assignmentId !== assignmentId));
-        onSetTotalItems((prev) => Math.max(0, prev - 1));
-        onSetPersistedCounts((prev) =>
-          prev
-            ? {
-                ...prev,
-                reviews: Math.max(0, prev.reviews - 1),
-                lessons: prev.lessons + 1,
-                all: Math.max(0, prev.all),
-              }
-            : prev,
-        );
-        onSetReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: "reset-to-lessons" }));
-        onSetHasPendingStudySubmissions(true);
-        onSetSelectedId(nextFocusedItem?.subjectId ?? null);
-        removeFromModalSession(assignmentId);
       } catch (submitError) {
         onSetSubmitFeedback({
           kind: "error",
@@ -339,19 +286,10 @@ export function useStudyReviewSubmission({
     [
       accountId,
       getSubmissionContext,
-      onSetHasPendingStudySubmissions,
-      onSetHiddenSubmittedAssignmentIds,
-      onSetLoadedItems,
-      onSetModalSessionItemByAssignmentId,
-      onSetPersistedCounts,
       onSetRevealedAssignmentIds,
-      onSetReviewOutcomeByAssignmentId,
-      onSetSelectedId,
       onSetSubmitFeedback,
       onSetSubmitInFlight,
       onSetSubmittingByAssignmentId,
-      onSetTotalItems,
-      removeFromModalSession,
     ],
   );
 

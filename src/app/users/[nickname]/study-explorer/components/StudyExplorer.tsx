@@ -390,7 +390,6 @@ export default function StudyExplorer({
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
       <StudyExplorerPanel
-        accountId={accountId}
         canToggleEnglish={canToggleEnglish}
         showEnglish={showEnglish}
         studyMode={studyMode}

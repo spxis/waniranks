@@ -233,7 +233,7 @@ export default function LevelExplorerContent({
     clearSelection,
     resetSelected,
     resetSingle,
-  } = useLevelExplorerResetSelection({ accountId, filteredItems, visibleItems });
+  } = useLevelExplorerResetSelection({ filteredItems, visibleItems });
 
   const visibleDetailInsertIndex =
     selectedVisibleIndex >= 0

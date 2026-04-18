@@ -43,7 +43,6 @@ function StudySkeletonCards() {
 }
 
 type Props = {
-  accountId: string;
   canToggleEnglish: boolean;
   showEnglish: boolean;
   studyMode: boolean;
@@ -87,7 +86,6 @@ type Props = {
 };
 
 export default function StudyExplorerPanel({
-  accountId,
   canToggleEnglish,
   showEnglish,
   studyMode,
@@ -138,7 +136,7 @@ export default function StudyExplorerPanel({
     setSelectedSubjectIds,
     setPendingBulkReset,
     resetSelectedItems,
-  } = useStudyBulkReset({ accountId, filteredItems });
+  } = useStudyBulkReset({ filteredItems });
 
   const showLoadingIndicator = (isLoading || isValidating || !hasData) && filteredItems.length === 0 && !errorMessage;
   const showFilterPagingState =
@@ -289,7 +287,7 @@ export default function StudyExplorerPanel({
             <div className="fixed left-1/2 top-3 z-40 w-[min(96vw,1100px)] -translate-x-1/2 rounded-2xl border border-line bg-surface p-3 shadow-[0_12px_32px_rgba(8,16,36,0.18)] backdrop-blur-[3px]">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Bulk Reset Active</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Bulk Selection Active</p>
                   <p className="text-xs text-foreground/70">
                     Selected {formatNumber(selectedSubjectIds.size)} item{selectedSubjectIds.size === 1 ? "" : "s"}
                   </p>
@@ -298,6 +296,9 @@ export default function StudyExplorerPanel({
                   ) : (
                     <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
                   )}
+                  <p className="mt-1 text-xs text-amber-800/90">
+                    Per-item reset is not supported by the official WaniKani API.
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -319,10 +320,10 @@ export default function StudyExplorerPanel({
                   <button
                     type="button"
                     onClick={() => setPendingBulkReset(true)}
-                    disabled={selectedSubjectIds.size === 0 || isResetting}
+                    disabled={isResetting}
                     className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {isResetting ? "Resetting..." : "Reset Selected"}
+                    Unsupported
                   </button>
                 </div>
               </div>
@@ -456,11 +457,11 @@ export default function StudyExplorerPanel({
 
         <ExplorerConfirmDialog
           open={pendingBulkReset}
-          title={`Reset ${formatNumber(selectedItems.length)} selected item${selectedItems.length === 1 ? "" : "s"} to lessons?`}
-          description="This will move selected assignments back to lessons. This action cannot be undone."
-          confirmLabel="Reset Selected"
+          title="Per-item reset is unavailable"
+          description="WaniKani API does not provide a per-item reset endpoint."
+          confirmLabel="Acknowledge"
           details={selectedDetails}
-          requirePhrase="RESET"
+          requirePhrase="OK"
           busy={isResetting}
           onCancel={() => {
             if (!isResetting) {

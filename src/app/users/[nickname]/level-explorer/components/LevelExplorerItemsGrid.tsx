@@ -255,15 +255,15 @@ export default function LevelExplorerItemsGrid({
                 <button
                   type="button"
                   onClick={() => {
-                    if (selectedSubjectIds.size === 0 || isResetting) {
+                    if (isResetting) {
                       return;
                     }
                     setPendingResetKind("bulk");
                   }}
-                  disabled={selectedSubjectIds.size === 0 || isResetting}
+                  disabled={isResetting}
                   className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isResetting ? "Resetting..." : "Reset Selected"}
+                  Unsupported
                 </button>
               </div>
             </div>
@@ -432,7 +432,7 @@ export default function LevelExplorerItemsGrid({
                 onResetToLessons={() => {
                   setPendingResetKind("single");
                 }}
-                resetDisabled={isResetting}
+                resetDisabled
                 resetBusy={isResetting}
               />
             ) : null}
@@ -450,11 +450,11 @@ export default function LevelExplorerItemsGrid({
 
       <ExplorerConfirmDialog
         open={pendingResetKind === "bulk"}
-        title={`Reset ${formatNumber(selectedItems.length)} selected item${selectedItems.length === 1 ? "" : "s"} to lessons?`}
-        description="This will move the selected assignments back to lessons. This action cannot be undone."
-        confirmLabel="Reset Selected"
+        title="Per-item reset is unavailable"
+        description="WaniKani API does not provide a per-item reset endpoint."
+        confirmLabel="Acknowledge"
         details={selectedDetails}
-        requirePhrase="RESET"
+        requirePhrase="OK"
         busy={isResetting}
         onCancel={() => {
           if (!isResetting) {
@@ -472,11 +472,11 @@ export default function LevelExplorerItemsGrid({
 
       <ExplorerConfirmDialog
         open={pendingResetKind === "single" && Boolean(selectedItemForReset)}
-        title={`Reset ${selectedItemForReset?.characters ?? "this item"} to lessons?`}
-        description="This will move this assignment back to lessons. This action cannot be undone."
-        confirmLabel="Reset Item"
+        title="Per-item reset is unavailable"
+        description="WaniKani API does not provide a per-item reset endpoint."
+        confirmLabel="Acknowledge"
         details={selectedItemForReset ? [selectedItemForReset.characters] : undefined}
-        requirePhrase="RESET"
+        requirePhrase="OK"
         busy={isResetting}
         onCancel={() => {
           if (!isResetting) {

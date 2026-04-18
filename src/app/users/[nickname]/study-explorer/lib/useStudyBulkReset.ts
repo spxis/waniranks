@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  formatNumber,
   shortSubjectTypeLabel,
 } from "../../level-explorer/lib/levelExplorerDisplay";
 import type { StudyQueueItem } from "./studyExplorerTypes";
@@ -9,11 +8,10 @@ import type { StudyQueueItem } from "./studyExplorerTypes";
 type ResetFeedback = { kind: "success" | "error"; message: string } | null;
 
 type Args = {
-  accountId: string;
   filteredItems: StudyQueueItem[];
 };
 
-export function useStudyBulkReset({ accountId, filteredItems }: Args) {
+export function useStudyBulkReset({ filteredItems }: Args) {
   const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<number>>(new Set());
   const [pendingBulkReset, setPendingBulkReset] = useState(false);
@@ -54,11 +52,7 @@ export function useStudyBulkReset({ accountId, filteredItems }: Args) {
   );
 
   const selectedPreview = useMemo(() => {
-    const labels = selectedItems.slice(0, 6).map((item) => item.characters);
-    if (selectedItems.length > 6) {
-      labels.push(`+${formatNumber(selectedItems.length - 6)} more`);
-    }
-    return labels;
+    return selectedItems.slice(0, 6).map((item) => item.characters);
   }, [selectedItems]);
 
   const toggleBulkSelection = (subjectId: number) => {
@@ -129,44 +123,10 @@ export function useStudyBulkReset({ accountId, filteredItems }: Args) {
     setResetFeedback(null);
 
     try {
-      const response = await fetch(`/api/study/${accountId}/reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subjectIds }),
-      });
-      const payload = (await response.json()) as {
-        error?: string;
-        reset?: number;
-        skipped?: number;
-        failed?: number;
-      };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Could not reset selected items.");
-      }
-
-      const reset = payload.reset ?? 0;
-      const skipped = payload.skipped ?? 0;
-      const failed = payload.failed ?? 0;
-
-      setResetFeedback({
-        kind: failed > 0 ? "error" : "success",
-        message: `Reset ${formatNumber(reset)} • Skipped ${formatNumber(skipped)} • Failed ${formatNumber(failed)}`,
-      });
-
-      setSelectedSubjectIds(new Set());
-      setPendingBulkReset(false);
-      setBulkModeEnabled(false);
-      setBulkAnchorIndex(null);
-
-      window.dispatchEvent(new Event("focus"));
-      void fetch(`/api/accounts/${accountId}/refresh`, { method: "POST" }).catch(() => {
-        // Non-blocking refresh keeps study caches and aggregates aligned.
-      });
-    } catch (error) {
       setResetFeedback({
         kind: "error",
-        message: error instanceof Error ? error.message : "Could not reset selected items.",
+        message:
+          "Per-item reset is not available in the official WaniKani API. Use WaniKani account reset for level resets.",
       });
     } finally {
       setIsResetting(false);

@@ -313,15 +313,15 @@ export default function LevelExplorerDetailSection({
           </summary>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-foreground/70">
-              Reset sends this item back to lessons. Use only when you intentionally want to restart it.
+              Per-item reset is not supported by the official WaniKani API.
             </p>
             <button
               type="button"
               onClick={onResetToLessons}
-              disabled={resetDisabled || resetBusy}
+              disabled
               className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {resetBusy ? "Resetting..." : "Reset To Lessons"}
+              Unsupported
             </button>
           </div>
         </details>

@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { LevelItem } from "../../explorerTypes";
-import { formatNumber } from "./levelExplorerDisplay";
 
 type ResetFeedback = { kind: "success" | "error"; message: string } | null;
 
 type Args = {
-  accountId: string;
   filteredItems: LevelItem[];
   visibleItems: LevelItem[];
 };
 
 export function useLevelExplorerResetSelection({
-  accountId,
   filteredItems,
   visibleItems,
 }: Args) {
@@ -48,57 +45,16 @@ export function useLevelExplorerResetSelection({
       setResetFeedback(null);
 
       try {
-        const response = await fetch(`/api/study/${accountId}/reset`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subjectIds }),
-        });
-        const payload = (await response.json()) as {
-          error?: string;
-          reset?: number;
-          skipped?: number;
-          failed?: number;
-        };
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Could not reset selected items.");
-        }
-
-        const reset = payload.reset ?? 0;
-        const skipped = payload.skipped ?? 0;
-        const failed = payload.failed ?? 0;
-        const kind = failed > 0 ? "error" : "success";
-        const summary = `Reset ${formatNumber(reset)} • Skipped ${formatNumber(skipped)} • Failed ${formatNumber(failed)}`;
-        const postResetNote =
-          reset > 0
-            ? " Reset items may now be locked and can be hidden by current filters (for example, Hide Locked)."
-            : skipped > 0 && failed === 0
-              ? " Selected items were already reset or unavailable."
-              : "";
-        const message = `${summary}${postResetNote}`;
-
-        setResetFeedback({ kind, message });
-        setSelectedSubjectIds((prev) => {
-          const next = new Set(prev);
-          for (const subjectId of subjectIds) {
-            next.delete(subjectId);
-          }
-          return next;
-        });
-
-        void fetch(`/api/accounts/${accountId}/refresh`, { method: "POST" }).catch(() => {
-          // Non-blocking refresh to keep explorer aggregates aligned.
-        });
-      } catch (resetError) {
         setResetFeedback({
           kind: "error",
-          message: resetError instanceof Error ? resetError.message : "Could not reset selected items.",
+          message:
+            "Per-item reset is not available in the official WaniKani API. Use WaniKani account reset for level resets.",
         });
       } finally {
         setIsResetting(false);
       }
     },
-    [accountId],
+    [],
   );
 
   const toggleSubjectSelection = useCallback((subjectId: number) => {
