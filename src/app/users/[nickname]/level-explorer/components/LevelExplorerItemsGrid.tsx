@@ -94,7 +94,13 @@ export default function LevelExplorerItemsGrid({
   onJumpToRelatedSubject,
   onJumpToKanji,
 }: Props) {
-  const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
+  const [bulkModeEnabled, setBulkModeEnabled] = useState(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem("wr:level-bulk-mode") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
   const [showAllSelectedInBar, setShowAllSelectedInBar] = useState(false);
 
@@ -104,11 +110,7 @@ export default function LevelExplorerItemsGrid({
   );
 
   const selectedPreview = useMemo(() => {
-    const labels = selectedItems.slice(0, 6).map((item) => item.characters);
-    if (selectedItems.length > 6) {
-      labels.push(`+${formatNumber(selectedItems.length - 6)} more`);
-    }
-    return labels;
+    return selectedItems.map((item) => item.characters);
   }, [selectedItems]);
 
   const selectedDetails = useMemo(() => selectedItems.map((item) => `${item.characters} • ${shortSubjectTypeLabel(item.subjectType)} • ${typeof item.wkLevel === "number" ? `L${item.wkLevel}` : "L?"} • SRS ${item.srsStage}`), [selectedItems]);
@@ -180,6 +182,7 @@ export default function LevelExplorerItemsGrid({
                   setBulkAnchorIndex(null);
                   setShowAllSelectedInBar(false);
                 }
+                try { window.localStorage.setItem("wr:level-bulk-mode", next ? "1" : "0"); } catch { /* ignore */ }
                 return next;
               });
             }}
@@ -201,6 +204,8 @@ export default function LevelExplorerItemsGrid({
             subjectTypeLabel: shortSubjectTypeLabel(item.subjectType),
             wkLevel: typeof item.wkLevel === "number" ? item.wkLevel : null,
             srsStage: item.srsStage,
+            reading: (item.primaryReadings?.[0] ?? item.readings?.[0]) || null,
+            meaning: item.meanings?.[0] || null,
           }))}
           showFullList={showAllSelectedInBar}
           isBusy={isResetting}
@@ -212,6 +217,7 @@ export default function LevelExplorerItemsGrid({
             onClearSelection();
             setBulkAnchorIndex(null);
             setShowAllSelectedInBar(false);
+            try { window.localStorage.setItem("wr:level-bulk-mode", "0"); } catch { /* ignore */ }
           }}
         />
       ) : null}

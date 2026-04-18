@@ -286,6 +286,8 @@ export default function StudyExplorerPanel({
               subjectTypeLabel: shortSubjectTypeLabel(item.subjectType),
               wkLevel: typeof item.wkLevel === "number" ? item.wkLevel : null,
               srsStage: item.srsStage,
+              reading: (item.primaryReadings?.[0] ?? item.readings?.[0]) || null,
+              meaning: item.meanings?.[0] || null,
             }))}
             showFullList={showAllSelectedInBar}
             onToggleFullList={() => setShowAllSelectedInBar((value) => !value)}

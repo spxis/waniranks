@@ -37,54 +37,54 @@ export function MainTabPanel({
   vocabularyCount,
 }: MainTabPanelProps) {
   return (
-    <div className="mt-4" role="tabpanel">
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-        <article className="rounded-2xl border border-line bg-surface-muted p-3 text-center sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Level</p>
-          <p className="mt-2 text-3xl font-black text-accent sm:text-4xl">{formatNumber(wkLevel)}</p>
+    <div className="mt-3 sm:mt-4" role="tabpanel">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 lg:grid-cols-5">
+        <article className="rounded-xl border border-line bg-surface-muted p-2 text-center sm:rounded-2xl sm:p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 sm:text-xs">Level</p>
+          <p className="mt-1 text-xl font-black text-accent sm:mt-2 sm:text-4xl">{formatNumber(wkLevel)}</p>
         </article>
-        <article className="rounded-2xl border border-line bg-surface-muted p-3 text-center sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Learned Kanji</p>
-          <p className="mt-2 text-3xl font-black text-foreground sm:text-4xl">{formatNumber(levelKanjiLearned)}</p>
-          <p className="text-xs text-foreground/65">of {formatNumber(levelKanjiTotal)} in this level</p>
+        <article className="rounded-xl border border-line bg-surface-muted p-2 text-center sm:rounded-2xl sm:p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 sm:text-xs">Learned Kanji</p>
+          <p className="mt-1 text-xl font-black text-foreground sm:mt-2 sm:text-4xl">{formatNumber(levelKanjiLearned)}</p>
+          <p className="text-[10px] text-foreground/65 sm:text-xs">of {formatNumber(levelKanjiTotal)} in this level</p>
         </article>
-        <article className="rounded-2xl border border-line bg-surface-muted p-3 text-center sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Remaining (Level)</p>
-          <p className="mt-2 text-3xl font-black text-hot sm:text-4xl">
+        <article className="rounded-xl border border-line bg-surface-muted p-2 text-center sm:rounded-2xl sm:p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 sm:text-xs">Remaining</p>
+          <p className="mt-1 text-xl font-black text-hot sm:mt-2 sm:text-4xl">
             {formatNumber(Math.max(0, levelKanjiTotal - levelKanjiLearned))}
           </p>
-          <p className="text-xs text-foreground/65">locked: {formatNumber(levelKanjiLocked)}</p>
+          <p className="text-[10px] text-foreground/65 sm:text-xs">locked: {formatNumber(levelKanjiLocked)}</p>
         </article>
-        <article className="rounded-2xl border border-kanji/30 bg-kanji/10 p-3 text-center sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-kanji">Total Learned</p>
-          <p className="mt-2 text-3xl font-black text-kanji sm:text-4xl">{formatNumber(totalLearnedKanji)}</p>
-          <p className="text-xs text-foreground/65">all kanji at Guru+</p>
+        <article className="rounded-xl border border-kanji/30 bg-kanji/10 p-2 text-center sm:rounded-2xl sm:p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-kanji sm:text-xs">Total Learned</p>
+          <p className="mt-1 text-xl font-black text-kanji sm:mt-2 sm:text-4xl">{formatNumber(totalLearnedKanji)}</p>
+          <p className="text-[10px] text-foreground/65 sm:text-xs">all kanji at Guru+</p>
         </article>
-        <article className="col-span-2 rounded-2xl border border-line bg-surface-muted p-3 text-center sm:col-span-1 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Est. Time Remaining</p>
-          <p className="mt-2 text-2xl font-black text-foreground sm:text-3xl">
+        <article className="col-span-2 rounded-xl border border-line bg-surface-muted p-2 text-center sm:col-span-1 sm:rounded-2xl sm:p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 sm:text-xs">Est. Time Remaining</p>
+          <p className="mt-1 text-lg font-black text-foreground sm:mt-2 sm:text-3xl">
             {estimatedHoursRemaining === null ? "Unknown" : `${estimatedHoursRemaining}h`}
           </p>
-          <p className="text-xs text-foreground/65">Until 90% level kanji at Guru+</p>
+          <p className="text-[10px] text-foreground/65 sm:text-xs">Until 90% level kanji at Guru+</p>
         </article>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-        <SrsLink label="Apprentice" query="apprentice" value={apprenticeCount} />
-        <SrsLink label="Guru" query="guru" value={guruCount} />
-        <SrsLink label="Master" query="master" value={masterCount} />
-        <SrsLink label="Enlightened" query="enlightened" value={enlightenedCount} />
-        <SrsLink label="Burned" query="burned" value={burnedCount} />
-        <div className="rounded-xl border border-radical/40 bg-radical/10 px-3 py-2 text-center text-sm font-semibold text-radical">
-          <span className="block">{subjectTypePluralLabel("radical")}:</span>
-          <span className="mt-0.5 block text-4xl leading-none">{formatNumber(radicalCount)}</span>
+      <div className="mt-2 grid grid-cols-4 gap-1.5 sm:mt-4 sm:gap-2 lg:grid-cols-8">
+        <SrsLink label="Apprentice" shortLabel="Appr" query="apprentice" value={apprenticeCount} />
+        <SrsLink label="Guru" shortLabel="Guru" query="guru" value={guruCount} />
+        <SrsLink label="Master" shortLabel="Mstr" query="master" value={masterCount} />
+        <SrsLink label="Enlightened" shortLabel="Enl" query="enlightened" value={enlightenedCount} />
+        <SrsLink label="Burned" shortLabel="Burn" query="burned" value={burnedCount} />
+        <div className="rounded-lg border border-radical/40 bg-radical/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-radical sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
+          <span className="block"><span className="sm:hidden">Rad:</span><span className="hidden sm:inline">{subjectTypePluralLabel("radical")}:</span></span>
+          <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(radicalCount)}</span>
         </div>
-        <div className="rounded-xl border border-kanji/40 bg-kanji/10 px-3 py-2 text-center text-sm font-semibold text-kanji">
-          <span className="block">{subjectTypePluralLabel("kanji")}:</span>
-          <span className="mt-0.5 block text-4xl leading-none">{formatNumber(totalKanjiCount)}</span>
+        <div className="rounded-lg border border-kanji/40 bg-kanji/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-kanji sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
+          <span className="block"><span className="sm:hidden">Kan:</span><span className="hidden sm:inline">{subjectTypePluralLabel("kanji")}:</span></span>
+          <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(totalKanjiCount)}</span>
         </div>
-        <div className="rounded-xl border border-vocabulary/40 bg-vocabulary/10 px-3 py-2 text-center text-sm font-semibold text-vocabulary">
-          <span className="block">{subjectTypePluralLabel("vocabulary")}:</span>
-          <span className="mt-0.5 block text-4xl leading-none">{formatNumber(vocabularyCount)}</span>
+        <div className="rounded-lg border border-vocabulary/40 bg-vocabulary/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-vocabulary sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
+          <span className="block"><span className="sm:hidden">Voc:</span><span className="hidden sm:inline">{subjectTypePluralLabel("vocabulary")}:</span></span>
+          <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(vocabularyCount)}</span>
         </div>
       </div>
     </div>
@@ -291,14 +291,14 @@ function stageLabel(stage: "locked" | "apprentice" | "guru" | "master" | "enligh
   return "Lock";
 }
 
-function SrsLink({ label, query, value }: { label: string; query: string; value: number }) {
+function SrsLink({ label, shortLabel, query, value }: { label: string; shortLabel: string; query: string; value: number }) {
   return (
     <Link
       href={`?srs=${query}#explorer`}
-      className="select-none rounded-xl border border-line bg-surface px-3 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-muted"
+      className="select-none rounded-lg border border-line bg-surface px-1.5 py-1.5 text-center text-[10px] font-semibold text-foreground hover:bg-surface-muted sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm"
     >
-      <span className="block">{label}:</span>
-      <span className="mt-0.5 block text-3xl leading-none sm:text-4xl">{formatNumber(value)}</span>
+      <span className="block"><span className="sm:hidden">{shortLabel}:</span><span className="hidden sm:inline">{label}:</span></span>
+      <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(value)}</span>
     </Link>
   );
 }

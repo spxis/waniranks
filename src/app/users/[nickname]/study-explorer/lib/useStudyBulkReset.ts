@@ -1,16 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   shortSubjectTypeLabel,
 } from "../../level-explorer/lib/levelExplorerDisplay";
 import type { StudyQueueItem } from "./studyExplorerTypes";
 
+const BULK_MODE_KEY = "wr:study-bulk-mode";
+
 type Args = {
   filteredItems: StudyQueueItem[];
 };
 
 export function useStudyBulkReset({ filteredItems }: Args) {
-  const [bulkModeEnabled, setBulkModeEnabled] = useState(false);
+  const [bulkModeEnabled, setBulkModeEnabled] = useState(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(BULK_MODE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<number>>(new Set());
   const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
 
@@ -47,7 +55,7 @@ export function useStudyBulkReset({ filteredItems }: Args) {
   );
 
   const selectedPreview = useMemo(() => {
-    return selectedItems.slice(0, 6).map((item) => item.characters);
+    return selectedItems.map((item) => item.characters);
   }, [selectedItems]);
 
   const toggleBulkSelection = (subjectId: number) => {
@@ -96,16 +104,17 @@ export function useStudyBulkReset({ filteredItems }: Args) {
     return true;
   };
 
-  const toggleBulkMode = () => {
+  const toggleBulkMode = useCallback(() => {
     setBulkModeEnabled((prev) => {
       const next = !prev;
       if (!next) {
         setSelectedSubjectIds(new Set());
         setBulkAnchorIndex(null);
       }
+      try { window.localStorage.setItem(BULK_MODE_KEY, next ? "1" : "0"); } catch { /* ignore */ }
       return next;
     });
-  };
+  }, []);
 
   return {
     bulkModeEnabled,

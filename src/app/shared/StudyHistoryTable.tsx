@@ -142,23 +142,23 @@ export default function StudyHistoryTable({
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
+    <section className="rounded-2xl border border-line bg-surface/90 p-4 shadow-sm sm:p-5">
       {collapsible ? (
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="text-sm font-bold uppercase tracking-[0.1em] text-foreground"
+          className="text-base font-bold uppercase tracking-[0.1em] text-foreground sm:text-lg"
         >
           {heading} {expanded ? "▲" : "▼"}
         </button>
       ) : (
-        <h2 className="text-sm font-bold uppercase tracking-[0.1em] text-foreground">{heading}</h2>
+        <h2 className="text-base font-bold uppercase tracking-[0.1em] text-foreground sm:text-lg">{heading}</h2>
       )}
 
       {!expanded ? null : (
         <>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-sm sm:text-base">
         <span>Total: <strong>{totalAttempts}</strong></span>
         <span>Correct: <strong className="text-emerald-600">{totals.correct ?? 0}</strong></span>
         <span>Wrong: <strong className="text-red-500">{totals.wrong ?? 0}</strong></span>
@@ -167,14 +167,14 @@ export default function StudyHistoryTable({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">Page size</label>
+        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:text-sm">Page size</label>
         <select
           value={pageSize}
           onChange={(event) => {
             setPage(1);
             setPageSize(Number(event.target.value));
           }}
-          className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold"
+          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold"
         >
           {[10, 25, 50, 100].map((size) => (
             <option key={size} value={size}>{size}</option>
@@ -182,59 +182,60 @@ export default function StudyHistoryTable({
         </select>
       </div>
 
-      {isLoading ? <p className="mt-4 text-sm text-foreground/70">Loading...</p> : null}
-      {error ? <p className="mt-4 text-sm text-red-600">{error.message}</p> : null}
+      {isLoading ? <p className="mt-4 text-base text-foreground/70">Loading...</p> : null}
+      {error ? <p className="mt-4 text-base text-red-600">{error.message}</p> : null}
 
       {data ? (
-        <div className="mt-3 max-h-[34rem] overflow-auto rounded-lg border border-line">
-          <table className="w-full text-left text-xs">
-            <thead className="sticky top-0 bg-surface-muted text-[0.65rem] uppercase tracking-wider text-muted">
+        <div className="mt-3 max-h-[42rem] overflow-auto rounded-lg border border-line">
+          <table className="w-full text-left text-sm sm:text-base">
+            <thead className="sticky top-0 bg-surface-muted text-xs uppercase tracking-wider text-muted sm:text-sm">
               <tr>
-                <th className="px-2 py-1.5">
+                <th className="px-3 py-2">
                   <button type="button" onClick={() => toggleSort("submittedAt")} className="font-bold">Time {sortIcon(sortBy, "submittedAt", sortDir)}</button>
                 </th>
                 {showUserColumn ? (
-                  <th className="px-2 py-1.5">
+                  <th className="px-3 py-2">
                     <button type="button" onClick={() => toggleSort("user")} className="font-bold">User {sortIcon(sortBy, "user", sortDir)}</button>
                   </th>
                 ) : null}
-                <th className="px-2 py-1.5">
+                <th className="px-3 py-2">
                   <button type="button" onClick={() => toggleSort("result")} className="font-bold">Result {sortIcon(sortBy, "result", sortDir)}</button>
                 </th>
-                <th className="px-2 py-1.5">
+                <th className="hidden px-3 py-2 sm:table-cell">
                   <button type="button" onClick={() => toggleSort("subjectType")} className="font-bold">Type {sortIcon(sortBy, "subjectType", sortDir)}</button>
                 </th>
-                <th className="px-2 py-1.5">
+                <th className="px-3 py-2">
                   <button type="button" onClick={() => toggleSort("subject")} className="font-bold">Subject {sortIcon(sortBy, "subject", sortDir)}</button>
                 </th>
-                <th className="px-2 py-1.5">Assignment</th>
+                <th className="hidden px-3 py-2 sm:table-cell">Assignment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/50">
               {data.attempts.map((row) => (
                 <tr key={row.id} className="hover:bg-surface-muted/40">
-                  <td className="whitespace-nowrap px-2 py-1">
+                  <td className="whitespace-nowrap px-3 py-2">
                     <p className="font-semibold text-foreground/85">{formatDateTimeShort(row.submittedAt)}</p>
-                    <p className="text-[10px] uppercase tracking-[0.08em] text-foreground/55">
+                    <p className="text-xs uppercase tracking-[0.08em] text-foreground/55">
                       {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
                     </p>
                   </td>
-                  {showUserColumn ? <td className="px-2 py-1">{row.nickname}</td> : null}
-                  <td className={`px-2 py-1 font-bold ${resultColor[row.result] ?? ""}`}>{row.result}</td>
-                  <td className="px-2 py-1">
-                    <span className={`inline-block rounded px-1.5 py-0.5 text-[0.6rem] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
+                  {showUserColumn ? <td className="px-3 py-2">{row.nickname}</td> : null}
+                  <td className={`px-3 py-2 font-bold uppercase ${resultColor[row.result] ?? ""}`}>{row.result}</td>
+                  <td className="hidden px-3 py-2 sm:table-cell">
+                    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
                       {row.subjectType}
                     </span>
                   </td>
-                  <td className="px-2 py-1">
-                    <p className="font-bold text-foreground">{row.subjectLabel}</p>
-                    <p className="text-[11px] text-foreground/65">
+                  <td className="px-3 py-2">
+                    <p className="text-lg font-black text-foreground sm:text-xl">{row.subjectLabel}</p>
+                    <p className="text-xs text-foreground/65 sm:text-sm">
+                      <span className="sm:hidden"><span className={`mr-1 inline-block rounded px-1 py-0.5 text-[10px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>{row.subjectType}</span></span>
                       {row.subjectReading ? `${row.subjectReading}` : "-"}
-                      {row.subjectMeaning ? ` • ${row.subjectMeaning}` : ""}
-                      {` • #${row.subjectId}`}
+                      {row.subjectMeaning ? ` · ${row.subjectMeaning}` : ""}
+                      {` · #${row.subjectId}`}
                     </p>
                   </td>
-                  <td className="px-2 py-1 font-mono text-foreground/70">{row.assignmentId}</td>
+                  <td className="hidden px-3 py-2 font-mono text-foreground/70 sm:table-cell">{row.assignmentId}</td>
                 </tr>
               ))}
             </tbody>
@@ -243,16 +244,16 @@ export default function StudyHistoryTable({
       ) : null}
 
       {data ? (
-        <div className="mt-3 flex items-center justify-between gap-2 text-xs">
+        <div className="mt-3 flex items-center justify-between gap-2 text-sm">
           <p className="font-semibold text-foreground/70">
-            Page {data.pagination.page} of {data.pagination.totalPages} • {data.pagination.total} rows
+            Page {data.pagination.page} of {data.pagination.totalPages} · {data.pagination.total} rows
           </p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={!data.pagination.hasPrevious}
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              className="rounded-full border border-line bg-surface px-3 py-1 font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Prev
             </button>
@@ -260,7 +261,7 @@ export default function StudyHistoryTable({
               type="button"
               disabled={!data.pagination.hasNext}
               onClick={() => setPage((prev) => prev + 1)}
-              className="rounded-full border border-line bg-surface px-3 py-1 font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>

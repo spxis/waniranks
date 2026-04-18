@@ -181,7 +181,7 @@ export default function UserDashboardTabs({
     passedLevelUpGate,
   };
   return (
-    <section className="rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
+    <section className="rounded-[2rem] border border-line bg-surface/90 p-4 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -283,9 +283,9 @@ export default function UserDashboardTabs({
             <span className="hidden sm:inline">Level Progress</span>
           </button>
         </div>
-        <div className="flex w-full items-start gap-3">
+        <div className="flex w-full items-start gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-4xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
+            <h1 className="truncate text-3xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
             {viewerMatchesAccount ? (
               <span className="inline-flex select-none items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-800">
                 Me
@@ -293,7 +293,7 @@ export default function UserDashboardTabs({
             ) : null}
           </div>
           <div className="ml-auto shrink-0 text-right">
-            <p className="text-2xl font-black uppercase tracking-[0.06em] text-foreground sm:text-4xl">
+            <p className="text-xl font-black uppercase tracking-[0.06em] text-foreground sm:text-4xl">
               <span>Rank #{globalRank}</span>
               <span className="ml-2 text-base font-bold text-foreground/65 sm:text-xl">
                 of {formatNumber(totalPlayers)}

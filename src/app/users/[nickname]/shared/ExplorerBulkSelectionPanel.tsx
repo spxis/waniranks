@@ -4,6 +4,8 @@ type BulkSelectionRow = {
   subjectTypeLabel: string;
   wkLevel: number | null;
   srsStage: number;
+  reading: string | null;
+  meaning: string | null;
 };
 
 type Props = {
@@ -48,7 +50,7 @@ export default function ExplorerBulkSelectionPanel({
               >
                 {showFullList ? "Hide Full List" : "View Full List"}
               </button>
-              <p className="mt-1 truncate text-xs text-foreground/70">{preview.join("  •  ")}</p>
+              <p className="mt-1 text-xs text-foreground/70">{preview.join("  •  ")}</p>
             </>
           ) : (
             <p className="mt-1 text-xs text-foreground/70">Shift+click to select ranges.</p>
@@ -89,6 +91,8 @@ export default function ExplorerBulkSelectionPanel({
             <thead className="sticky top-0 bg-surface">
               <tr className="border-b border-line text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70">
                 <th className="px-3 py-2">Item</th>
+                <th className="px-3 py-2">Reading</th>
+                <th className="px-3 py-2">Meaning</th>
                 <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Level</th>
                 <th className="px-3 py-2">SRS</th>
@@ -98,6 +102,8 @@ export default function ExplorerBulkSelectionPanel({
               {rows.map((row) => (
                 <tr key={row.subjectId} className="border-b border-line/60 last:border-b-0">
                   <td className="px-3 py-2 text-sm font-black text-foreground">{row.characters}</td>
+                  <td className="px-3 py-2 text-foreground/80">{row.reading ?? "-"}</td>
+                  <td className="px-3 py-2 text-foreground/80">{row.meaning ?? "-"}</td>
                   <td className="px-3 py-2 font-semibold uppercase tracking-[0.06em] text-foreground/80">
                     {row.subjectTypeLabel}
                   </td>
