@@ -141,6 +141,9 @@ export default function LevelExplorerDetailSection({
             {typeof selectedItem.wkLevel === "number" ? (
               <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span>
             ) : null}
+            {typeof selectedItem.jlptMeta?.schoolGrade === "number" ? (
+              <span className="subject-pill border-line bg-surface text-foreground">G{selectedItem.jlptMeta.schoolGrade}</span>
+            ) : null}
             {selectedItem.jlptLevel ? (
               <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span>
             ) : null}

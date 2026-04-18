@@ -303,6 +303,9 @@ export default function LevelExplorerItemsGrid({
                       L{selectedLevelList[selectedLevelList.length - 1]}
                     </span>
                   ) : null}
+                  {typeof item.jlptMeta?.schoolGrade === "number" ? (
+                    <span className="subject-pill border-line bg-surface text-foreground">G{item.jlptMeta.schoolGrade}</span>
+                  ) : null}
                   {item.jlptLevel ? (
                     <span className={jlptLevelPillClass()}>N{item.jlptLevel}</span>
                   ) : null}
