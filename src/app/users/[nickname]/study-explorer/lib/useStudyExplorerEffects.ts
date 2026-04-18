@@ -63,6 +63,78 @@ function sameAssignmentList(a: StudyQueueItem[], b: StudyQueueItem[]): boolean {
   return true;
 }
 
+function sameCounts(a: StudyCounts | null | undefined, b: StudyCounts | null | undefined): boolean {
+  if (!a && !b) {
+    return true;
+  }
+
+  if (!a || !b) {
+    return false;
+  }
+
+  return a.all === b.all && a.reviews === b.reviews && a.lessons === b.lessons;
+}
+
+function sameTypeCounts(
+  a: { all: number; radical: number; kanji: number; vocabulary: number } | undefined,
+  b: { all: number; radical: number; kanji: number; vocabulary: number } | undefined,
+): boolean {
+  if (!a && !b) {
+    return true;
+  }
+
+  if (!a || !b) {
+    return false;
+  }
+
+  return (
+    a.all === b.all &&
+    a.radical === b.radical &&
+    a.kanji === b.kanji &&
+    a.vocabulary === b.vocabulary
+  );
+}
+
+function sameLevelCounts(a: Record<number, number> | undefined, b: Record<number, number> | undefined): boolean {
+  const aEntries = Object.entries(a ?? {});
+  const bEntries = Object.entries(b ?? {});
+
+  if (aEntries.length !== bEntries.length) {
+    return false;
+  }
+
+  const bMap = new Map(bEntries);
+  for (const [key, value] of aEntries) {
+    if (Number(bMap.get(key)) !== Number(value)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function sameTypeCountsByLevel(
+  a: Record<number, { all: number; radical: number; kanji: number; vocabulary: number }> | undefined,
+  b: Record<number, { all: number; radical: number; kanji: number; vocabulary: number }> | undefined,
+): boolean {
+  const aEntries = Object.entries(a ?? {});
+  const bEntries = Object.entries(b ?? {});
+
+  if (aEntries.length !== bEntries.length) {
+    return false;
+  }
+
+  const bMap = new Map(bEntries);
+  for (const [key, value] of aEntries) {
+    const other = bMap.get(key);
+    if (!other || !sameTypeCounts(value, other)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function useStudyExplorerEffects({
   accountId,
   queueMode,
@@ -281,6 +353,21 @@ export function useStudyExplorerEffects({
   ]);
 
   useEffect(() => {
+    const nextCounts = counts ?? { all: loadedItems.length, reviews: 0, lessons: 0 };
+    const nextPayload: QueueResponse = {
+      items: loadedItems,
+      counts: nextCounts,
+      levelCounts,
+      typeCounts,
+      typeCountsByLevel,
+      pagination: {
+        offset: 0,
+        limit: loadedItems.length,
+        total: totalItems,
+        hasMore: loadedItems.length < totalItems,
+      },
+    };
+
     persistQueue(
       accountId,
       queueMode,
@@ -291,13 +378,28 @@ export function useStudyExplorerEffects({
       typeCounts,
       typeCountsByLevel,
     );
-    setCachedQueueData({
-      items: loadedItems,
-      counts: counts ?? { all: loadedItems.length, reviews: 0, lessons: 0 },
-      levelCounts,
-      typeCounts,
-      typeCountsByLevel,
-      pagination: { offset: 0, limit: loadedItems.length, total: totalItems, hasMore: loadedItems.length < totalItems },
+    setCachedQueueData((prev) => {
+      if (!prev) {
+        return nextPayload;
+      }
+
+      const prevPagination = prev.pagination;
+      const nextPagination = nextPayload.pagination;
+      const samePagination =
+        prevPagination?.offset === nextPagination?.offset &&
+        prevPagination?.limit === nextPagination?.limit &&
+        prevPagination?.total === nextPagination?.total &&
+        prevPagination?.hasMore === nextPagination?.hasMore;
+
+      const unchanged =
+        sameAssignmentList(prev.items, nextPayload.items) &&
+        sameCounts(prev.counts, nextPayload.counts) &&
+        sameLevelCounts(prev.levelCounts, nextPayload.levelCounts) &&
+        sameTypeCounts(prev.typeCounts, nextPayload.typeCounts) &&
+        sameTypeCountsByLevel(prev.typeCountsByLevel, nextPayload.typeCountsByLevel) &&
+        samePagination;
+
+      return unchanged ? prev : nextPayload;
     });
   }, [
     accountId,
