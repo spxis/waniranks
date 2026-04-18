@@ -19,6 +19,8 @@ type Args = {
   showLocked: boolean;
   hasHydratedTypeFilter: boolean;
   setHasHydratedTypeFilter: React.Dispatch<React.SetStateAction<boolean>>;
+  hasHydratedViewedLevel: boolean;
+  setHasHydratedViewedLevel: React.Dispatch<React.SetStateAction<boolean>>;
   hiddenSubmittedAssignmentIds: Set<number>;
   loadedItems: StudyQueueItem[];
   totalItems: number;
@@ -151,6 +153,8 @@ export function useStudyExplorerEffects({
   showLocked,
   hasHydratedTypeFilter,
   setHasHydratedTypeFilter,
+  hasHydratedViewedLevel,
+  setHasHydratedViewedLevel,
   hiddenSubmittedAssignmentIds,
   loadedItems,
   totalItems,
@@ -219,6 +223,7 @@ export function useStudyExplorerEffects({
       const parsed = Number(urlLevel);
       if (Number.isInteger(parsed) && parsed > 0) {
         setViewedLevel(parsed);
+        setHasHydratedViewedLevel(true);
         return;
       }
     }
@@ -226,18 +231,21 @@ export function useStudyExplorerEffects({
     const raw = window.localStorage.getItem(viewedLevelStorageKey);
     if (!raw) {
       setViewedLevel(null);
+      setHasHydratedViewedLevel(true);
       return;
     }
 
     const parsed = Number(raw);
     if (Number.isInteger(parsed) && parsed > 0) {
       setViewedLevel(parsed);
+      setHasHydratedViewedLevel(true);
       return;
     }
 
     window.localStorage.removeItem(viewedLevelStorageKey);
     setViewedLevel(null);
-  }, [setViewedLevel, viewedLevelStorageKey]);
+    setHasHydratedViewedLevel(true);
+  }, [setHasHydratedViewedLevel, setViewedLevel, viewedLevelStorageKey]);
 
   useEffect(() => {
     const urlRecent = new URLSearchParams(window.location.search).get("recent");
@@ -284,13 +292,14 @@ export function useStudyExplorerEffects({
   }, [hasHydratedTypeFilter, typeFilter, typeFilterStorageKey]);
 
   useEffect(() => {
+    if (!hasHydratedViewedLevel) return;
     if (viewedLevel === null) {
       window.localStorage.removeItem(viewedLevelStorageKey);
       return;
     }
 
     window.localStorage.setItem(viewedLevelStorageKey, String(viewedLevel));
-  }, [viewedLevel, viewedLevelStorageKey]);
+  }, [hasHydratedViewedLevel, viewedLevel, viewedLevelStorageKey]);
 
   useEffect(() => {
     window.localStorage.setItem(recentOnlyStorageKey, recentOnly ? "1" : "0");

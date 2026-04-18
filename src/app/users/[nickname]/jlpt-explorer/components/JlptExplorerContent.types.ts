@@ -43,6 +43,8 @@ export type JlptExplorerContentProps = {
   selectedLevels: Set<number>;
   stickyLevels: boolean;
   wkFilter: JlptFilter;
+  wkLevelFilter: number | "none" | null;
+  availableWkLevels: number[];
   filteredItems: JlptItem[];
   selectedKanji: string | null;
   selectedItem: JlptItem | null;
@@ -55,6 +57,7 @@ export type JlptExplorerContentProps = {
   onSetSelectedLevels: (next: Set<number>) => void;
   onToggleNLevel: (level: number) => void;
   onSetWkFilter: (next: JlptFilter) => void;
+  onSetWkLevelFilter: (next: number | "none" | null) => void;
   onSetStickyLevels: (next: boolean) => void;
   onSetSelectedKanji: (next: string | null | ((prev: string | null) => string | null)) => void;
 };

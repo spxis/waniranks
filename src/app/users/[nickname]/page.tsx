@@ -270,8 +270,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const viewerMatchesAccount = Boolean(viewerEmail && linkedEmail && viewerEmail === linkedEmail);
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
-      <main className="relative mx-auto w-full max-w-6xl space-y-4 sm:space-y-6">
+    <div className="relative min-h-screen overflow-hidden px-2 py-3 sm:px-6 sm:py-8 lg:px-8">
+      <main className="relative mx-auto w-full max-w-6xl space-y-3 sm:space-y-6">
         <UserDashboardTabs
           accountId={account.id}
           nickname={account.nickname}

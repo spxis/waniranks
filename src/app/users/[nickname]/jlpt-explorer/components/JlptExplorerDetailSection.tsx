@@ -50,35 +50,45 @@ export default function JlptExplorerDetailSection({
 
   return (
     <section className="col-span-1 rounded-2xl border-2 border-accent/35 bg-surface p-5 sm:col-span-2 lg:col-span-4">
-      <div className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-x-3">
-        <div className="inline-flex rounded-2xl border border-kanji/50 bg-kanji/10 px-4 py-3 text-kanji">
-          <h3 className="text-4xl font-black leading-none">{selectedItem.kanji}</h3>
+      <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-3">
+        <div className="inline-flex sm:self-start">
+          <div className="inline-flex min-h-[5.75rem] min-w-[5.75rem] flex-col items-center justify-center rounded-2xl border border-kanji/50 bg-kanji/10 px-4 py-3">
+            <p className="text-center text-4xl font-black leading-none text-kanji">{selectedItem.kanji}</p>
+            {!studyMode && primary ? (
+              <p className="mt-1 w-full text-center text-sm font-semibold text-foreground/85">{readingLabel(primary, showEnglish)}</p>
+            ) : null}
+          </div>
         </div>
-        <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
-          <span className="subject-pill subject-pill--kanji">kanji</span>
-          {typeof selectedUserMatch?.wkLevel === "number" ? (
-            <span className="subject-pill border-line bg-surface text-foreground">L{selectedUserMatch.wkLevel}</span>
-          ) : null}
-          <span className={jlptLevelPillClass()}>N{selectedItem.nLevel}</span>
-          <span className={`subject-pill ${jlptStatusClass(selectedUserMatch?.status)}`}>
-            {selectedUserMatch?.status ?? "untracked"}
-          </span>
-        </div>
+
         <div className="min-w-0">
-          <p className="text-3xl font-black leading-tight text-foreground">
-            {studyMode
-              ? "Kanji"
-              : jlptHeading(
-                  selectedItem.primaryMeaning,
-                  selectedUserMatch?.meanings,
-                  selectedItem.meanings.length > 0 ? selectedItem.meanings : (selectedPreload?.meanings ?? []),
-                  selectedItem.kanji,
-                )}
-          </p>
+          <div className="flex flex-wrap justify-start gap-1 sm:justify-end">
+            <span className={`subject-pill ${jlptStatusClass(selectedUserMatch?.status)}`}>
+              {selectedUserMatch?.status ?? "untracked"}
+            </span>
+            {typeof selectedUserMatch?.wkLevel === "number" ? (
+              <span className="subject-pill border-line bg-surface text-foreground">L{selectedUserMatch.wkLevel}</span>
+            ) : null}
+            <span className={jlptLevelPillClass()}>N{selectedItem.nLevel}</span>
+            {selectedUserMatch ? (
+              <span className="subject-pill border-line bg-surface text-foreground">SRS {selectedUserMatch.srsStage ?? 0}</span>
+            ) : null}
+          </div>
+          <div className="mt-2 min-w-0">
+            <p className="text-4xl font-black leading-tight text-foreground">
+              {studyMode
+                ? "Kanji"
+                : jlptHeading(
+                    selectedItem.primaryMeaning,
+                    selectedUserMatch?.meanings,
+                    selectedItem.meanings.length > 0 ? selectedItem.meanings : (selectedPreload?.meanings ?? []),
+                    selectedItem.kanji,
+                  )}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <JlptExplorerStatsPanel
           open={statsOpen}
           onToggle={onToggleStatsOpen}

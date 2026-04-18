@@ -34,7 +34,7 @@ export default function ExplorerBulkSelectionPanel({
   const hasSelection = selectedCount > 0;
 
   return (
-    <div className="mb-3 rounded-2xl border border-line bg-surface p-3 shadow-[0_8px_22px_rgba(8,16,36,0.12)]">
+    <div className="sticky top-0 z-30 mb-3 rounded-2xl border border-line bg-surface p-3 shadow-[0_8px_22px_rgba(8,16,36,0.12)]">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">Bulk Selection Active</p>

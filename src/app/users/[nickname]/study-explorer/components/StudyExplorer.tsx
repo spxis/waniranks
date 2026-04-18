@@ -73,6 +73,7 @@ export default function StudyExplorer({
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
   const [viewedLevel, setViewedLevel] = useState<number | null>(null);
+  const [hasHydratedViewedLevel, setHasHydratedViewedLevel] = useState(false);
   const [typeFilter, setTypeFilter] = useState<StudyTypeFilter>("all");
   const [srsFilter, setSrsFilter] = useState<StudySrsFilter>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -275,6 +276,8 @@ export default function StudyExplorer({
     showLocked,
     hasHydratedTypeFilter,
     setHasHydratedTypeFilter,
+    hasHydratedViewedLevel,
+    setHasHydratedViewedLevel,
     hiddenSubmittedAssignmentIds,
     loadedItems,
     totalItems,

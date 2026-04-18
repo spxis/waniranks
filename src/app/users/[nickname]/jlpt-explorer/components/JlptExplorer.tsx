@@ -124,6 +124,7 @@ export default function JlptExplorer({
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
   const [stickyLevels, setStickyLevels] = useState(false);
   const [wkFilter, setWkFilter] = useState<JlptFilter>("all");
+  const [wkLevelFilter, setWkLevelFilter] = useState<number | "none" | null>(null);
   const [query, setQuery] = useState("");
   const [selectedKanji, setSelectedKanji] = useState<string | null>(null);
   const [gridColumns, setGridColumns] = useState(1);
@@ -208,6 +209,15 @@ export default function JlptExplorer({
         return false;
       }
 
+      if (wkLevelFilter !== null) {
+        const itemWkLevel = userMatch?.wkLevel ?? null;
+        if (wkLevelFilter === "none") {
+          if (itemWkLevel !== null && itemWkLevel !== undefined) return false;
+        } else {
+          if (itemWkLevel !== wkLevelFilter) return false;
+        }
+      }
+
       if (!normalizedQuery) {
         return true;
       }
@@ -244,7 +254,7 @@ export default function JlptExplorer({
         meanings.some((meaning) => normalizeSearch(meaning).includes(normalizedQuery))
       );
     });
-  }, [effectiveItems, query, selectedLevels, userKanjiByChar, wkFilter]);
+  }, [effectiveItems, query, selectedLevels, userKanjiByChar, wkFilter, wkLevelFilter]);
 
   useEffect(() => {
     const computeColumns = () => {
@@ -447,6 +457,15 @@ export default function JlptExplorer({
     ? filteredItems.find((item) => item.kanji === selectedKanji) ?? null
     : null;
 
+  const availableWkLevels = useMemo(() => {
+    const levels = new Set<number>();
+    for (const item of effectiveItems) {
+      const match = userKanjiByChar.get(item.kanji);
+      if (typeof match?.wkLevel === "number") levels.add(match.wkLevel);
+    }
+    return Array.from(levels).sort((a, b) => a - b);
+  }, [effectiveItems, userKanjiByChar]);
+
   return (
     <JlptExplorerContent
       items={effectiveItems}
@@ -456,6 +475,8 @@ export default function JlptExplorer({
       selectedLevels={selectedLevels}
       stickyLevels={stickyLevels}
       wkFilter={wkFilter}
+      wkLevelFilter={wkLevelFilter}
+      availableWkLevels={availableWkLevels}
       filteredItems={filteredItems}
       selectedKanji={selectedKanji}
       selectedItem={selectedItem}
@@ -468,6 +489,7 @@ export default function JlptExplorer({
       onSetSelectedLevels={setSelectedLevels}
       onToggleNLevel={toggleNLevel}
       onSetWkFilter={setWkFilter}
+      onSetWkLevelFilter={setWkLevelFilter}
       onSetStickyLevels={setStickyLevels}
       onSetSelectedKanji={setSelectedKanji}
     />

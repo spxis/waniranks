@@ -30,6 +30,7 @@ export default function ExplorerTabs({
   const previousPageKeyRef = useRef<string | null>(null);
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
+  const [dashboardTab, setDashboardTab] = useState<string>("main");
   const [studyMode, setStudyMode] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -269,6 +270,20 @@ export default function ExplorerTabs({
       }),
     );
   }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onDashboardTabChange = (event: Event) => {
+      const custom = event as CustomEvent<{ tab?: string }>;
+      setDashboardTab(custom.detail?.tab ?? "main");
+    };
+    window.addEventListener("wr:dashboard-tab-change", onDashboardTabChange as EventListener);
+    return () => {
+      window.removeEventListener("wr:dashboard-tab-change", onDashboardTabChange as EventListener);
+    };
+  }, []);
+
+  if (dashboardTab !== "main") return null;
 
   function tabClass(tab: "study" | "level" | "jlpt"): string {
     const active = activeTab === tab;

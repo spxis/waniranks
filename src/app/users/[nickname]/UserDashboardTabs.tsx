@@ -138,12 +138,22 @@ export default function UserDashboardTabs({
   function switchTab(next: TabId) {
     setActiveTab(next);
     setStoredEnum(tabStorageKey, next);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("wr:dashboard-tab-change", { detail: { tab: next } }));
+    }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("wr:dashboard-tab-change", { detail: { tab: activeTab } }));
+  }, [activeTab]);
+
+  const segmentBtnBase = "inline-flex h-8 shrink-0 select-none items-center justify-center rounded-full px-3 text-[11px] font-bold uppercase tracking-[0.1em] transition sm:px-4 sm:text-xs";
   function tabClass(tab: TabId): string {
     const active = activeTab === tab;
     return active
-      ? `${actionButtonBaseClass} border-accent bg-accent text-white`
-      : `${actionButtonBaseClass} border-line bg-surface text-foreground hover:bg-surface-muted`;
+      ? `${segmentBtnBase} border border-accent bg-accent text-white`
+      : `${segmentBtnBase} text-foreground hover:bg-surface-muted`;
   }
 
   useEffect(() => {
@@ -181,8 +191,8 @@ export default function UserDashboardTabs({
     passedLevelUpGate,
   };
   return (
-    <section className="rounded-[2rem] border border-line bg-surface/90 p-4 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
-      <div className="flex flex-col gap-3">
+    <section className="rounded-[2rem] border border-line bg-surface/90 p-3 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
+      <div className="flex flex-col gap-2 sm:gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
@@ -200,7 +210,7 @@ export default function UserDashboardTabs({
             </Link>
           </div>
           <div className="ml-auto hidden items-center justify-end gap-2 sm:flex">
-            <div className="flex flex-wrap gap-2" role="tablist" aria-label="User dashboard tabs">
+            <div className="inline-flex items-center rounded-full border border-line bg-surface p-1" role="tablist" aria-label="User dashboard tabs">
               <button
                 type="button"
                 role="tab"
@@ -248,7 +258,7 @@ export default function UserDashboardTabs({
           />
         </div>
         <div
-          className="flex w-full items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:hidden"
+          className="inline-flex items-center rounded-full border border-line bg-surface p-1 sm:hidden"
           role="tablist"
           aria-label="User dashboard tabs"
         >
@@ -259,8 +269,7 @@ export default function UserDashboardTabs({
             className={tabClass("main")}
             onClick={() => switchTab("main")}
           >
-            <span className="sm:hidden">Main</span>
-            <span className="hidden sm:inline">Main Data</span>
+            Main
           </button>
           <button
             type="button"
@@ -269,8 +278,7 @@ export default function UserDashboardTabs({
             className={tabClass("item-spread")}
             onClick={() => switchTab("item-spread")}
           >
-            <span className="sm:hidden">Items</span>
-            <span className="hidden sm:inline">Item Spread</span>
+            Items
           </button>
           <button
             type="button"
@@ -279,13 +287,12 @@ export default function UserDashboardTabs({
             className={tabClass("level-progress")}
             onClick={() => switchTab("level-progress")}
           >
-            <span className="sm:hidden">Level</span>
-            <span className="hidden sm:inline">Level Progress</span>
+            Level
           </button>
         </div>
         <div className="flex w-full items-start gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-3xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
+            <h1 className="truncate text-2xl leading-[0.95] text-foreground sm:text-5xl">{nickname}</h1>
             {viewerMatchesAccount ? (
               <span className="inline-flex select-none items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-800">
                 Me
@@ -293,9 +300,9 @@ export default function UserDashboardTabs({
             ) : null}
           </div>
           <div className="ml-auto shrink-0 text-right">
-            <p className="text-xl font-black uppercase tracking-[0.06em] text-foreground sm:text-4xl">
+            <p className="text-lg font-black uppercase tracking-[0.06em] text-foreground sm:text-4xl">
               <span>Rank #{globalRank}</span>
-              <span className="ml-2 text-base font-bold text-foreground/65 sm:text-xl">
+              <span className="ml-1 text-sm font-bold text-foreground/65 sm:ml-2 sm:text-xl">
                 of {formatNumber(totalPlayers)}
               </span>
             </p>

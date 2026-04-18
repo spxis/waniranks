@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import jlptReadings from "@/data/jlptReadings.json";
-import SubjectTypeFilterButton from "../../shared/SubjectTypeFilterButton";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import { badgeClass, jlptLevelPillClass } from "../../level-explorer/lib/levelExplorerDisplay";
 import {
@@ -26,6 +25,8 @@ export default function JlptExplorerContent({
   selectedLevels,
   stickyLevels,
   wkFilter,
+  wkLevelFilter,
+  availableWkLevels,
   filteredItems,
   selectedKanji,
   selectedItem,
@@ -38,6 +39,7 @@ export default function JlptExplorerContent({
   onSetSelectedLevels,
   onToggleNLevel,
   onSetWkFilter,
+  onSetWkLevelFilter,
   onSetStickyLevels,
   onSetSelectedKanji,
 }: Props) {
@@ -163,30 +165,6 @@ export default function JlptExplorerContent({
                 N{level} ({formatNumber(count)})
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => onSetWkFilter("all")}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
-                wkFilter === "all",
-              )}`}
-            >
-              All ({formatNumber(counts.all)})
-            </button>
-            <SubjectTypeFilterButton
-              type="kanji"
-              count={counts.kanji}
-              active={wkFilter === "kanji" || wkFilter === "all"}
-              onClick={() => onSetWkFilter("kanji")}
-            />
-            <button
-              type="button"
-              onClick={() => onSetWkFilter("none")}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
-                wkFilter === "none",
-              )}`}
-            >
-              None ({formatNumber(counts.none)})
-            </button>
           </div>
           <button
             type="button"
@@ -198,6 +176,47 @@ export default function JlptExplorerContent({
             Sticky {stickyLevels ? "On" : "Off"}
           </button>
         </div>
+        {availableWkLevels.length > 0 ? (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/60">WK Level:</span>
+            <button
+              type="button"
+              onClick={() => onSetWkLevelFilter(null)}
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
+                wkLevelFilter === null
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-surface text-foreground hover:bg-surface-muted"
+              }`}
+            >
+              All
+            </button>
+            {availableWkLevels.map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => onSetWkLevelFilter(wkLevelFilter === level ? null : level)}
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] transition ${
+                  wkLevelFilter === level
+                    ? "border-accent bg-accent text-white"
+                    : "border-line bg-surface text-foreground hover:bg-surface-muted"
+                }`}
+              >
+                {level}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => onSetWkLevelFilter(wkLevelFilter === "none" ? null : "none")}
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
+                wkLevelFilter === "none"
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-surface text-foreground hover:bg-surface-muted"
+              }`}
+            >
+              None
+            </button>
+          </div>
+        ) : null}
       </header>
       <div className="p-5">
         {isLoadingData ? (
@@ -235,7 +254,6 @@ export default function JlptExplorerContent({
                   indexLabel={`#${index + 1}`}
                   topRight={
                     <>
-                      <span className="subject-pill subject-pill--kanji">kanji</span>
                       {typeof userMatch?.wkLevel === "number" ? (
                         <span className="subject-pill border-line bg-surface text-foreground">L{userMatch.wkLevel}</span>
                       ) : null}
