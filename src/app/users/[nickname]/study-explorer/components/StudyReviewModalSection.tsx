@@ -244,14 +244,14 @@ export default function StudyReviewModalSection({
         ) : useStudyFlashLayout ? (
           <>
             <div className="grid min-h-[48vh] gap-2 lg:min-h-[68vh] lg:grid-cols-2 lg:items-stretch">
-              <div className="flex min-h-[12rem] flex-col lg:h-full lg:min-h-0">
+              <div className="flex min-h-[12rem] flex-col max-[380px]:min-h-[10.5rem] lg:h-full lg:min-h-0">
                 {!detailsRevealed ? (
                   <div
-                    className={`relative flex min-h-[12rem] flex-1 select-none items-center justify-center rounded-2xl border p-3 sm:p-6 lg:h-full ${typeGlyphBoxClass(
+                    className={`relative flex min-h-[12rem] flex-1 select-none items-center justify-center rounded-2xl border p-3 max-[380px]:min-h-[10.5rem] max-[380px]:p-2 sm:p-6 lg:h-full ${typeGlyphBoxClass(
                       selectedItem.subjectType,
                     )}`}
                   >
-                    <div className="absolute left-1/2 top-4 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-x-auto px-1">
+                    <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-x-auto px-1 max-[380px]:top-2">
                       <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                       {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
                       {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
@@ -261,14 +261,14 @@ export default function StudyReviewModalSection({
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-center text-[clamp(4rem,13vw,11rem)] font-black leading-none text-current">
+                    <p className="text-center text-[clamp(3.4rem,12vw,11rem)] font-black leading-none text-current max-[380px]:text-[clamp(3rem,11vw,8rem)]">
                       {selectedItem.characters}
                     </p>
                   </div>
                 ) : (
                   <>
-                    <div className={`relative flex min-h-[12rem] items-center justify-center rounded-2xl border p-4 sm:p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
-                      <div className="absolute left-1/2 top-4 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-x-auto px-1">
+                    <div className={`relative flex min-h-[12rem] items-center justify-center rounded-2xl border p-4 max-[380px]:min-h-[10.5rem] max-[380px]:p-2 sm:p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
+                      <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-x-auto px-1 max-[380px]:top-2">
                         <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
                         {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
                         {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
@@ -278,21 +278,21 @@ export default function StudyReviewModalSection({
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-center text-[clamp(4rem,12vw,8rem)] font-black leading-none text-current">{selectedItem.characters}</p>
+                      <p className="text-center text-[clamp(3.4rem,11vw,8rem)] font-black leading-none text-current max-[380px]:text-[clamp(2.8rem,10vw,6.5rem)]">{selectedItem.characters}</p>
                     </div>
 
                     <div className="mt-2 grid flex-1 gap-2 lg:mt-3 lg:gap-3 lg:grid-rows-2">
-                      <div className="rounded-xl border border-line bg-surface-muted px-3 py-3 sm:px-4 sm:py-4">
+                      <div className="rounded-xl border border-line bg-surface-muted px-3 py-3 max-[380px]:px-2.5 max-[380px]:py-2.5 sm:px-4 sm:py-4">
                         <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Reading</p>
-                        <p className="mt-1.5 text-4xl font-black leading-tight text-foreground sm:mt-2 sm:text-5xl">
+                        <p className="mt-1 text-3xl font-black leading-tight text-foreground max-[380px]:text-[2.25rem] sm:mt-2 sm:text-5xl">
                           {primaryReadingHiragana === "-" && secondaryReadingValue !== "-" ? secondaryReadingValue : primaryReadingHiragana}
                         </p>
-                        {primaryReadingKatakana !== "-" ? <p className="mt-1 text-3xl font-black leading-tight text-foreground/75 sm:mt-2 sm:text-4xl">{primaryReadingKatakana}</p> : null}
+                        {primaryReadingKatakana !== "-" ? <p className="mt-1 text-sm font-semibold leading-tight text-foreground/70">{primaryReadingKatakana}</p> : null}
                       </div>
-                      <div className="rounded-xl border border-line bg-surface-muted px-3 py-3 sm:px-4 sm:py-4">
+                      <div className="rounded-xl border border-line bg-surface-muted px-3 py-3 max-[380px]:px-2.5 max-[380px]:py-2.5 sm:px-4 sm:py-4">
                         <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Meaning</p>
-                        <p className="mt-1.5 text-3xl font-black leading-tight text-foreground sm:mt-2 sm:text-4xl">{allMeanings[0] ?? selectedItem.characters}</p>
-                        {allMeanings.length > 1 ? <p className="mt-2 text-sm font-semibold uppercase tracking-[0.08em] text-foreground/70">{allMeanings.slice(1).join(" • ")}</p> : null}
+                        <p className="mt-1 text-[2rem] font-black leading-tight text-foreground max-[380px]:text-[1.65rem] sm:mt-2 sm:text-4xl">{allMeanings[0] ?? selectedItem.characters}</p>
+                        {allMeanings.length > 1 ? <p className="mt-1.5 text-sm font-semibold uppercase tracking-[0.08em] text-foreground/70">{allMeanings.slice(1).join(" • ")}</p> : null}
                       </div>
                     </div>
                   </>
