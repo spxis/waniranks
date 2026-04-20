@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
-import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
+import { formatRelativeFromNow } from "@/lib/timeFormat";
 
 type SortBy = "submittedAt" | "result" | "subjectType" | "subject" | "user";
 type SortDir = "asc" | "desc";
@@ -52,6 +53,25 @@ function sortIcon(activeSortBy: SortBy, sortBy: SortBy, sortDir: SortDir): strin
   }
 
   return sortDir === "desc" ? "v" : "^";
+}
+
+function formatHistoryDateCompact(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return "-";
+  }
+
+  const monthDay = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+  }).format(date);
+  const time = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date).toLowerCase();
+
+  return `${monthDay.toUpperCase()} (${time})`;
 }
 
 export default function StudyHistoryTable({
@@ -186,60 +206,119 @@ export default function StudyHistoryTable({
       {error ? <p className="mt-4 text-base text-red-600">{error.message}</p> : null}
 
       {data ? (
-        <div className="mt-3 max-h-[42rem] overflow-auto rounded-lg border border-line">
-          <table className="w-full text-left text-sm sm:text-base">
+        <div className="mt-3 space-y-3">
+          <div className="space-y-2 sm:hidden">
+            {data.attempts.map((row) => (
+              <article key={`mobile-${row.id}`} className="rounded-lg border border-line bg-surface-muted/40 px-3 py-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/70">{formatHistoryDateCompact(row.submittedAt)}</p>
+                    <p className="text-[10px] uppercase tracking-[0.08em] text-foreground/50">
+                      {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
+                    </p>
+                  </div>
+                  {showUserColumn ? <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/65">{row.nickname}</p> : null}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className={`text-xs font-black uppercase ${resultColor[row.result] ?? ""}`}>{row.result}</span>
+                  <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
+                    {row.subjectType}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <p className="text-xl font-black leading-tight text-foreground">{row.subjectLabel}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-foreground/80">{row.subjectReading ? row.subjectReading : "-"}</p>
+                  <p className="mt-0.5 text-[11px] text-foreground/65">
+                    {row.subjectMeaning ? row.subjectMeaning : "-"} · #{row.subjectId}
+                  </p>
+                  {row.subjectType === "kanji" ? (
+                    <p className="mt-1">
+                      <Link
+                        href={`/users/${encodeURIComponent(row.wkUsername)}?tab=study&subject=${row.subjectId}`}
+                        className="text-[11px] font-bold uppercase tracking-[0.08em] text-accent hover:underline"
+                      >
+                        View details
+                      </Link>
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="hidden max-h-[42rem] overflow-auto rounded-lg border border-line sm:block">
+            <table className="w-full text-left text-sm sm:text-base">
             <thead className="sticky top-0 bg-surface-muted text-xs uppercase tracking-wider text-muted sm:text-sm">
               <tr>
-                <th className="px-3 py-2">
+                <th className="w-[18%] px-3 py-2">
                   <button type="button" onClick={() => toggleSort("submittedAt")} className="font-bold">Time {sortIcon(sortBy, "submittedAt", sortDir)}</button>
                 </th>
                 {showUserColumn ? (
-                  <th className="px-3 py-2">
+                  <th className="w-[14%] px-3 py-2">
                     <button type="button" onClick={() => toggleSort("user")} className="font-bold">User {sortIcon(sortBy, "user", sortDir)}</button>
                   </th>
                 ) : null}
-                <th className="px-3 py-2">
+                <th className="w-[14%] px-3 py-2">
                   <button type="button" onClick={() => toggleSort("result")} className="font-bold">Result {sortIcon(sortBy, "result", sortDir)}</button>
                 </th>
-                <th className="hidden px-3 py-2 sm:table-cell">
+                <th className="hidden w-[10%] px-3 py-2 sm:table-cell">
                   <button type="button" onClick={() => toggleSort("subjectType")} className="font-bold">Type {sortIcon(sortBy, "subjectType", sortDir)}</button>
                 </th>
-                <th className="px-3 py-2">
+                <th className="w-[34%] px-3 py-2">
                   <button type="button" onClick={() => toggleSort("subject")} className="font-bold">Subject {sortIcon(sortBy, "subject", sortDir)}</button>
                 </th>
-                <th className="hidden px-3 py-2 sm:table-cell">Assignment</th>
+                <th className="hidden w-[10%] px-3 py-2 sm:table-cell">Assignment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/50">
               {data.attempts.map((row) => (
                 <tr key={row.id} className="hover:bg-surface-muted/40">
-                  <td className="whitespace-nowrap px-3 py-2">
-                    <p className="font-semibold text-foreground/85">{formatDateTimeShort(row.submittedAt)}</p>
-                    <p className="text-xs uppercase tracking-[0.08em] text-foreground/55">
+                  <td className="px-3 py-2 align-top">
+                    <p className="font-semibold text-foreground/85">{formatHistoryDateCompact(row.submittedAt)}</p>
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-foreground/55">
                       {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
                     </p>
                   </td>
-                  {showUserColumn ? <td className="px-3 py-2">{row.nickname}</td> : null}
-                  <td className={`px-3 py-2 font-bold uppercase ${resultColor[row.result] ?? ""}`}>{row.result}</td>
-                  <td className="hidden px-3 py-2 sm:table-cell">
+                  {showUserColumn ? <td className="px-3 py-2 align-top">{row.nickname}</td> : null}
+                  <td className="px-3 py-2 align-top">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`font-bold uppercase ${resultColor[row.result] ?? ""}`}>{row.result}</span>
+                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase sm:hidden ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
+                        {row.subjectType}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="hidden px-3 py-2 align-top sm:table-cell">
                     <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
                       {row.subjectType}
                     </span>
                   </td>
-                  <td className="px-3 py-2">
-                    <p className="text-lg font-black text-foreground sm:text-xl">{row.subjectLabel}</p>
+                  <td className="px-3 py-2 align-top">
+                    <p className="text-xl font-black leading-tight text-foreground sm:text-2xl">{row.subjectLabel}</p>
+                    <p className="text-sm font-semibold text-foreground/80 sm:text-base">
+                      {row.subjectReading ? row.subjectReading : "-"}
+                    </p>
                     <p className="text-xs text-foreground/65 sm:text-sm">
-                      <span className="sm:hidden"><span className={`mr-1 inline-block rounded px-1 py-0.5 text-[10px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>{row.subjectType}</span></span>
-                      {row.subjectReading ? `${row.subjectReading}` : "-"}
                       {row.subjectMeaning ? ` · ${row.subjectMeaning}` : ""}
                       {` · #${row.subjectId}`}
                     </p>
+                    {row.subjectType === "kanji" ? (
+                      <p className="mt-1">
+                        <Link
+                          href={`/users/${encodeURIComponent(row.wkUsername)}?tab=study&subject=${row.subjectId}`}
+                          className="text-xs font-bold uppercase tracking-[0.08em] text-accent hover:underline"
+                        >
+                          View details
+                        </Link>
+                      </p>
+                    ) : null}
                   </td>
-                  <td className="hidden px-3 py-2 font-mono text-foreground/70 sm:table-cell">{row.assignmentId}</td>
+                  <td className="hidden px-3 py-2 align-top font-mono text-foreground/70 sm:table-cell">{row.assignmentId}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       ) : null}
 
