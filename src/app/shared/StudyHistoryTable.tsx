@@ -1,47 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 import { formatRelativeFromNow } from "@/lib/timeFormat";
+import HistoryItemDetailModal from "@/app/shared/HistoryItemDetailModal";
+import StudyHistoryFilters from "@/app/shared/StudyHistoryFilters";
+import type { HistorySrsBucket, StudyHistoryPayload } from "@/app/shared/studyHistoryTypes";
+import { srsBucketBadgeClass, srsBucketLabel } from "@/app/shared/studyHistoryUi";
 
 type SortBy = "submittedAt" | "result" | "subjectType" | "subject" | "user";
 type SortDir = "asc" | "desc";
-
-type Attempt = {
-  id: string;
-  accountId: string;
-  nickname: string;
-  wkUsername: string;
-  assignmentId: number;
-  subjectId: number;
-  subjectType: string;
-  result: string;
-  submittedAt: string;
-  subjectLabel: string;
-  subjectReading: string | null;
-  subjectMeaning: string | null;
-  wkLevel: number | null;
-  srsStage: number | null;
-};
-
-type HistoryPayload = {
-  attempts: Attempt[];
-  totals: Record<string, number>;
-  accountCount: number;
-  availableLevels: number[];
-  availableSrs: number[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrevious: boolean;
-  };
-  error?: string;
-};
 
 type Props = {
   endpoint: string;
@@ -115,7 +84,8 @@ export default function StudyHistoryTable({
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [resultFilter, setResultFilter] = useState<"all" | "correct" | "wrong" | "skipped">("all");
   const [levelFilter, setLevelFilter] = useState<number | "all">("all");
-  const [srsFilter, setSrsFilter] = useState<number | "all">("all");
+  const [srsBucketFilter, setSrsBucketFilter] = useState<HistorySrsBucket | "all">("all");
+  const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
 
   const query = useMemo(() => {
     const params = new URLSearchParams({
@@ -131,19 +101,19 @@ export default function StudyHistoryTable({
     if (levelFilter !== "all") {
       params.set("level", String(levelFilter));
     }
-    if (srsFilter !== "all") {
-      params.set("srs", String(srsFilter));
+    if (srsBucketFilter !== "all") {
+      params.set("srsBucket", srsBucketFilter);
     }
 
     const glue = endpoint.includes("?") ? "&" : "?";
     return `${endpoint}${glue}${params.toString()}`;
-  }, [endpoint, levelFilter, page, pageSize, resultFilter, sortBy, sortDir, srsFilter]);
+  }, [endpoint, levelFilter, page, pageSize, resultFilter, sortBy, sortDir, srsBucketFilter]);
 
-  const { data, error, isLoading } = useSWR<HistoryPayload>(
+  const { data, error, isLoading } = useSWR<StudyHistoryPayload>(
     expanded ? query : null,
     async (url: string) => {
       const response = await fetch(url, { cache: "no-store" });
-      const payload = (await response.json()) as HistoryPayload;
+      const payload = (await response.json()) as StudyHistoryPayload;
       if (!response.ok) {
         throw new Error(payload.error ?? "Could not load study history.");
       }
@@ -157,7 +127,22 @@ export default function StudyHistoryTable({
 
   useEffect(() => {
     setPage(1);
-  }, [resultFilter, levelFilter, srsFilter]);
+  }, [resultFilter, levelFilter, srsBucketFilter]);
+
+  useEffect(() => {
+    if (!data || data.attempts.length === 0) {
+      setSelectedAttemptId(null);
+      return;
+    }
+
+    setSelectedAttemptId((prev) => {
+      if (!prev) {
+        return prev;
+      }
+
+      return data.attempts.some((row) => row.id === prev) ? prev : null;
+    });
+  }, [data]);
 
   useEffect(() => {
     if (!collapsible || typeof window === "undefined") {
@@ -213,68 +198,19 @@ export default function StudyHistoryTable({
         {showUserColumn ? <span>Accounts: <strong>{data?.accountCount ?? 0}</strong></span> : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:text-sm">Page size</label>
-        <select
-          value={pageSize}
-          onChange={(event) => {
-            setPage(1);
-            setPageSize(Number(event.target.value));
-          }}
-          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold"
-        >
-          {[10, 25, 50, 100].map((size) => (
-            <option key={size} value={size}>{size}</option>
-          ))}
-        </select>
-
-        <label className="ml-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:text-sm">Result</label>
-        <select
-          value={resultFilter}
-          onChange={(event) => {
-            const next = event.target.value;
-            setResultFilter(
-              next === "correct" || next === "wrong" || next === "skipped" ? next : "all",
-            );
-          }}
-          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold"
-        >
-          <option value="all">All</option>
-          <option value="correct">Correct</option>
-          <option value="wrong">Wrong</option>
-          <option value="skipped">Skipped</option>
-        </select>
-
-        <label className="ml-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:text-sm">Level</label>
-        <select
-          value={String(levelFilter)}
-          onChange={(event) => {
-            const next = Number(event.target.value);
-            setLevelFilter(Number.isInteger(next) && next > 0 ? next : "all");
-          }}
-          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold"
-        >
-          <option value="all">All</option>
-          {(data?.availableLevels ?? []).map((level) => (
-            <option key={`lvl-${level}`} value={level}>L{level}</option>
-          ))}
-        </select>
-
-        <label className="ml-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:text-sm">SRS</label>
-        <select
-          value={String(srsFilter)}
-          onChange={(event) => {
-            const next = Number(event.target.value);
-            setSrsFilter(Number.isInteger(next) && next > 0 ? next : "all");
-          }}
-          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold"
-        >
-          <option value="all">All</option>
-          {(data?.availableSrs ?? []).map((srs) => (
-            <option key={`srs-${srs}`} value={srs}>SRS {srs}</option>
-          ))}
-        </select>
-      </div>
+      <StudyHistoryFilters
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        setPage={setPage}
+        resultFilter={resultFilter}
+        setResultFilter={setResultFilter}
+        levelFilter={levelFilter}
+        setLevelFilter={setLevelFilter}
+        availableLevels={data?.availableLevels ?? []}
+        srsBucketFilter={srsBucketFilter}
+        setSrsBucketFilter={setSrsBucketFilter}
+        availableSrsBuckets={data?.availableSrsBuckets ?? []}
+      />
 
       {isLoading ? <p className="mt-4 text-base text-foreground/70">Loading...</p> : null}
       {error ? <p className="mt-4 text-base text-red-600">{error.message}</p> : null}
@@ -324,6 +260,9 @@ export default function StudyHistoryTable({
                             SRS {row.srsStage}
                           </span>
                         ) : null}
+                        <span className={`inline-block rounded border px-1 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
+                          {srsBucketLabel(row.srsBucket)}
+                        </span>
                       </div>
                       {showUserColumn ? (
                         <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/60 leading-tight">{row.nickname}</p>
@@ -331,20 +270,19 @@ export default function StudyHistoryTable({
                     </td>
                     <td className="px-2 py-1.5">
                       <div className="flex items-baseline gap-1.5 leading-tight">
-                        {row.subjectType === "kanji" ? (
-                          <Link
-                            href={`/users/${encodeURIComponent(row.wkUsername)}?tab=study&subject=${row.subjectId}&viewer=detail`}
-                            className="text-lg font-black text-accent hover:underline"
-                          >
-                            {row.subjectLabel}
-                          </Link>
-                        ) : (
-                          <p className="text-lg font-black text-foreground">{row.subjectLabel}</p>
-                        )}
-                        <p className="min-w-0 truncate text-[13px] font-semibold text-foreground/85">{row.subjectReading ? row.subjectReading : "-"}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedAttemptId(row.id);
+                          }}
+                          className="text-2xl font-black text-accent hover:underline"
+                        >
+                          {row.subjectLabel}
+                        </button>
+                        <p className="min-w-0 truncate text-base font-semibold text-foreground/90">{row.subjectReading ? row.subjectReading : "-"}</p>
                       </div>
-                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-tight text-foreground/70">
-                        {row.subjectMeaning ? row.subjectMeaning : "-"} · #{row.subjectId}
+                      <p className="mt-0.5 line-clamp-2 text-[14px] leading-tight text-foreground/75">
+                        {row.subjectMeaning ? row.subjectMeaning : "-"}
                       </p>
                     </td>
                   </tr>
@@ -413,6 +351,9 @@ export default function StudyHistoryTable({
                           SRS {row.srsStage}
                         </span>
                       ) : null}
+                      <span className={`inline-block rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
+                        {srsBucketLabel(row.srsBucket)}
+                      </span>
                     </div>
                   </td>
                   <td className="hidden px-3 py-2 align-top sm:table-cell">
@@ -430,25 +371,26 @@ export default function StudyHistoryTable({
                           SRS {row.srsStage}
                         </span>
                       ) : null}
+                      <span className={`inline-block rounded border px-2 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
+                        {srsBucketLabel(row.srsBucket)}
+                      </span>
                     </div>
                   </td>
                   <td className="px-3 py-2 align-top">
-                    {row.subjectType === "kanji" ? (
-                      <Link
-                        href={`/users/${encodeURIComponent(row.wkUsername)}?tab=study&subject=${row.subjectId}&viewer=detail`}
-                        className="text-xl font-black leading-tight text-accent hover:underline sm:text-2xl"
-                      >
-                        {row.subjectLabel}
-                      </Link>
-                    ) : (
-                      <p className="text-xl font-black leading-tight text-foreground sm:text-2xl">{row.subjectLabel}</p>
-                    )}
-                    <p className="text-base font-semibold text-foreground/85 sm:text-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAttemptId(row.id);
+                      }}
+                      className="text-left text-3xl font-black leading-tight text-accent hover:underline sm:text-4xl"
+                    >
+                      {row.subjectLabel}
+                    </button>
+                    <p className="text-lg font-semibold text-foreground/90 sm:text-xl">
                       {row.subjectReading ? row.subjectReading : "-"}
                     </p>
-                    <p className="text-sm text-foreground/70 sm:text-base">
+                    <p className="text-base text-foreground/75 sm:text-lg">
                       {row.subjectMeaning ? row.subjectMeaning : "-"}
-                      {` · #${row.subjectId}`}
                     </p>
                   </td>
                   <td className="hidden px-3 py-2 align-top font-mono text-foreground/70 sm:table-cell">{row.assignmentId}</td>
@@ -484,6 +426,17 @@ export default function StudyHistoryTable({
             </button>
           </div>
         </div>
+      ) : null}
+
+      {data ? (
+        <HistoryItemDetailModal
+          attempts={data.attempts}
+          selectedAttemptId={selectedAttemptId}
+          onSelectAttemptId={setSelectedAttemptId}
+          onClose={() => {
+            setSelectedAttemptId(null);
+          }}
+        />
       ) : null}
         </>
       )}

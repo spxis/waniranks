@@ -313,7 +313,11 @@ export default function StudyReviewModal({
           </div>
         </div>
 
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
+        <div
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3 sm:px-6 sm:py-5"
+          onTouchStart={handleFlashTouchStart}
+          onTouchEnd={handleFlashTouchEnd}
+        >
           <StudyReviewModalSection
             accountId={accountId}
             studyMode={studyMode}

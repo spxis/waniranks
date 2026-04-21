@@ -18,6 +18,8 @@ export type StudyHistoryRow = {
   subjectMeaning: string | null;
   wkLevel: number | null;
   srsStage: number | null;
+  srsBucket: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "unknown";
+  subjectData: SnapshotItem | null;
 };
 
 export type StudyHistoryPage = {
@@ -26,6 +28,9 @@ export type StudyHistoryPage = {
   accountCount: number;
   availableLevels: number[];
   availableSrs: number[];
+  availableSrsBuckets: Array<
+    "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "unknown"
+  >;
   pagination: {
     page: number;
     pageSize: number;
@@ -41,6 +46,7 @@ type QueryArgs = {
   result?: "correct" | "wrong" | "skipped";
   level?: number;
   srs?: number;
+  srsBucket?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
   page: number;
   pageSize: number;
   sortBy: StudyHistorySortBy;
@@ -49,13 +55,39 @@ type QueryArgs = {
 
 type SnapshotItem = {
   subjectId?: number;
+  subjectType?: "kanji" | "radical" | "vocabulary";
+  status?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
   characters?: string;
   meanings?: string[];
-  primaryReadings?: string[];
   readings?: string[];
+  primaryReadings?: string[];
+  radicals?: Array<{ subjectId: number; label: string; wkLevel?: number | null; reading?: string | null }>;
+  visuallySimilar?: Array<{ subjectId: number; label: string; wkLevel?: number | null; reading?: string | null }>;
+  usedInVocabulary?: Array<{ subjectId: number; label: string; wkLevel?: number | null; reading?: string | null }>;
+  componentKanji?: Array<{ subjectId: number; label: string; wkLevel?: number | null; reading?: string | null }>;
+  meaningExplanation?: string;
+  readingExplanation?: string;
+  jlptLevel?: number | null;
+  jlptMeta?: {
+    primaryMeaning: string | null;
+    meanings: string[];
+    onReadings: string[];
+    kunReadings: string[];
+    nanoriReadings: string[];
+    wordExamples: unknown;
+    strokeCount: number | null;
+    frequencyRank: number | null;
+    schoolGrade: number | null;
+    heisigKeyword: string | null;
+  } | null;
+  startedAt?: string | null;
+  passedAt?: string | null;
+  availableAt?: string | null;
   wkLevel?: number;
   srsStage?: number;
 };
+
+type SrsBucket = "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "unknown";
 
 function parseSnapshotItems(raw: unknown): SnapshotItem[] {
   if (!Array.isArray(raw)) {
@@ -107,6 +139,48 @@ function normalizeResult(raw: string | null): QueryArgs["result"] {
   return undefined;
 }
 
+function normalizeSrsBucket(raw: string | null): QueryArgs["srsBucket"] {
+  if (
+    raw === "locked" ||
+    raw === "apprentice" ||
+    raw === "guru" ||
+    raw === "master" ||
+    raw === "enlightened" ||
+    raw === "burned"
+  ) {
+    return raw;
+  }
+
+  return undefined;
+}
+
+function getSrsBucketFromStage(stage: number | null): SrsBucket {
+  if (!Number.isInteger(stage) || stage === null) {
+    return "unknown";
+  }
+
+  if (stage <= 0) {
+    return "locked";
+  }
+  if (stage <= 4) {
+    return "apprentice";
+  }
+  if (stage <= 6) {
+    return "guru";
+  }
+  if (stage === 7) {
+    return "master";
+  }
+  if (stage === 8) {
+    return "enlightened";
+  }
+  if (stage >= 9) {
+    return "burned";
+  }
+
+  return "unknown";
+}
+
 function normalizeOptionalPositiveInt(raw: string | null): number | undefined {
   if (!raw) {
     return undefined;
@@ -126,6 +200,7 @@ export function parseStudyHistoryQuery(url: URL): QueryArgs {
     result: normalizeResult(url.searchParams.get("result")),
     level: normalizeOptionalPositiveInt(url.searchParams.get("level")),
     srs: normalizeOptionalPositiveInt(url.searchParams.get("srs")),
+    srsBucket: normalizeSrsBucket(url.searchParams.get("srsBucket")),
     page: normalizePage(url.searchParams.get("page")),
     pageSize: normalizePageSize(url.searchParams.get("pageSize")),
     sortBy: normalizeSort(url.searchParams.get("sortBy")),
@@ -175,6 +250,8 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
       meaning: string | null;
       wkLevel: number | null;
       srsStage: number | null;
+      srsBucket: SrsBucket;
+      subjectData: SnapshotItem | null;
     }
   >();
 
@@ -192,12 +269,15 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
           : null;
 
       const meaning = Array.isArray(item.meanings) ? item.meanings[0] ?? null : null;
+      const stage = typeof item.srsStage === "number" ? item.srsStage : null;
       subjectMeta.set(key, {
         label: item.characters ?? `#${item.subjectId}`,
         reading,
         meaning,
         wkLevel: typeof item.wkLevel === "number" ? item.wkLevel : null,
-        srsStage: typeof item.srsStage === "number" ? item.srsStage : null,
+        srsStage: stage,
+        srsBucket: item.status ?? getSrsBucketFromStage(stage),
+        subjectData: item,
       });
     }
   }
@@ -215,12 +295,15 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
           ? item.readings[0] ?? null
           : null;
       const meaning = Array.isArray(item.meanings) ? item.meanings[0] ?? null : null;
+      const stage = typeof item.srsStage === "number" ? item.srsStage : null;
       subjectMeta.set(key, {
         label: item.characters ?? `#${item.subjectId}`,
         reading,
         meaning,
         wkLevel: typeof item.wkLevel === "number" ? item.wkLevel : null,
-        srsStage: typeof item.srsStage === "number" ? item.srsStage : null,
+        srsStage: stage,
+        srsBucket: item.status ?? getSrsBucketFromStage(stage),
+        subjectData: item,
       });
     }
   }
@@ -246,6 +329,8 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
       subjectMeaning: subject?.meaning ?? null,
       wkLevel: subject?.wkLevel ?? null,
       srsStage: subject?.srsStage ?? null,
+      srsBucket: subject?.srsBucket ?? "unknown",
+      subjectData: subject?.subjectData ?? null,
     };
   });
 
@@ -255,6 +340,10 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
 
   if (typeof args.srs === "number") {
     rows = rows.filter((row) => row.srsStage === args.srs);
+  }
+
+  if (args.srsBucket) {
+    rows = rows.filter((row) => row.srsBucket === args.srsBucket);
   }
 
   const compareSign = args.sortDir === "asc" ? 1 : -1;
@@ -302,6 +391,7 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
   const availableSrs = Array.from(
     new Set(rows.map((row) => row.srsStage).filter((srs): srs is number => typeof srs === "number")),
   ).sort((a, b) => a - b);
+  const availableSrsBuckets = Array.from(new Set(rows.map((row) => row.srsBucket)));
   const accountCount = new Set(rows.map((row) => row.accountId)).size;
 
   return {
@@ -310,6 +400,7 @@ export async function getStudyHistoryPage(args: QueryArgs): Promise<StudyHistory
     accountCount,
     availableLevels,
     availableSrs,
+    availableSrsBuckets,
     pagination: {
       page,
       pageSize: args.pageSize,
