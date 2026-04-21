@@ -115,6 +115,19 @@ export default function StudyReviewModal({
     onRestartFromBeginning?.();
   }, [canUseFlashCycleNext, currentFlashCycleKey, flashCycleDone, goNextItem, onNext, onRestartFromBeginning]);
 
+  const skipCurrentAndAdvance = useCallback(() => {
+    if (!selectedItem || selectedItem.queueType !== "review") {
+      return;
+    }
+
+    const currentOutcome = reviewOutcomeByAssignmentId[selectedItem.assignmentId];
+    if (currentOutcome !== "correct" && currentOutcome !== "wrong" && currentOutcome !== "skipped") {
+      onMarkSkipped(selectedItem.assignmentId);
+    }
+
+    advanceFlashOrNext();
+  }, [advanceFlashOrNext, onMarkSkipped, reviewOutcomeByAssignmentId, selectedItem]);
+
   const handleFlashTouchStart = useCallback((event: React.TouchEvent) => {
     const touch = event.changedTouches[0];
     if (!touch) return;
@@ -354,6 +367,7 @@ export default function StudyReviewModal({
             correct={correct}
             onReveal={onReveal}
             onSubmit={onSubmit}
+            onSkipCurrent={skipCurrentAndAdvance}
             onStartLesson={onStartLesson}
             onResetToLessons={onResetToLessons}
             onAdvanceFlashOrNext={advanceFlashOrNext}
