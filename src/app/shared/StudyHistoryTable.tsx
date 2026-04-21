@@ -217,79 +217,77 @@ export default function StudyHistoryTable({
 
       {data ? (
         <div className="mt-3 space-y-3">
-          <div className="sm:hidden overflow-hidden rounded-lg border border-line">
-            <table className="w-full table-fixed text-left text-xs">
-              <thead className="bg-surface-muted text-[10px] uppercase tracking-[0.08em] text-foreground/65">
-                <tr>
-                  <th className="w-[40%] px-2 py-1.5 font-bold">Time</th>
-                  <th className="w-[60%] px-2 py-1.5 font-bold">Subject</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/50">
-                {data.attempts.map((row) => (
-                  <tr key={`mobile-${row.id}`} className="relative bg-surface hover:bg-surface-muted/40 align-top">
-                    <td className="px-2 py-1.5">
-                      {(() => {
-                        const meta = resultIcon(row.result);
-                        return (
-                          <>
-                            <span
-                              className={`absolute right-2 top-1/2 -translate-y-1/2 text-lg font-black leading-none ${meta.className}`}
-                              title={meta.label}
-                              aria-hidden
-                            >
-                              {meta.icon}
-                            </span>
-                            <span className="sr-only">{meta.label}</span>
-                          </>
-                        );
-                      })()}
-                      <p className="truncate pr-5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/70 leading-tight">
-                        {formatHistoryDateCompact(row.submittedAt)} · {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
-                      </p>
-                      <div className="mt-0.5 flex flex-nowrap items-center gap-1 overflow-hidden whitespace-nowrap pr-5">
-                        <span className={`inline-block rounded px-1 py-0.5 text-[10px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
-                          {row.subjectType}
-                        </span>
-                        {typeof row.wkLevel === "number" ? (
-                          <span className="inline-block rounded border border-line px-1 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                            L{row.wkLevel}
-                          </span>
-                        ) : null}
-                        {typeof row.srsStage === "number" ? (
-                          <span className="inline-block rounded border border-line px-1 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                            SRS {row.srsStage}
-                          </span>
-                        ) : null}
-                        <span className={`inline-block rounded border px-1 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
-                          {srsBucketLabel(row.srsBucket)}
-                        </span>
-                      </div>
-                      {showUserColumn ? (
-                        <p className="mt-0.5 truncate pr-5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/60 leading-tight">{row.nickname}</p>
-                      ) : null}
-                    </td>
-                    <td className="px-2 py-1.5 pr-6">
-                      <div className="flex items-baseline gap-1 leading-tight">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedAttemptId(row.id);
-                          }}
-                          className="text-xl font-black text-accent hover:underline"
+          <div className="sm:hidden overflow-hidden rounded-lg border border-line bg-surface">
+            <div className="grid grid-cols-[40%_60%] bg-surface-muted px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/65">
+              <p>Time</p>
+              <p>Subject</p>
+            </div>
+            <div className="divide-y divide-line/50">
+              {data.attempts.map((row) => (
+                <div key={`mobile-${row.id}`} className="relative grid grid-cols-[40%_60%] gap-0 bg-surface px-2 py-1.5 hover:bg-surface-muted/40">
+                  {(() => {
+                    const meta = resultIcon(row.result);
+                    return (
+                      <>
+                        <span
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 text-base font-black leading-none ${meta.className}`}
+                          title={meta.label}
+                          aria-hidden
                         >
-                          {row.subjectLabel}
-                        </button>
-                        <p className="min-w-0 truncate text-[13px] font-semibold text-foreground/90">{row.subjectReading ? row.subjectReading : "-"}</p>
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-[13px] leading-tight text-foreground/75">
-                        {row.subjectMeaning ? row.subjectMeaning : "-"}
-                      </p>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {meta.icon}
+                        </span>
+                        <span className="sr-only">{meta.label}</span>
+                      </>
+                    );
+                  })()}
+
+                  <div className="min-w-0">
+                    <p className="truncate pr-5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/70 leading-tight">
+                      {formatHistoryDateCompact(row.submittedAt)} · {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
+                    </p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-0.5 pr-5">
+                      <span className={`inline-block rounded px-1 py-0.5 text-[9px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
+                        {row.subjectType}
+                      </span>
+                      {typeof row.wkLevel === "number" ? (
+                        <span className="inline-block rounded border border-line px-1 py-0.5 text-[9px] font-bold uppercase text-foreground/80">
+                          L{row.wkLevel}
+                        </span>
+                      ) : null}
+                      {typeof row.srsStage === "number" ? (
+                        <span className="inline-block rounded border border-line px-1 py-0.5 text-[9px] font-bold uppercase text-foreground/80">
+                          SRS {row.srsStage}
+                        </span>
+                      ) : null}
+                      <span className={`inline-block rounded border px-1 py-0.5 text-[9px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
+                        {srsBucketLabel(row.srsBucket)}
+                      </span>
+                    </div>
+                    {showUserColumn ? (
+                      <p className="mt-0.5 truncate pr-5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/60 leading-tight">{row.nickname}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="min-w-0 pr-5">
+                    <div className="flex items-baseline gap-1 leading-tight">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAttemptId(row.id);
+                        }}
+                        className="truncate text-xl font-black text-accent hover:underline"
+                      >
+                        {row.subjectLabel}
+                      </button>
+                      <p className="min-w-0 truncate text-[13px] font-semibold text-foreground/90">{row.subjectReading ? row.subjectReading : "-"}</p>
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-[13px] leading-tight text-foreground/75">
+                      {row.subjectMeaning ? row.subjectMeaning : "-"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="hidden max-h-[42rem] overflow-auto rounded-lg border border-line sm:block">
