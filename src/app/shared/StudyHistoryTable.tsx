@@ -285,62 +285,67 @@ export default function StudyHistoryTable({
             <table className="w-full table-fixed text-left text-xs">
               <thead className="bg-surface-muted text-[10px] uppercase tracking-[0.08em] text-foreground/65">
                 <tr>
-                  <th className="w-[34%] px-2 py-1.5 font-bold">Time</th>
-                  <th className="w-[18%] px-2 py-1.5 font-bold">Result</th>
-                  <th className="w-[48%] px-2 py-1.5 font-bold">Subject</th>
+                  <th className="w-[40%] px-2 py-1.5 font-bold">Time</th>
+                  <th className="w-[60%] px-2 py-1.5 font-bold">Subject</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line/50">
                 {data.attempts.map((row) => (
                   <tr key={`mobile-${row.id}`} className="bg-surface hover:bg-surface-muted/40 align-top">
                     <td className="px-2 py-1.5">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-foreground/75 leading-tight">{formatHistoryDateCompact(row.submittedAt)}</p>
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-foreground/75 leading-tight">{formatHistoryDateCompact(row.submittedAt)}</p>
+                        {(() => {
+                          const meta = resultIcon(row.result);
+                          return (
+                            <>
+                              <span className={`text-base font-black leading-none ${meta.className}`} title={meta.label} aria-hidden>
+                                {meta.icon}
+                              </span>
+                              <span className="sr-only">{meta.label}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
                       <p className="text-[10px] uppercase tracking-[0.06em] text-foreground/50 leading-tight">
                         {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
                       </p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                        <span className={`inline-block rounded px-1 py-0.5 text-[10px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
+                          {row.subjectType}
+                        </span>
+                        {typeof row.wkLevel === "number" ? (
+                          <span className="inline-block rounded border border-line px-1 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
+                            L{row.wkLevel}
+                          </span>
+                        ) : null}
+                        {typeof row.srsStage === "number" ? (
+                          <span className="inline-block rounded border border-line px-1 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
+                            SRS {row.srsStage}
+                          </span>
+                        ) : null}
+                      </div>
                       {showUserColumn ? (
                         <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/60 leading-tight">{row.nickname}</p>
                       ) : null}
                     </td>
                     <td className="px-2 py-1.5">
-                      {(() => {
-                        const meta = resultIcon(row.result);
-                        return (
-                          <div className="flex items-start gap-1.5">
-                            <span className={`text-base font-black leading-none ${meta.className}`} title={meta.label} aria-hidden>
-                              {meta.icon}
-                            </span>
-                            <span className="sr-only">{meta.label}</span>
-                          </div>
-                        );
-                      })()}
-                      <span className={`mt-0.5 inline-block rounded px-1 py-0.5 text-[10px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
-                        {row.subjectType}
-                      </span>
-                      {typeof row.wkLevel === "number" ? (
-                        <span className="mt-0.5 inline-block rounded border border-line px-1 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                          L{row.wkLevel}
-                        </span>
-                      ) : null}
-                      {typeof row.srsStage === "number" ? (
-                        <span className="mt-0.5 inline-block rounded border border-line px-1 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                          SRS {row.srsStage}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-2 py-1.5">
-                      {row.subjectType === "kanji" ? (
-                        <Link
-                          href={`/users/${encodeURIComponent(row.wkUsername)}?tab=study&subject=${row.subjectId}&viewer=detail`}
-                          className="text-lg font-black leading-tight text-accent hover:underline"
-                        >
-                          {row.subjectLabel}
-                        </Link>
-                      ) : (
-                        <p className="text-lg font-black leading-tight text-foreground">{row.subjectLabel}</p>
-                      )}
-                      <p className="text-sm font-semibold leading-tight text-foreground/85">{row.subjectReading ? row.subjectReading : "-"}</p>
-                      <p className="text-xs leading-tight text-foreground/70">{row.subjectMeaning ? row.subjectMeaning : "-"}</p>
+                      <div className="flex items-baseline gap-1.5 leading-tight">
+                        {row.subjectType === "kanji" ? (
+                          <Link
+                            href={`/users/${encodeURIComponent(row.wkUsername)}?tab=study&subject=${row.subjectId}&viewer=detail`}
+                            className="text-lg font-black text-accent hover:underline"
+                          >
+                            {row.subjectLabel}
+                          </Link>
+                        ) : (
+                          <p className="text-lg font-black text-foreground">{row.subjectLabel}</p>
+                        )}
+                        <p className="min-w-0 truncate text-[13px] font-semibold text-foreground/85">{row.subjectReading ? row.subjectReading : "-"}</p>
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-tight text-foreground/70">
+                        {row.subjectMeaning ? row.subjectMeaning : "-"} · #{row.subjectId}
+                      </p>
                     </td>
                   </tr>
                 ))}
