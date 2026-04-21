@@ -274,7 +274,7 @@ export default function StudyReviewModalSection({
                   }
                 }}
                 className={`relative flex h-full cursor-pointer flex-col justify-center overflow-hidden rounded-2xl border p-3 transition-colors hover:bg-violet-100/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:p-5 ${typeGlyphBoxClass(selectedItem.subjectType)}`}
-                title="View Glyph"
+                title="View Item"
               >
                 <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.25rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-hidden px-1 sm:top-4">
                   <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
