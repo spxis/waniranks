@@ -305,13 +305,9 @@ export default function StudyHistoryTable({
                 <th className="w-[14%] px-3 py-2">
                   <button type="button" onClick={() => toggleSort("result")} className="font-bold">Result {sortIcon(sortBy, "result", sortDir)}</button>
                 </th>
-                <th className="hidden w-[10%] px-3 py-2 sm:table-cell">
-                  <button type="button" onClick={() => toggleSort("subjectType")} className="font-bold">Type {sortIcon(sortBy, "subjectType", sortDir)}</button>
-                </th>
-                <th className="w-[34%] px-3 py-2">
+                <th className="w-[56%] px-3 py-2">
                   <button type="button" onClick={() => toggleSort("subject")} className="font-bold">Subject {sortIcon(sortBy, "subject", sortDir)}</button>
                 </th>
-                <th className="hidden w-[10%] px-3 py-2 sm:table-cell">Assignment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/50">
@@ -337,62 +333,49 @@ export default function StudyHistoryTable({
                           </>
                         );
                       })()}
-                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase sm:hidden ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
-                        {row.subjectType}
-                      </span>
-                      {typeof row.wkLevel === "number" ? (
-                        <span className="inline-block rounded border border-line px-1.5 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                          L{row.wkLevel}
-                        </span>
-                      ) : null}
-                      {typeof row.srsStage === "number" ? (
-                        <span className="inline-block rounded border border-line px-1.5 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                          SRS {row.srsStage}
-                        </span>
-                      ) : null}
-                      <span className={`inline-block rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
-                        {srsBucketLabel(row.srsBucket)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="hidden px-3 py-2 align-top sm:table-cell">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
-                        {row.subjectType}
-                      </span>
-                      {typeof row.wkLevel === "number" ? (
-                        <span className="inline-block rounded border border-line px-2 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                          L{row.wkLevel}
-                        </span>
-                      ) : null}
-                      {typeof row.srsStage === "number" ? (
-                        <span className="inline-block rounded border border-line px-2 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
-                          SRS {row.srsStage}
-                        </span>
-                      ) : null}
-                      <span className={`inline-block rounded border px-2 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
-                        {srsBucketLabel(row.srsBucket)}
-                      </span>
                     </div>
                   </td>
                   <td className="px-3 py-2 align-top">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedAttemptId(row.id);
-                      }}
-                      className="text-left text-3xl font-black leading-tight text-accent hover:underline sm:text-4xl"
-                    >
-                      {row.subjectLabel}
-                    </button>
-                    <p className="text-lg font-semibold text-foreground/90 sm:text-xl">
-                      {row.subjectReading ? row.subjectReading : "-"}
-                    </p>
-                    <p className="text-base text-foreground/75 sm:text-lg">
-                      {row.subjectMeaning ? row.subjectMeaning : "-"}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-baseline gap-2 leading-tight">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedAttemptId(row.id);
+                            }}
+                            className="truncate text-left text-3xl font-black text-accent hover:underline sm:text-4xl"
+                          >
+                            {row.subjectLabel}
+                          </button>
+                          <p className="min-w-0 truncate text-lg font-semibold text-foreground/90 sm:text-xl">
+                            {row.subjectReading ? row.subjectReading : "-"}
+                          </p>
+                        </div>
+                        <p className="mt-0.5 text-base leading-tight text-foreground/75 sm:text-lg">
+                          {row.subjectMeaning ? row.subjectMeaning : "-"}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
+                          {row.subjectType}
+                        </span>
+                        {typeof row.wkLevel === "number" ? (
+                          <span className="inline-block rounded border border-line px-2 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
+                            L{row.wkLevel}
+                          </span>
+                        ) : null}
+                        {typeof row.srsStage === "number" ? (
+                          <span className="inline-block rounded border border-line px-2 py-0.5 text-[10px] font-bold uppercase text-foreground/80">
+                            SRS {row.srsStage}
+                          </span>
+                        ) : null}
+                        <span className={`inline-block rounded border px-2 py-0.5 text-[10px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
+                          {srsBucketLabel(row.srsBucket)}
+                        </span>
+                      </div>
+                    </div>
                   </td>
-                  <td className="hidden px-3 py-2 align-top font-mono text-foreground/70 sm:table-cell">{row.assignmentId}</td>
                 </tr>
               ))}
             </tbody>
