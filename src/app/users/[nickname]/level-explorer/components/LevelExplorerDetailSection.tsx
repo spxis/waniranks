@@ -1,4 +1,5 @@
 import type { LevelItem } from "../../explorerTypes";
+import { useGlyphFontPreference } from "@/lib/glyphFontPreference";
 import {
   ReadingListWithPronunciation,
   ReadingWithPronunciation,
@@ -75,6 +76,7 @@ export default function LevelExplorerDetailSection({
   resetDisabled = false,
   resetBusy = false,
 }: Props) {
+  const { fontFamily } = useGlyphFontPreference();
   const isStudyHidden = studyMode && !revealStudyReading;
   const canShowReadings = !isStudyHidden;
   const primaryMeaning = selectedItem.meanings.find((entry) => entry.trim().length > 0) ?? "";
@@ -106,7 +108,7 @@ export default function LevelExplorerDetailSection({
             } ${typeGlyphBoxClass(selectedItem.subjectType)}`}
           >
             <div>
-              <p className="text-center text-4xl font-black leading-none text-current">
+              <p style={{ fontFamily }} className="text-center text-4xl font-black leading-none text-current">
                 {selectedItem.characters}
               </p>
               {(() => {

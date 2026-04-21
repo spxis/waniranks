@@ -8,6 +8,7 @@ import HistoryItemDetailModal from "@/app/shared/HistoryItemDetailModal";
 import StudyHistoryFilters from "@/app/shared/StudyHistoryFilters";
 import type { HistorySrsBucket, StudyHistoryPayload } from "@/app/shared/studyHistoryTypes";
 import { srsBucketBadgeClass, srsBucketLabel } from "@/app/shared/studyHistoryUi";
+import { useGlyphFontPreference } from "@/lib/glyphFontPreference";
 
 type SortBy = "submittedAt" | "result" | "subjectType" | "subject" | "user";
 type SortDir = "asc" | "desc";
@@ -66,6 +67,7 @@ export default function StudyHistoryTable({
   collapsible = true,
   persistenceKey,
 }: Props) {
+  const { fontFamily } = useGlyphFontPreference();
   const storageKey = persistenceKey ?? `wr:study-history:open:${endpoint}`;
   const [expanded, setExpanded] = useState(() => {
     if (!collapsible || typeof window === "undefined") {
@@ -172,6 +174,11 @@ export default function StudyHistoryTable({
     kanji: "bg-pink-100 text-pink-700",
     vocabulary: "bg-violet-100 text-violet-700",
   };
+  const typeGlyphBoxColor: Record<string, string> = {
+    radical: "border-sky-300 bg-sky-100/70 text-sky-700",
+    kanji: "border-pink-300 bg-pink-100/70 text-pink-700",
+    vocabulary: "border-violet-300 bg-violet-100/70 text-violet-700",
+  };
 
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-4 shadow-sm sm:p-5">
@@ -269,15 +276,22 @@ export default function StudyHistoryTable({
                   </div>
 
                   <div className="min-w-0 pr-5">
-                    <div className="flex items-baseline gap-1 leading-tight">
+                    <div className="flex items-center gap-1.5 leading-tight">
                       <button
                         type="button"
                         onClick={() => {
                           setSelectedAttemptId(row.id);
                         }}
-                        className="truncate text-xl font-black text-accent hover:underline"
+                        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+                          typeGlyphBoxColor[row.subjectType] ?? "border-gray-300 bg-gray-100 text-gray-600"
+                        }`}
                       >
-                        {row.subjectLabel}
+                        <span
+                          style={{ fontFamily }}
+                          className={`max-w-full truncate px-1 text-center font-black leading-none ${row.subjectLabel.length > 2 ? "text-lg" : "text-2xl"}`}
+                        >
+                          {row.subjectLabel}
+                        </span>
                       </button>
                       <p className="min-w-0 truncate text-[13px] font-semibold text-foreground/90">{row.subjectReading ? row.subjectReading : "-"}</p>
                     </div>
@@ -340,15 +354,22 @@ export default function StudyHistoryTable({
                   {showUserColumn ? <td className="px-3 py-2 align-top">{row.nickname}</td> : null}
                   <td className="px-3 py-2 align-top">
                     <div className="min-w-0">
-                      <div className="flex items-baseline gap-2 leading-tight">
+                      <div className="flex items-center gap-2 leading-tight">
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedAttemptId(row.id);
                           }}
-                          className="truncate text-left text-3xl font-black text-accent hover:underline sm:text-4xl"
+                          className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border ${
+                            typeGlyphBoxColor[row.subjectType] ?? "border-gray-300 bg-gray-100 text-gray-600"
+                          }`}
                         >
-                          {row.subjectLabel}
+                          <span
+                            style={{ fontFamily }}
+                            className={`max-w-full truncate px-1 text-center font-black leading-none ${row.subjectLabel.length > 2 ? "text-2xl" : "text-4xl"}`}
+                          >
+                            {row.subjectLabel}
+                          </span>
                         </button>
                         <p className="min-w-0 truncate text-lg font-semibold text-foreground/90 sm:text-xl">
                           {row.subjectReading ? row.subjectReading : "-"}

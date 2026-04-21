@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useGlyphFontPreference } from "@/lib/glyphFontPreference";
 
 type Props = {
   onClick: (meta?: { shiftKey: boolean }) => void;
@@ -29,6 +32,8 @@ export default function UnifiedExplorerCard({
   middleChip,
   rightChip,
 }: Props) {
+  const { fontFamily } = useGlyphFontPreference();
+
   return (
     <button
       type="button"
@@ -42,7 +47,7 @@ export default function UnifiedExplorerCard({
       </div>
 
       <div className={`mt-2 flex h-[8rem] flex-col justify-center rounded-xl border px-3 py-2 ${glyphClassName}`}>
-        <p className={`${glyphTextClassName} text-center font-black leading-none`}>{glyphText}</p>
+        <p style={{ fontFamily }} className={`${glyphTextClassName} text-center font-black leading-none`}>{glyphText}</p>
         <p className="mt-1 min-h-[1.35rem] truncate whitespace-nowrap text-center text-base font-semibold text-foreground/70">{glyphSubtitle ?? ""}</p>
       </div>
 

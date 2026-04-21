@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-
 import type { ReviewOutcome, StudyQueueItem, SubmitInFlight } from "../lib/studyExplorerTypes";
+import { useGlyphFontPreference } from "@/lib/glyphFontPreference";
 
 import type { RelatedReference } from "./StudyReviewModal.types";
 import type { LevelItem } from "../../explorerTypes";
@@ -122,31 +121,7 @@ export default function StudyReviewModalSection({
   const selectedMeaningExplanation = stripHtml(selectedItem.meaningExplanation) || "-";
   const selectedReadingExplanationRaw = stripHtml(selectedItem.readingExplanation);
   const showReadingExplanation = selectedReadingExplanationRaw.length > 0;
-  const glyphFontStorageKey = "wr:study-modal:glyph-font";
-  const [glyphFontMode, setGlyphFontMode] = useState<"jpSans" | "jpSerif">(() => {
-    if (typeof window === "undefined") {
-      return "jpSans";
-    }
-
-    const stored = window.localStorage.getItem(glyphFontStorageKey);
-    return stored === "jpSerif" ? "jpSerif" : "jpSans";
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.localStorage.setItem(glyphFontStorageKey, glyphFontMode);
-  }, [glyphFontMode]);
-
-  const glyphFontFamily = useMemo(
-    () =>
-      glyphFontMode === "jpSerif"
-        ? '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif'
-        : '"Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif',
-    [glyphFontMode],
-  );
+  const { mode: glyphFontMode, fontFamily: glyphFontFamily, toggle: toggleGlyphFont } = useGlyphFontPreference();
 
   const sanitizedRelatedItems = (items: RelatedReference[] | undefined) =>
     (items ?? []).map((item) => ({ ...item, wkLevel: null }));
@@ -212,7 +187,7 @@ export default function StudyReviewModalSection({
                     </span>
                   ) : null}
                 </div>
-                <p className="text-center text-[clamp(5rem,14vw,11rem)] font-black leading-none text-current">
+                <p style={{ fontFamily: glyphFontFamily }} className="text-center text-[clamp(5rem,14vw,11rem)] font-black leading-none text-current">
                   {selectedItem.characters}
                 </p>
               </button>
@@ -277,12 +252,12 @@ export default function StudyReviewModalSection({
                 role="button"
                 tabIndex={0}
                 onClick={() => {
-                  setGlyphFontMode((prev) => (prev === "jpSans" ? "jpSerif" : "jpSans"));
+                  toggleGlyphFont();
                 }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    setGlyphFontMode((prev) => (prev === "jpSans" ? "jpSerif" : "jpSans"));
+                    toggleGlyphFont();
                   }
                 }}
                 className={`relative flex h-full cursor-pointer flex-col justify-center overflow-hidden rounded-2xl border p-3 transition-colors hover:bg-violet-100/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:p-5 ${typeGlyphBoxClass(selectedItem.subjectType)}`}
@@ -368,7 +343,7 @@ export default function StudyReviewModalSection({
         ) : requiresReveal && !isAnswerRevealed ? (
           <div className="grid min-h-[68vh] gap-3 lg:grid-cols-2 lg:items-stretch">
             <div className={`flex min-h-[20rem] items-center justify-center rounded-2xl border p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
-              <p className="text-center text-[clamp(5rem,14vw,11rem)] font-black leading-none text-current">{selectedItem.characters}</p>
+              <p style={{ fontFamily: glyphFontFamily }} className="text-center text-[clamp(5rem,14vw,11rem)] font-black leading-none text-current">{selectedItem.characters}</p>
             </div>
             <button type="button" onClick={() => onReveal(selectedItem.assignmentId)} className="flex min-h-[20rem] w-full flex-col justify-center rounded-2xl border border-line bg-surface px-6 py-6 text-left hover:bg-surface-muted lg:h-full lg:min-h-0">
               <div className="mx-auto text-center">
@@ -401,7 +376,7 @@ export default function StudyReviewModalSection({
           ) : (
             <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-start">
               <div className={`inline-flex min-h-[5.75rem] min-w-[5.75rem] items-center justify-center rounded-2xl border px-4 py-3 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
-                <p className={`text-center font-black leading-none ${glyphTextSizeClass(selectedItem.characters)}`}>{selectedItem.characters}</p>
+                <p style={{ fontFamily: glyphFontFamily }} className={`text-center font-black leading-none ${glyphTextSizeClass(selectedItem.characters)}`}>{selectedItem.characters}</p>
               </div>
               <div>
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
