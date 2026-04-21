@@ -99,6 +99,7 @@ export default function StudyReviewModalMetaPanels({
     subjectType?: "kanji" | "radical" | "vocabulary";
   }) {
     openViewGlyphViewer({
+      accountId,
       items: [
         {
           assignmentId: -1,

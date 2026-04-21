@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { LevelItem, RelatedReference } from "@/app/users/[nickname]/explorerTypes";
+import LevelExplorerDetailSection from "@/app/users/[nickname]/level-explorer/components/LevelExplorerDetailSection";
+import type { VocabularyKanjiLink } from "@/app/users/[nickname]/level-explorer/components/LevelExplorerReferenceCards";
+import { stripHtml } from "@/app/users/[nickname]/level-explorer/lib/levelExplorerDisplay";
+import { hasRenderableRelatedItems } from "@/app/users/[nickname]/study-explorer/components/StudyReviewModalHelpers";
 import type { StudyQueueItem } from "@/app/users/[nickname]/study-explorer/lib/studyExplorerTypes";
-import type { RelatedReference } from "@/app/users/[nickname]/explorerTypes";
-import { jlptLevelPillClass, shortSubjectTypeLabel, statusClass, statusShortLabel, subjectTypePillClass, typeGlyphBoxClass } from "@/app/users/[nickname]/level-explorer/lib/levelExplorerDisplay";
-import { useGlyphFontPreference } from "@/lib/glyphFontPreference";
 import { VIEW_GLYPH_EVENT, type ViewGlyphViewerPayload } from "@/lib/viewGlyphViewer";
-import { parseWordExamples } from "@/app/users/[nickname]/jlpt-explorer/lib/jlptExplorerContentHelpers";
 
 function viewerTitle(item: StudyQueueItem): string {
   if (item.subjectType === "kanji") return "View Kanji";
@@ -25,19 +26,12 @@ function firstNonEmpty(values: Array<string | null | undefined>): string {
   return "-";
 }
 
-function toRelatedItems(items: RelatedReference[] | undefined): RelatedReference[] {
-  if (!items || items.length === 0) {
-    return [];
-  }
-
-  return items.filter((item) => item.label.trim().length > 0 && item.label.trim() !== "-");
-}
-
 export default function ViewGlyphModalHost() {
   const [items, setItems] = useState<StudyQueueItem[]>([]);
   const [index, setIndex] = useState(0);
+  const [accountId, setAccountId] = useState("");
+  const [showEnglish, setShowEnglish] = useState(true);
   const [customTitle, setCustomTitle] = useState<string | undefined>(undefined);
-  const { fontFamily, toggle } = useGlyphFontPreference();
 
   useEffect(() => {
     const onOpen = (event: Event) => {
@@ -48,6 +42,7 @@ export default function ViewGlyphModalHost() {
 
       setItems(detail.items);
       setIndex(Math.max(0, Math.min(detail.startIndex ?? 0, detail.items.length - 1)));
+      setAccountId(detail.accountId ?? "");
       setCustomTitle(detail.title);
     };
 
@@ -58,93 +53,87 @@ export default function ViewGlyphModalHost() {
   }, []);
 
   const item = items[index] ?? null;
-  const closeModal = () => {
+
+  const closeModal = useCallback(() => {
     setItems([]);
     setIndex(0);
+    setAccountId("");
     setCustomTitle(undefined);
-  };
+  }, []);
 
-  const reading = useMemo(() => {
-    if (!item) return "-";
-    const primary = item.primaryReadings?.[0];
-    if (primary && primary.trim().length > 0) return primary;
-    const alt = item.readings?.[0];
-    if (alt && alt.trim().length > 0) return alt;
-    return "-";
-  }, [item]);
+  const subjectById = useMemo(() => {
+    const map = new Map<number, LevelItem>();
+    for (const entry of items) {
+      map.set(entry.subjectId, entry);
+    }
+    return map;
+  }, [items]);
 
-  const meaning = useMemo(() => {
-    if (!item) return "-";
-    const primary = item.meanings?.[0];
-    return primary && primary.trim().length > 0 ? primary : "-";
-  }, [item]);
+  const createSyntheticItem = useCallback(
+    (related: RelatedReference, subjectType: "radical" | "kanji" | "vocabulary"): StudyQueueItem | null => {
+      if (!item) return null;
 
-  const allReadings = useMemo(() => {
-    if (!item) return [];
-    return Array.from(
-      new Set(
-        [
-          ...(item.primaryReadings ?? []),
-          ...(item.readings ?? []),
-          ...(item.jlptMeta?.onReadings ?? []),
-          ...(item.jlptMeta?.kunReadings ?? []),
-          ...(item.jlptMeta?.nanoriReadings ?? []),
-        ].filter((value) => value.trim().length > 0),
-      ),
-    );
-  }, [item]);
+      return {
+        assignmentId: -1,
+        queueType: "review",
+        subjectId: related.subjectId,
+        subjectType,
+        wkLevel: related.wkLevel ?? item.wkLevel,
+        characters: firstNonEmpty([related.label]),
+        meanings: [firstNonEmpty([related.meaning, "-"])],
+        readings: related.reading ? [related.reading] : [],
+        primaryReadings: related.reading ? [related.reading] : [],
+        radicals: [],
+        visuallySimilar: [],
+        usedInVocabulary: [],
+        componentKanji: [],
+        meaningExplanation: undefined,
+        readingExplanation: undefined,
+        jlptLevel: item.jlptLevel ?? null,
+        jlptMeta: null,
+        srsStage: item.srsStage,
+        status: item.status,
+        startedAt: null,
+        passedAt: null,
+        availableAt: null,
+      };
+    },
+    [item],
+  );
 
-  const allMeanings = useMemo(() => {
-    if (!item) return [];
-    return Array.from(
-      new Set(
-        [
-          ...(item.meanings ?? []),
-          ...(item.jlptMeta?.meanings ?? []),
-          ...(item.jlptMeta?.primaryMeaning ? [item.jlptMeta.primaryMeaning] : []),
-        ].filter((value) => value.trim().length > 0),
-      ),
-    );
-  }, [item]);
+  const openBySubject = useCallback(
+    (subjectId: number, fallbackType: "radical" | "kanji" | "vocabulary") => {
+      const existingIndex = items.findIndex((entry) => entry.subjectId === subjectId);
+      if (existingIndex >= 0) {
+        setIndex(existingIndex);
+        return;
+      }
 
-  const radicals = useMemo(() => toRelatedItems(item?.radicals as RelatedReference[] | undefined), [item]);
-  const visuallySimilar = useMemo(() => toRelatedItems(item?.visuallySimilar as RelatedReference[] | undefined), [item]);
-  const componentKanji = useMemo(() => toRelatedItems(item?.componentKanji as RelatedReference[] | undefined), [item]);
-  const usedInVocabulary = useMemo(() => toRelatedItems(item?.usedInVocabulary as RelatedReference[] | undefined), [item]);
-  const wordExamples = useMemo(() => parseWordExamples(item?.jlptMeta?.wordExamples), [item]);
+      if (!item) {
+        return;
+      }
 
-  const openRelated = (related: RelatedReference, subjectType: "radical" | "kanji" | "vocabulary") => {
-    if (!item) return;
+      const allRelated: Array<{ ref: RelatedReference; type: "radical" | "kanji" | "vocabulary" }> = [
+        ...((item.radicals as RelatedReference[] | undefined) ?? []).map((ref) => ({ ref, type: "radical" as const })),
+        ...((item.visuallySimilar as RelatedReference[] | undefined) ?? []).map((ref) => ({ ref, type: "kanji" as const })),
+        ...((item.componentKanji as RelatedReference[] | undefined) ?? []).map((ref) => ({ ref, type: "kanji" as const })),
+        ...((item.usedInVocabulary as RelatedReference[] | undefined) ?? []).map((ref) => ({
+          ref,
+          type: item.subjectType === "radical" ? ("kanji" as const) : ("vocabulary" as const),
+        })),
+      ];
 
-    const label = firstNonEmpty([related.label]);
-    const next: StudyQueueItem = {
-      assignmentId: -1,
-      queueType: "review",
-      subjectId: related.subjectId,
-      subjectType,
-      wkLevel: related.wkLevel ?? item.wkLevel,
-      characters: label,
-      meanings: [firstNonEmpty([related.meaning, "-"])],
-      readings: related.reading ? [related.reading] : [],
-      primaryReadings: related.reading ? [related.reading] : [],
-      radicals: [],
-      visuallySimilar: [],
-      usedInVocabulary: [],
-      componentKanji: [],
-      meaningExplanation: undefined,
-      readingExplanation: undefined,
-      jlptLevel: item.jlptLevel ?? null,
-      jlptMeta: null,
-      srsStage: item.srsStage,
-      status: item.status,
-      startedAt: null,
-      passedAt: null,
-      availableAt: null,
-    };
+      const found = allRelated.find((entry) => entry.ref.subjectId === subjectId);
+      const synthetic = createSyntheticItem(found?.ref ?? { subjectId, label: "-" }, found?.type ?? fallbackType);
+      if (!synthetic) {
+        return;
+      }
 
-    setItems([next]);
-    setIndex(0);
-  };
+      setItems([synthetic]);
+      setIndex(0);
+    },
+    [createSyntheticItem, item, items],
+  );
 
   useEffect(() => {
     if (!item) {
@@ -199,15 +188,38 @@ export default function ViewGlyphModalHost() {
       document.body.style.overflow = overflow;
       document.body.style.overscrollBehavior = overscrollBehavior;
     };
-  }, [item, items.length]);
+  }, [closeModal, item, items.length]);
 
   if (!item) {
     return null;
   }
 
+  const selectedMeaningExplanation = stripHtml(item.meaningExplanation) || "-";
+  const selectedReadingExplanationRaw = stripHtml(item.readingExplanation);
+  const showReadingExplanation = selectedReadingExplanationRaw.length > 0;
+  const hasPrimaryRelatedPanel = hasRenderableRelatedItems(
+    item.subjectType === "vocabulary"
+      ? (item.componentKanji as RelatedReference[] | undefined)
+      : (item.radicals as RelatedReference[] | undefined),
+  );
+  const hasVisuallySimilarPanel = hasRenderableRelatedItems(item.visuallySimilar as RelatedReference[] | undefined);
+  const hasUsedInVocabularyPanel = hasRenderableRelatedItems(item.usedInVocabulary as RelatedReference[] | undefined);
+
+  const vocabularyKanjiLinks: VocabularyKanjiLink[] =
+    item.subjectType === "vocabulary"
+      ? ((item.componentKanji as RelatedReference[] | undefined) ?? [])
+          .filter((entry) => entry.label.trim().length > 0 && entry.label.trim() !== "-")
+          .map((entry) => ({
+            char: entry.label,
+            subjectId: entry.subjectId,
+            reading: entry.reading ?? "-",
+            wkLevel: entry.wkLevel ?? null,
+          }))
+      : [];
+
   return (
     <div className="fixed inset-0 z-[90] bg-[rgba(6,12,26,0.56)] p-3 backdrop-blur-[1px] sm:p-6">
-      <div className="mx-auto flex h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_20px_65px_rgba(0,0,0,0.42)]">
+      <div className="mx-auto flex h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_20px_65px_rgba(0,0,0,0.42)]">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-line bg-surface-muted px-3 py-2 sm:px-4">
           <button
             type="button"
@@ -239,197 +251,31 @@ export default function ViewGlyphModalHost() {
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
-          <div className={`rounded-2xl border p-4 ${typeGlyphBoxClass(item.subjectType)}`}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="inline-flex flex-wrap items-center gap-1">
-                <span className={subjectTypePillClass(item.subjectType)}>{shortSubjectTypeLabel(item.subjectType)}</span>
-                {typeof item.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{item.wkLevel}</span> : null}
-                {typeof item.jlptMeta?.schoolGrade === "number" ? <span className="subject-pill border-line bg-surface text-foreground">G{item.jlptMeta.schoolGrade}</span> : null}
-                {item.jlptLevel ? <span className={jlptLevelPillClass()}>N{item.jlptLevel}</span> : null}
-              </div>
-              <button
-                type="button"
-                onClick={toggle}
-                className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-foreground/80 hover:bg-surface-muted"
-              >
-                Font
-              </button>
-            </div>
-
-            <p style={{ fontFamily }} className="mt-4 text-center text-[clamp(3rem,12vw,6.2rem)] font-black leading-none text-current">
-              {item.characters}
-            </p>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-xl border border-line bg-surface-muted px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Reading</p>
-                <p className="mt-1 truncate text-xl font-black text-foreground/90">{reading}</p>
-              </div>
-              <div className="rounded-xl border border-line bg-surface-muted px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Meaning</p>
-                <p className="mt-1 truncate text-xl font-black text-foreground/90">{meaning}</p>
-              </div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClass(item.status)}`}>{statusShortLabel(item.status)}</span>
-              <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold text-foreground">SRS {item.srsStage}</span>
-            </div>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">All readings</p>
-              <p className="mt-1 text-sm font-black text-foreground/95">{allReadings.length > 0 ? allReadings.join(" • ") : "-"}</p>
-            </div>
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">All meanings</p>
-              <p className="mt-1 text-sm font-black text-foreground/95">{allMeanings.length > 0 ? allMeanings.join(" • ") : "-"}</p>
-            </div>
-          </div>
-
-          {item.meaningExplanation ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Meaning explanation</p>
-              <p className="mt-1 text-sm font-semibold text-foreground/90">{item.meaningExplanation}</p>
-            </div>
-          ) : null}
-
-          {item.readingExplanation ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Reading explanation</p>
-              <p className="mt-1 text-sm font-semibold text-foreground/90">{item.readingExplanation}</p>
-            </div>
-          ) : null}
-
-          {radicals.length > 0 ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Radicals</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {radicals.map((related) => (
-                  <button
-                    type="button"
-                    key={`radical-${related.subjectId}-${related.label}`}
-                    onClick={() => openRelated(related, "radical")}
-                    className="inline-flex min-w-[4.5rem] cursor-pointer flex-col items-center rounded-xl border border-line bg-surface-muted px-3 py-2 text-center hover:bg-surface"
-                  >
-                    <span className="text-2xl font-black leading-none text-foreground">{related.label}</span>
-                    {related.reading ? <span className="mt-1 text-xs font-semibold text-foreground/70">{related.reading}</span> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {visuallySimilar.length > 0 ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Visually similar</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {visuallySimilar.map((related) => (
-                  <button
-                    type="button"
-                    key={`visually-similar-${related.subjectId}-${related.label}`}
-                    onClick={() => openRelated(related, "kanji")}
-                    className="inline-flex min-w-[4.5rem] cursor-pointer flex-col items-center rounded-xl border border-line bg-surface-muted px-3 py-2 text-center hover:bg-surface"
-                  >
-                    <span className="text-2xl font-black leading-none text-foreground">{related.label}</span>
-                    {related.reading ? <span className="mt-1 text-xs font-semibold text-foreground/70">{related.reading}</span> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {usedInVocabulary.length > 0 ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">
-                {item.subjectType === "radical" ? "Used in kanji" : "Used in vocabulary"}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {usedInVocabulary.map((related) => (
-                  <button
-                    type="button"
-                    key={`used-in-vocab-${related.subjectId}-${related.label}`}
-                    onClick={() => openRelated(related, item.subjectType === "radical" ? "kanji" : "vocabulary")}
-                    className="inline-flex min-w-[4.5rem] cursor-pointer flex-col items-center rounded-xl border border-line bg-surface-muted px-3 py-2 text-center hover:bg-surface"
-                  >
-                    <span className="text-2xl font-black leading-none text-foreground">{related.label}</span>
-                    {related.reading ? <span className="mt-1 text-xs font-semibold text-foreground/70">{related.reading}</span> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {componentKanji.length > 0 ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Component kanji</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {componentKanji.map((related) => (
-                  <button
-                    type="button"
-                    key={`component-kanji-${related.subjectId}-${related.label}`}
-                    onClick={() => openRelated(related, "kanji")}
-                    className="inline-flex min-w-[4.5rem] cursor-pointer flex-col items-center rounded-xl border border-line bg-surface-muted px-3 py-2 text-center hover:bg-surface"
-                  >
-                    <span className="text-2xl font-black leading-none text-foreground">{related.label}</span>
-                    {related.reading ? <span className="mt-1 text-xs font-semibold text-foreground/70">{related.reading}</span> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {item.jlptMeta ? (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div className="rounded-xl border border-line bg-surface px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">JLPT meanings</p>
-                <p className="mt-1 text-sm font-black text-foreground/95">{item.jlptMeta.meanings.slice(0, 6).join(" • ") || "-"}</p>
-              </div>
-              <div className="rounded-xl border border-line bg-surface px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Stroke / Freq</p>
-                <p className="mt-1 text-sm font-black text-foreground/95">{item.jlptMeta.strokeCount ?? "-"} / {item.jlptMeta.frequencyRank ?? "-"}</p>
-              </div>
-              <div className="rounded-xl border border-line bg-surface px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Grade / Heisig</p>
-                <p className="mt-1 text-sm font-black text-foreground/95">{item.jlptMeta.schoolGrade ?? "-"} / {item.jlptMeta.heisigKeyword ?? "-"}</p>
-              </div>
-            </div>
-          ) : null}
-
-          {wordExamples.length > 0 ? (
-            <div className="rounded-xl border border-line bg-surface px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Used in words</p>
-              <ul className="mt-2 space-y-2">
-                {wordExamples.slice(0, 8).map((example, exampleIndex) => (
-                  <li key={`word-example-${example.written}-${example.pronounced}-${exampleIndex}`} className="rounded-lg border border-line bg-surface-muted px-3 py-2">
-                    <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          openRelated(
-                            {
-                              subjectId: -(exampleIndex + 1),
-                              label: example.written || "-",
-                              reading: example.pronounced || null,
-                              meaning: example.gloss || null,
-                            },
-                            "vocabulary",
-                          );
-                        }}
-                        className="cursor-pointer text-left text-2xl font-black leading-none text-foreground hover:opacity-85"
-                      >
-                        {example.written || "-"}
-                      </button>
-                      <p className="text-xl font-bold leading-none text-foreground/80">{example.pronounced || "-"}</p>
-                    </div>
-                    <p className="mt-1 text-sm text-foreground/85">{example.gloss || "-"}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+          <LevelExplorerDetailSection
+            accountId={accountId}
+            selectedItem={item}
+            showEnglish={showEnglish}
+            canToggleEnglish
+            onToggleShowEnglish={() => setShowEnglish((prev) => !prev)}
+            hideTimeStats={false}
+            studyMode={false}
+            selectedMeaningExplanation={selectedMeaningExplanation}
+            selectedReadingExplanationRaw={selectedReadingExplanationRaw}
+            showReadingExplanation={showReadingExplanation}
+            hasPrimaryRelatedPanel={hasPrimaryRelatedPanel}
+            hasVisuallySimilarPanel={hasVisuallySimilarPanel}
+            hasUsedInVocabularyPanel={hasUsedInVocabularyPanel}
+            vocabularyKanjiLinks={vocabularyKanjiLinks}
+            subjectById={subjectById}
+            onJumpToRelatedSubject={async (subjectId) => {
+              const fallback = item.subjectType === "radical" ? "kanji" : "vocabulary";
+              openBySubject(subjectId, fallback);
+            }}
+            onJumpToKanji={async (subjectId) => {
+              openBySubject(subjectId, "kanji");
+            }}
+          />
         </div>
       </div>
     </div>

@@ -262,6 +262,7 @@ export default function StudyReviewModalSection({
                   openViewGlyphViewer({
                     items: resolvedViewerItems,
                     startIndex: Math.max(0, Math.min(resolvedViewerIndex, resolvedViewerItems.length - 1)),
+                    accountId,
                   });
                 }}
                 onKeyDown={(event) => {
@@ -270,6 +271,7 @@ export default function StudyReviewModalSection({
                     openViewGlyphViewer({
                       items: resolvedViewerItems,
                       startIndex: Math.max(0, Math.min(resolvedViewerIndex, resolvedViewerItems.length - 1)),
+                      accountId,
                     });
                   }
                 }}

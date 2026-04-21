@@ -6,6 +6,7 @@ export type ViewGlyphViewerPayload = {
   items: StudyQueueItem[];
   startIndex?: number;
   title?: string;
+  accountId?: string;
 };
 
 export const VIEW_GLYPH_EVENT = "wr:view-glyph-open";
