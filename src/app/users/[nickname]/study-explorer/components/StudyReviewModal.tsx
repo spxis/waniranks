@@ -391,7 +391,7 @@ export default function StudyReviewModal({
           />
         </div>
 
-        <div className="hidden border-t border-line/70 bg-surface px-4 py-3 sm:block sm:px-6">
+        <div className={`border-t border-line/70 bg-surface px-4 py-3 sm:px-6 ${useStudyFlashLayout ? "hidden" : "hidden sm:block"}`}>
           <p className="rounded-xl border border-line/70 bg-surface-muted px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground/65 sm:text-[11px]">
             {studyMode
               ? isLessonItem
