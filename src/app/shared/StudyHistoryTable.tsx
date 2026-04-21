@@ -218,13 +218,13 @@ export default function StudyHistoryTable({
       {data ? (
         <div className="mt-3 space-y-3">
           <div className="sm:hidden overflow-hidden rounded-lg border border-line bg-surface">
-            <div className="grid grid-cols-[40%_60%] bg-surface-muted px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/65">
+            <div className="grid grid-cols-[52%_48%] bg-surface-muted px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/65">
               <p>Time</p>
               <p>Subject</p>
             </div>
             <div className="divide-y divide-line/50">
               {data.attempts.map((row) => (
-                <div key={`mobile-${row.id}`} className="relative grid grid-cols-[40%_60%] gap-0 bg-surface px-2 py-1.5 hover:bg-surface-muted/40">
+                <div key={`mobile-${row.id}`} className="relative grid grid-cols-[52%_48%] gap-0 bg-surface px-2 py-1.5 hover:bg-surface-muted/40">
                   {(() => {
                     const meta = resultIcon(row.result);
                     return (
@@ -242,10 +242,10 @@ export default function StudyHistoryTable({
                   })()}
 
                   <div className="min-w-0">
-                    <p className="truncate pr-5 text-[10px] font-bold uppercase tracking-[0.06em] text-foreground/70 leading-tight">
+                    <p className="pr-5 text-[10px] font-bold uppercase tracking-[0.05em] text-foreground/70 leading-tight whitespace-nowrap">
                       {formatHistoryDateCompact(row.submittedAt)} · {formatRelativeFromNow(row.submittedAt, { style: "short", allowFuture: false, noValueLabel: "-", invalidLabel: "-" })}
                     </p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-0.5 pr-5">
+                    <div className="mt-0.5 flex flex-nowrap items-center gap-0.5 overflow-hidden whitespace-nowrap pr-5">
                       <span className={`inline-block rounded px-1 py-0.5 text-[9px] font-bold uppercase ${typeColor[row.subjectType] ?? "bg-gray-100 text-gray-600"}`}>
                         {row.subjectType}
                       </span>
@@ -256,7 +256,7 @@ export default function StudyHistoryTable({
                       ) : null}
                       {typeof row.srsStage === "number" ? (
                         <span className="inline-block rounded border border-line px-1 py-0.5 text-[9px] font-bold uppercase text-foreground/80">
-                          SRS {row.srsStage}
+                          S{row.srsStage}
                         </span>
                       ) : null}
                       <span className={`inline-block rounded border px-1 py-0.5 text-[9px] font-bold uppercase ${srsBucketBadgeClass(row.srsBucket)}`}>
