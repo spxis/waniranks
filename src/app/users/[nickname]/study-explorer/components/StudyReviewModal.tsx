@@ -272,9 +272,16 @@ export default function StudyReviewModal({
     <div className="fixed inset-0 z-50 bg-[rgba(8,16,36,0.72)] p-2 backdrop-blur-[2px] sm:p-6">
       <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-[1.8rem] border border-line bg-surface shadow-[0_26px_75px_rgba(0,0,0,0.35)]">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 border-b border-line bg-surface-muted px-2 py-2 sm:gap-2 sm:px-6 sm:py-3">
-          <button type="button" onClick={closeModal} className="justify-self-start whitespace-nowrap rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:px-4 sm:py-2 sm:text-xs">Back</button>
+          <button type="button" onClick={closeModal} className="justify-self-start whitespace-nowrap rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted sm:px-4 sm:py-2 sm:text-xs">Close</button>
           <div className="flex min-w-0 flex-nowrap items-center justify-center gap-1 sm:gap-2">
             <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70 sm:text-xs sm:tracking-[0.1em]">#{displayIndex} of {displayTotal}</p>
+            {studyMode && selectedItem.queueType === "review" ? (
+              <div className="flex items-center gap-1">
+                <span className="rounded-full border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-black uppercase text-red-800">W {wrong}</span>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-800">S {skipped}</span>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black uppercase text-emerald-800">C {correct}</span>
+              </div>
+            ) : null}
             {!studyMode ? (
               <div className="inline-flex items-center rounded-full border border-line bg-surface p-1">
                 <button
@@ -313,13 +320,13 @@ export default function StudyReviewModal({
           <div className="flex items-center justify-self-end gap-1 sm:gap-2">
             <button type="button" onClick={goPrev} disabled={!onPrev || !prevLabel} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[11px] font-bold text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:uppercase sm:tracking-[0.1em]">
               <span className="sm:hidden" aria-hidden>
-                ←
+                Prev
               </span>
               <span className="hidden sm:inline">Prev {prevLabel ?? "-"}</span>
             </button>
             <button type="button" onClick={advanceFlashOrNext} disabled={!(onNext || canUseFlashCycleNext)} className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[11px] font-bold text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs sm:uppercase sm:tracking-[0.1em]">
               <span className="sm:hidden" aria-hidden>
-                {!onNext && canUseFlashCycleNext ? (flashCycleDone ? "↺" : "→") : "→"}
+                {!onNext && canUseFlashCycleNext ? (flashCycleDone ? "Restart" : "Next") : "Next"}
               </span>
               <span className="hidden sm:inline">{!onNext && canUseFlashCycleNext ? (flashCycleDone ? "Restart" : "Next") : `Next ${nextLabel ?? "-"}`}</span>
             </button>
@@ -327,7 +334,7 @@ export default function StudyReviewModal({
         </div>
 
         <div
-          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3 sm:px-6 sm:py-5"
+          className={`relative flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-6 sm:py-5 ${useStudyFlashLayout ? "overflow-hidden" : "overflow-y-auto"}`}
           onTouchStart={handleFlashTouchStart}
           onTouchEnd={handleFlashTouchEnd}
         >

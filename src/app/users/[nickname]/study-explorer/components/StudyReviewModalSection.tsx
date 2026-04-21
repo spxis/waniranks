@@ -2,7 +2,6 @@ import type { ReviewOutcome, StudyQueueItem, SubmitInFlight } from "../lib/study
 
 import type { RelatedReference } from "./StudyReviewModal.types";
 import type { LevelItem } from "../../explorerTypes";
-import LevelExplorerReviewStatsCard from "../../level-explorer/components/LevelExplorerReviewStatsCard";
 import LevelExplorerDetailSection from "../../level-explorer/components/LevelExplorerDetailSection";
 import {
   glyphTextSizeClass,
@@ -246,74 +245,54 @@ export default function StudyReviewModalSection({
           )
         ) : useStudyFlashLayout ? (
           <>
-            <div className="grid min-h-[calc(100dvh-20rem)] gap-2 lg:min-h-[68vh] lg:grid-cols-2 lg:items-stretch">
-              <div className="flex min-h-[10rem] flex-col max-[380px]:min-h-[9rem] lg:h-full lg:min-h-0">
-                {!detailsRevealed ? (
-                  <div
-                    className={`relative flex min-h-[10rem] flex-1 select-none items-center justify-center rounded-2xl border p-3 max-[380px]:min-h-[9rem] max-[380px]:p-2 sm:p-6 lg:h-full ${typeGlyphBoxClass(
-                      selectedItem.subjectType,
-                    )}`}
-                  >
-                    <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-hidden px-1 max-[380px]:top-2 sm:top-4">
-                      <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
-                      {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                      {typeof selectedItem.jlptMeta?.schoolGrade === "number" ? <span className="subject-pill border-line bg-surface text-foreground">G{selectedItem.jlptMeta.schoolGrade}</span> : null}
-                      {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
-                      {showStatusChip ? (
-                    <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase max-[380px]:hidden sm:px-3 sm:py-1 sm:text-xs ${statusClass(selectedItem.status)}`}>
-                          {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-center text-[clamp(2.8rem,9.4vw,6rem)] font-black leading-none text-current sm:text-[clamp(3.8rem,12vw,10rem)] lg:text-[clamp(3.8rem,6vw,7rem)] max-[380px]:text-[clamp(2.5rem,9.8vw,5.6rem)]">
-                      {selectedItem.characters}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className={`relative flex min-h-[10rem] items-center justify-center rounded-2xl border p-4 max-[380px]:min-h-[9rem] max-[380px]:p-2 sm:p-6 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
-                      <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-hidden px-1 max-[380px]:top-2 sm:top-4">
-                        <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
-                        {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
-                        {typeof selectedItem.jlptMeta?.schoolGrade === "number" ? <span className="subject-pill border-line bg-surface text-foreground">G{selectedItem.jlptMeta.schoolGrade}</span> : null}
-                        {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
-                        {showStatusChip ? (
-                        <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase max-[380px]:hidden sm:px-3 sm:py-1 sm:text-xs ${statusClass(selectedItem.status)}`}>
-                            {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="text-center text-[clamp(3rem,9.8vw,6.2rem)] font-black leading-none text-current sm:text-[clamp(3.6rem,11vw,8rem)] lg:text-[clamp(3.6rem,5.8vw,6.8rem)] max-[380px]:text-[clamp(2.6rem,9.8vw,5.8rem)]">{selectedItem.characters}</p>
-                    </div>
+            <div className="grid h-[calc(100dvh-11.5rem)] min-h-[26rem] grid-rows-2 gap-2 lg:min-h-[68vh] lg:grid-cols-2 lg:grid-rows-1 lg:items-stretch">
+              <div className={`relative flex h-full flex-col justify-center overflow-hidden rounded-2xl border p-3 sm:p-5 ${typeGlyphBoxClass(selectedItem.subjectType)}`}>
+                <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.25rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-1 overflow-hidden px-1 sm:top-4">
+                  <span className={subjectTypePillClass(selectedItem.subjectType)}>{shortSubjectTypeLabel(selectedItem.subjectType)}</span>
+                  {typeof selectedItem.wkLevel === "number" ? <span className="subject-pill border-line bg-surface text-foreground">L{selectedItem.wkLevel}</span> : null}
+                  {typeof selectedItem.jlptMeta?.schoolGrade === "number" ? <span className="subject-pill border-line bg-surface text-foreground">G{selectedItem.jlptMeta.schoolGrade}</span> : null}
+                  {selectedItem.jlptLevel ? <span className={jlptLevelPillClass()}>N{selectedItem.jlptLevel}</span> : null}
+                  {showStatusChip ? (
+                    <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusClass(selectedItem.status)}`}>
+                      {statusShortLabel(selectedItem.status)} · SRS {selectedItem.srsStage}
+                    </span>
+                  ) : null}
+                </div>
 
-                    <div className="mt-2 grid flex-1 gap-2 lg:mt-3 lg:gap-3 lg:grid-rows-2">
-                      <div className="max-h-[8.7rem] overflow-hidden rounded-xl border border-line bg-surface-muted px-3 py-3 max-[380px]:max-h-[7.8rem] max-[380px]:px-2.5 max-[380px]:py-2.5 sm:max-h-none sm:px-4 sm:py-4">
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Reading</p>
-                        <p className="mt-1 line-clamp-2 text-3xl font-black leading-tight text-foreground max-[380px]:text-[2.25rem] sm:mt-2 sm:text-5xl">
-                          {primaryReadingHiragana === "-" && secondaryReadingValue !== "-" ? secondaryReadingValue : primaryReadingHiragana}
-                        </p>
-                        {primaryReadingKatakana !== "-" ? <p className="mt-1 line-clamp-1 text-sm font-semibold leading-tight text-foreground/70">{primaryReadingKatakana}</p> : null}
-                      </div>
-                      <div className="max-h-[8.7rem] overflow-hidden rounded-xl border border-line bg-surface-muted px-3 py-3 max-[380px]:max-h-[7.8rem] max-[380px]:px-2.5 max-[380px]:py-2.5 sm:max-h-none sm:px-4 sm:py-4">
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Meaning</p>
-                        <p className="mt-1 line-clamp-2 text-[2rem] font-black leading-tight text-foreground max-[380px]:text-[1.65rem] sm:mt-2 sm:text-4xl">{allMeanings[0] ?? selectedItem.characters}</p>
-                        {allMeanings.length > 1 ? <p className="mt-1.5 line-clamp-2 text-sm font-semibold uppercase tracking-[0.08em] text-foreground/70">{allMeanings.slice(1).join(" • ")}</p> : null}
-                      </div>
+                <p className="px-2 text-center text-[clamp(2.8rem,10.4vw,5.4rem)] font-black leading-none text-current sm:text-[clamp(3.6rem,8vw,7rem)]">
+                  {selectedItem.characters}
+                </p>
+
+                {detailsRevealed ? (
+                  <div className="absolute inset-x-2 bottom-2 grid gap-2 sm:inset-x-3 sm:bottom-3">
+                    <div className="rounded-xl border border-line bg-surface-muted px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Reading</p>
+                      <p className="mt-1 line-clamp-1 text-xl font-black leading-tight text-foreground sm:text-2xl">
+                        {primaryReadingHiragana === "-" && secondaryReadingValue !== "-" ? secondaryReadingValue : primaryReadingHiragana}
+                      </p>
+                      {primaryReadingKatakana !== "-" ? <p className="line-clamp-1 text-xs font-semibold text-foreground/70 sm:text-sm">{primaryReadingKatakana}</p> : null}
                     </div>
-                  </>
-                )}
+                    <div className="rounded-xl border border-line bg-surface-muted px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">Meaning</p>
+                      <p className="mt-1 line-clamp-1 text-2xl font-black leading-tight text-foreground sm:text-3xl">{allMeanings[0] ?? selectedItem.characters}</p>
+                      {allMeanings.length > 1 ? <p className="line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/70 sm:text-xs">{allMeanings.slice(1).join(" • ")}</p> : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
-              <div className="grid min-h-[9rem] gap-2 lg:h-full lg:min-h-0 lg:grid-rows-2 lg:gap-3">
+              <div className="h-full rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
                 {!detailsRevealed ? (
-                  <button type="button" onClick={() => onReveal(selectedItem.assignmentId)} className="h-full w-full rounded-2xl border border-line bg-surface-muted px-3 py-3 text-center hover:bg-surface sm:px-6 sm:py-6 lg:row-span-2">
-                    <div>
-                      <p className="text-sm font-black uppercase tracking-[0.12em] text-foreground/70 sm:text-base">Show Answer</p>
-                      <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground/55">Space To Reveal</p>
-                    </div>
+                  <button
+                    type="button"
+                    onClick={() => onReveal(selectedItem.assignmentId)}
+                    className="flex h-full w-full flex-col items-center justify-center rounded-2xl bg-surface-muted text-center hover:bg-surface"
+                  >
+                    <p className="text-sm font-black uppercase tracking-[0.12em] text-foreground/70 sm:text-base">Show Answer</p>
+                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground/55">Space To Reveal</p>
                   </button>
                 ) : isOutcomeFinal ? (
-                  <div className="flex h-full w-full items-center justify-center rounded-2xl border-2 border-line bg-surface px-3 py-3 text-center sm:px-4 sm:py-4 lg:row-span-2">
+                  <div className="flex h-full w-full items-center justify-center rounded-2xl border-2 border-line bg-surface px-3 py-3 text-center sm:px-4 sm:py-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.1em] text-foreground/65">Answer locked</p>
                       <p className={`mt-2 text-2xl font-black uppercase ${selectedOutcome === "correct" ? "text-emerald-700" : "text-red-700"}`}>{selectedOutcome}</p>
@@ -321,19 +300,21 @@ export default function StudyReviewModalSection({
                     </div>
                   </div>
                 ) : (
-                  <div className="grid h-full grid-cols-2 gap-2 lg:row-span-2 lg:grid-cols-1 lg:grid-rows-[1fr_1fr_auto] lg:gap-3">
-                    <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-red-800 sm:px-4 sm:py-4">
-                      <span className="block">Wrong</span>
-                      <span className="mt-1 block text-xl leading-none">{wrong}</span>
-                    </button>
-                    <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 sm:px-4 sm:py-4">
-                      <span className="block">Correct</span>
-                      <span className="mt-1 block text-xl leading-none">{correct}</span>
-                    </button>
+                  <div className="grid h-full grid-rows-[1fr_auto] gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-red-800 sm:px-4 sm:py-4">
+                        <span className="block">Wrong</span>
+                        <span className="mt-1 block text-xl leading-none">{wrong}</span>
+                      </button>
+                      <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 sm:px-4 sm:py-4">
+                        <span className="block">Correct</span>
+                        <span className="mt-1 block text-xl leading-none">{correct}</span>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={onSkipCurrent}
-                      className="col-span-2 h-full w-full rounded-2xl border-2 border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-black uppercase tracking-[0.1em] text-amber-800 sm:px-4 sm:py-4 lg:col-span-1"
+                      className="h-full w-full rounded-2xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-amber-800 sm:px-4 sm:py-3"
                     >
                       <span className="block">Skipped</span>
                       <span className="mt-1 block text-xl leading-none">{skipped}</span>
@@ -341,9 +322,6 @@ export default function StudyReviewModalSection({
                   </div>
                 )}
               </div>
-            </div>
-            <div className="mt-3 hidden sm:block">
-              <LevelExplorerReviewStatsCard accountId={accountId} subjectId={selectedItem.subjectId} currentSrsStage={selectedItem.srsStage} startedAt={selectedItem.startedAt} />
             </div>
           </>
         ) : requiresReveal && !isAnswerRevealed ? (
