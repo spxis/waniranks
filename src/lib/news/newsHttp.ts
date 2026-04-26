@@ -21,11 +21,33 @@ export type NewsHttpOk = {
 export type NewsHttpResult = NewsHttpOk | { ok: false; error: NewsHttpError };
 
 export async function fetchNewsHtml(url: string): Promise<NewsHttpResult> {
+  const attempts = [
+    buildHeaders(url, "minimal"),
+    buildHeaders(url, "browser-like"),
+  ] as const;
+
+  let lastFailure: NewsHttpError = { kind: "fetch_failed" };
+
+  for (const headers of attempts) {
+    const attempt = await fetchNewsHtmlOnce(url, headers);
+    if (attempt.ok) {
+      return attempt;
+    }
+    lastFailure = attempt.error;
+    if (attempt.error.kind === "too_large") {
+      return attempt;
+    }
+  }
+
+  return { ok: false, error: lastFailure };
+}
+
+async function fetchNewsHtmlOnce(url: string, headers: HeadersInit): Promise<NewsHttpResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const response = await fetch(url, {
-      headers: buildHeaders(url),
+      headers,
       redirect: "follow",
       signal: controller.signal,
     });
@@ -57,7 +79,7 @@ export async function fetchNewsHtml(url: string): Promise<NewsHttpResult> {
   }
 }
 
-function buildHeaders(url: string): HeadersInit {
+function buildHeaders(url: string, profile: "minimal" | "browser-like"): HeadersInit {
   let referer: string | null = null;
   try {
     referer = new URL(url).origin + "/";
@@ -70,18 +92,19 @@ function buildHeaders(url: string): HeadersInit {
     Accept:
       "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
     "Cache-Control": "max-age=0",
-    "Sec-Ch-Ua":
-      '"Not A(Brand";v="99", "Google Chrome";v="132", "Chromium";v="132"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"macOS"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
   };
+
+  if (profile === "browser-like") {
+    headers["Sec-Ch-Ua"] = '"Not A(Brand";v="99", "Google Chrome";v="132", "Chromium";v="132"';
+    headers["Sec-Ch-Ua-Mobile"] = "?0";
+    headers["Sec-Ch-Ua-Platform"] = '"macOS"';
+    headers["Sec-Fetch-Dest"] = "document";
+    headers["Sec-Fetch-Mode"] = "navigate";
+    headers["Sec-Fetch-Site"] = "none";
+    headers["Sec-Fetch-User"] = "?1";
+    headers["Upgrade-Insecure-Requests"] = "1";
+  }
 
   if (referer) {
     headers.Referer = referer;
