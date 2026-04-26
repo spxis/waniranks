@@ -243,7 +243,8 @@ function compareLabels(a: string, b: string): number {
     const numeric = Number(value.replace(/[^0-9]/g, ""));
     if (Number.isFinite(numeric)) {
       if (value.startsWith("N")) {
-        return numeric;
+        // JLPT should display from easiest to hardest: N5 -> N1.
+        return -numeric;
       }
       return numeric;
     }
