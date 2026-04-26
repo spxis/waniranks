@@ -211,6 +211,11 @@ async function selectBestCandidate(
       continue;
     }
 
+    // For explicit click/open, preserve user intent: first openable candidate wins.
+    if (options.requireKnown && openable) {
+      return { run: candidate, resolved };
+    }
+
     const score = candidateScore(candidate, resolved.result);
     if (!best || score > best.score) {
       best = { run: candidate, resolved, score };
