@@ -19,6 +19,10 @@ export type ViewGlyphViewerPayload = {
 
 export const VIEW_GLYPH_EVENT = "wr:view-glyph-open";
 
+const DUPLICATE_DISPATCH_WINDOW_MS = 500;
+let lastDispatchAtMs = 0;
+let lastDispatchKey = "";
+
 export function openViewGlyphViewer(payload: ViewGlyphViewerPayload): void {
   if (typeof window === "undefined") {
     return;
@@ -27,6 +31,16 @@ export function openViewGlyphViewer(payload: ViewGlyphViewerPayload): void {
   if (!payload.items || payload.items.length === 0) {
     return;
   }
+
+  const first = payload.items[0];
+  const dispatchKey = `${first?.subjectId ?? "none"}:${payload.items.length}:${payload.startIndex ?? 0}:${payload.title ?? ""}`;
+  const now = Date.now();
+  if (dispatchKey === lastDispatchKey && now - lastDispatchAtMs < DUPLICATE_DISPATCH_WINDOW_MS) {
+    return;
+  }
+
+  lastDispatchAtMs = now;
+  lastDispatchKey = dispatchKey;
 
   window.dispatchEvent(new CustomEvent<ViewGlyphViewerPayload>(VIEW_GLYPH_EVENT, { detail: payload }));
 }
