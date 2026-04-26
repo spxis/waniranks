@@ -3,8 +3,10 @@
 import {
   articleFontLabel,
   bumpTextSize,
+  kanjiDowngradeLabel,
   textSizeLabel,
   type NewsArticleFont,
+  type NewsKanjiDowngrade,
   type NewsReadingPrefs,
   type NewsTextSize,
 } from "./newsReadingPrefs";
@@ -25,6 +27,10 @@ export default function NewsReadingControls({ prefs, onChange }: Props) {
 
   function setFont(font: NewsArticleFont) {
     onChange({ ...prefs, articleFont: font });
+  }
+
+  function setKanjiDowngrade(value: NewsKanjiDowngrade) {
+    onChange({ ...prefs, kanjiDowngrade: value });
   }
 
   return (
@@ -71,6 +77,25 @@ export default function NewsReadingControls({ prefs, onChange }: Props) {
                 aria-label={`Use ${articleFontLabel(font)} font`}
               >
                 {articleFontLabel(font)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/60">
+            Kanji cap
+          </span>
+          <div className="inline-flex items-center overflow-hidden rounded-full border border-line bg-surface">
+            {(["off", "n5", "n4", "n3", "n2", "n1"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setKanjiDowngrade(value)}
+                className={`px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${prefs.kanjiDowngrade === value ? "bg-accent text-surface" : "text-foreground/75 hover:bg-surface-muted"}`}
+                aria-label={`Use ${kanjiDowngradeLabel(value)} kanji cap`}
+              >
+                {kanjiDowngradeLabel(value)}
               </button>
             ))}
           </div>

@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import jlptReadings from "@/data/jlptReadings.json";
+
+import type { NewsKanjiDowngrade } from "./newsReadingPrefs";
+
 import {
   availabilityForRun,
   openNewsGlyphCandidatesWithOptions,
@@ -20,11 +24,13 @@ import { tokenizeJapanese } from "./newsTokenize";
 type Props = {
   text: string;
   emphasizeKanji: boolean;
+  kanjiDowngrade: NewsKanjiDowngrade;
 };
 
 const pageSessionSeenGlyphs = new Set<string>();
+type JlptRecord = Record<string, { nLevel?: number; readings?: string[] }>;
 
-export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
+export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade }: Props) {
   const segments = tokenizeJapanese(text);
   const [dynamicAvailability, setDynamicAvailability] = useState<
     Record<string, "unknown" | "known" | "missing">
@@ -81,6 +87,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
         const primaryRun = candidates[0] ?? segment.text;
         const availability = dynamicAvailability[segment.text] ?? availabilityByRun[segment.text] ?? "unknown";
         const isLoading = loadingRun === segment.text;
+        const displayedText = downgradeKanjiDisplay(segment.text, kanjiDowngrade);
         const sizeClass = emphasizeKanji ? "text-[1.2em] leading-none" : "";
         const seenClass = seenRuns.has(segment.text) ? "text-accent/80" : "";
         const missingClass =
@@ -171,7 +178,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
             }
           >
             <span className="rounded-sm group-hover:bg-accent/10 group-focus-visible:bg-accent/10">
-              {segment.text}
+              {displayedText}
             </span>
             {isLoading ? (
               <span
@@ -187,6 +194,8 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
 }
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+const jlptByChar = jlptReadings as JlptRecord;
+
 function collectSeenGlyphs(): Set<string> {
   const seen = new Set<string>();
   for (const entry of readNewsKanjiHistory()) {
@@ -204,5 +213,43 @@ function collectSeenGlyphs(): Set<string> {
 
 function extractKanjiTokens(value: string): string[] {
   return Array.from(value).filter((char) => KANJI_REGEX.test(char));
+}
+
+function downgradeKanjiDisplay(value: string, mode: NewsKanjiDowngrade): string {
+  const threshold = jlptThresholdFromMode(mode);
+  if (threshold === null) {
+    return value;
+  }
+
+  return Array.from(value)
+    .map((char) => downgradeKanjiChar(char, threshold))
+    .join("");
+}
+
+function jlptThresholdFromMode(mode: NewsKanjiDowngrade): number | null {
+  if (mode === "off") {
+    return null;
+  }
+
+  const parsed = Number(mode.slice(1));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function downgradeKanjiChar(char: string, threshold: number): string {
+  if (!KANJI_REGEX.test(char)) {
+    return char;
+  }
+
+  const nLevel = jlptByChar[char]?.nLevel;
+  if (typeof nLevel !== "number" || nLevel >= threshold) {
+    return char;
+  }
+
+  const fallback = sanitizeKanaReading(jlptByChar[char]?.readings?.[0] ?? "");
+  return fallback.length > 0 ? fallback : "・";
+}
+
+function sanitizeKanaReading(value: string): string {
+  return value.replace(/\./g, "").replace(/[^ぁ-んァ-ンー]/g, "");
 }
 

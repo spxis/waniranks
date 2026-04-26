@@ -14,6 +14,7 @@ import {
   readReadingPrefs,
   textSizeClass,
   writeReadingPrefs,
+  type NewsKanjiDowngrade,
   type NewsReadingPrefs,
 } from "./newsReadingPrefs";
 
@@ -115,6 +116,7 @@ export default function NewsArticleView({
                     key={`block-${index}`}
                     block={item.block}
                     emphasizeKanji={prefs.emphasizeKanji}
+                    kanjiDowngrade={prefs.kanjiDowngrade}
                   />
                 );
               })}
@@ -206,12 +208,18 @@ function articleTextStyle(font: "body" | "jp-sans" | "jp-serif"): { fontFamily: 
 function BlockView({
   block,
   emphasizeKanji,
+  kanjiDowngrade,
 }: {
   block: NewsArticleBlock;
   emphasizeKanji: boolean;
+  kanjiDowngrade: NewsKanjiDowngrade;
 }) {
   const content = (
-    <NewsTokenizedText text={block.text} emphasizeKanji={emphasizeKanji} />
+    <NewsTokenizedText
+      text={block.text}
+      emphasizeKanji={emphasizeKanji}
+      kanjiDowngrade={kanjiDowngrade}
+    />
   );
 
   if (block.kind === "heading") {

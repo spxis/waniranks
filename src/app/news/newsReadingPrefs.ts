@@ -4,21 +4,25 @@ export const NEWS_READING_PREFS_KEY = "uk:news-reading-prefs";
 
 export type NewsTextSize = "sm" | "md" | "lg" | "xl" | "2xl";
 export type NewsArticleFont = "body" | "jp-sans" | "jp-serif";
+export type NewsKanjiDowngrade = "off" | "n5" | "n4" | "n3" | "n2" | "n1";
 
 export type NewsReadingPrefs = {
   textSize: NewsTextSize;
   emphasizeKanji: boolean;
   articleFont: NewsArticleFont;
+  kanjiDowngrade: NewsKanjiDowngrade;
 };
 
 export const DEFAULT_NEWS_READING_PREFS: NewsReadingPrefs = {
   textSize: "lg",
   emphasizeKanji: false,
   articleFont: "body",
+  kanjiDowngrade: "off",
 };
 
 const TEXT_SIZE_ORDER: NewsTextSize[] = ["sm", "md", "lg", "xl", "2xl"];
 const ARTICLE_FONTS: NewsArticleFont[] = ["body", "jp-sans", "jp-serif"];
+const KANJI_DOWNGRADE_OPTIONS: NewsKanjiDowngrade[] = ["off", "n5", "n4", "n3", "n2", "n1"];
 
 export function readReadingPrefs(): NewsReadingPrefs {
   const stored = getStoredJson<Partial<NewsReadingPrefs> | null>(
@@ -38,7 +42,12 @@ export function readReadingPrefs(): NewsReadingPrefs {
   const articleFont = ARTICLE_FONTS.includes(stored.articleFont as NewsArticleFont)
     ? (stored.articleFont as NewsArticleFont)
     : DEFAULT_NEWS_READING_PREFS.articleFont;
-  return { textSize, emphasizeKanji, articleFont };
+  const kanjiDowngrade = KANJI_DOWNGRADE_OPTIONS.includes(
+    stored.kanjiDowngrade as NewsKanjiDowngrade,
+  )
+    ? (stored.kanjiDowngrade as NewsKanjiDowngrade)
+    : DEFAULT_NEWS_READING_PREFS.kanjiDowngrade;
+  return { textSize, emphasizeKanji, articleFont, kanjiDowngrade };
 }
 
 export function writeReadingPrefs(prefs: NewsReadingPrefs): void {
@@ -93,5 +102,23 @@ export function articleFontLabel(font: NewsArticleFont): string {
     case "body":
     default:
       return "Body";
+  }
+}
+
+export function kanjiDowngradeLabel(value: NewsKanjiDowngrade): string {
+  switch (value) {
+    case "n5":
+      return "N5+";
+    case "n4":
+      return "N4+";
+    case "n3":
+      return "N3+";
+    case "n2":
+      return "N2+";
+    case "n1":
+      return "N1+";
+    case "off":
+    default:
+      return "Off";
   }
 }
