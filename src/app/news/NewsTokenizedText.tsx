@@ -87,9 +87,10 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
         const primaryRun = candidates[0] ?? segment.text;
         const availability = dynamicAvailability[segment.text] ?? availabilityByRun[segment.text] ?? "unknown";
         const isLoading = loadingRun === segment.text;
-        const displayedText = downgradeKanjiDisplay(segment.text, kanjiDowngrade);
+        const isDowngraded = shouldDeemphasizeSegment(segment.text, kanjiDowngrade);
         const sizeClass = emphasizeKanji ? "text-[1.2em] leading-none" : "";
         const seenClass = seenRuns.has(segment.text) ? "text-accent/80" : "";
+        const downgradedClass = isDowngraded ? "opacity-65" : "";
         const missingClass =
           availability === "missing"
             ? "text-hot/80 decoration-hot/70 decoration-wavy underline"
@@ -168,7 +169,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
-            className={`group relative inline cursor-pointer select-text align-baseline text-foreground outline-none transition hover:text-accent focus-visible:text-accent ${isLoading ? "cursor-wait opacity-80" : ""} ${sizeClass} ${seenClass} ${missingClass}`.trim()}
+            className={`group relative inline cursor-pointer select-text align-baseline text-foreground outline-none transition hover:text-accent focus-visible:text-accent ${isLoading ? "cursor-wait opacity-80" : ""} ${sizeClass} ${seenClass} ${downgradedClass} ${missingClass}`.trim()}
             title={
               isLoading
                 ? `Looking up ${segment.text}...`
@@ -178,7 +179,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
             }
           >
             <span className="rounded-sm group-hover:bg-accent/10 group-focus-visible:bg-accent/10">
-              {displayedText}
+              {segment.text}
             </span>
             {isLoading ? (
               <span
@@ -215,15 +216,13 @@ function extractKanjiTokens(value: string): string[] {
   return Array.from(value).filter((char) => KANJI_REGEX.test(char));
 }
 
-function downgradeKanjiDisplay(value: string, mode: NewsKanjiDowngrade): string {
+function shouldDeemphasizeSegment(value: string, mode: NewsKanjiDowngrade): boolean {
   const threshold = jlptThresholdFromMode(mode);
   if (threshold === null) {
-    return value;
+    return false;
   }
 
-  return Array.from(value)
-    .map((char) => downgradeKanjiChar(char, threshold))
-    .join("");
+  return Array.from(value).some((char) => isHarderThanThreshold(char, threshold));
 }
 
 function jlptThresholdFromMode(mode: NewsKanjiDowngrade): number | null {
@@ -235,17 +234,16 @@ function jlptThresholdFromMode(mode: NewsKanjiDowngrade): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function downgradeKanjiChar(char: string, threshold: number): string {
+function isHarderThanThreshold(char: string, threshold: number): boolean {
   if (!KANJI_REGEX.test(char)) {
-    return char;
+    return false;
   }
 
   const nLevel = jlptByChar[char]?.nLevel;
-  if (typeof nLevel !== "number" || nLevel >= threshold) {
-    return char;
+  if (typeof nLevel !== "number") {
+    return false;
   }
 
-  // A single neutral mask avoids showing incorrect out-of-context readings.
-  return "・";
+  return nLevel < threshold;
 }
 
