@@ -22,6 +22,7 @@ type JlptRecord = Record<string, { nLevel?: number }>;
 const pageSessionSeenGlyphs = new Set<string>();
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const jlptByChar = jlptReadings as JlptRecord;
+const STARTUP_PREFETCH_LIMIT = 10;
 
 export default function NewsTokenizedText({
   text,
@@ -80,6 +81,65 @@ export default function NewsTokenizedText({
     }
     return Object.fromEntries(map.entries());
   }, [segments]);
+
+  const startupPrefetchCandidates = useMemo(() => {
+    const uniquePrimaryRuns = new Set<string>();
+    const out: string[][] = [];
+
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment = segments[index];
+      if (segment.kind !== "kanji") {
+        continue;
+      }
+
+      const candidates = candidatesByIndex[index] ?? [];
+      const primary = candidates[0] ?? segment.text;
+      if (!primary || uniquePrimaryRuns.has(primary)) {
+        continue;
+      }
+
+      uniquePrimaryRuns.add(primary);
+      out.push(candidates);
+      if (out.length >= STARTUP_PREFETCH_LIMIT) {
+        break;
+      }
+    }
+
+    return out;
+  }, [candidatesByIndex, segments]);
+
+  useEffect(() => {
+    if (startupPrefetchCandidates.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void Promise.all(
+      startupPrefetchCandidates.map(async (candidates) => {
+        const run = candidates[0];
+        if (!run) {
+          return;
+        }
+
+        const next = await prefetchNewsGlyphCandidates(candidates);
+        if (cancelled) {
+          return;
+        }
+
+        setDynamicAvailability((prev) => {
+          if (prev[run] === next) {
+            return prev;
+          }
+          return { ...prev, [run]: next };
+        });
+      }),
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [startupPrefetchCandidates]);
 
   const capEnabled = isCapEnabled(kanjiCapBasis, kanjiCapJlpt, kanjiCapWk, kanjiCapGrade);
 
