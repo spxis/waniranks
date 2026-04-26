@@ -32,7 +32,7 @@ type KanjiEntry = {
 
 type GroupMode = "all" | "jlpt" | "wk" | "grade";
 type EntrySortMode = "article" | "count" | "jp";
-type AllCountFilter = "all" | "2+" | "3+" | "5+";
+type AllCountFilter = "all" | "10+" | "25+" | "50+";
 type AllCoverageFilter = "all" | "wk-known" | "wk-unknown" | "no-level-data";
 
 type JlptRecord = Record<string, { nLevel?: number }>;
@@ -45,7 +45,7 @@ const ALL_COUNT_FILTER_STORAGE_KEY = "news:kanji-all-count-filter";
 const ALL_COVERAGE_FILTER_STORAGE_KEY = "news:kanji-all-coverage-filter";
 const GROUP_MODE_OPTIONS = ["all", "jlpt", "wk", "grade"] as const;
 const ENTRY_SORT_OPTIONS = ["article", "count", "jp"] as const;
-const ALL_COUNT_FILTER_OPTIONS = ["all", "2+", "3+", "5+"] as const;
+const ALL_COUNT_FILTER_OPTIONS = ["all", "10+", "25+", "50+"] as const;
 const ALL_COVERAGE_FILTER_OPTIONS = ["all", "wk-known", "wk-unknown", "no-level-data"] as const;
 
 export function countUniqueArticleKanji(blocks: NewsArticleBlock[]): number {
@@ -267,24 +267,24 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
                   }}
                 />
                 <SegmentButton
-                  label="2+"
-                  selected={allCountFilter === "2+"}
+                  label="10+"
+                  selected={allCountFilter === "10+"}
                   onClick={() => {
-                    updateAllCountFilter("2+");
+                    updateAllCountFilter("10+");
                   }}
                 />
                 <SegmentButton
-                  label="3+"
-                  selected={allCountFilter === "3+"}
+                  label="25+"
+                  selected={allCountFilter === "25+"}
                   onClick={() => {
-                    updateAllCountFilter("3+");
+                    updateAllCountFilter("25+");
                   }}
                 />
                 <SegmentButton
-                  label="5+"
-                  selected={allCountFilter === "5+"}
+                  label="50+"
+                  selected={allCountFilter === "50+"}
                   onClick={() => {
-                    updateAllCountFilter("5+");
+                    updateAllCountFilter("50+");
                   }}
                 />
               </div>
@@ -533,14 +533,14 @@ function matchesAllFilters(
 }
 
 function matchesCountFilter(count: number, filter: AllCountFilter): boolean {
-  if (filter === "2+") {
-    return count >= 2;
+  if (filter === "10+") {
+    return count >= 10;
   }
-  if (filter === "3+") {
-    return count >= 3;
+  if (filter === "25+") {
+    return count >= 25;
   }
-  if (filter === "5+") {
-    return count >= 5;
+  if (filter === "50+") {
+    return count >= 50;
   }
   return true;
 }
