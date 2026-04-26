@@ -117,9 +117,160 @@ function htmlToBlocks(html: string, baseUrl: string): NewsArticleBlock[] {
   };
 
   body.childNodes.forEach((child) => walk(child));
-  return out;
+  return cleanExtractedBlocks(out);
 }
 
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
+}
+
+function cleanExtractedBlocks(blocks: NewsArticleBlock[]): NewsArticleBlock[] {
+  if (blocks.length <= 2) {
+    return blocks;
+  }
+
+  const start = findLikelyContentStart(blocks);
+  const end = findLikelyContentEnd(blocks);
+  if (start > end) {
+    return blocks;
+  }
+
+  const sliced = blocks.slice(start, end + 1);
+  return sliced.filter((block) => !isAlwaysDropBoilerplate(block.text));
+}
+
+function findLikelyContentStart(blocks: NewsArticleBlock[]): number {
+  let start = 0;
+
+  while (start < blocks.length - 1 && isLikelyLeadingNoise(blocks[start], start)) {
+    start += 1;
+  }
+
+  for (let index = start; index < Math.min(blocks.length, start + 10); index += 1) {
+    const block = blocks[index];
+    if (isSubstantialParagraph(block)) {
+      if (index > 0) {
+        const prev = blocks[index - 1];
+        if (prev.kind === "heading" && !isLikelyHeadingNoise(prev.text)) {
+          return index - 1;
+        }
+      }
+      return index;
+    }
+  }
+
+  return start;
+}
+
+function findLikelyContentEnd(blocks: NewsArticleBlock[]): number {
+  let end = blocks.length - 1;
+
+  while (end > 0 && isLikelyTrailingNoise(blocks[end], blocks.length - 1 - end)) {
+    end -= 1;
+  }
+
+  for (let index = end; index >= Math.max(0, end - 10); index -= 1) {
+    if (isSubstantialParagraph(blocks[index])) {
+      return index;
+    }
+  }
+
+  return end;
+}
+
+function isSubstantialParagraph(block: NewsArticleBlock): boolean {
+  if (block.kind !== "paragraph") {
+    return false;
+  }
+  const text = block.text.trim();
+  if (text.length < 44) {
+    return false;
+  }
+  return !isLikelyHeadingNoise(text) && !isLikelyLinkHubText(text) && !isAlwaysDropBoilerplate(text);
+}
+
+function isLikelyLeadingNoise(block: NewsArticleBlock, indexFromTop: number): boolean {
+  const text = block.text.trim();
+  if (!text) {
+    return true;
+  }
+
+  if (isAlwaysDropBoilerplate(text) || isLikelyHeadingNoise(text)) {
+    return true;
+  }
+
+  if (block.kind === "heading" && isLikelyTocHeading(text)) {
+    return true;
+  }
+
+  if (indexFromTop <= 5 && isLikelyLinkHubText(text)) {
+    return true;
+  }
+
+  if (indexFromTop <= 3 && block.kind === "paragraph" && text.length <= 20) {
+    return true;
+  }
+
+  return false;
+}
+
+function isLikelyTrailingNoise(block: NewsArticleBlock, indexFromBottom: number): boolean {
+  const text = block.text.trim();
+  if (!text) {
+    return true;
+  }
+
+  if (isAlwaysDropBoilerplate(text)) {
+    return true;
+  }
+
+  if (isLikelyHeadingNoise(text) || isLikelyLinkHubText(text)) {
+    return true;
+  }
+
+  if (indexFromBottom <= 3 && block.kind === "paragraph" && text.length <= 26) {
+    return true;
+  }
+
+  return false;
+}
+
+function isLikelyHeadingNoise(text: string): boolean {
+  const value = text.toLowerCase();
+  return (
+    /(table of contents|contents|toc|related articles?|recommended|share|follow us|newsletter|subscribe|sponsored|advertisement)/i.test(value) ||
+    /(目次|関連記事|関連リンク|あわせて読みたい|シェア|フォロー|広告|スポンサー|おすすめ|ランキング|次の記事|前の記事|トップへ)/.test(text)
+  );
+}
+
+function isLikelyTocHeading(text: string): boolean {
+  const normalized = text.replace(/[\s:：]+/g, "").toLowerCase();
+  return (
+    normalized === "toc" ||
+    normalized === "contents" ||
+    normalized === "tableofcontents" ||
+    normalized === "目次"
+  );
+}
+
+function isLikelyLinkHubText(text: string): boolean {
+  const value = text.trim();
+  if (!value) {
+    return false;
+  }
+
+  const tokenSplit = value.split(/[|｜・•·／/]/).map((token) => token.trim()).filter(Boolean);
+  const manyShortTokens = tokenSplit.length >= 4 && tokenSplit.every((token) => token.length <= 10);
+  const hasUrlish = /(https?:\/\/|www\.|\.com\b|\.jp\b)/i.test(value);
+  const navWords = /(home|news|sports|life|business|tech|menu|login|sign in|register)/i.test(value);
+
+  return manyShortTokens || hasUrlish || navWords;
+}
+
+function isAlwaysDropBoilerplate(text: string): boolean {
+  const value = text.toLowerCase();
+  return (
+    /(all rights reserved|copyright|terms of use|privacy policy|cookie policy|about us|contact us)/i.test(value) ||
+    /(利用規約|プライバシーポリシー|著作権|無断転載|会社概要|お問い合わせ|サイトマップ|免責事項)/.test(text)
+  );
 }
