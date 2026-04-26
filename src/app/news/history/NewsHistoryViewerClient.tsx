@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { formatRelativeFromNow } from "@/lib/timeFormat";
 
+import { newsGlyphButtonClass } from "../newsGlyphBoxStyle";
 import { openNewsGlyphRun } from "../newsGlyphRunner";
 import {
   NEWS_GLYPH_STATS_EVENT,
@@ -146,7 +147,7 @@ export default function NewsHistoryViewerClient() {
                     <button
                       type="button"
                       onClick={() => void openNewsGlyphRun(entry.run)}
-                      className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-vocabulary/55 bg-vocabulary/10 px-3 text-2xl font-black leading-none text-vocabulary transition hover:bg-vocabulary/20"
+                      className={newsGlyphButtonClass({ type: "vocabulary", size: "normal" })}
                       title={`Open vocabulary ${entry.run}`}
                     >
                       {entry.run}
@@ -157,7 +158,7 @@ export default function NewsHistoryViewerClient() {
                       key={`${entry.key}-${char}`}
                       type="button"
                       onClick={() => void openNewsGlyphRun(char)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-kanji/55 bg-kanji/10 text-2xl font-black leading-none text-kanji transition hover:bg-kanji/20"
+                      className={newsGlyphButtonClass({ type: "kanji", size: "compact" })}
                       title={`Open kanji ${char}`}
                     >
                       {char}

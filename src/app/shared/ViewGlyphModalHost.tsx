@@ -7,6 +7,7 @@ import LevelExplorerDetailSection from "@/app/users/[nickname]/level-explorer/co
 import type { VocabularyKanjiLink } from "@/app/users/[nickname]/level-explorer/components/LevelExplorerReferenceCards";
 import { stripHtml } from "@/app/users/[nickname]/level-explorer/lib/levelExplorerDisplay";
 import { hasRenderableRelatedItems } from "@/app/users/[nickname]/study-explorer/components/StudyReviewModalHelpers";
+import { newsGlyphButtonClass } from "@/app/news/newsGlyphBoxStyle";
 import type { StudyQueueItem } from "@/app/users/[nickname]/study-explorer/lib/studyExplorerTypes";
 import {
   VIEW_GLYPH_EVENT,
@@ -253,16 +254,7 @@ export default function ViewGlyphModalHost() {
               const unavailable = !entry.exists || entry.itemIndex === null;
               const isVocabulary = entry.kind === "vocabulary";
               const isSessionEntry = entry.origin === "session";
-              const selectedClass = selected
-                ? isVocabulary
-                  ? "border-vocabulary bg-vocabulary text-white"
-                  : "border-kanji bg-kanji text-white"
-                : "";
-              const baseClass = unavailable
-                ? "border-hot/45 bg-hot/10 text-hot/75"
-                : isVocabulary
-                  ? "border-vocabulary/55 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20"
-                  : "border-kanji/55 bg-kanji/10 text-kanji hover:bg-kanji/20";
+              const glyphType = isVocabulary ? "vocabulary" : "kanji";
               const sessionClass = isSessionEntry && !selected ? "ring-1 ring-current/35" : "";
               return (
                 <button
@@ -275,7 +267,16 @@ export default function ViewGlyphModalHost() {
                     setIndex(entry.itemIndex);
                   }}
                   disabled={entry.itemIndex === null}
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-base font-black tracking-[0.04em] transition ${selected ? selectedClass : baseClass} ${sessionClass} ${entry.itemIndex === null ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+                  className={
+                    unavailable
+                      ? `inline-flex min-h-10 items-center gap-1 rounded-xl border border-hot/45 bg-hot/10 px-3 text-2xl font-black leading-none text-hot/75 ${entry.itemIndex === null ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`
+                      : `${newsGlyphButtonClass({
+                          type: glyphType,
+                          size: "normal",
+                          selected,
+                          clickable: entry.itemIndex !== null,
+                        })} gap-1 ${sessionClass}`
+                  }
                   title={
                     unavailable
                       ? `${entry.label} not found in WaniKani`
@@ -283,7 +284,7 @@ export default function ViewGlyphModalHost() {
                   }
                 >
                   <span>{entry.label}</span>
-                  {unavailable ? <span className="text-xs">missing</span> : null}
+                  {unavailable ? <span className="text-sm font-semibold">missing</span> : null}
                 </button>
               );
             })}
