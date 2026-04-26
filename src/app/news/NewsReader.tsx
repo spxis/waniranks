@@ -6,7 +6,11 @@ import type { NewsArticle } from "@/lib/news/newsTypes";
 
 import NewsArticleView from "./NewsArticleView";
 
-export default function NewsReader() {
+type Props = {
+  devSampleUrls?: string[];
+};
+
+export default function NewsReader({ devSampleUrls = [] }: Props) {
   const [url, setUrl] = useState("");
   const [article, setArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,6 +78,21 @@ export default function NewsReader() {
         <p className="text-xs text-slate-500">
           You provide the link, so you take responsibility for the source. Articles are cached briefly and not stored.
         </p>
+        {devSampleUrls.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+            <span className="text-slate-500">Dev samples:</span>
+            {devSampleUrls.map((sample) => (
+              <button
+                key={sample}
+                type="button"
+                onClick={() => setUrl(sample)}
+                className="rounded border border-slate-300 bg-white px-2 py-0.5 font-mono text-[11px] text-slate-700 hover:border-[#2D7CFF] hover:text-[#2D7CFF]"
+              >
+                {hostnameOf(sample)}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </form>
 
       {loading ? <LoadingState /> : null}
@@ -97,4 +116,12 @@ function ErrorState({ message }: { message: string }) {
       {message}
     </div>
   );
+}
+
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
 }
