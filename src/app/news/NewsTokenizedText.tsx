@@ -38,6 +38,12 @@ type Props = {
 const pageSessionSeenGlyphs = new Set<string>();
 type JlptRecord = Record<string, { nLevel?: number }>;
 
+const sharedWkLevelsByChar: Record<string, number | null> = {};
+const sharedGradesByChar: Record<string, number | null> = {};
+const sharedReadingsByRun: Record<string, string | null> = {};
+const loadingLevelChars = new Set<string>();
+const loadingReadingRuns = new Set<string>();
+
 export default function NewsTokenizedText({
   text,
   emphasizeKanji,
@@ -50,9 +56,15 @@ export default function NewsTokenizedText({
   const [dynamicAvailability, setDynamicAvailability] = useState<
     Record<string, "unknown" | "known" | "missing">
   >({});
-  const [resolvedWkLevels, setResolvedWkLevels] = useState<Record<string, number | null>>({});
-  const [resolvedGrades, setResolvedGrades] = useState<Record<string, number | null>>({});
-  const [readingsByRun, setReadingsByRun] = useState<Record<string, string | null>>({});
+  const [resolvedWkLevels, setResolvedWkLevels] = useState<Record<string, number | null>>(
+    () => ({ ...sharedWkLevelsByChar }),
+  );
+  const [resolvedGrades, setResolvedGrades] = useState<Record<string, number | null>>(
+    () => ({ ...sharedGradesByChar }),
+  );
+  const [readingsByRun, setReadingsByRun] = useState<Record<string, string | null>>(
+    () => ({ ...sharedReadingsByRun }),
+  );
   const [loadingRun, setLoadingRun] = useState<string | null>(null);
   const [seenRuns, setSeenRuns] = useState<Set<string>>(() => {
     const next = collectSeenGlyphs();
@@ -119,29 +131,14 @@ export default function NewsTokenizedText({
     }
 
     let cancelled = false;
-    void fetch("/api/news/kanji-levels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chars: unresolved }),
-    })
-      .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as
-          | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
-          | null;
-        if (!response.ok || cancelled) {
-          return;
-        }
+    void ensureKanjiLevels(unresolved).then(() => {
+      if (cancelled) {
+        return;
+      }
 
-        if (payload?.levels) {
-          setResolvedWkLevels((prev) => ({ ...prev, ...payload.levels }));
-        }
-        if (payload?.grades) {
-          setResolvedGrades((prev) => ({ ...prev, ...payload.grades }));
-        }
-      })
-      .catch(() => {
-        // Keep original rendering when level enrichment is unavailable.
-      });
+      setResolvedWkLevels((prev) => ({ ...prev, ...pickCharValues(unresolved, sharedWkLevelsByChar) }));
+      setResolvedGrades((prev) => ({ ...prev, ...pickCharValues(unresolved, sharedGradesByChar) }));
+    });
 
     return () => {
       cancelled = true;
@@ -195,24 +192,13 @@ export default function NewsTokenizedText({
     }
 
     let cancelled = false;
-    void fetch("/api/news/readings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ runs: unresolved }),
-    })
-      .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as
-          | { readings?: Record<string, string | null> }
-          | null;
-        if (!response.ok || cancelled || !payload?.readings) {
-          return;
-        }
+    void ensureRunReadings(unresolved).then(() => {
+      if (cancelled) {
+        return;
+      }
 
-        setReadingsByRun((prev) => ({ ...prev, ...payload.readings }));
-      })
-      .catch(() => {
-        // Keep original rendering if readings cannot be resolved.
-      });
+      setReadingsByRun((prev) => ({ ...prev, ...pickRunValues(unresolved, sharedReadingsByRun) }));
+    });
 
     return () => {
       cancelled = true;
@@ -242,14 +228,20 @@ export default function NewsTokenizedText({
           gradeByChar: resolvedGrades,
         });
         const resolvedReading = readingsByRun[segment.text];
+        const readingPending = isDowngraded && !(segment.text in readingsByRun);
+        const levelPending = isSegmentLevelPending(segment.text, {
+          basis: kanjiCapBasis,
+          wkByChar: resolvedWkLevels,
+          gradeByChar: resolvedGrades,
+        });
         const displayText =
           isDowngraded && typeof resolvedReading === "string" && resolvedReading.length > 0
             ? resolvedReading
             : segment.text;
         const sizeClass = emphasizeKanji ? "text-[1.2em] leading-none" : "";
         const seenClass = seenRuns.has(segment.text) ? "text-accent/80" : "";
-        const downgradedClass =
-          isDowngraded && displayText === segment.text ? "opacity-65" : "";
+        const downgradedClass = isDowngraded && displayText === segment.text ? "opacity-65" : "";
+        const capPendingClass = isDowngraded && (readingPending || levelPending) ? "animate-pulse" : "";
         const missingClass =
           availability === "missing"
             ? "text-hot/80 decoration-hot/70 decoration-wavy underline"
@@ -328,10 +320,12 @@ export default function NewsTokenizedText({
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
-            className={`group relative inline cursor-pointer select-text align-baseline text-foreground outline-none transition hover:text-accent focus-visible:text-accent ${isLoading ? "cursor-wait opacity-80" : ""} ${sizeClass} ${seenClass} ${downgradedClass} ${missingClass}`.trim()}
+            className={`group relative inline cursor-pointer select-text align-baseline text-foreground outline-none transition hover:text-accent focus-visible:text-accent ${isLoading ? "cursor-wait opacity-80" : ""} ${sizeClass} ${seenClass} ${downgradedClass} ${capPendingClass} ${missingClass}`.trim()}
             title={
               isLoading
                 ? `Looking up ${segment.text}...`
+                : isDowngraded && (readingPending || levelPending)
+                ? `Applying cap to ${segment.text}...`
                 : availability === "missing"
                 ? `${segment.text} is not in your WaniKani data`
                 : `Look up ${segment.text}`
@@ -346,6 +340,12 @@ export default function NewsTokenizedText({
                 className="pointer-events-none absolute -right-2 -top-1 h-3 w-3 animate-spin rounded-full border-2 border-accent/35 border-t-accent"
               />
             ) : null}
+            {!isLoading && isDowngraded && (readingPending || levelPending) ? (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-2 -top-1 h-3 w-3 animate-spin rounded-full border-2 border-accent/25 border-t-accent"
+              />
+            ) : null}
           </span>
         );
       })}
@@ -355,6 +355,128 @@ export default function NewsTokenizedText({
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const jlptByChar = jlptReadings as JlptRecord;
+
+async function ensureKanjiLevels(chars: string[]): Promise<void> {
+  const queued = chars.filter(
+    (char) =>
+      !(char in sharedWkLevelsByChar) ||
+      !(char in sharedGradesByChar) ? !loadingLevelChars.has(char) : false,
+  );
+  if (queued.length === 0) {
+    return;
+  }
+
+  for (const char of queued) {
+    loadingLevelChars.add(char);
+  }
+
+  try {
+    const response = await fetch("/api/news/kanji-levels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chars: queued }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
+      | null;
+    if (!response.ok) {
+      return;
+    }
+
+    for (const char of queued) {
+      sharedWkLevelsByChar[char] = payload?.levels?.[char] ?? null;
+      sharedGradesByChar[char] = payload?.grades?.[char] ?? null;
+    }
+  } catch {
+    // Keep rendering functional if enrichment fails.
+  } finally {
+    for (const char of queued) {
+      loadingLevelChars.delete(char);
+    }
+  }
+}
+
+async function ensureRunReadings(runs: string[]): Promise<void> {
+  const queued = runs.filter((run) => !(run in sharedReadingsByRun) && !loadingReadingRuns.has(run));
+  if (queued.length === 0) {
+    return;
+  }
+
+  for (const run of queued) {
+    loadingReadingRuns.add(run);
+  }
+
+  try {
+    const response = await fetch("/api/news/readings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ runs: queued }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { readings?: Record<string, string | null> }
+      | null;
+    if (!response.ok) {
+      return;
+    }
+
+    for (const run of queued) {
+      sharedReadingsByRun[run] = payload?.readings?.[run] ?? null;
+    }
+  } catch {
+    // Keep original text if reading lookup fails.
+  } finally {
+    for (const run of queued) {
+      loadingReadingRuns.delete(run);
+    }
+  }
+}
+
+function pickCharValues(
+  chars: string[],
+  source: Record<string, number | null>,
+): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const char of chars) {
+    if (char in source) {
+      out[char] = source[char] ?? null;
+    }
+  }
+  return out;
+}
+
+function pickRunValues(
+  runs: string[],
+  source: Record<string, string | null>,
+): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const run of runs) {
+    if (run in source) {
+      out[run] = source[run] ?? null;
+    }
+  }
+  return out;
+}
+
+function isSegmentLevelPending(
+  value: string,
+  settings: {
+    basis: NewsKanjiCapBasis;
+    wkByChar: Record<string, number | null>;
+    gradeByChar: Record<string, number | null>;
+  },
+): boolean {
+  if (settings.basis === "jlpt") {
+    return false;
+  }
+
+  const chars = Array.from(value).filter((char) => KANJI_REGEX.test(char));
+  if (settings.basis === "wk") {
+    return chars.some((char) => !(char in settings.wkByChar));
+  }
+  return chars.some((char) => !(char in settings.gradeByChar));
+}
 
 function collectSeenGlyphs(): Set<string> {
   const seen = new Set<string>();
