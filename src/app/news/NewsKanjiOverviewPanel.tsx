@@ -218,9 +218,9 @@ function GroupColumn({
             </p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {group.entries.map((entry) => (
-                <div key={`${group.label}-${entry.char}`} className="inline-flex flex-col items-center gap-1">
+                <div key={`${group.label}-${entry.char}`} className="relative inline-flex">
                   {entry.occurrenceCount > 1 ? (
-                    <span className="rounded-full border border-line bg-surface px-1.5 py-0.5 text-[10px] font-bold leading-none text-foreground/70">
+                    <span className="pointer-events-none absolute -right-1 -top-1 z-10 min-w-4 -translate-y-1/2 translate-x-1/2 rounded-full border border-line bg-surface px-1 py-0.5 text-center text-[9px] font-bold leading-none text-foreground/75 shadow-sm">
                       {entry.occurrenceCount}
                     </span>
                   ) : null}
