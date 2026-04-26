@@ -136,7 +136,10 @@ function cleanExtractedBlocks(blocks: NewsArticleBlock[]): NewsArticleBlock[] {
   }
 
   const sliced = blocks.slice(start, end + 1);
-  return sliced.filter((block) => !isAlwaysDropBoilerplate(block.text));
+  return sliced.filter((block) => {
+    const text = block.text;
+    return !isAlwaysDropBoilerplate(text) && !isLikelyInlineRelatedBlock(text);
+  });
 }
 
 function findLikelyContentStart(blocks: NewsArticleBlock[]): number {
@@ -248,7 +251,7 @@ function isLikelyHeadingNoise(text: string): boolean {
   const value = text.toLowerCase();
   return (
     /(table of contents|contents|toc|related articles?|recommended|share|follow us|newsletter|subscribe|sponsored|advertisement)/i.test(value) ||
-    /(目次|関連記事|関連リンク|あわせて読みたい|シェア|フォロー|広告|スポンサー|おすすめ|ランキング|次の記事|前の記事|トップへ)/.test(text)
+    /(目次|関連記事|関連リンク|あわせて読みたい|シェア|フォロー|広告|スポンサー|おすすめ|ランキング|次の記事|前の記事|トップへ|深掘りコンテンツ|特集コンテンツ|注目コンテンツ)/.test(text)
   );
 }
 
@@ -301,4 +304,27 @@ function isAlwaysDropBoilerplate(text: string): boolean {
     /(all rights reserved|copyright|terms of use|privacy policy|cookie policy|about us|contact us)/i.test(value) ||
     /(利用規約|プライバシーポリシー|著作権|無断転載|会社概要|お問い合わせ|サイトマップ|免責事項)/.test(text)
   );
+}
+
+function isLikelyInlineRelatedBlock(text: string): boolean {
+  const value = text.trim();
+  if (!value) {
+    return true;
+  }
+
+  if (/^(深掘りコンテンツ|関連記事|関連リンク|あわせて読みたい|おすすめ|注目記事)$/.test(value)) {
+    return true;
+  }
+
+  const endsWithTimestamp = /(?:\d{1,2}月\d{1,2}日)?\d{1,2}:\d{2}$/.test(value);
+  const quoteHeadline = /[「『“"].+[」』”"]/.test(value);
+  const bracketTag = /【[^】]{2,20}】/.test(value);
+  const noSentencePunctuation = !/[。！？.!?]$/.test(value);
+  const likelyHeadlineLine = value.length <= 90 && noSentencePunctuation;
+
+  if (endsWithTimestamp && likelyHeadlineLine && (quoteHeadline || bracketTag || /[\p{Script=Han}]{4,}/u.test(value))) {
+    return true;
+  }
+
+  return false;
 }

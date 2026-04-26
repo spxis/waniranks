@@ -10,6 +10,7 @@ import NewsArticleView from "./NewsArticleView";
 import NewsHistoryPanel from "./NewsHistoryPanel";
 import NewsKanjiHistoryPanel from "./NewsKanjiHistoryPanel";
 import NewsSiteLinks from "./NewsSiteLinks";
+import NewsStatsClient from "./stats/NewsStatsClient";
 import {
   clearNewsHistory,
   readNewsHistory,
@@ -33,6 +34,7 @@ import {
 } from "./newsClientCache";
 
 type Mode = "article" | "site";
+type ReaderTab = "article" | "history" | "stats";
 
 type DiscoverState = {
   baseUrl: string | null;
@@ -58,6 +60,7 @@ export default function NewsReader({ devSampleUrls = [] }: Props) {
   const initialUrlParam = searchParams.get("url") ?? "";
 
   const [mode, setMode] = useState<Mode>("article");
+  const [activeTab, setActiveTab] = useState<ReaderTab>("article");
   const [url, setUrl] = useState(initialUrlParam);
   const [article, setArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(false);
@@ -233,6 +236,7 @@ export default function NewsReader({ devSampleUrls = [] }: Props) {
   function handleSelectHistory(target: string) {
     setUrl(target);
     setMode("article");
+    setActiveTab("article");
     void fetchArticle(target);
   }
 
@@ -248,6 +252,7 @@ export default function NewsReader({ devSampleUrls = [] }: Props) {
   function handleSelectDiscovered(target: string) {
     setUrl(target);
     setMode("article");
+    setActiveTab("article");
     void fetchArticle(target);
   }
 
@@ -311,47 +316,108 @@ export default function NewsReader({ devSampleUrls = [] }: Props) {
       </form>
 
       {loading ? <LoadingState label="Fetching the article…" /> : null}
-      {error ? <ErrorState message={error} /> : null}
-      {article && !loading ? <NewsArticleView article={article} /> : null}
+      <ReaderTabs
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        articleCount={article ? 1 : 0}
+        historyCount={history.length}
+        statsCount={kanjiHistory.length}
+      />
 
-      {(discover.links.length > 0 || discoverLoading || discoverError) && !article ? (
-        <NewsSiteLinks
-          baseUrl={discover.baseUrl}
-          links={discover.links}
-          cached={discover.cached}
-          cachedAgeMs={discover.cachedAgeMs}
-          fetchedAt={discover.fetchedAt}
-          loading={discoverLoading}
-          error={discoverError}
-          onSelect={handleSelectDiscovered}
-          onDismiss={() => {
-            setDiscover(EMPTY_DISCOVER);
-            setDiscoverError(null);
-          }}
-        />
+      {activeTab === "article" ? (
+        <>
+          {error ? <ErrorState message={error} /> : null}
+          {article && !loading ? <NewsArticleView article={article} /> : null}
+
+          {(discover.links.length > 0 || discoverLoading || discoverError) && !article ? (
+            <NewsSiteLinks
+              baseUrl={discover.baseUrl}
+              links={discover.links}
+              cached={discover.cached}
+              cachedAgeMs={discover.cachedAgeMs}
+              fetchedAt={discover.fetchedAt}
+              loading={discoverLoading}
+              error={discoverError}
+              onSelect={handleSelectDiscovered}
+              onDismiss={() => {
+                setDiscover(EMPTY_DISCOVER);
+                setDiscoverError(null);
+              }}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      <NewsHistoryPanel
-        entries={history}
-        activeUrl={article ? lastFetchedUrl.current : null}
-        onSelect={handleSelectHistory}
-        onRemove={handleRemoveHistory}
-        onClear={handleClearHistory}
-      />
+      {activeTab === "history" ? (
+        <div className="space-y-6">
+          <NewsHistoryPanel
+            entries={history}
+            activeUrl={article ? lastFetchedUrl.current : null}
+            onSelect={handleSelectHistory}
+            onRemove={handleRemoveHistory}
+            onClear={handleClearHistory}
+          />
 
-      <NewsKanjiHistoryPanel
-        entries={kanjiHistory}
-        onSelect={(run) => {
-          void openNewsGlyphRun(run);
-        }}
-        onRemove={(run) => {
-          setKanjiHistory(removeNewsKanjiHistory(run));
-        }}
-        onClear={() => {
-          clearNewsKanjiHistory();
-          setKanjiHistory([]);
-        }}
-      />
+          <NewsKanjiHistoryPanel
+            entries={kanjiHistory}
+            onSelect={(run) => {
+              void openNewsGlyphRun(run);
+            }}
+            onRemove={(run) => {
+              setKanjiHistory(removeNewsKanjiHistory(run));
+            }}
+            onClear={() => {
+              clearNewsKanjiHistory();
+              setKanjiHistory([]);
+            }}
+          />
+        </div>
+      ) : null}
+
+      {activeTab === "stats" ? <NewsStatsClient /> : null}
+    </div>
+  );
+}
+
+function ReaderTabs({
+  activeTab,
+  onChange,
+  articleCount,
+  historyCount,
+  statsCount,
+}: {
+  activeTab: ReaderTab;
+  onChange: (next: ReaderTab) => void;
+  articleCount: number;
+  historyCount: number;
+  statsCount: number;
+}) {
+  return (
+    <div className="inline-flex flex-wrap overflow-hidden rounded-full border border-line bg-surface-muted text-[11px] font-bold uppercase tracking-[0.12em]">
+      <button
+        type="button"
+        onClick={() => onChange("article")}
+        className={`inline-flex items-center gap-1 px-3 py-1 ${activeTab === "article" ? "bg-accent text-surface" : "text-foreground/70"}`}
+      >
+        <span>Article</span>
+        <span className="text-[10px] opacity-85">{articleCount}</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("history")}
+        className={`inline-flex items-center gap-1 px-3 py-1 ${activeTab === "history" ? "bg-accent text-surface" : "text-foreground/70"}`}
+      >
+        <span>History</span>
+        <span className="text-[10px] opacity-85">{historyCount}</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("stats")}
+        className={`inline-flex items-center gap-1 px-3 py-1 ${activeTab === "stats" ? "bg-accent text-surface" : "text-foreground/70"}`}
+      >
+        <span>Stats</span>
+        <span className="text-[10px] opacity-85">{statsCount}</span>
+      </button>
     </div>
   );
 }

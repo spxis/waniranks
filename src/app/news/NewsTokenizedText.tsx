@@ -18,6 +18,8 @@ type Props = {
   emphasizeKanji: boolean;
 };
 
+const pageSessionSeenGlyphs = new Set<string>();
+
 export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
   const segments = tokenizeJapanese(text);
   const [dynamicAvailability, setDynamicAvailability] = useState<
@@ -28,12 +30,19 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
 
   useEffect(() => {
     const next = collectSeenGlyphs();
+    for (const token of pageSessionSeenGlyphs) {
+      next.add(token);
+    }
     setSeenRuns(next);
   }, []);
 
   useEffect(() => {
     const refresh = () => {
-      setSeenRuns(collectSeenGlyphs());
+      const next = collectSeenGlyphs();
+      for (const token of pageSessionSeenGlyphs) {
+        next.add(token);
+      }
+      setSeenRuns(next);
     };
     window.addEventListener(NEWS_KANJI_HISTORY_EVENT, refresh);
     return () => {
@@ -88,8 +97,10 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
               setSeenRuns((prev) => {
                 const next = new Set(prev);
                 next.add(segment.text);
+                pageSessionSeenGlyphs.add(segment.text);
                 for (const token of clickedChars) {
                   next.add(token);
+                  pageSessionSeenGlyphs.add(token);
                 }
                 return next;
               });
