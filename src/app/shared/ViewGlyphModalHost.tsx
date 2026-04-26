@@ -274,7 +274,7 @@ export default function ViewGlyphModalHost() {
                     setIndex(entry.itemIndex);
                   }}
                   disabled={entry.itemIndex === null}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-black uppercase tracking-[0.08em] transition ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-black uppercase tracking-[0.08em] transition ${
                     unavailable
                       ? "border-hot/40 bg-hot/10 text-hot/70"
                       : selected

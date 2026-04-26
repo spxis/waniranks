@@ -4,7 +4,7 @@ import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
 
 import type { LookupRunResult } from "@/lib/news/newsKanjiLookup";
 
-const CACHE_KEY = "uk:news-run-lookup";
+const CACHE_KEY = "uk:news-run-lookup:v2";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const MAX_ENTRIES = 500;
 

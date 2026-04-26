@@ -27,9 +27,17 @@ type ResolvedLookup = {
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const OPEN_COOLDOWN_MS = 1000;
+const MIN_LOOKUP_GAP_MS = 600;
 
 const inFlightLookupByRun = new Map<string, Promise<ResolvedLookup | null>>();
-const inFlightOpenByRun = new Map<string, Promise<boolean>>();
+let activeOpenRequest: {
+  run: string;
+  requestId: number;
+  abortController: AbortController | null;
+  promise: Promise<boolean>;
+} | null = null;
+let requestSequence = 0;
+let lastLookupAtMs = 0;
 const recentOpenAtByRun = new Map<string, number>();
 
 export function availabilityForRun(run: string): "unknown" | "known" | "missing" {
@@ -42,7 +50,10 @@ export async function prefetchNewsGlyphRun(run: string): Promise<"unknown" | "kn
     return "unknown";
   }
 
-  const resolved = await resolveLookup(value);
+  const resolved = await resolveLookup(value, {
+    requestId: null,
+    abortSignal: undefined,
+  });
   if (!resolved) {
     return availabilityForRun(value);
   }
@@ -64,10 +75,16 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
     return false;
   }
 
-  const existingOpen = inFlightOpenByRun.get(value);
-  if (existingOpen) {
-    return existingOpen;
+  if (activeOpenRequest?.run === value) {
+    return activeOpenRequest.promise;
   }
+
+  if (activeOpenRequest && activeOpenRequest.run !== value) {
+    activeOpenRequest.abortController?.abort();
+  }
+
+  const requestId = ++requestSequence;
+  const abortController = new AbortController();
 
   const openTask = (async () => {
     const lastOpenAt = recentOpenAtByRun.get(value) ?? 0;
@@ -75,8 +92,15 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
       return false;
     }
 
-    const resolved = await resolveLookup(value);
+    const resolved = await resolveLookup(value, {
+      requestId,
+      abortSignal: abortController.signal,
+    });
     if (!resolved) {
+      return false;
+    }
+
+    if (activeOpenRequest?.requestId !== requestId) {
       return false;
     }
 
@@ -122,14 +146,24 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
 
     return true;
   })().finally(() => {
-    inFlightOpenByRun.delete(value);
+    if (activeOpenRequest?.requestId === requestId) {
+      activeOpenRequest = null;
+    }
   });
 
-  inFlightOpenByRun.set(value, openTask);
+  activeOpenRequest = {
+    run: value,
+    requestId,
+    abortController,
+    promise: openTask,
+  };
   return openTask;
 }
 
-async function resolveLookup(run: string): Promise<ResolvedLookup | null> {
+async function resolveLookup(
+  run: string,
+  options: { requestId: number | null; abortSignal: AbortSignal | undefined },
+): Promise<ResolvedLookup | null> {
   const cached = readRunLookupCache(run);
   if (cached) {
     return {
@@ -144,11 +178,23 @@ async function resolveLookup(run: string): Promise<ResolvedLookup | null> {
   }
 
   const lookupTask = (async () => {
+    const now = Date.now();
+    const remaining = MIN_LOOKUP_GAP_MS - (now - lastLookupAtMs);
+    if (remaining > 0) {
+      await delay(remaining);
+    }
+
+    if (options.requestId !== null && activeOpenRequest?.requestId !== options.requestId) {
+      return null;
+    }
+
     const response = await fetch("/api/news/lookup-kanji", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ run }),
+      signal: options.abortSignal,
     });
+    lastLookupAtMs = Date.now();
 
     const payload = (await response.json().catch(() => null)) as
       | (LookupResponse & { error?: string })
@@ -165,12 +211,25 @@ async function resolveLookup(run: string): Promise<ResolvedLookup | null> {
     };
     writeRunLookupCache(run, resolved.accountId, resolved.result);
     return resolved;
-  })().finally(() => {
-    inFlightLookupByRun.delete(run);
-  });
+  })()
+    .catch((error) => {
+    if (error instanceof Error && error.name === "AbortError") {
+      return null;
+    }
+    throw error;
+    })
+    .finally(() => {
+      inFlightLookupByRun.delete(run);
+    });
 
   inFlightLookupByRun.set(run, lookupTask);
   return lookupTask;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function buildViewerState(

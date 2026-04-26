@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   availabilityForRun,
   openNewsGlyphRun,
   prefetchNewsGlyphRun,
 } from "./newsGlyphRunner";
+import {
+  NEWS_KANJI_HISTORY_EVENT,
+  readNewsKanjiHistory,
+} from "./newsKanjiHistory";
 import { tokenizeJapanese } from "./newsTokenize";
 
 type Props = {
@@ -20,6 +24,22 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
     Record<string, "unknown" | "known" | "missing">
   >({});
   const [loadingRun, setLoadingRun] = useState<string | null>(null);
+  const [seenRuns, setSeenRuns] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    const next = new Set(readNewsKanjiHistory().map((entry) => entry.run));
+    setSeenRuns(next);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      setSeenRuns(new Set(readNewsKanjiHistory().map((entry) => entry.run)));
+    };
+    window.addEventListener(NEWS_KANJI_HISTORY_EVENT, refresh);
+    return () => {
+      window.removeEventListener(NEWS_KANJI_HISTORY_EVENT, refresh);
+    };
+  }, []);
 
   const availabilityByRun = useMemo<Record<string, "unknown" | "known" | "missing">>(() => {
     const map = new Map<string, "unknown" | "known" | "missing">();
@@ -47,6 +67,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
         const availability = dynamicAvailability[segment.text] ?? availabilityByRun[segment.text] ?? "unknown";
         const isLoading = loadingRun === segment.text;
         const sizeClass = emphasizeKanji ? "text-[1.2em] leading-none" : "";
+        const seenClass = seenRuns.has(segment.text) ? "text-accent/80" : "";
         const missingClass =
           availability === "missing"
             ? "text-hot/80 decoration-hot/70 decoration-wavy underline"
@@ -81,7 +102,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
-            className={`group relative inline select-none align-baseline border-0 bg-transparent p-0 text-foreground outline-none transition hover:text-accent focus:outline-none focus-visible:outline-none disabled:cursor-wait disabled:opacity-80 ${sizeClass} ${missingClass}`.trim()}
+            className={`group relative inline cursor-pointer select-none align-baseline border-0 bg-transparent p-0 text-foreground outline-none transition hover:text-accent focus:outline-none focus-visible:outline-none disabled:cursor-wait disabled:opacity-80 ${sizeClass} ${seenClass} ${missingClass}`.trim()}
             title={
               isLoading
                 ? `Looking up ${segment.text}...`
