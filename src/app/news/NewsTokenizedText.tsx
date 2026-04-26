@@ -357,11 +357,6 @@ async function ensureKanjiLevels(chars: string[]): Promise<void> {
   if (levelBatchPromise) {
     await levelBatchPromise;
   }
-
-  const stillMissing = chars.filter((char) => !isCharLevelResolved(char) && !loadingLevelChars.has(char));
-  if (stillMissing.length > 0) {
-    await ensureKanjiLevels(stillMissing);
-  }
 }
 
 async function ensureRunReadings(runs: string[]): Promise<void> {
@@ -380,11 +375,6 @@ async function ensureRunReadings(runs: string[]): Promise<void> {
 
   if (readingBatchPromise) {
     await readingBatchPromise;
-  }
-
-  const stillMissing = runs.filter((run) => !(run in sharedReadingsByRun) && !loadingReadingRuns.has(run));
-  if (stillMissing.length > 0) {
-    await ensureRunReadings(stillMissing);
   }
 }
 
@@ -412,6 +402,7 @@ async function flushLevelBatch(): Promise<void> {
       loadingLevelChars.add(char);
     }
 
+    let success = false;
     try {
       const response = await fetch("/api/news/kanji-levels", {
         method: "POST",
@@ -423,6 +414,7 @@ async function flushLevelBatch(): Promise<void> {
         | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
         | null;
       if (response.ok) {
+        success = true;
         for (const char of batch) {
           sharedWkLevelsByChar[char] = payload?.levels?.[char] ?? null;
           sharedGradesByChar[char] = payload?.grades?.[char] ?? null;
@@ -431,6 +423,17 @@ async function flushLevelBatch(): Promise<void> {
     } catch {
       // Keep rendering functional if enrichment fails.
     } finally {
+      if (!success) {
+        // Mark as resolved-missing to avoid hot retry loops that can freeze UI.
+        for (const char of batch) {
+          if (!(char in sharedWkLevelsByChar)) {
+            sharedWkLevelsByChar[char] = null;
+          }
+          if (!(char in sharedGradesByChar)) {
+            sharedGradesByChar[char] = null;
+          }
+        }
+      }
       for (const char of batch) {
         loadingLevelChars.delete(char);
       }
@@ -472,6 +475,7 @@ async function flushReadingBatch(): Promise<void> {
       loadingReadingRuns.add(run);
     }
 
+    let success = false;
     try {
       const response = await fetch("/api/news/readings", {
         method: "POST",
@@ -483,6 +487,7 @@ async function flushReadingBatch(): Promise<void> {
         | { readings?: Record<string, string | null> }
         | null;
       if (response.ok) {
+        success = true;
         for (const run of batch) {
           sharedReadingsByRun[run] = payload?.readings?.[run] ?? null;
         }
@@ -490,6 +495,14 @@ async function flushReadingBatch(): Promise<void> {
     } catch {
       // Keep original text if reading lookup fails.
     } finally {
+      if (!success) {
+        // Mark as resolved-missing to avoid repeated retries under failures.
+        for (const run of batch) {
+          if (!(run in sharedReadingsByRun)) {
+            sharedReadingsByRun[run] = null;
+          }
+        }
+      }
       for (const run of batch) {
         loadingReadingRuns.delete(run);
       }
