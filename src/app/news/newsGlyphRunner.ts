@@ -396,41 +396,6 @@ function buildViewerState(
     });
   }
 
-  const currentRunKanji = new Set(selector.filter((entry) => entry.kind === "kanji").map((entry) => entry.label));
-  for (const char of sessionKanjiOrder) {
-    if (currentRunKanji.has(char)) {
-      continue;
-    }
-
-    const knownItem = sessionKnownItemByKanji.get(char);
-    if (!knownItem) {
-      selector.push({
-        label: char,
-        kind: "kanji",
-        exists: false,
-        itemIndex: null,
-        origin: "session",
-      });
-      continue;
-    }
-
-    const key = `k:${char}`;
-    let index = indexByKey.get(key);
-    if (index === undefined) {
-      index = items.length;
-      indexByKey.set(key, index);
-      items.push(knownItem);
-    }
-
-    selector.push({
-      label: char,
-      kind: "kanji",
-      exists: true,
-      itemIndex: index,
-      origin: "session",
-    });
-  }
-
   return { items, selector };
 }
 

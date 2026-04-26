@@ -85,6 +85,15 @@ describe("tokenizeJapanese", () => {
     expect(kanjiRuns).not.toContain("日本時間");
   });
 
+  it("does not keep long kanji chains merged when okurigana follows", () => {
+    const segments = tokenizeJapanese("情勢悪化後初めて確認した");
+    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+
+    expect(kanjiRuns).not.toContain("情勢悪化後初めて");
+    expect(kanjiRuns).toContain("情勢");
+    expect(kanjiRuns).toContain("悪化");
+  });
+
   it("does not create giant merged clickable runs after numeric counters", () => {
     const segments = tokenizeJapanese("さん55歳地方公務員愛知県在住");
     const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
