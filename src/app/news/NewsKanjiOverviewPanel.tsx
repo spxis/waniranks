@@ -32,7 +32,7 @@ type KanjiEntry = {
 
 type GroupMode = "all" | "jlpt" | "wk" | "grade";
 type EntrySortMode = "article" | "count" | "jp";
-type AllCountFilter = "all" | "10+" | "25+" | "50+";
+type AllCountFilter = "all" | "2+" | "5+" | "10+" | "25+" | "50+";
 type AllCoverageFilter = "all" | "wk-known" | "wk-unknown" | "no-level-data";
 
 type JlptRecord = Record<string, { nLevel?: number }>;
@@ -45,7 +45,7 @@ const ALL_COUNT_FILTER_STORAGE_KEY = "news:kanji-all-count-filter";
 const ALL_COVERAGE_FILTER_STORAGE_KEY = "news:kanji-all-coverage-filter";
 const GROUP_MODE_OPTIONS = ["all", "jlpt", "wk", "grade"] as const;
 const ENTRY_SORT_OPTIONS = ["article", "count", "jp"] as const;
-const ALL_COUNT_FILTER_OPTIONS = ["all", "10+", "25+", "50+"] as const;
+const ALL_COUNT_FILTER_OPTIONS = ["all", "2+", "5+", "10+", "25+", "50+"] as const;
 const ALL_COVERAGE_FILTER_OPTIONS = ["all", "wk-known", "wk-unknown", "no-level-data"] as const;
 
 export function countUniqueArticleKanji(blocks: NewsArticleBlock[]): number {
@@ -141,20 +141,24 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
   const knownWk = entries.filter((entry) => entry.wkLevel !== null).length;
   const knownGrade = entries.filter((entry) => entry.schoolGrade !== null).length;
 
-  const jlptGroups = buildGroups(entries, (entry) =>
+  const filteredByCountEntries = entries.filter((entry) =>
+    matchesCountFilter(entry.occurrenceCount, allCountFilter),
+  );
+
+  const jlptGroups = buildGroups(filteredByCountEntries, (entry) =>
     entry.jlptLevel === null ? "Unknown" : `N${entry.jlptLevel}`,
   );
-  const wkGroups = buildGroups(entries, (entry) =>
+  const wkGroups = buildGroups(filteredByCountEntries, (entry) =>
     entry.wkLevel === null ? "Unknown" : `WK ${entry.wkLevel}`,
   );
-  const gradeGroups = buildGroups(entries, (entry) =>
+  const gradeGroups = buildGroups(filteredByCountEntries, (entry) =>
     entry.schoolGradePending
       ? "Loading"
       : entry.schoolGrade === null
         ? "Unknown"
         : `Grade ${entry.schoolGrade}`,
   );
-  const filteredAllEntries = entries.filter((entry) =>
+  const filteredAllEntries = filteredByCountEntries.filter((entry) =>
     matchesAllFilters(entry, allCountFilter, allCoverageFilter),
   );
   const allGroups = buildGroups(filteredAllEntries, () => "All");
@@ -256,39 +260,53 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
             />
           </div>
 
+          <div className="inline-flex rounded-lg border border-line bg-surface-muted p-1">
+            <SegmentButton
+              label="Count All"
+              selected={allCountFilter === "all"}
+              onClick={() => {
+                updateAllCountFilter("all");
+              }}
+            />
+            <SegmentButton
+              label="2+"
+              selected={allCountFilter === "2+"}
+              onClick={() => {
+                updateAllCountFilter("2+");
+              }}
+            />
+            <SegmentButton
+              label="5+"
+              selected={allCountFilter === "5+"}
+              onClick={() => {
+                updateAllCountFilter("5+");
+              }}
+            />
+            <SegmentButton
+              label="10+"
+              selected={allCountFilter === "10+"}
+              onClick={() => {
+                updateAllCountFilter("10+");
+              }}
+            />
+            <SegmentButton
+              label="25+"
+              selected={allCountFilter === "25+"}
+              onClick={() => {
+                updateAllCountFilter("25+");
+              }}
+            />
+            <SegmentButton
+              label="50+"
+              selected={allCountFilter === "50+"}
+              onClick={() => {
+                updateAllCountFilter("50+");
+              }}
+            />
+          </div>
+
           {groupMode === "all" ? (
             <>
-              <div className="inline-flex rounded-lg border border-line bg-surface-muted p-1">
-                <SegmentButton
-                  label="Count All"
-                  selected={allCountFilter === "all"}
-                  onClick={() => {
-                    updateAllCountFilter("all");
-                  }}
-                />
-                <SegmentButton
-                  label="10+"
-                  selected={allCountFilter === "10+"}
-                  onClick={() => {
-                    updateAllCountFilter("10+");
-                  }}
-                />
-                <SegmentButton
-                  label="25+"
-                  selected={allCountFilter === "25+"}
-                  onClick={() => {
-                    updateAllCountFilter("25+");
-                  }}
-                />
-                <SegmentButton
-                  label="50+"
-                  selected={allCountFilter === "50+"}
-                  onClick={() => {
-                    updateAllCountFilter("50+");
-                  }}
-                />
-              </div>
-
               <div className="inline-flex rounded-lg border border-line bg-surface-muted p-1">
                 <SegmentButton
                   label="Focus All"
@@ -533,6 +551,12 @@ function matchesAllFilters(
 }
 
 function matchesCountFilter(count: number, filter: AllCountFilter): boolean {
+  if (filter === "2+") {
+    return count >= 2;
+  }
+  if (filter === "5+") {
+    return count >= 5;
+  }
   if (filter === "10+") {
     return count >= 10;
   }
