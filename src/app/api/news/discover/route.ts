@@ -42,7 +42,13 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[news/discover] failed", error);
-    return respond({ error: "Couldn't scan that page." }, 500);
+    return respond(
+      {
+        error:
+          "Server could not scan that page. Try a site homepage URL or wait a moment and retry.",
+      },
+      500,
+    );
   }
 }
 

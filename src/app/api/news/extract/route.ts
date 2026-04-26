@@ -47,7 +47,13 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("[news/extract] failed", error);
-    return respond({ error: "Couldn't read that article." }, 500);
+    return respond(
+      {
+        error:
+          "Server could not parse that page. Try the clean article URL (without tracking params) or use site mode first.",
+      },
+      500,
+    );
   }
 }
 
