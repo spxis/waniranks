@@ -4,11 +4,13 @@
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const KANA_REGEX = /[\u3040-\u309F\u30A0-\u30FA\u30FC-\u30FF]/;
+const KATAKANA_REGEX = /[\u30A0-\u30FA\u30FC-\u30FF]/;
 const PARTICLE_BOUNDARY_FIRST = new Set(["を", "が", "に", "で", "と", "へ", "は", "も", "や", "の", "か"]);
 const PARTICLE_BOUNDARY_LATER = new Set(["を", "が", "に", "で", "と", "へ", "は", "も", "や", "の", "か"]);
 const INDEFINITE_PRONOUN_BASE = new Set(["誰", "何"]);
 const COUNTER_AFTER_DIGIT = new Set(["歳", "才", "人", "円", "年", "月", "日", "時", "分", "秒", "代", "位", "名"]);
 const MAX_KANA_SUFFIX = 3;
+const MAX_KANA_SUFFIX_WITH_KATAKANA = 8;
 
 export type NewsTextSegment = {
   kind: "kanji" | "other";
@@ -54,6 +56,7 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
     let suffixEnd = kanjiEnd;
     let suffixCount = 0;
     let firstAttachedKana = "";
+    let sawKatakanaInSuffix = false;
 
     while (suffixEnd < chars.length && KANA_REGEX.test(chars[suffixEnd] ?? "")) {
       const nextChar = chars[suffixEnd] ?? "";
@@ -64,6 +67,9 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
       }
       if (suffixCount === 0) {
         firstAttachedKana = nextChar;
+      }
+      if (KATAKANA_REGEX.test(nextChar)) {
+        sawKatakanaInSuffix = true;
       }
       // If a particle appears after an inflectional suffix, stop before it.
       if (suffixCount > 0 && PARTICLE_BOUNDARY_LATER.has(nextChar)) {
@@ -81,7 +87,8 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
       ) {
         break;
       }
-      if (suffixCount >= MAX_KANA_SUFFIX) {
+      const suffixLimit = sawKatakanaInSuffix ? MAX_KANA_SUFFIX_WITH_KATAKANA : MAX_KANA_SUFFIX;
+      if (suffixCount >= suffixLimit) {
         break;
       }
       suffixEnd += 1;

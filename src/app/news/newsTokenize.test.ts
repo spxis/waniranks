@@ -76,6 +76,14 @@ describe("tokenizeJapanese", () => {
     expect(kanjiRuns).not.toContain("音を");
   });
 
+  it("keeps katakana tails after okurigana for mixed compounds", () => {
+    const segments = tokenizeJapanese("深掘りコンテンツを読む");
+    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+
+    expect(kanjiRuns).toContain("深掘りコンテンツ");
+    expect(kanjiRuns).not.toContain("深掘りコン");
+  });
+
   it("splits 4-kanji pure compounds into smaller runs", () => {
     const segments = tokenizeJapanese("日本時間の26日夜");
     const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
