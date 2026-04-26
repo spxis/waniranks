@@ -98,6 +98,20 @@ export async function openNewsGlyphCandidates(candidates: string[]): Promise<boo
   const requestId = ++requestSequence;
   const abortController = new AbortController();
 
+  // Register the active request before any async selection checks run.
+  const requestState: {
+    run: string;
+    requestId: number;
+    abortController: AbortController | null;
+    promise: Promise<boolean>;
+  } = {
+    run: dedupeKey,
+    requestId,
+    abortController,
+    promise: Promise.resolve(false),
+  };
+  activeOpenRequest = requestState;
+
   const openTask = (async () => {
     const selected = await selectBestCandidate(normalized, {
       requestId,
@@ -166,12 +180,7 @@ export async function openNewsGlyphCandidates(candidates: string[]): Promise<boo
     }
   });
 
-  activeOpenRequest = {
-    run: dedupeKey,
-    requestId,
-    abortController,
-    promise: openTask,
-  };
+  requestState.promise = openTask;
   return openTask;
 }
 

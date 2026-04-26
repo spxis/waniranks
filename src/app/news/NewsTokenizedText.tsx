@@ -76,7 +76,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
         const candidates = buildLookupCandidates(segments, index);
         const primaryRun = candidates[0] ?? segment.text;
         const availability = dynamicAvailability[segment.text] ?? availabilityByRun[segment.text] ?? "unknown";
-        const isLoading = loadingRun === primaryRun;
+        const isLoading = loadingRun === segment.text;
         const sizeClass = emphasizeKanji ? "text-[1.2em] leading-none" : "";
         const seenClass = seenRuns.has(segment.text) ? "text-accent/80" : "";
         const missingClass =
@@ -97,7 +97,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
               : candidates;
           const lookupPrimary = lookupCandidates[0] ?? primaryRun;
 
-          setLoadingRun(lookupPrimary);
+          setLoadingRun(segment.text);
           void openNewsGlyphCandidates(lookupCandidates)
             .then((opened) => {
               if (!opened) {
@@ -117,7 +117,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
               });
             })
             .finally(() => {
-              setLoadingRun((prev) => (prev === primaryRun ? null : prev));
+              setLoadingRun((prev) => (prev === segment.text ? null : prev));
             });
         };
 
