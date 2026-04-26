@@ -78,6 +78,10 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
             type="button"
             disabled={isLoading}
             onClick={() => {
+              const selection = typeof window !== "undefined" ? window.getSelection()?.toString().trim() ?? "" : "";
+              if (selection.length > 0) {
+                return;
+              }
               if (isLoading) {
                 return;
               }
@@ -102,7 +106,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
-            className={`group relative inline cursor-pointer select-none align-baseline border-0 bg-transparent p-0 text-foreground outline-none transition hover:text-accent focus:outline-none focus-visible:outline-none disabled:cursor-wait disabled:opacity-80 ${sizeClass} ${seenClass} ${missingClass}`.trim()}
+            className={`group relative inline cursor-pointer align-baseline border-0 bg-transparent p-0 text-foreground outline-none transition hover:text-accent focus:outline-none focus-visible:outline-none disabled:cursor-wait disabled:opacity-80 ${sizeClass} ${seenClass} ${missingClass}`.trim()}
             title={
               isLoading
                 ? `Looking up ${segment.text}...`
