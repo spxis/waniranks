@@ -63,7 +63,6 @@ async function lookupVocabulary(run: string, token: string): Promise<LookupGlyph
     }
 
     const readings = (data.readings ?? [])
-      .filter((reading) => reading.accepted_answer ?? true)
       .map((reading) => reading.reading)
       .filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
 
@@ -132,7 +131,6 @@ async function lookupKanjiByChars(
       }
 
       const readings = (data.readings ?? [])
-        .filter((reading) => reading.accepted_answer ?? true)
         .map((reading) => reading.reading)
         .filter((value): value is string => typeof value === "string" && value.length > 0);
 
