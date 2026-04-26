@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   availabilityForRun,
+  openNewsGlyphCandidates,
   openNewsGlyphRun,
+  prefetchNewsGlyphCandidates,
   prefetchNewsGlyphRun,
 } from "./newsGlyphRunner";
 import {
@@ -73,8 +75,10 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
         if (segment.kind !== "kanji") {
           return <span key={index}>{segment.text}</span>;
         }
+        const candidates = buildLookupCandidates(segments, index);
+        const primaryRun = candidates[0] ?? segment.text;
         const availability = dynamicAvailability[segment.text] ?? availabilityByRun[segment.text] ?? "unknown";
-        const isLoading = loadingRun === segment.text;
+        const isLoading = loadingRun === primaryRun;
         const sizeClass = emphasizeKanji ? "text-[1.2em] leading-none" : "";
         const seenClass = seenRuns.has(segment.text) ? "text-accent/80" : "";
         const missingClass =
@@ -86,18 +90,18 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
           if (selection.length > 0 || isLoading) {
             return;
           }
-          setLoadingRun(segment.text);
-          void openNewsGlyphRun(segment.text)
+          setLoadingRun(primaryRun);
+          void openNewsGlyphCandidates(candidates)
             .then((opened) => {
               if (!opened) {
                 return;
               }
 
-              const clickedChars = extractKanjiTokens(segment.text);
+              const clickedChars = extractKanjiTokens(primaryRun);
               setSeenRuns((prev) => {
                 const next = new Set(prev);
-                next.add(segment.text);
-                pageSessionSeenGlyphs.add(segment.text);
+                next.add(primaryRun);
+                pageSessionSeenGlyphs.add(primaryRun);
                 for (const token of clickedChars) {
                   next.add(token);
                   pageSessionSeenGlyphs.add(token);
@@ -106,7 +110,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
               });
             })
             .finally(() => {
-              setLoadingRun((prev) => (prev === segment.text ? null : prev));
+              setLoadingRun((prev) => (prev === primaryRun ? null : prev));
             });
         };
 
@@ -127,7 +131,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
               if (availability !== "unknown" || isLoading) {
                 return;
               }
-              void prefetchNewsGlyphRun(segment.text).then((next) => {
+              void prefetchNewsGlyphCandidates(candidates).then((next) => {
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
@@ -135,7 +139,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
               if (availability !== "unknown" || isLoading) {
                 return;
               }
-              void prefetchNewsGlyphRun(segment.text).then((next) => {
+              void prefetchNewsGlyphCandidates(candidates).then((next) => {
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
@@ -165,6 +169,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
 }
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+const KANA_REGEX = /[\u3040-\u309F\u30A0-\u30FFー]/;
 
 function collectSeenGlyphs(): Set<string> {
   const seen = new Set<string>();
@@ -183,4 +188,54 @@ function collectSeenGlyphs(): Set<string> {
 
 function extractKanjiTokens(value: string): string[] {
   return Array.from(value).filter((char) => KANJI_REGEX.test(char));
+}
+
+function buildLookupCandidates(segments: Array<{ kind: "kanji" | "other"; text: string }>, index: number): string[] {
+  const run = segments[index]?.text ?? "";
+  if (!run) {
+    return [];
+  }
+
+  const prevKana = trailingKana(segments[index - 1]?.kind === "other" ? segments[index - 1].text : "", 2);
+  const nextKana = leadingKana(segments[index + 1]?.kind === "other" ? segments[index + 1].text : "", 3);
+
+  const out = [
+    `${prevKana}${run}${nextKana}`,
+    `${run}${nextKana}`,
+    `${prevKana}${run}`,
+    run,
+  ];
+
+  return Array.from(new Set(out.map((value) => value.trim()).filter((value) => value.length > 0)));
+}
+
+function leadingKana(text: string, maxChars: number): string {
+  const chars = Array.from(text);
+  const out: string[] = [];
+  for (const char of chars) {
+    if (!KANA_REGEX.test(char)) {
+      break;
+    }
+    out.push(char);
+    if (out.length >= maxChars) {
+      break;
+    }
+  }
+  return out.join("");
+}
+
+function trailingKana(text: string, maxChars: number): string {
+  const chars = Array.from(text);
+  const out: string[] = [];
+  for (let i = chars.length - 1; i >= 0; i -= 1) {
+    const char = chars[i];
+    if (!KANA_REGEX.test(char)) {
+      break;
+    }
+    out.push(char);
+    if (out.length >= maxChars) {
+      break;
+    }
+  }
+  return out.reverse().join("");
 }

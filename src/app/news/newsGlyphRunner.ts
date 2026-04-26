@@ -47,42 +47,50 @@ export function availabilityForRun(run: string): "unknown" | "known" | "missing"
   return runAvailabilityFromCache(run);
 }
 
-export async function prefetchNewsGlyphRun(run: string): Promise<"unknown" | "known" | "missing"> {
-  const value = run.trim();
-  if (!value || !KANJI_REGEX.test(value)) {
+export async function prefetchNewsGlyphCandidates(
+  candidates: string[],
+): Promise<"unknown" | "known" | "missing"> {
+  const normalized = normalizeCandidateRuns(candidates);
+  if (normalized.length === 0) {
     return "unknown";
   }
 
-  const resolved = await resolveLookup(value, {
+  const selected = await selectBestCandidate(normalized, {
     requestId: null,
     abortSignal: undefined,
   });
-  if (!resolved) {
-    return availabilityForRun(value);
+  if (!selected) {
+    return normalized.some((run) => availabilityForRun(run) === "known") ? "known" : "unknown";
   }
 
-  if (resolved.result.vocabulary?.subjectId) {
+  const result = selected.resolved.result;
+  if (result.vocabulary?.subjectId) {
     return "known";
   }
 
-  if (resolved.result.kanjiItems.some((item) => item.subjectId !== null)) {
+  if (result.kanjiItems.some((item) => item.subjectId !== null)) {
     return "known";
   }
 
   return "missing";
 }
 
-export async function openNewsGlyphRun(run: string): Promise<boolean> {
-  const value = run.trim();
-  if (!value || !KANJI_REGEX.test(value)) {
+export async function prefetchNewsGlyphRun(run: string): Promise<"unknown" | "known" | "missing"> {
+  return prefetchNewsGlyphCandidates([run]);
+}
+
+export async function openNewsGlyphCandidates(candidates: string[]): Promise<boolean> {
+  const normalized = normalizeCandidateRuns(candidates);
+  if (normalized.length === 0) {
     return false;
   }
 
-  if (activeOpenRequest?.run === value) {
+  const dedupeKey = normalized[0];
+  if (activeOpenRequest?.run === dedupeKey) {
     return activeOpenRequest.promise;
   }
 
-  if (activeOpenRequest && activeOpenRequest.run !== value) {
+  if (activeOpenRequest && activeOpenRequest.run !== dedupeKey) {
     activeOpenRequest.abortController?.abort();
   }
 
@@ -90,16 +98,17 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
   const abortController = new AbortController();
 
   const openTask = (async () => {
-    const lastOpenAt = recentOpenAtByRun.get(value) ?? 0;
-    if (Date.now() - lastOpenAt < OPEN_COOLDOWN_MS) {
-      return false;
-    }
-
-    const resolved = await resolveLookup(value, {
+    const selected = await selectBestCandidate(normalized, {
       requestId,
       abortSignal: abortController.signal,
     });
-    if (!resolved) {
+    if (!selected) {
+      return false;
+    }
+
+    const value = selected.run;
+    const lastOpenAt = recentOpenAtByRun.get(value) ?? 0;
+    if (Date.now() - lastOpenAt < OPEN_COOLDOWN_MS) {
       return false;
     }
 
@@ -107,7 +116,7 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
       return false;
     }
 
-    const { accountId, result } = resolved;
+    const { accountId, result } = selected.resolved;
 
     const { items, selector } = buildViewerState(value, result);
     const currentSelector = selector.filter((entry) => entry.origin !== "session");
@@ -156,12 +165,75 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
   });
 
   activeOpenRequest = {
-    run: value,
+    run: dedupeKey,
     requestId,
     abortController,
     promise: openTask,
   };
   return openTask;
+}
+
+export async function openNewsGlyphRun(run: string): Promise<boolean> {
+  return openNewsGlyphCandidates([run]);
+}
+
+async function selectBestCandidate(
+  candidates: string[],
+  options: { requestId: number | null; abortSignal: AbortSignal | undefined },
+): Promise<{ run: string; resolved: ResolvedLookup } | null> {
+  let best: { run: string; resolved: ResolvedLookup; score: number } | null = null;
+
+  for (const candidate of candidates) {
+    if (options.requestId !== null && activeOpenRequest?.requestId !== options.requestId) {
+      return null;
+    }
+
+    const resolved = await resolveLookup(candidate, options);
+    if (!resolved) {
+      continue;
+    }
+
+    const score = candidateScore(candidate, resolved.result);
+    if (!best || score > best.score) {
+      best = { run: candidate, resolved, score };
+    }
+
+    if (resolved.result.vocabulary?.subjectId && candidate.length > 1) {
+      break;
+    }
+  }
+
+  return best ? { run: best.run, resolved: best.resolved } : null;
+}
+
+function candidateScore(run: string, result: LookupRunResult): number {
+  const knownKanji = result.kanjiItems.filter((item) => item.subjectId !== null).length;
+  const hasVocab = Boolean(result.vocabulary?.subjectId);
+  let score = knownKanji * 3 + Math.min(run.length, 8);
+  if (hasVocab) {
+    score += 120;
+  }
+  if (run.length === 1) {
+    score -= 6;
+  }
+  return score;
+}
+
+function normalizeCandidateRuns(candidates: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of candidates) {
+    const value = raw.trim();
+    if (!value || value.length > 24 || !KANJI_REGEX.test(value) || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    out.push(value);
+    if (out.length >= 6) {
+      break;
+    }
+  }
+  return out;
 }
 
 async function resolveLookup(
