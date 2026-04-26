@@ -5,6 +5,7 @@ const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
 
 const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_TIMEOUT_FALLBACK_MS = 30_000;
 const MAX_BYTES = 4 * 1024 * 1024;
 
 export type NewsHttpError =
@@ -20,16 +21,26 @@ export type NewsHttpOk = {
 
 export type NewsHttpResult = NewsHttpOk | { ok: false; error: NewsHttpError };
 
+type HeaderProfile = "minimal" | "browser-like";
+
+type FetchAttempt = {
+  profile: HeaderProfile;
+  timeoutMs: number;
+  includeReferer: boolean;
+};
+
 export async function fetchNewsHtml(url: string): Promise<NewsHttpResult> {
-  const attempts = [
-    buildHeaders(url, "minimal"),
-    buildHeaders(url, "browser-like"),
-  ] as const;
+  const attempts: FetchAttempt[] = [
+    { profile: "minimal", timeoutMs: FETCH_TIMEOUT_MS, includeReferer: true },
+    { profile: "browser-like", timeoutMs: FETCH_TIMEOUT_MS, includeReferer: true },
+    { profile: "browser-like", timeoutMs: FETCH_TIMEOUT_FALLBACK_MS, includeReferer: false },
+  ];
 
   let lastFailure: NewsHttpError = { kind: "fetch_failed" };
 
-  for (const headers of attempts) {
-    const attempt = await fetchNewsHtmlOnce(url, headers);
+  for (const attemptConfig of attempts) {
+    const headers = buildHeaders(url, attemptConfig.profile, attemptConfig.includeReferer);
+    const attempt = await fetchNewsHtmlOnce(url, headers, attemptConfig.timeoutMs);
     if (attempt.ok) {
       return attempt;
     }
@@ -42,9 +53,13 @@ export async function fetchNewsHtml(url: string): Promise<NewsHttpResult> {
   return { ok: false, error: lastFailure };
 }
 
-async function fetchNewsHtmlOnce(url: string, headers: HeadersInit): Promise<NewsHttpResult> {
+async function fetchNewsHtmlOnce(
+  url: string,
+  headers: HeadersInit,
+  timeoutMs: number,
+): Promise<NewsHttpResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       headers,
@@ -79,7 +94,7 @@ async function fetchNewsHtmlOnce(url: string, headers: HeadersInit): Promise<New
   }
 }
 
-function buildHeaders(url: string, profile: "minimal" | "browser-like"): HeadersInit {
+function buildHeaders(url: string, profile: HeaderProfile, includeReferer: boolean): HeadersInit {
   let referer: string | null = null;
   try {
     referer = new URL(url).origin + "/";
@@ -106,7 +121,7 @@ function buildHeaders(url: string, profile: "minimal" | "browser-like"): Headers
     headers["Upgrade-Insecure-Requests"] = "1";
   }
 
-  if (referer) {
+  if (includeReferer && referer) {
     headers.Referer = referer;
   }
 

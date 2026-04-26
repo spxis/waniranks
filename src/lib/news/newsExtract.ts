@@ -22,46 +22,52 @@ export async function extractArticle(rawUrl: string): Promise<NewsExtractResult>
     return { ok: false, error: { kind: "blocked_host" } };
   }
 
-  const fetched = await fetchNewsHtml(parsed.toString());
-  if (!fetched.ok) {
-    return { ok: false, error: fetched.error };
-  }
+  try {
+    const fetched = await fetchNewsHtml(parsed.toString());
+    if (!fetched.ok) {
+      return { ok: false, error: fetched.error };
+    }
 
-  const [{ Readability }, { JSDOM }] = await Promise.all([
-    import("@mozilla/readability"),
-    import("jsdom"),
-  ]);
+    const [{ Readability }, { JSDOM }] = await Promise.all([
+      import("@mozilla/readability"),
+      import("jsdom"),
+    ]);
 
-  const dom = new JSDOM(fetched.html, { url: fetched.finalUrl });
-  const reader = new Readability(dom.window.document);
-  const parsedArticle = reader.parse();
+    const dom = new JSDOM(fetched.html, { url: fetched.finalUrl });
+    const reader = new Readability(dom.window.document);
+    const parsedArticle = reader.parse();
 
-  if (!parsedArticle || !parsedArticle.content) {
+    if (!parsedArticle || !parsedArticle.content) {
+      return { ok: false, error: { kind: "not_article" } };
+    }
+
+    const blocks = htmlToBlocks(parsedArticle.content, fetched.finalUrl, JSDOM);
+    const textLength = blocks.reduce((sum, block) => sum + block.text.length, 0);
+
+    if (textLength < MIN_TEXT_LENGTH || blocks.length === 0) {
+      return { ok: false, error: { kind: "not_article" } };
+    }
+
+    const article: NewsArticle = {
+      url: rawUrl,
+      finalUrl: fetched.finalUrl,
+      title: parsedArticle.title?.trim() || dom.window.document.title || "Untitled",
+      byline: parsedArticle.byline?.trim() || null,
+      siteName: parsedArticle.siteName?.trim() || null,
+      lang: parsedArticle.lang || dom.window.document.documentElement.lang || null,
+      excerpt: parsedArticle.excerpt?.trim() || null,
+      blocks,
+      textLength,
+      fetchedAt: new Date().toISOString(),
+      cached: false,
+    };
+
+    return { ok: true, article };
+  } catch {
+    // Certain publisher responses can trigger parser/runtime exceptions.
+    // Return a typed extraction failure instead of bubbling a 500.
     return { ok: false, error: { kind: "not_article" } };
   }
-
-  const blocks = htmlToBlocks(parsedArticle.content, fetched.finalUrl, JSDOM);
-  const textLength = blocks.reduce((sum, block) => sum + block.text.length, 0);
-
-  if (textLength < MIN_TEXT_LENGTH || blocks.length === 0) {
-    return { ok: false, error: { kind: "not_article" } };
-  }
-
-  const article: NewsArticle = {
-    url: rawUrl,
-    finalUrl: fetched.finalUrl,
-    title: parsedArticle.title?.trim() || dom.window.document.title || "Untitled",
-    byline: parsedArticle.byline?.trim() || null,
-    siteName: parsedArticle.siteName?.trim() || null,
-    lang: parsedArticle.lang || dom.window.document.documentElement.lang || null,
-    excerpt: parsedArticle.excerpt?.trim() || null,
-    blocks,
-    textLength,
-    fetchedAt: new Date().toISOString(),
-    cached: false,
-  };
-
-  return { ok: true, article };
 }
 
 function parseAllowedUrl(input: string): URL | null {
