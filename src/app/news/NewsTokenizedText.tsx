@@ -72,23 +72,29 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
           availability === "missing"
             ? "text-hot/80 decoration-hot/70 decoration-wavy underline"
             : "";
+        const tryOpen = () => {
+          const selection = typeof window !== "undefined" ? window.getSelection()?.toString().trim() ?? "" : "";
+          if (selection.length > 0 || isLoading) {
+            return;
+          }
+          setLoadingRun(segment.text);
+          void openNewsGlyphRun(segment.text).finally(() => {
+            setLoadingRun((prev) => (prev === segment.text ? null : prev));
+          });
+        };
+
         return (
-          <button
+          <span
             key={index}
-            type="button"
-            disabled={isLoading}
-            onClick={() => {
-              const selection = typeof window !== "undefined" ? window.getSelection()?.toString().trim() ?? "" : "";
-              if (selection.length > 0) {
-                return;
+            role="button"
+            tabIndex={isLoading ? -1 : 0}
+            aria-disabled={isLoading}
+            onClick={tryOpen}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                tryOpen();
               }
-              if (isLoading) {
-                return;
-              }
-              setLoadingRun(segment.text);
-              void openNewsGlyphRun(segment.text).finally(() => {
-                setLoadingRun((prev) => (prev === segment.text ? null : prev));
-              });
             }}
             onMouseEnter={() => {
               if (availability !== "unknown" || isLoading) {
@@ -106,7 +112,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
                 setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
               });
             }}
-            className={`group relative inline cursor-pointer align-baseline border-0 bg-transparent p-0 text-foreground outline-none transition hover:text-accent focus:outline-none focus-visible:outline-none disabled:cursor-wait disabled:opacity-80 ${sizeClass} ${seenClass} ${missingClass}`.trim()}
+            className={`group relative inline cursor-pointer select-text align-baseline text-foreground outline-none transition hover:text-accent focus-visible:text-accent ${isLoading ? "cursor-wait opacity-80" : ""} ${sizeClass} ${seenClass} ${missingClass}`.trim()}
             title={
               isLoading
                 ? `Looking up ${segment.text}...`
@@ -124,7 +130,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
                 className="pointer-events-none absolute -right-2 -top-1 h-3 w-3 animate-spin rounded-full border-2 border-accent/35 border-t-accent"
               />
             ) : null}
-          </button>
+          </span>
         );
       })}
     </>
