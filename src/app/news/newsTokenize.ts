@@ -51,7 +51,7 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
       kanjiEnd = start + 1;
     }
 
-    let suffixEnd = index;
+    let suffixEnd = kanjiEnd;
     let suffixCount = 0;
     let firstAttachedKana = "";
 

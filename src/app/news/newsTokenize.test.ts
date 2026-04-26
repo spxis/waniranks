@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { tokenizeJapanese } from "./newsTokenize";
 
+const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+
 describe("tokenizeJapanese", () => {
   it("keeps okurigana with kanji for inflectional forms", () => {
     const segments = tokenizeJapanese("高い山 食べたり飲んだり");
@@ -80,4 +82,109 @@ describe("tokenizeJapanese", () => {
     expect(kanjiRuns).not.toContain("歳地方公務員愛知県在住");
     expect(kanjiRuns).toContain("歳");
   });
+
+  it("maintains core segmentation invariants across mixed corpus", () => {
+    const corpus = [
+      "高い山に登った。",
+      "花を贈りたい人へ。",
+      "誰かの物語を読んだ。",
+      "何もない夜でも、星は見える。",
+      "基調にした配色。",
+      "さん55歳地方公務員愛知県在住",
+      "SNSで共有された。",
+      "今日、東京で雨が降る。",
+      "食べたり飲んだりして過ごす。",
+      "A/Bテストを回した。",
+    ];
+
+    for (const text of corpus) {
+      const segments = tokenizeJapanese(text);
+      assertTokenizerInvariants(text, segments);
+    }
+  });
+
+  it("handles generated particle boundaries for many nouns", () => {
+    const nouns = ["物語", "計画", "現場", "資料", "社会", "政策", "市場", "話題"];
+    const particles = ["を", "に", "が", "で", "と", "へ", "は", "も", "や", "の", "か"];
+
+    for (const noun of nouns) {
+      for (const particle of particles) {
+        const text = `${noun}${particle}進める`;
+        const runs = kanjiRuns(text);
+        if (particle === "か") {
+          // Generic nouns should not absorb interrogative particle.
+          expect(runs).toContain(noun);
+          expect(runs).not.toContain(`${noun}${particle}`);
+        } else {
+          expect(runs).toContain(noun);
+          expect(runs).not.toContain(`${noun}${particle}`);
+        }
+      }
+    }
+  });
+
+  it("keeps common inflection suffixes attached for verb/adjective stems", () => {
+    const stems = ["食べ", "届け", "見", "書き", "高", "強"];
+    const suffixes = ["たい", "た", "たり", "ない", "ます"];
+
+    for (const stem of stems) {
+      for (const suffix of suffixes) {
+        const token = `${stem}${suffix}`;
+        const text = `${token}。`;
+        const runs = kanjiRuns(text);
+        expect(runs).toContain(token);
+      }
+    }
+  });
+
+  it("passes deterministic fuzz-style invariant checks", () => {
+    const seedText = ["山", "川", "花", "語", "高", "食", "べ", "た", "り", "を", "に", "の", "A", " ", "。", "、"];
+    for (let i = 0; i < 30; i += 1) {
+      const text = generateDeterministicString(seedText, i + 17, 22);
+      const segments = tokenizeJapanese(text);
+      assertTokenizerInvariants(text, segments);
+    }
+  });
 });
+
+function kanjiRuns(text: string): string[] {
+  return tokenizeJapanese(text)
+    .filter((segment) => segment.kind === "kanji")
+    .map((segment) => segment.text);
+}
+
+function assertTokenizerInvariants(
+  original: string,
+  segments: Array<{ kind: "kanji" | "other"; text: string }>,
+): void {
+  expect(segments.map((segment) => segment.text).join("")).toBe(original);
+  for (let i = 0; i < segments.length; i += 1) {
+    const segment = segments[i];
+    expect(segment.text.length).toBeGreaterThan(0);
+
+    if (segment.kind === "kanji") {
+      expect(KANJI_REGEX.test(segment.text)).toBe(true);
+    } else {
+      expect(KANJI_REGEX.test(segment.text)).toBe(false);
+    }
+
+    if (i > 0) {
+      const prev = segments[i - 1];
+      if (prev?.kind === segment.kind) {
+        // Adjacent kanji segments can happen by design after anti-overmerge splits.
+        // Adjacent "other" segments indicate an actual segmentation bug.
+        expect(segment.kind).toBe("kanji");
+      }
+    }
+  }
+}
+
+function generateDeterministicString(pool: string[], seed: number, length: number): string {
+  let state = seed >>> 0;
+  const out: string[] = [];
+  for (let i = 0; i < length; i += 1) {
+    state = (1664525 * state + 1013904223) >>> 0;
+    out.push(pool[state % pool.length] ?? "");
+  }
+  return out.join("");
+}
