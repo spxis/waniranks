@@ -10,7 +10,6 @@ const PARTICLE_BOUNDARY_LATER = new Set(["を", "が", "に", "で", "と", "へ
 const INDEFINITE_PRONOUN_BASE = new Set(["誰", "何"]);
 const COUNTER_AFTER_DIGIT = new Set(["歳", "才", "人", "円", "年", "月", "日", "時", "分", "秒", "代", "位", "名"]);
 const MAX_KANA_SUFFIX = 3;
-const MAX_KANA_SUFFIX_WITH_KATAKANA = 8;
 
 export type NewsTextSegment = {
   kind: "kanji" | "other";
@@ -56,7 +55,6 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
     let suffixEnd = kanjiEnd;
     let suffixCount = 0;
     let firstAttachedKana = "";
-    let sawKatakanaInSuffix = false;
 
     while (suffixEnd < chars.length && KANA_REGEX.test(chars[suffixEnd] ?? "")) {
       const nextChar = chars[suffixEnd] ?? "";
@@ -68,8 +66,10 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
       if (suffixCount === 0) {
         firstAttachedKana = nextChar;
       }
-      if (KATAKANA_REGEX.test(nextChar)) {
-        sawKatakanaInSuffix = true;
+      // Do not absorb katakana noun tails after hiragana okurigana.
+      // Example: 深掘りコンテンツ should keep 深掘り as the clickable run.
+      if (suffixCount > 0 && KATAKANA_REGEX.test(nextChar) && !KATAKANA_REGEX.test(firstAttachedKana)) {
+        break;
       }
       // If a particle appears after an inflectional suffix, stop before it.
       if (suffixCount > 0 && PARTICLE_BOUNDARY_LATER.has(nextChar)) {
@@ -87,8 +87,7 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
       ) {
         break;
       }
-      const suffixLimit = sawKatakanaInSuffix ? MAX_KANA_SUFFIX_WITH_KATAKANA : MAX_KANA_SUFFIX;
-      if (suffixCount >= suffixLimit) {
+      if (suffixCount >= MAX_KANA_SUFFIX) {
         break;
       }
       suffixEnd += 1;

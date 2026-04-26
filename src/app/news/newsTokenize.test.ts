@@ -76,11 +76,12 @@ describe("tokenizeJapanese", () => {
     expect(kanjiRuns).not.toContain("音を");
   });
 
-  it("keeps katakana tails after okurigana for mixed compounds", () => {
+  it("does not absorb katakana noun tails after okurigana", () => {
     const segments = tokenizeJapanese("深掘りコンテンツを読む");
     const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
 
-    expect(kanjiRuns).toContain("深掘りコンテンツ");
+    expect(kanjiRuns).toContain("深掘り");
+    expect(kanjiRuns).not.toContain("深掘りコンテンツ");
     expect(kanjiRuns).not.toContain("深掘りコン");
   });
 
