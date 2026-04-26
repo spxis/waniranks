@@ -84,23 +84,39 @@ export default function NewsArticleView({
       />
 
       {activeTab === "article" ? (
-        <div
-          className={`space-y-4 text-foreground ${textSizeClass(prefs.textSize)}`.trim()}
-          style={articleTextStyle(prefs.articleFont)}
-        >
-          {items.map((item, index) => {
-            if (item.kind === "ad") {
-              return <AdPlaceholder key={`ad-${index}`} />;
-            }
-            return (
-              <BlockView
-                key={`block-${index}`}
-                block={item.block}
-                emphasizeKanji={prefs.emphasizeKanji}
-              />
-            );
-          })}
-        </div>
+        <section className="relative overflow-hidden rounded-[1.75rem] border border-accent/25 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(245,249,255,0.9)_100%)] px-4 py-5 shadow-[0_18px_50px_rgba(11,40,90,0.14)] sm:px-6 sm:py-7">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(15,111,255,0.09),rgba(15,111,255,0))]" />
+          <div className="relative mb-4 flex items-center gap-2 border-b border-line/80 pb-3">
+            <span className="inline-flex items-center rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-accent">
+              Reading View
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground/55">
+              Article Body
+            </span>
+          </div>
+
+          <div
+            className="relative mx-auto max-w-3xl rounded-2xl border border-line/70 bg-surface/80 px-4 py-4 sm:px-6 sm:py-6"
+          >
+            <div
+              className={`space-y-5 text-foreground leading-relaxed ${textSizeClass(prefs.textSize)}`.trim()}
+              style={articleTextStyle(prefs.articleFont)}
+            >
+              {items.map((item, index) => {
+                if (item.kind === "ad") {
+                  return <AdPlaceholder key={`ad-${index}`} />;
+                }
+                return (
+                  <BlockView
+                    key={`block-${index}`}
+                    block={item.block}
+                    emphasizeKanji={prefs.emphasizeKanji}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </section>
       ) : null}
 
       {activeTab === "history" ? historyPanel : null}
