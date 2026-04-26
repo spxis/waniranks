@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import jlptReadings from "@/data/jlptReadings.json";
 
-import type { NewsKanjiDowngrade } from "./newsReadingPrefs";
+import type {
+  NewsKanjiCapBasis,
+  NewsKanjiCapGrade,
+  NewsKanjiCapJlpt,
+  NewsKanjiCapWk,
+} from "./newsReadingPrefs";
 
 import {
   availabilityForRun,
@@ -24,17 +29,29 @@ import { tokenizeJapanese } from "./newsTokenize";
 type Props = {
   text: string;
   emphasizeKanji: boolean;
-  kanjiDowngrade: NewsKanjiDowngrade;
+  kanjiCapBasis: NewsKanjiCapBasis;
+  kanjiCapJlpt: NewsKanjiCapJlpt;
+  kanjiCapWk: NewsKanjiCapWk;
+  kanjiCapGrade: NewsKanjiCapGrade;
 };
 
 const pageSessionSeenGlyphs = new Set<string>();
 type JlptRecord = Record<string, { nLevel?: number }>;
 
-export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade }: Props) {
+export default function NewsTokenizedText({
+  text,
+  emphasizeKanji,
+  kanjiCapBasis,
+  kanjiCapJlpt,
+  kanjiCapWk,
+  kanjiCapGrade,
+}: Props) {
   const segments = tokenizeJapanese(text);
   const [dynamicAvailability, setDynamicAvailability] = useState<
     Record<string, "unknown" | "known" | "missing">
   >({});
+  const [resolvedWkLevels, setResolvedWkLevels] = useState<Record<string, number | null>>({});
+  const [resolvedGrades, setResolvedGrades] = useState<Record<string, number | null>>({});
   const [readingsByRun, setReadingsByRun] = useState<Record<string, string | null>>({});
   const [loadingRun, setLoadingRun] = useState<string | null>(null);
   const [seenRuns, setSeenRuns] = useState<Set<string>>(() => {
@@ -72,8 +89,67 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
     return Object.fromEntries(map.entries());
   }, [segments]);
 
+  const articleKanjiChars = useMemo(() => {
+    const unique = new Set<string>();
+    for (const segment of segments) {
+      if (segment.kind !== "kanji") {
+        continue;
+      }
+      for (const char of Array.from(segment.text)) {
+        if (KANJI_REGEX.test(char)) {
+          unique.add(char);
+        }
+      }
+    }
+    return Array.from(unique);
+  }, [segments]);
+
+  const articleCharsKey = useMemo(() => articleKanjiChars.join(""), [articleKanjiChars]);
+
+  useEffect(() => {
+    if (articleKanjiChars.length === 0) {
+      return;
+    }
+
+    const unresolved = articleKanjiChars.filter(
+      (char) => !(char in resolvedWkLevels) || !(char in resolvedGrades),
+    );
+    if (unresolved.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    void fetch("/api/news/kanji-levels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chars: unresolved }),
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
+          | null;
+        if (!response.ok || cancelled) {
+          return;
+        }
+
+        if (payload?.levels) {
+          setResolvedWkLevels((prev) => ({ ...prev, ...payload.levels }));
+        }
+        if (payload?.grades) {
+          setResolvedGrades((prev) => ({ ...prev, ...payload.grades }));
+        }
+      })
+      .catch(() => {
+        // Keep original rendering when level enrichment is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [articleCharsKey, articleKanjiChars, resolvedGrades, resolvedWkLevels]);
+
   const downgradedRuns = useMemo(() => {
-    if (kanjiDowngrade === "off") {
+    if (!isCapEnabled(kanjiCapBasis, kanjiCapJlpt, kanjiCapWk, kanjiCapGrade)) {
       return [] as string[];
     }
 
@@ -82,17 +158,34 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
       if (segment.kind !== "kanji") {
         continue;
       }
-      if (!shouldDeemphasizeSegment(segment.text, kanjiDowngrade)) {
+      if (
+        !shouldDeemphasizeSegment(segment.text, {
+          basis: kanjiCapBasis,
+          jlptCap: kanjiCapJlpt,
+          wkCap: kanjiCapWk,
+          gradeCap: kanjiCapGrade,
+          wkByChar: resolvedWkLevels,
+          gradeByChar: resolvedGrades,
+        })
+      ) {
         continue;
       }
       unique.add(segment.text);
     }
 
     return Array.from(unique);
-  }, [kanjiDowngrade, segments]);
+  }, [
+    kanjiCapBasis,
+    kanjiCapGrade,
+    kanjiCapJlpt,
+    kanjiCapWk,
+    resolvedGrades,
+    resolvedWkLevels,
+    segments,
+  ]);
 
   useEffect(() => {
-    if (kanjiDowngrade === "off" || downgradedRuns.length === 0) {
+    if (downgradedRuns.length === 0) {
       return;
     }
 
@@ -124,7 +217,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
     return () => {
       cancelled = true;
     };
-  }, [downgradedRuns, kanjiDowngrade, readingsByRun]);
+  }, [downgradedRuns, readingsByRun]);
 
   if (segments.length === 0) {
     return <>{text}</>;
@@ -140,7 +233,14 @@ export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade
         const primaryRun = candidates[0] ?? segment.text;
         const availability = dynamicAvailability[segment.text] ?? availabilityByRun[segment.text] ?? "unknown";
         const isLoading = loadingRun === segment.text;
-        const isDowngraded = shouldDeemphasizeSegment(segment.text, kanjiDowngrade);
+        const isDowngraded = shouldDeemphasizeSegment(segment.text, {
+          basis: kanjiCapBasis,
+          jlptCap: kanjiCapJlpt,
+          wkCap: kanjiCapWk,
+          gradeCap: kanjiCapGrade,
+          wkByChar: resolvedWkLevels,
+          gradeByChar: resolvedGrades,
+        });
         const resolvedReading = readingsByRun[segment.text];
         const displayText =
           isDowngraded && typeof resolvedReading === "string" && resolvedReading.length > 0
@@ -275,17 +375,68 @@ function extractKanjiTokens(value: string): string[] {
   return Array.from(value).filter((char) => KANJI_REGEX.test(char));
 }
 
-function shouldDeemphasizeSegment(value: string, mode: NewsKanjiDowngrade): boolean {
-  const threshold = jlptThresholdFromMode(mode);
-  if (threshold === null) {
+function isCapEnabled(
+  basis: NewsKanjiCapBasis,
+  jlptCap: NewsKanjiCapJlpt,
+  wkCap: NewsKanjiCapWk,
+  gradeCap: NewsKanjiCapGrade,
+): boolean {
+  if (basis === "jlpt") {
+    return jlptCap !== "all";
+  }
+  if (basis === "wk") {
+    return wkCap !== "all";
+  }
+  return gradeCap !== "all";
+}
+
+function shouldDeemphasizeSegment(
+  value: string,
+  settings: {
+    basis: NewsKanjiCapBasis;
+    jlptCap: NewsKanjiCapJlpt;
+    wkCap: NewsKanjiCapWk;
+    gradeCap: NewsKanjiCapGrade;
+    wkByChar: Record<string, number | null>;
+    gradeByChar: Record<string, number | null>;
+  },
+): boolean {
+  const chars = Array.from(value).filter((char) => KANJI_REGEX.test(char));
+  if (chars.length === 0) {
     return false;
   }
 
-  return Array.from(value).some((char) => isHarderThanThreshold(char, threshold));
+  if (settings.basis === "jlpt") {
+    const threshold = jlptThresholdFromMode(settings.jlptCap);
+    if (threshold === null) {
+      return false;
+    }
+    return chars.some((char) => isJlptHarderThanThreshold(char, threshold));
+  }
+
+  if (settings.basis === "wk") {
+    const threshold = wkThresholdFromMode(settings.wkCap);
+    if (threshold === null) {
+      return false;
+    }
+    return chars.some((char) => {
+      const wkLevel = settings.wkByChar[char];
+      return typeof wkLevel === "number" && wkLevel > threshold;
+    });
+  }
+
+  const threshold = gradeThresholdFromMode(settings.gradeCap);
+  if (threshold === null) {
+    return false;
+  }
+  return chars.some((char) => {
+    const grade = settings.gradeByChar[char];
+    return typeof grade === "number" && grade > threshold;
+  });
 }
 
-function jlptThresholdFromMode(mode: NewsKanjiDowngrade): number | null {
-  if (mode === "off") {
+function jlptThresholdFromMode(mode: NewsKanjiCapJlpt): number | null {
+  if (mode === "all") {
     return null;
   }
 
@@ -293,7 +444,25 @@ function jlptThresholdFromMode(mode: NewsKanjiDowngrade): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function isHarderThanThreshold(char: string, threshold: number): boolean {
+function wkThresholdFromMode(mode: NewsKanjiCapWk): number | null {
+  if (mode === "all") {
+    return null;
+  }
+
+  const parsed = Number(mode);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function gradeThresholdFromMode(mode: NewsKanjiCapGrade): number | null {
+  if (mode === "all") {
+    return null;
+  }
+
+  const parsed = Number(mode);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isJlptHarderThanThreshold(char: string, threshold: number): boolean {
   if (!KANJI_REGEX.test(char)) {
     return false;
   }

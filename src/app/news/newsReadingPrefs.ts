@@ -4,25 +4,66 @@ export const NEWS_READING_PREFS_KEY = "uk:news-reading-prefs";
 
 export type NewsTextSize = "sm" | "md" | "lg" | "xl" | "2xl";
 export type NewsArticleFont = "body" | "jp-sans" | "jp-serif";
-export type NewsKanjiDowngrade = "off" | "n5" | "n4" | "n3" | "n2" | "n1";
+export type NewsKanjiCapBasis = "jlpt" | "wk" | "grade";
+export type NewsKanjiCapJlpt = "all" | "n5" | "n4" | "n3" | "n2" | "n1";
+export type NewsKanjiCapWk = "all" | "10" | "20" | "30" | "40" | "50" | "60";
+export type NewsKanjiCapGrade = "all" | "1" | "2" | "3" | "4" | "5" | "6" | "8";
+
+export const NEWS_KANJI_CAP_BASIS_OPTIONS: readonly NewsKanjiCapBasis[] = [
+  "jlpt",
+  "wk",
+  "grade",
+];
+export const NEWS_KANJI_CAP_JLPT_OPTIONS: readonly NewsKanjiCapJlpt[] = [
+  "all",
+  "n5",
+  "n4",
+  "n3",
+  "n2",
+  "n1",
+];
+export const NEWS_KANJI_CAP_WK_OPTIONS: readonly NewsKanjiCapWk[] = [
+  "all",
+  "10",
+  "20",
+  "30",
+  "40",
+  "50",
+  "60",
+];
+export const NEWS_KANJI_CAP_GRADE_OPTIONS: readonly NewsKanjiCapGrade[] = [
+  "all",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "8",
+];
 
 export type NewsReadingPrefs = {
   textSize: NewsTextSize;
   emphasizeKanji: boolean;
   articleFont: NewsArticleFont;
-  kanjiDowngrade: NewsKanjiDowngrade;
+  kanjiCapBasis: NewsKanjiCapBasis;
+  kanjiCapJlpt: NewsKanjiCapJlpt;
+  kanjiCapWk: NewsKanjiCapWk;
+  kanjiCapGrade: NewsKanjiCapGrade;
 };
 
 export const DEFAULT_NEWS_READING_PREFS: NewsReadingPrefs = {
   textSize: "lg",
   emphasizeKanji: false,
   articleFont: "body",
-  kanjiDowngrade: "off",
+  kanjiCapBasis: "jlpt",
+  kanjiCapJlpt: "all",
+  kanjiCapWk: "all",
+  kanjiCapGrade: "all",
 };
 
 const TEXT_SIZE_ORDER: NewsTextSize[] = ["sm", "md", "lg", "xl", "2xl"];
 const ARTICLE_FONTS: NewsArticleFont[] = ["body", "jp-sans", "jp-serif"];
-const KANJI_DOWNGRADE_OPTIONS: NewsKanjiDowngrade[] = ["off", "n5", "n4", "n3", "n2", "n1"];
 
 export function readReadingPrefs(): NewsReadingPrefs {
   const stored = getStoredJson<Partial<NewsReadingPrefs> | null>(
@@ -42,12 +83,33 @@ export function readReadingPrefs(): NewsReadingPrefs {
   const articleFont = ARTICLE_FONTS.includes(stored.articleFont as NewsArticleFont)
     ? (stored.articleFont as NewsArticleFont)
     : DEFAULT_NEWS_READING_PREFS.articleFont;
-  const kanjiDowngrade = KANJI_DOWNGRADE_OPTIONS.includes(
-    stored.kanjiDowngrade as NewsKanjiDowngrade,
+  const kanjiCapBasis = NEWS_KANJI_CAP_BASIS_OPTIONS.includes(
+    stored.kanjiCapBasis as NewsKanjiCapBasis,
   )
-    ? (stored.kanjiDowngrade as NewsKanjiDowngrade)
-    : DEFAULT_NEWS_READING_PREFS.kanjiDowngrade;
-  return { textSize, emphasizeKanji, articleFont, kanjiDowngrade };
+    ? (stored.kanjiCapBasis as NewsKanjiCapBasis)
+    : DEFAULT_NEWS_READING_PREFS.kanjiCapBasis;
+  const kanjiCapJlpt = NEWS_KANJI_CAP_JLPT_OPTIONS.includes(
+    stored.kanjiCapJlpt as NewsKanjiCapJlpt,
+  )
+    ? (stored.kanjiCapJlpt as NewsKanjiCapJlpt)
+    : DEFAULT_NEWS_READING_PREFS.kanjiCapJlpt;
+  const kanjiCapWk = NEWS_KANJI_CAP_WK_OPTIONS.includes(stored.kanjiCapWk as NewsKanjiCapWk)
+    ? (stored.kanjiCapWk as NewsKanjiCapWk)
+    : DEFAULT_NEWS_READING_PREFS.kanjiCapWk;
+  const kanjiCapGrade = NEWS_KANJI_CAP_GRADE_OPTIONS.includes(
+    stored.kanjiCapGrade as NewsKanjiCapGrade,
+  )
+    ? (stored.kanjiCapGrade as NewsKanjiCapGrade)
+    : DEFAULT_NEWS_READING_PREFS.kanjiCapGrade;
+  return {
+    textSize,
+    emphasizeKanji,
+    articleFont,
+    kanjiCapBasis,
+    kanjiCapJlpt,
+    kanjiCapWk,
+    kanjiCapGrade,
+  };
 }
 
 export function writeReadingPrefs(prefs: NewsReadingPrefs): void {
@@ -105,20 +167,29 @@ export function articleFontLabel(font: NewsArticleFont): string {
   }
 }
 
-export function kanjiDowngradeLabel(value: NewsKanjiDowngrade): string {
+export function kanjiCapBasisLabel(value: NewsKanjiCapBasis): string {
   switch (value) {
-    case "n5":
-      return "N5+";
-    case "n4":
-      return "N4+";
-    case "n3":
-      return "N3+";
-    case "n2":
-      return "N2+";
-    case "n1":
-      return "N1+";
-    case "off":
+    case "wk":
+      return "WK";
+    case "grade":
+      return "Grade";
+    case "jlpt":
     default:
-      return "Off";
+      return "JLPT";
   }
+}
+
+export function kanjiCapLabel(
+  basis: NewsKanjiCapBasis,
+  value: NewsKanjiCapJlpt | NewsKanjiCapWk | NewsKanjiCapGrade,
+): string {
+  if (value === "all") {
+    return "All";
+  }
+
+  if (basis === "jlpt") {
+    return `${String(value).toUpperCase()}+`;
+  }
+
+  return `${value}+`;
 }

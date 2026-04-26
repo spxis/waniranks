@@ -3,10 +3,18 @@
 import {
   articleFontLabel,
   bumpTextSize,
-  kanjiDowngradeLabel,
+  kanjiCapBasisLabel,
+  kanjiCapLabel,
+  NEWS_KANJI_CAP_BASIS_OPTIONS,
+  NEWS_KANJI_CAP_GRADE_OPTIONS,
+  NEWS_KANJI_CAP_JLPT_OPTIONS,
+  NEWS_KANJI_CAP_WK_OPTIONS,
   textSizeLabel,
   type NewsArticleFont,
-  type NewsKanjiDowngrade,
+  type NewsKanjiCapBasis,
+  type NewsKanjiCapGrade,
+  type NewsKanjiCapJlpt,
+  type NewsKanjiCapWk,
   type NewsReadingPrefs,
   type NewsTextSize,
 } from "./newsReadingPrefs";
@@ -29,8 +37,46 @@ export default function NewsReadingControls({ prefs, onChange }: Props) {
     onChange({ ...prefs, articleFont: font });
   }
 
-  function setKanjiDowngrade(value: NewsKanjiDowngrade) {
-    onChange({ ...prefs, kanjiDowngrade: value });
+  function setKanjiCapBasis(value: NewsKanjiCapBasis) {
+    onChange({ ...prefs, kanjiCapBasis: value });
+  }
+
+  function setKanjiCapJlpt(value: NewsKanjiCapJlpt) {
+    onChange({ ...prefs, kanjiCapJlpt: value });
+  }
+
+  function setKanjiCapWk(value: NewsKanjiCapWk) {
+    onChange({ ...prefs, kanjiCapWk: value });
+  }
+
+  function setKanjiCapGrade(value: NewsKanjiCapGrade) {
+    onChange({ ...prefs, kanjiCapGrade: value });
+  }
+
+  const capOptions =
+    prefs.kanjiCapBasis === "jlpt"
+      ? NEWS_KANJI_CAP_JLPT_OPTIONS
+      : prefs.kanjiCapBasis === "wk"
+        ? NEWS_KANJI_CAP_WK_OPTIONS
+        : NEWS_KANJI_CAP_GRADE_OPTIONS;
+
+  const activeCapValue =
+    prefs.kanjiCapBasis === "jlpt"
+      ? prefs.kanjiCapJlpt
+      : prefs.kanjiCapBasis === "wk"
+        ? prefs.kanjiCapWk
+        : prefs.kanjiCapGrade;
+
+  const setCapValue = (value: string) => {
+    if (prefs.kanjiCapBasis === "jlpt") {
+      setKanjiCapJlpt(value as NewsKanjiCapJlpt);
+      return;
+    }
+    if (prefs.kanjiCapBasis === "wk") {
+      setKanjiCapWk(value as NewsKanjiCapWk);
+      return;
+    }
+    setKanjiCapGrade(value as NewsKanjiCapGrade);
   }
 
   return (
@@ -87,15 +133,28 @@ export default function NewsReadingControls({ prefs, onChange }: Props) {
             Kanji cap
           </span>
           <div className="inline-flex items-center overflow-hidden rounded-full border border-line bg-surface">
-            {(["off", "n5", "n4", "n3", "n2", "n1"] as const).map((value) => (
+            {NEWS_KANJI_CAP_BASIS_OPTIONS.map((value) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => setKanjiDowngrade(value)}
-                className={`px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${prefs.kanjiDowngrade === value ? "bg-accent text-surface" : "text-foreground/75 hover:bg-surface-muted"}`}
-                aria-label={`Use ${kanjiDowngradeLabel(value)} kanji cap`}
+                onClick={() => setKanjiCapBasis(value)}
+                className={`px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${prefs.kanjiCapBasis === value ? "bg-accent text-surface" : "text-foreground/75 hover:bg-surface-muted"}`}
+                aria-label={`Use ${kanjiCapBasisLabel(value)} cap basis`}
               >
-                {kanjiDowngradeLabel(value)}
+                {kanjiCapBasisLabel(value)}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex items-center overflow-hidden rounded-full border border-line bg-surface">
+            {capOptions.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setCapValue(value)}
+                className={`px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${activeCapValue === value ? "bg-accent text-surface" : "text-foreground/75 hover:bg-surface-muted"}`}
+                aria-label={`Use ${kanjiCapLabel(prefs.kanjiCapBasis, value)} kanji cap`}
+              >
+                {kanjiCapLabel(prefs.kanjiCapBasis, value)}
               </button>
             ))}
           </div>

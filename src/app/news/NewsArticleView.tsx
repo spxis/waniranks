@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 import type { NewsArticle, NewsArticleBlock } from "@/lib/news/newsTypes";
@@ -14,7 +14,10 @@ import {
   readReadingPrefs,
   textSizeClass,
   writeReadingPrefs,
-  type NewsKanjiDowngrade,
+  type NewsKanjiCapBasis,
+  type NewsKanjiCapGrade,
+  type NewsKanjiCapJlpt,
+  type NewsKanjiCapWk,
   type NewsReadingPrefs,
 } from "./newsReadingPrefs";
 
@@ -44,10 +47,6 @@ export default function NewsArticleView({
   const items = interleaveAdSlots(article.blocks);
   const kanjiCount = countUniqueArticleKanji(article.blocks);
   const [prefs, setPrefs] = useState<NewsReadingPrefs>(() => readReadingPrefs());
-
-  useEffect(() => {
-    setPrefs(readReadingPrefs());
-  }, []);
 
   function updatePrefs(next: NewsReadingPrefs) {
     setPrefs(next);
@@ -116,7 +115,10 @@ export default function NewsArticleView({
                     key={`block-${index}`}
                     block={item.block}
                     emphasizeKanji={prefs.emphasizeKanji}
-                    kanjiDowngrade={prefs.kanjiDowngrade}
+                    kanjiCapBasis={prefs.kanjiCapBasis}
+                    kanjiCapJlpt={prefs.kanjiCapJlpt}
+                    kanjiCapWk={prefs.kanjiCapWk}
+                    kanjiCapGrade={prefs.kanjiCapGrade}
                   />
                 );
               })}
@@ -208,17 +210,26 @@ function articleTextStyle(font: "body" | "jp-sans" | "jp-serif"): { fontFamily: 
 function BlockView({
   block,
   emphasizeKanji,
-  kanjiDowngrade,
+  kanjiCapBasis,
+  kanjiCapJlpt,
+  kanjiCapWk,
+  kanjiCapGrade,
 }: {
   block: NewsArticleBlock;
   emphasizeKanji: boolean;
-  kanjiDowngrade: NewsKanjiDowngrade;
+  kanjiCapBasis: NewsKanjiCapBasis;
+  kanjiCapJlpt: NewsKanjiCapJlpt;
+  kanjiCapWk: NewsKanjiCapWk;
+  kanjiCapGrade: NewsKanjiCapGrade;
 }) {
   const content = (
     <NewsTokenizedText
       text={block.text}
       emphasizeKanji={emphasizeKanji}
-      kanjiDowngrade={kanjiDowngrade}
+      kanjiCapBasis={kanjiCapBasis}
+      kanjiCapJlpt={kanjiCapJlpt}
+      kanjiCapWk={kanjiCapWk}
+      kanjiCapGrade={kanjiCapGrade}
     />
   );
 
