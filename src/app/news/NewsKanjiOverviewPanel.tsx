@@ -342,7 +342,15 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
         </div>
       </header>
 
-      <GroupColumn title={activeGroup.title} groups={visibleGroups} />
+      <GroupColumn
+        title={activeGroup.title}
+        groups={visibleGroups}
+        emptyMessage={
+          groupMode === "all"
+            ? "No kanji match these filters. Try Count All or a lower count threshold."
+            : "No kanji match the current count filter. Try Count All or a lower threshold."
+        }
+      />
     </section>
   );
 }
@@ -405,14 +413,23 @@ function sortEntries(entries: KanjiEntry[], mode: EntrySortMode): KanjiEntry[] {
 function GroupColumn({
   title,
   groups,
+  emptyMessage,
 }: {
   title: string;
   groups: Array<{ label: string; entries: KanjiEntry[] }>;
+  emptyMessage?: string;
 }) {
+  const totalEntries = groups.reduce((sum, group) => sum + group.entries.length, 0);
+
   return (
     <article className="rounded-xl border border-line bg-surface p-3">
       <p className="text-[11px] font-black uppercase tracking-[0.12em] text-foreground/70">{title}</p>
-      <div className="mt-2 space-y-2">
+      {totalEntries === 0 ? (
+        <div className="mt-2 rounded-lg border border-dashed border-line bg-surface-muted/70 px-3 py-3 text-xs font-semibold text-foreground/65">
+          {emptyMessage ?? "No kanji found for this view."}
+        </div>
+      ) : (
+        <div className="mt-2 space-y-2">
         {groups.map((group) => (
           <div key={group.label} className="rounded-lg border border-line/70 bg-surface-muted/60 p-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">
@@ -444,7 +461,8 @@ function GroupColumn({
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </article>
   );
 }
