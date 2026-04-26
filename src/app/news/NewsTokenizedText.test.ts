@@ -32,4 +32,19 @@ describe("news lookup candidate priority", () => {
     expect(candidates).toContain("日本");
     expect(candidates).toContain("時間");
   });
+
+  it("includes kanji core candidate for inflected mixed runs", () => {
+    const segments = [{ kind: "kanji" as const, text: "締結されて" }];
+    const candidates = buildLookupCandidates(segments, 0);
+
+    expect(candidates[0]).toBe("締結されて");
+    expect(candidates).toContain("締結");
+    expect(candidates).toContain("締結される");
+  });
+
+  it("strips punctuation from selected-text lookup", () => {
+    const candidates = buildCandidatesFromSelectedText("配信・");
+    expect(candidates[0]).toBe("配信");
+    expect(candidates).not.toContain("配信・");
+  });
 });

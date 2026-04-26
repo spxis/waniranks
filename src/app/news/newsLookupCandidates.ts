@@ -1,5 +1,6 @@
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
-const KANA_REGEX = /[\u3040-\u309F\u30A0-\u30FFー]/;
+const KANA_REGEX = /[\u3040-\u309F\u30A0-\u30FA\u30FC-\u30FF]/;
+const JAPANESE_WORD_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FA\u30FC-\u30FF々]/;
 
 type Segment = { kind: "kanji" | "other"; text: string };
 
@@ -14,6 +15,10 @@ export function buildLookupCandidates(segments: Segment[], index: number): strin
   const suffixVariants = kanaPrefixVariants(nextKana);
 
   const out: string[] = [run];
+  const core = leadingKanjiCore(run);
+  if (core.length >= 2 && core !== run) {
+    out.push(core);
+  }
   for (const subrun of pureKanjiSubruns(run)) {
     out.push(subrun);
   }
@@ -33,6 +38,15 @@ export function buildLookupCandidates(segments: Segment[], index: number): strin
   return expandDictionaryCandidates(expandBySuffixShortening(normalized));
 }
 
+function leadingKanjiCore(run: string): string {
+  const chars = Array.from(run);
+  let end = 0;
+  while (end < chars.length && KANJI_REGEX.test(chars[end] ?? "")) {
+    end += 1;
+  }
+  return chars.slice(0, end).join("");
+}
+
 function pureKanjiSubruns(run: string): string[] {
   const chars = Array.from(run);
   if (chars.length < 3 || chars.some((char) => !KANJI_REGEX.test(char))) {
@@ -50,7 +64,7 @@ function pureKanjiSubruns(run: string): string[] {
 }
 
 export function buildCandidatesFromSelectedText(raw: string): string[] {
-  const value = raw.replace(/\s+/g, "").trim();
+  const value = normalizeSelectedRun(raw);
   if (!value || !KANJI_REGEX.test(value)) {
     return [];
   }
@@ -74,6 +88,29 @@ export function buildCandidatesFromSelectedText(raw: string): string[] {
   }
 
   return Array.from(new Set(out));
+}
+
+function normalizeSelectedRun(raw: string): string {
+  const compact = raw.replace(/\s+/g, "").trim();
+  if (!compact) {
+    return "";
+  }
+
+  const chunks = compact.split(/[^\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FA\u30FC-\u30FF々]+/u);
+  const candidates = chunks
+    .map((chunk) => chunk.trim())
+    .filter((chunk) => chunk.length > 0 && JAPANESE_WORD_REGEX.test(chunk));
+
+  if (candidates.length === 0) {
+    return "";
+  }
+
+  const withKanji = candidates.filter((chunk) => KANJI_REGEX.test(chunk));
+  if (withKanji.length > 0) {
+    return withKanji.sort((a, b) => b.length - a.length)[0] ?? "";
+  }
+
+  return candidates.sort((a, b) => b.length - a.length)[0] ?? "";
 }
 
 function expandBySuffixShortening(base: string[]): string[] {

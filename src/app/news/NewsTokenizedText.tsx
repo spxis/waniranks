@@ -105,6 +105,9 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
           void openNewsGlyphCandidates(lookupCandidates)
             .then((opened) => {
               if (!opened) {
+                void prefetchNewsGlyphCandidates(lookupCandidates).then((next) => {
+                  setDynamicAvailability((prev) => ({ ...prev, [segment.text]: next }));
+                });
                 return;
               }
 

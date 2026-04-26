@@ -3,7 +3,7 @@
 // like 高い / 食べたり are clickable as a single unit.
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
-const KANA_REGEX = /[\u3040-\u309F\u30A0-\u30FFー]/;
+const KANA_REGEX = /[\u3040-\u309F\u30A0-\u30FA\u30FC-\u30FF]/;
 const PARTICLE_BOUNDARY_FIRST = new Set(["を", "が", "に", "で", "と", "へ", "は", "も", "や", "の", "か"]);
 const PARTICLE_BOUNDARY_LATER = new Set(["を", "が", "に", "で", "と", "へ", "は", "も", "や", "の", "か"]);
 const INDEFINITE_PRONOUN_BASE = new Set(["誰", "何"]);

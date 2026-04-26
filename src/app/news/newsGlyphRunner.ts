@@ -26,6 +26,8 @@ type ResolvedLookup = {
 };
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+const JAPANESE_WORD_ONLY_REGEX =
+  /^[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FA\u30FC-\u30FF々]+$/u;
 const OPEN_COOLDOWN_MS = 1000;
 const MIN_LOOKUP_GAP_MS = 600;
 const MAX_SESSION_KANJI = 48;
@@ -243,7 +245,13 @@ function normalizeCandidateRuns(candidates: string[]): string[] {
   const seen = new Set<string>();
   for (const raw of candidates) {
     const value = raw.trim();
-    if (!value || value.length > 24 || !KANJI_REGEX.test(value) || seen.has(value)) {
+    if (
+      !value ||
+      value.length > 24 ||
+      !KANJI_REGEX.test(value) ||
+      !JAPANESE_WORD_ONLY_REGEX.test(value) ||
+      seen.has(value)
+    ) {
       continue;
     }
     seen.add(value);
