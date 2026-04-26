@@ -27,13 +27,13 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
   const [seenRuns, setSeenRuns] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    const next = new Set(readNewsKanjiHistory().map((entry) => entry.run));
+    const next = collectSeenGlyphs();
     setSeenRuns(next);
   }, []);
 
   useEffect(() => {
     const refresh = () => {
-      setSeenRuns(new Set(readNewsKanjiHistory().map((entry) => entry.run)));
+      setSeenRuns(collectSeenGlyphs());
     };
     window.addEventListener(NEWS_KANJI_HISTORY_EVENT, refresh);
     return () => {
@@ -78,9 +78,25 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
             return;
           }
           setLoadingRun(segment.text);
-          void openNewsGlyphRun(segment.text).finally(() => {
-            setLoadingRun((prev) => (prev === segment.text ? null : prev));
-          });
+          void openNewsGlyphRun(segment.text)
+            .then((opened) => {
+              if (!opened) {
+                return;
+              }
+
+              const clickedChars = extractKanjiTokens(segment.text);
+              setSeenRuns((prev) => {
+                const next = new Set(prev);
+                next.add(segment.text);
+                for (const token of clickedChars) {
+                  next.add(token);
+                }
+                return next;
+              });
+            })
+            .finally(() => {
+              setLoadingRun((prev) => (prev === segment.text ? null : prev));
+            });
         };
 
         return (
@@ -135,4 +151,25 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
       })}
     </>
   );
+}
+
+const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+
+function collectSeenGlyphs(): Set<string> {
+  const seen = new Set<string>();
+  for (const entry of readNewsKanjiHistory()) {
+    const run = entry.run.trim();
+    if (!run) {
+      continue;
+    }
+    seen.add(run);
+    for (const token of extractKanjiTokens(run)) {
+      seen.add(token);
+    }
+  }
+  return seen;
+}
+
+function extractKanjiTokens(value: string): string[] {
+  return Array.from(value).filter((char) => KANJI_REGEX.test(char));
 }
