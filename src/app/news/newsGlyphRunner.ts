@@ -58,6 +58,7 @@ export async function prefetchNewsGlyphCandidates(
   const selected = await selectBestCandidate(normalized, {
     requestId: null,
     abortSignal: undefined,
+    requireKnown: false,
   });
   if (!selected) {
     return normalized.some((run) => availabilityForRun(run) === "known") ? "known" : "unknown";
@@ -101,6 +102,7 @@ export async function openNewsGlyphCandidates(candidates: string[]): Promise<boo
     const selected = await selectBestCandidate(normalized, {
       requestId,
       abortSignal: abortController.signal,
+      requireKnown: true,
     });
     if (!selected) {
       return false;
@@ -179,7 +181,7 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
 
 async function selectBestCandidate(
   candidates: string[],
-  options: { requestId: number | null; abortSignal: AbortSignal | undefined },
+  options: { requestId: number | null; abortSignal: AbortSignal | undefined; requireKnown: boolean },
 ): Promise<{ run: string; resolved: ResolvedLookup } | null> {
   let best: { run: string; resolved: ResolvedLookup; score: number } | null = null;
 
@@ -190,6 +192,13 @@ async function selectBestCandidate(
 
     const resolved = await resolveLookup(candidate, options);
     if (!resolved) {
+      continue;
+    }
+
+    const knownKanjiCount = resolved.result.kanjiItems.filter((item) => item.subjectId !== null).length;
+    const hasVocab = Boolean(resolved.result.vocabulary?.subjectId);
+    const openable = hasVocab || knownKanjiCount > 0;
+    if (options.requireKnown && !openable) {
       continue;
     }
 

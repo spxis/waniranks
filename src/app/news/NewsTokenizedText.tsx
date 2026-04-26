@@ -5,9 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   availabilityForRun,
   openNewsGlyphCandidates,
-  openNewsGlyphRun,
   prefetchNewsGlyphCandidates,
-  prefetchNewsGlyphRun,
 } from "./newsGlyphRunner";
 import {
   NEWS_KANJI_HISTORY_EVENT,
@@ -21,6 +19,7 @@ type Props = {
 };
 
 const pageSessionSeenGlyphs = new Set<string>();
+let pointerDownAt: { x: number; y: number } | null = null;
 
 export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
   const segments = tokenizeJapanese(text);
@@ -85,9 +84,14 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
           availability === "missing"
             ? "text-hot/80 decoration-hot/70 decoration-wavy underline"
             : "";
-        const tryOpen = () => {
-          const selection = typeof window !== "undefined" ? window.getSelection()?.toString().trim() ?? "" : "";
-          if (selection.length > 0 || isLoading) {
+        const tryOpen = (event?: { clientX: number; clientY: number }) => {
+          const selectionText = typeof window !== "undefined" ? window.getSelection()?.toString().trim() ?? "" : "";
+          const isDraggedSelection =
+            Boolean(event) &&
+            Boolean(pointerDownAt) &&
+            Math.hypot((event?.clientX ?? 0) - (pointerDownAt?.x ?? 0), (event?.clientY ?? 0) - (pointerDownAt?.y ?? 0)) > 4;
+          const isExactWordSelection = selectionText.length > 0 && selectionText === segment.text;
+          if ((selectionText.length > 0 && (!isExactWordSelection || isDraggedSelection)) || isLoading) {
             return;
           }
           setLoadingRun(primaryRun);
@@ -120,7 +124,12 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
             tabIndex={isLoading ? -1 : 0}
             aria-disabled={isLoading}
             aria-label={`Look up ${segment.text}`}
-            onClick={tryOpen}
+            onClick={(event) => {
+              tryOpen(event);
+            }}
+            onPointerDown={(event) => {
+              pointerDownAt = { x: event.clientX, y: event.clientY };
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
@@ -189,6 +198,7 @@ function collectSeenGlyphs(): Set<string> {
 function extractKanjiTokens(value: string): string[] {
   return Array.from(value).filter((char) => KANJI_REGEX.test(char));
 }
+
 
 function buildLookupCandidates(segments: Array<{ kind: "kanji" | "other"; text: string }>, index: number): string[] {
   const run = segments[index]?.text ?? "";
