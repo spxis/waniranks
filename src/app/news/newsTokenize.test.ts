@@ -76,6 +76,15 @@ describe("tokenizeJapanese", () => {
     expect(kanjiRuns).not.toContain("音を");
   });
 
+  it("splits 4-kanji pure compounds into smaller runs", () => {
+    const segments = tokenizeJapanese("日本時間の26日夜");
+    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+
+    expect(kanjiRuns).toContain("日本");
+    expect(kanjiRuns).toContain("時間");
+    expect(kanjiRuns).not.toContain("日本時間");
+  });
+
   it("does not create giant merged clickable runs after numeric counters", () => {
     const segments = tokenizeJapanese("さん55歳地方公務員愛知県在住");
     const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
