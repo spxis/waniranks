@@ -234,7 +234,7 @@ function hostnameOf(url: string): string {
 
 function articleMetaLine(article: NewsArticle): string {
   const values = [article.siteName ?? hostnameOf(article.finalUrl), article.byline ?? ""]
-    .map((value) => value.trim())
+    .map((value) => cleanMetaDisplayValue(value))
     .filter((value) => value.length > 0);
 
   const unique: string[] = [];
@@ -252,11 +252,20 @@ function articleMetaLine(article: NewsArticle): string {
 }
 
 function normalizeMetaValue(value: string): string {
-  return value
+  return cleanMetaDisplayValue(value)
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[\s\u00A0]+/g, " ")
     .replace(/[\[\]（）()]/g, "")
     .replace(/[・･·]/g, "")
+    .trim();
+}
+
+function cleanMetaDisplayValue(value: string): string {
+  return value
+    .replace(/[＆&]\s*\[(?:and|AND)\]/g, "")
+    .replace(/\[(?:and|AND)\]/g, "")
+    .replace(/[\s\u00A0]+/g, " ")
+    .replace(/\s*[·・･]\s*$/g, "")
     .trim();
 }
