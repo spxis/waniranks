@@ -13,6 +13,8 @@
     "test:smoke:local": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 playwright test -c playwright.smoke.local.config.ts",
     "test:smoke:build": "pnpm build && PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 playwright test -c playwright.smoke.build.config.ts",
     "test:smoke:install": "playwright install chromium",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "lint": "eslint",
     "loc:check": "node scripts/check-max-loc.mjs",
     "postinstall": "prisma generate",
@@ -46,6 +48,7 @@
     "eslint-config-next": "16.2.2",
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   }
 }
