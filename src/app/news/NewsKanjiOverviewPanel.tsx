@@ -19,6 +19,7 @@ type KanjiEntry = {
   jlptLevel: number | null;
   wkLevel: number | null;
   schoolGrade: number | null;
+  occurrenceCount: number;
 };
 
 type GroupMode = "jlpt" | "wk" | "grade";
@@ -28,7 +29,7 @@ type JlptRecord = Record<string, { nLevel?: number }>;
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 
 export function countUniqueArticleKanji(blocks: NewsArticleBlock[]): number {
-  return extractArticleKanji(blocks).length;
+  return extractArticleKanjiData(blocks).orderedChars.length;
 }
 
 export default function NewsKanjiOverviewPanel({ blocks }: Props) {
@@ -37,7 +38,7 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
   const [resolvedGrades, setResolvedGrades] = useState<Record<string, number | null>>({});
   const [groupMode, setGroupMode] = useState<GroupMode>("jlpt");
 
-  const orderedChars = useMemo(() => extractArticleKanji(blocks), [blocks]);
+  const { orderedChars, countsByChar } = useMemo(() => extractArticleKanjiData(blocks), [blocks]);
   const charsKey = useMemo(() => orderedChars.join(""), [orderedChars]);
 
   useEffect(() => {
@@ -104,8 +105,9 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
           : null,
       wkLevel: wkByChar.get(char) ?? resolvedWkLevels[char] ?? null,
       schoolGrade: resolvedGrades[char] ?? null,
+      occurrenceCount: countsByChar.get(char) ?? 1,
     }));
-  }, [orderedChars, refreshKey, resolvedGrades, resolvedWkLevels]);
+  }, [countsByChar, orderedChars, refreshKey, resolvedGrades, resolvedWkLevels]);
 
   if (entries.length === 0) {
     return null;
@@ -203,7 +205,7 @@ function GroupColumn({
   groups,
 }: {
   title: string;
-  groups: Array<{ label: string; chars: string[] }>;
+  groups: Array<{ label: string; entries: KanjiEntry[] }>;
 }) {
   return (
     <article className="rounded-xl border border-line bg-surface p-3">
@@ -212,25 +214,31 @@ function GroupColumn({
         {groups.map((group) => (
           <div key={group.label} className="rounded-lg border border-line/70 bg-surface-muted/60 p-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">
-              {group.label} ({group.chars.length})
+              {group.label} ({group.entries.length})
             </p>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {group.chars.map((char) => (
-                <button
-                  key={`${group.label}-${char}`}
-                  type="button"
-                  onClick={() => {
-                    void openNewsGlyphRun(char);
-                  }}
-                  className={newsGlyphButtonClass({
-                    type: "kanji",
-                    size: "normal",
-                    clickable: true,
-                  })}
-                  title={`Look up ${char}`}
-                >
-                  {char}
-                </button>
+              {group.entries.map((entry) => (
+                <div key={`${group.label}-${entry.char}`} className="inline-flex flex-col items-center gap-1">
+                  {entry.occurrenceCount > 1 ? (
+                    <span className="rounded-full border border-line bg-surface px-1.5 py-0.5 text-[10px] font-bold leading-none text-foreground/70">
+                      {entry.occurrenceCount}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void openNewsGlyphRun(entry.char);
+                    }}
+                    className={newsGlyphButtonClass({
+                      type: "kanji",
+                      size: "normal",
+                      clickable: true,
+                    })}
+                    title={`Look up ${entry.char}`}
+                  >
+                    {entry.char}
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -240,21 +248,31 @@ function GroupColumn({
   );
 }
 
-function extractArticleKanji(blocks: NewsArticleBlock[]): string[] {
+function extractArticleKanjiData(blocks: NewsArticleBlock[]): {
+  orderedChars: string[];
+  countsByChar: Map<string, number>;
+} {
   const seen = new Set<string>();
-  const out: string[] = [];
+  const orderedChars: string[] = [];
+  const countsByChar = new Map<string, number>();
 
   for (const block of blocks) {
     for (const char of Array.from(block.text)) {
-      if (!KANJI_REGEX.test(char) || seen.has(char)) {
+      if (!KANJI_REGEX.test(char)) {
         continue;
       }
+
+      countsByChar.set(char, (countsByChar.get(char) ?? 0) + 1);
+      if (seen.has(char)) {
+        continue;
+      }
+
       seen.add(char);
-      out.push(char);
+      orderedChars.push(char);
     }
   }
 
-  return out;
+  return { orderedChars, countsByChar };
 }
 
 function buildWkLevelByChar(): Map<string, number> {
@@ -275,19 +293,19 @@ function buildWkLevelByChar(): Map<string, number> {
 function buildGroups(
   entries: KanjiEntry[],
   labelOf: (entry: KanjiEntry) => string,
-): Array<{ label: string; chars: string[] }> {
-  const grouped = new Map<string, string[]>();
+): Array<{ label: string; entries: KanjiEntry[] }> {
+  const grouped = new Map<string, KanjiEntry[]>();
 
   for (const entry of entries) {
     const label = labelOf(entry);
-    const chars = grouped.get(label) ?? [];
-    chars.push(entry.char);
-    grouped.set(label, chars);
+    const existingEntries = grouped.get(label) ?? [];
+    existingEntries.push(entry);
+    grouped.set(label, existingEntries);
   }
 
   return Array.from(grouped.entries())
     .sort((a, b) => compareLabels(a[0], b[0]))
-    .map(([label, chars]) => ({ label, chars }));
+    .map(([label, groupedEntries]) => ({ label, entries: groupedEntries }));
 }
 
 function compareLabels(a: string, b: string): number {
