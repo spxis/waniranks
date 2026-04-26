@@ -7,6 +7,7 @@ import kanjiLevels from "@/data/kanjiLevels.json";
 import type { NewsArticleBlock } from "@/lib/news/newsTypes";
 
 import { openNewsGlyphRun } from "./newsGlyphRunner";
+import { newsGlyphButtonClass } from "./newsGlyphBoxStyle";
 import { NEWS_KANJI_HISTORY_EVENT } from "./newsKanjiHistory";
 import { readAllRunLookupCache } from "./newsKanjiCache";
 
@@ -26,8 +27,11 @@ type GradeRecord = Record<string, { schoolGrade?: number | null }>;
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 
+export function countUniqueArticleKanji(blocks: NewsArticleBlock[]): number {
+  return extractArticleKanji(blocks).length;
+}
+
 export default function NewsKanjiOverviewPanel({ blocks }: Props) {
-  const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -80,31 +84,20 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
 
   return (
     <section className="rounded-2xl border border-line bg-surface-muted/70 p-3 sm:p-4">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2 text-left"
-      >
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-accent">
-            Kanji In This Article
-          </p>
-          <p className="mt-1 text-xs text-foreground/65">
-            {entries.length} unique kanji • JLPT {knownJlpt} • WK {knownWk} • Grade {knownGrade}
-          </p>
-        </div>
-        <span className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">
-          {open ? "Collapse" : "Expand"}
-        </span>
-      </button>
+      <header className="mb-3 rounded-xl border border-line bg-surface px-3 py-2">
+        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-accent">
+          Kanji In This Article
+        </p>
+        <p className="mt-1 text-xs text-foreground/65">
+          {entries.length} unique kanji • JLPT {knownJlpt} • WK {knownWk} • Grade {knownGrade}
+        </p>
+      </header>
 
-      {open ? (
-        <div className="mt-3 grid gap-3 lg:grid-cols-3">
-          <GroupColumn title="By JLPT" groups={jlptGroups} />
-          <GroupColumn title="By WaniKani" groups={wkGroups} />
-          <GroupColumn title="By School Grade" groups={gradeGroups} />
-        </div>
-      ) : null}
+      <div className="grid gap-3 lg:grid-cols-3">
+        <GroupColumn title="By JLPT" groups={jlptGroups} />
+        <GroupColumn title="By WaniKani" groups={wkGroups} />
+        <GroupColumn title="By School Grade" groups={gradeGroups} />
+      </div>
     </section>
   );
 }
@@ -133,7 +126,11 @@ function GroupColumn({
                   onClick={() => {
                     void openNewsGlyphRun(char);
                   }}
-                  className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-line bg-surface px-2 text-base font-black text-foreground transition hover:border-accent hover:text-accent"
+                  className={newsGlyphButtonClass({
+                    type: "kanji",
+                    size: "normal",
+                    clickable: true,
+                  })}
                   title={`Look up ${char}`}
                 >
                   {char}

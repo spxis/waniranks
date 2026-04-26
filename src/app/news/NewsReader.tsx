@@ -66,7 +66,7 @@ export default function NewsReader({ devSampleUrls = [] }: Props) {
     getStoredEnum<Mode>(NEWS_READER_MODE_KEY, ["article", "site"], "article"),
   );
   const [activeTab, setActiveTab] = useState<ArticlePanelTab>(() =>
-    getStoredEnum<ArticlePanelTab>(NEWS_READER_TAB_KEY, ["article", "history", "stats"], "article"),
+    getStoredEnum<ArticlePanelTab>(NEWS_READER_TAB_KEY, ["article", "kanji", "history", "stats"], "article"),
   );
   const [url, setUrl] = useState(initialUrlParam);
   const [article, setArticle] = useState<NewsArticle | null>(null);

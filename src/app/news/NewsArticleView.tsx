@@ -7,6 +7,7 @@ import type { NewsArticle, NewsArticleBlock } from "@/lib/news/newsTypes";
 
 import NewsCacheBadge from "./NewsCacheBadge";
 import NewsKanjiOverviewPanel from "./NewsKanjiOverviewPanel";
+import { countUniqueArticleKanji } from "./NewsKanjiOverviewPanel";
 import NewsReadingControls from "./NewsReadingControls";
 import NewsTokenizedText from "./NewsTokenizedText";
 import {
@@ -18,7 +19,7 @@ import {
 
 const AD_INTERVAL = 4;
 
-export type ArticlePanelTab = "article" | "history" | "stats";
+export type ArticlePanelTab = "article" | "kanji" | "history" | "stats";
 
 type Props = {
   article: NewsArticle;
@@ -40,6 +41,7 @@ export default function NewsArticleView({
   statsPanel,
 }: Props) {
   const items = interleaveAdSlots(article.blocks);
+  const kanjiCount = countUniqueArticleKanji(article.blocks);
   const [prefs, setPrefs] = useState<NewsReadingPrefs>(() => readReadingPrefs());
 
   useEffect(() => {
@@ -77,11 +79,10 @@ export default function NewsArticleView({
 
       <NewsReadingControls prefs={prefs} onChange={updatePrefs} />
 
-      <NewsKanjiOverviewPanel blocks={article.blocks} />
-
       <ArticleTabs
         activeTab={activeTab}
         onChange={onTabChangeAction}
+        kanjiCount={kanjiCount}
         historyCount={historyCount}
         statsCount={statsCount}
       />
@@ -122,6 +123,8 @@ export default function NewsArticleView({
         </section>
       ) : null}
 
+      {activeTab === "kanji" ? <NewsKanjiOverviewPanel blocks={article.blocks} /> : null}
+
       {activeTab === "history" ? historyPanel : null}
       {activeTab === "stats" ? statsPanel : null}
 
@@ -143,11 +146,13 @@ export default function NewsArticleView({
 function ArticleTabs({
   activeTab,
   onChange,
+  kanjiCount,
   historyCount,
   statsCount,
 }: {
   activeTab: ArticlePanelTab;
   onChange: (next: ArticlePanelTab) => void;
+  kanjiCount: number;
   historyCount: number;
   statsCount: number;
 }) {
@@ -159,6 +164,14 @@ function ArticleTabs({
         className={`inline-flex items-center gap-1 px-3 py-1 ${activeTab === "article" ? "bg-accent text-surface" : "text-foreground/70"}`}
       >
         <span>Article</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("kanji")}
+        className={`inline-flex items-center gap-1 px-3 py-1 ${activeTab === "kanji" ? "bg-accent text-surface" : "text-foreground/70"}`}
+      >
+        <span>Kanji</span>
+        <span className="text-[10px] opacity-85">{kanjiCount}</span>
       </button>
       <button
         type="button"
