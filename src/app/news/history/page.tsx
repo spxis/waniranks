@@ -15,7 +15,7 @@ export default async function NewsHistoryPage() {
   const session = await getServerSession(authOptions);
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-12">
+    <div className="relative min-h-full overflow-hidden pb-12">
       <div className="noise-overlay pointer-events-none absolute inset-0" />
       <main className="relative mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
         <section className="rounded-[2rem] border border-line/80 bg-surface/90 p-5 shadow-[0_20px_55px_rgba(8,16,36,0.12)] sm:p-8">

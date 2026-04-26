@@ -36,7 +36,7 @@ export default async function NewsPage() {
   const userWkLevel = typeof linkedAccount?.wkLevel === "number" ? linkedAccount.wkLevel : null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-12">
+    <div className="relative min-h-full overflow-hidden pb-12">
       <div className="noise-overlay pointer-events-none absolute inset-0" />
       <main className="relative mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
         <section className="animate-enter rounded-[2rem] border border-line/80 bg-surface/85 p-5 shadow-[0_24px_80px_rgba(15,111,255,0.17)] backdrop-blur sm:p-8">
