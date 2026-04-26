@@ -146,12 +146,21 @@ function findLikelyContentStart(blocks: NewsArticleBlock[]): number {
     start += 1;
   }
 
-  for (let index = start; index < Math.min(blocks.length, start + 10); index += 1) {
+  const scanLimit = Math.min(blocks.length, start + 80);
+  for (let index = start; index < scanLimit; index += 1) {
     const block = blocks[index];
     if (isSubstantialParagraph(block)) {
+      if (index - start >= 4) {
+        const leadingSlice = blocks.slice(start, index);
+        const navLikeCount = leadingSlice.filter((entry) => isShortNavLikeBlock(entry) || isLikelyLeadingNoise(entry, 0)).length;
+        if (navLikeCount >= Math.ceil(leadingSlice.length * 0.6)) {
+          return index;
+        }
+      }
+
       if (index > 0) {
         const prev = blocks[index - 1];
-        if (prev.kind === "heading" && !isLikelyHeadingNoise(prev.text)) {
+        if (prev.kind === "heading" && !isLikelyHeadingNoise(prev.text) && !isShortNavLikeBlock(prev)) {
           return index - 1;
         }
       }
@@ -265,6 +274,25 @@ function isLikelyLinkHubText(text: string): boolean {
   const navWords = /(home|news|sports|life|business|tech|menu|login|sign in|register)/i.test(value);
 
   return manyShortTokens || hasUrlish || navWords;
+}
+
+function isShortNavLikeBlock(block: NewsArticleBlock): boolean {
+  const text = block.text.trim();
+  if (!text) {
+    return true;
+  }
+
+  const noSentencePunctuation = !/[。！？.!?]/.test(text);
+  const shortText = text.length <= 14;
+  if (!shortText || !noSentencePunctuation) {
+    return false;
+  }
+
+  if (block.kind === "heading") {
+    return true;
+  }
+
+  return isLikelyLinkHubText(text) || /^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}・･\s]+$/u.test(text);
 }
 
 function isAlwaysDropBoilerplate(text: string): boolean {
