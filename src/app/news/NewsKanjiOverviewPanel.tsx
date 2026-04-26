@@ -30,7 +30,7 @@ type KanjiEntry = {
   occurrenceCount: number;
 };
 
-type GroupMode = "jlpt" | "wk" | "grade";
+type GroupMode = "all" | "jlpt" | "wk" | "grade";
 type EntrySortMode = "article" | "count" | "jp";
 
 type JlptRecord = Record<string, { nLevel?: number }>;
@@ -39,7 +39,7 @@ const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const japaneseCollator = new Intl.Collator("ja");
 const GROUP_MODE_STORAGE_KEY = "news:kanji-group-mode";
 const ENTRY_SORT_STORAGE_KEY = "news:kanji-sort-mode";
-const GROUP_MODE_OPTIONS = ["jlpt", "wk", "grade"] as const;
+const GROUP_MODE_OPTIONS = ["all", "jlpt", "wk", "grade"] as const;
 const ENTRY_SORT_OPTIONS = ["article", "count", "jp"] as const;
 
 export function countUniqueArticleKanji(blocks: NewsArticleBlock[]): number {
@@ -50,7 +50,7 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [levelVersion, setLevelVersion] = useState(0);
   const [groupMode, setGroupMode] = useState<GroupMode>(() =>
-    getStoredEnum<GroupMode>(GROUP_MODE_STORAGE_KEY, GROUP_MODE_OPTIONS, "jlpt"),
+    getStoredEnum<GroupMode>(GROUP_MODE_STORAGE_KEY, GROUP_MODE_OPTIONS, "all"),
   );
   const [entrySortMode, setEntrySortMode] = useState<EntrySortMode>(() =>
     getStoredEnum<EntrySortMode>(ENTRY_SORT_STORAGE_KEY, ENTRY_SORT_OPTIONS, "article"),
@@ -142,9 +142,12 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
         ? "Unknown"
         : `Grade ${entry.schoolGrade}`,
   );
+  const allGroups = buildGroups(entries, () => "All");
 
   const activeGroup =
-    groupMode === "jlpt"
+    groupMode === "all"
+      ? { title: "All Kanji", groups: allGroups }
+      : groupMode === "jlpt"
       ? { title: "By JLPT", groups: jlptGroups }
       : groupMode === "wk"
         ? { title: "By WaniKani", groups: wkGroups }
@@ -174,6 +177,13 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-lg border border-line bg-surface-muted p-1">
+            <SegmentButton
+              label="All"
+              selected={groupMode === "all"}
+              onClick={() => {
+                updateGroupMode("all");
+              }}
+            />
             <SegmentButton
               label="JLPT"
               selected={groupMode === "jlpt"}
@@ -314,7 +324,6 @@ function GroupColumn({
                     }}
                     className={newsGlyphButtonClass({
                       type: "kanji",
-                      size: "normal",
                       clickable: true,
                     })}
                     title={`Look up ${entry.char}`}
