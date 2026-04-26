@@ -198,15 +198,89 @@ function buildLookupCandidates(segments: Array<{ kind: "kanji" | "other"; text: 
 
   const prevKana = trailingKana(segments[index - 1]?.kind === "other" ? segments[index - 1].text : "", 2);
   const nextKana = leadingKana(segments[index + 1]?.kind === "other" ? segments[index + 1].text : "", 3);
+  const suffixVariants = kanaPrefixVariants(nextKana);
 
-  const out = [
-    `${prevKana}${run}${nextKana}`,
-    `${run}${nextKana}`,
-    `${prevKana}${run}`,
-    run,
-  ];
+  const out: string[] = [];
+  for (const suffix of suffixVariants) {
+    out.push(`${prevKana}${run}${suffix}`);
+    out.push(`${run}${suffix}`);
+  }
+  out.push(`${prevKana}${run}`);
+  out.push(run);
 
-  return Array.from(new Set(out.map((value) => value.trim()).filter((value) => value.length > 0)));
+  const normalized = Array.from(new Set(out.map((value) => value.trim()).filter((value) => value.length > 0)));
+  return expandDictionaryCandidates(normalized);
+}
+
+function kanaPrefixVariants(nextKana: string): string[] {
+  const chars = Array.from(nextKana);
+  if (chars.length === 0) {
+    return [""];
+  }
+
+  const out: string[] = [];
+  for (let length = chars.length; length >= 1; length -= 1) {
+    out.push(chars.slice(0, length).join(""));
+  }
+  out.push("");
+  return out;
+}
+
+function expandDictionaryCandidates(base: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of base) {
+    if (!seen.has(value)) {
+      seen.add(value);
+      out.push(value);
+    }
+
+    for (const derived of recoverDictionaryForms(value)) {
+      if (seen.has(derived)) {
+        continue;
+      }
+      seen.add(derived);
+      out.push(derived);
+    }
+  }
+
+  return out;
+}
+
+function recoverDictionaryForms(value: string): string[] {
+  const out: string[] = [];
+  const endings = ["たり", "た", "て", "ない", "ます", "ません", "れば", "よう", "ろ"];
+
+  for (const ending of endings) {
+    if (!value.endsWith(ending) || value.length <= ending.length) {
+      continue;
+    }
+    const stem = value.slice(0, -ending.length);
+    if (looksIchidanStem(stem)) {
+      out.push(`${stem}る`);
+    }
+  }
+
+  if (looksIchidanStem(value)) {
+    out.push(`${value}る`);
+  }
+
+  return out;
+}
+
+function looksIchidanStem(value: string): boolean {
+  if (!value || !KANJI_REGEX.test(value)) {
+    return false;
+  }
+
+  const chars = Array.from(value);
+  const last = chars[chars.length - 1] ?? "";
+  if (!last || !KANA_REGEX.test(last)) {
+    return false;
+  }
+
+  return /[いきぎしじちぢにひびぴみりえけげせぜてでねへべぺめれ]/.test(last);
 }
 
 function leadingKana(text: string, maxChars: number): string {
