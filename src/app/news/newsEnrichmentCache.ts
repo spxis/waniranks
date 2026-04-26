@@ -5,7 +5,10 @@ import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
 const LEVEL_CACHE_KEY = "uk:news-enrichment-levels:v1";
 const READING_CACHE_KEY = "uk:news-enrichment-readings:v1";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const STALE_REFRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
 const BATCH_DELAY_MS = 20;
+const LEVEL_BATCH_MAX = 120;
+const READING_BATCH_MAX = 80;
 
 type LevelEntry = {
   wkLevel: number | null;
@@ -46,7 +49,7 @@ export function hasFreshKanjiLevel(char: string): boolean {
   if (!entry) {
     return false;
   }
-  return Date.now() - entry.updatedAt <= TTL_MS;
+  return isFresh(entry.updatedAt);
 }
 
 export function hasFreshRunReading(run: string): boolean {
@@ -54,7 +57,23 @@ export function hasFreshRunReading(run: string): boolean {
   if (!entry) {
     return false;
   }
-  return Date.now() - entry.updatedAt <= TTL_MS;
+  return isFresh(entry.updatedAt);
+}
+
+export function shouldRefreshKanjiLevel(char: string): boolean {
+  const entry = levelStore[char];
+  if (!entry) {
+    return false;
+  }
+  return isFreshButNearExpiry(entry.updatedAt);
+}
+
+export function shouldRefreshRunReading(run: string): boolean {
+  const entry = readingStore[run];
+  if (!entry) {
+    return false;
+  }
+  return isFreshButNearExpiry(entry.updatedAt);
 }
 
 export function isKanjiLevelPending(char: string): boolean {
@@ -96,10 +115,18 @@ export function getCachedRunReadings(runs: string[]): Record<string, string | nu
   return out;
 }
 
-export async function ensureKanjiLevels(chars: string[]): Promise<void> {
+export async function ensureKanjiLevels(
+  chars: string[],
+  options?: { allowFreshRefresh?: boolean },
+): Promise<void> {
   let added = false;
+  const allowFreshRefresh = options?.allowFreshRefresh === true;
+
   for (const char of chars) {
-    if (hasFreshKanjiLevel(char) || loadingLevelChars.has(char)) {
+    const canSkip =
+      hasFreshKanjiLevel(char) &&
+      (!allowFreshRefresh || !shouldRefreshKanjiLevel(char));
+    if (canSkip || loadingLevelChars.has(char)) {
       continue;
     }
     queuedLevelChars.add(char);
@@ -114,10 +141,18 @@ export async function ensureKanjiLevels(chars: string[]): Promise<void> {
   }
 }
 
-export async function ensureRunReadings(runs: string[]): Promise<void> {
+export async function ensureRunReadings(
+  runs: string[],
+  options?: { allowFreshRefresh?: boolean },
+): Promise<void> {
   let added = false;
+  const allowFreshRefresh = options?.allowFreshRefresh === true;
+
   for (const run of runs) {
-    if (hasFreshRunReading(run) || loadingReadingRuns.has(run)) {
+    const canSkip =
+      hasFreshRunReading(run) &&
+      (!allowFreshRefresh || !shouldRefreshRunReading(run));
+    if (canSkip || loadingReadingRuns.has(run)) {
       continue;
     }
     queuedReadingRuns.add(run);
@@ -152,34 +187,37 @@ async function flushLevelBatch(): Promise<void> {
   queuedLevelChars.clear();
 
   if (batch.length > 0) {
-    const now = Date.now();
-    for (const char of batch) {
-      loadingLevelChars.add(char);
-    }
+    while (batch.length > 0) {
+      const chunk = batch.splice(0, LEVEL_BATCH_MAX);
+      const now = Date.now();
+      for (const char of chunk) {
+        loadingLevelChars.add(char);
+      }
 
-    let payload: { levels?: Record<string, number | null>; grades?: Record<string, number | null> } | null = null;
-    let ok = false;
-    try {
-      const response = await fetch("/api/news/kanji-levels", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chars: batch }),
-      });
-      payload = (await response.json().catch(() => null)) as
-        | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
-        | null;
-      ok = response.ok;
-    } catch {
-      ok = false;
-    }
+      let payload: { levels?: Record<string, number | null>; grades?: Record<string, number | null> } | null = null;
+      let ok = false;
+      try {
+        const response = await fetch("/api/news/kanji-levels", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chars: chunk }),
+        });
+        payload = (await response.json().catch(() => null)) as
+          | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
+          | null;
+        ok = response.ok;
+      } catch {
+        ok = false;
+      }
 
-    for (const char of batch) {
-      levelStore[char] = {
-        wkLevel: ok ? payload?.levels?.[char] ?? null : null,
-        grade: ok ? payload?.grades?.[char] ?? null : null,
-        updatedAt: now,
-      };
-      loadingLevelChars.delete(char);
+      for (const char of chunk) {
+        levelStore[char] = {
+          wkLevel: ok ? payload?.levels?.[char] ?? null : null,
+          grade: ok ? payload?.grades?.[char] ?? null : null,
+          updatedAt: now,
+        };
+        loadingLevelChars.delete(char);
+      }
     }
 
     schedulePersistLevels();
@@ -216,33 +254,36 @@ async function flushReadingBatch(): Promise<void> {
   queuedReadingRuns.clear();
 
   if (batch.length > 0) {
-    const now = Date.now();
-    for (const run of batch) {
-      loadingReadingRuns.add(run);
-    }
+    while (batch.length > 0) {
+      const chunk = batch.splice(0, READING_BATCH_MAX);
+      const now = Date.now();
+      for (const run of chunk) {
+        loadingReadingRuns.add(run);
+      }
 
-    let payload: { readings?: Record<string, string | null> } | null = null;
-    let ok = false;
-    try {
-      const response = await fetch("/api/news/readings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runs: batch }),
-      });
-      payload = (await response.json().catch(() => null)) as
-        | { readings?: Record<string, string | null> }
-        | null;
-      ok = response.ok;
-    } catch {
-      ok = false;
-    }
+      let payload: { readings?: Record<string, string | null> } | null = null;
+      let ok = false;
+      try {
+        const response = await fetch("/api/news/readings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ runs: chunk }),
+        });
+        payload = (await response.json().catch(() => null)) as
+          | { readings?: Record<string, string | null> }
+          | null;
+        ok = response.ok;
+      } catch {
+        ok = false;
+      }
 
-    for (const run of batch) {
-      readingStore[run] = {
-        reading: ok ? payload?.readings?.[run] ?? null : null,
-        updatedAt: now,
-      };
-      loadingReadingRuns.delete(run);
+      for (const run of chunk) {
+        readingStore[run] = {
+          reading: ok ? payload?.readings?.[run] ?? null : null,
+          updatedAt: now,
+        };
+        loadingReadingRuns.delete(run);
+      }
     }
 
     schedulePersistReadings();
@@ -309,4 +350,13 @@ function schedulePersistReadings(): void {
     setStoredJson(READING_CACHE_KEY, readingStore);
     persistReadingsTimer = null;
   }, 150);
+}
+
+function isFresh(updatedAt: number): boolean {
+  return Date.now() - updatedAt <= TTL_MS;
+}
+
+function isFreshButNearExpiry(updatedAt: number): boolean {
+  const age = Date.now() - updatedAt;
+  return age > TTL_MS - STALE_REFRESH_WINDOW_MS && age <= TTL_MS;
 }

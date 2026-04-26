@@ -1,35 +1,11 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import jlptReadings from "@/data/jlptReadings.json";
-import type {
-  NewsKanjiCapBasis,
-  NewsKanjiCapGrade,
-  NewsKanjiCapJlpt,
-  NewsKanjiCapWk,
-} from "./newsReadingPrefs";
-import {
-  ensureKanjiLevels,
-  ensureRunReadings,
-  getCachedKanjiLevels,
-  getCachedRunReadings,
-  hasFreshKanjiLevel,
-  hasFreshRunReading,
-  isKanjiLevelPending,
-  isRunReadingPending,
-} from "./newsEnrichmentCache";
-import {
-  availabilityForRun,
-  openNewsGlyphCandidatesWithOptions,
-  prefetchNewsGlyphCandidates,
-} from "./newsGlyphRunner";
-import {
-  NEWS_KANJI_HISTORY_EVENT,
-  readNewsKanjiHistory,
-} from "./newsKanjiHistory";
-import {
-  buildCandidatesFromSelectedText,
-  buildLookupCandidates,
-} from "./newsLookupCandidates";
+import type { NewsKanjiCapBasis, NewsKanjiCapGrade, NewsKanjiCapJlpt, NewsKanjiCapWk } from "./newsReadingPrefs";
+import { ensureKanjiLevels, ensureRunReadings, getCachedKanjiLevels, getCachedRunReadings, hasFreshKanjiLevel, hasFreshRunReading, isKanjiLevelPending, isRunReadingPending, shouldRefreshKanjiLevel, shouldRefreshRunReading } from "./newsEnrichmentCache";
+import { availabilityForRun, openNewsGlyphCandidatesWithOptions, prefetchNewsGlyphCandidates } from "./newsGlyphRunner";
+import { NEWS_KANJI_HISTORY_EVENT, readNewsKanjiHistory } from "./newsKanjiHistory";
+import { buildCandidatesFromSelectedText, buildLookupCandidates } from "./newsLookupCandidates";
 import { tokenizeJapanese } from "./newsTokenize";
 
 type Props = {
@@ -137,13 +113,15 @@ export default function NewsTokenizedText({
       return;
     }
 
-    const unresolved = articleKanjiChars.filter((char) => !hasFreshKanjiLevel(char));
-    if (unresolved.length === 0) {
+    const toEnsure = articleKanjiChars.filter(
+      (char) => !hasFreshKanjiLevel(char) || shouldRefreshKanjiLevel(char),
+    );
+    if (toEnsure.length === 0) {
       return;
     }
 
     let cancelled = false;
-    void ensureKanjiLevels(unresolved).then(() => {
+    void ensureKanjiLevels(toEnsure, { allowFreshRefresh: true }).then(() => {
       if (cancelled) {
         return;
       }
@@ -189,13 +167,15 @@ export default function NewsTokenizedText({
       return;
     }
 
-    const unresolved = downgradedRuns.filter((run) => !hasFreshRunReading(run));
-    if (unresolved.length === 0) {
+    const toEnsure = downgradedRuns.filter(
+      (run) => !hasFreshRunReading(run) || shouldRefreshRunReading(run),
+    );
+    if (toEnsure.length === 0) {
       return;
     }
 
     let cancelled = false;
-    void ensureRunReadings(unresolved).then(() => {
+    void ensureRunReadings(toEnsure, { allowFreshRefresh: true }).then(() => {
       if (cancelled) {
         return;
       }

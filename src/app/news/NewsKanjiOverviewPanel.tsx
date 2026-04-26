@@ -12,6 +12,7 @@ import {
   ensureKanjiLevels,
   getCachedKanjiLevels,
   hasFreshKanjiLevel,
+  shouldRefreshKanjiLevel,
 } from "./newsEnrichmentCache";
 import { NEWS_KANJI_HISTORY_EVENT } from "./newsKanjiHistory";
 import { readAllRunLookupCache } from "./newsKanjiCache";
@@ -73,13 +74,15 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
       return;
     }
 
-    const unresolved = orderedChars.filter((char) => !hasFreshKanjiLevel(char));
-    if (unresolved.length === 0) {
+    const toEnsure = orderedChars.filter(
+      (char) => !hasFreshKanjiLevel(char) || shouldRefreshKanjiLevel(char),
+    );
+    if (toEnsure.length === 0) {
       return;
     }
 
     let cancelled = false;
-    void ensureKanjiLevels(unresolved).then(() => {
+    void ensureKanjiLevels(toEnsure, { allowFreshRefresh: true }).then(() => {
       if (cancelled) {
         return;
       }
