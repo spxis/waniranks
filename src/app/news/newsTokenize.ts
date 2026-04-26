@@ -8,7 +8,7 @@ const PARTICLE_BOUNDARY_FIRST = new Set(["を", "が", "に", "で", "と", "へ
 const PARTICLE_BOUNDARY_LATER = new Set(["を", "が", "に", "で", "と", "へ", "は", "も", "や", "の", "か"]);
 const INDEFINITE_PRONOUN_BASE = new Set(["誰", "何"]);
 const COUNTER_AFTER_DIGIT = new Set(["歳", "才", "人", "円", "年", "月", "日", "時", "分", "秒", "代", "位", "名"]);
-const MAX_PURE_KANJI_CLICKABLE_RUN = 6;
+const MAX_PURE_KANJI_CLICKABLE_RUN = 4;
 const MAX_KANA_SUFFIX = 3;
 
 export type NewsTextSegment = {
@@ -91,8 +91,11 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
 
     index = suffixEnd;
     if (suffixCount === 0 && kanjiEnd - start > MAX_PURE_KANJI_CLICKABLE_RUN) {
-      for (let i = start; i < kanjiEnd; i += 1) {
-        segments.push({ kind: "kanji", text: chars[i] ?? "" });
+      for (let i = start; i < kanjiEnd; i += MAX_PURE_KANJI_CLICKABLE_RUN) {
+        const chunk = chars.slice(i, Math.min(i + MAX_PURE_KANJI_CLICKABLE_RUN, kanjiEnd)).join("");
+        if (chunk) {
+          segments.push({ kind: "kanji", text: chunk });
+        }
       }
       continue;
     }

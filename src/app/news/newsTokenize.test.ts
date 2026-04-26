@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { tokenizeJapanese } from "./newsTokenize";
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+const MAX_PURE_KANJI_CLICKABLE_RUN = 4;
 
 describe("tokenizeJapanese", () => {
   it("keeps okurigana with kanji for inflectional forms", () => {
@@ -161,6 +162,39 @@ describe("tokenizeJapanese", () => {
       assertTokenizerInvariants(text, segments);
     }
   });
+
+  it("article-derived matrix: keeps boundaries conservative across 15 snippets", () => {
+    const articleSnippets = [
+      "就労継続支援A型事業所",
+      "福祉関連会社",
+      "再度挑戦できる",
+      "地方公務員愛知県在住",
+      "応募すること",
+      "紹介させていただきます",
+      "支援会社で働く",
+      "福祉サービス事業所",
+      "職場環境の改善",
+      "就労支援の現場",
+      "利用者家族の声",
+      "支援制度を活用",
+      "地域社会との連携",
+      "雇用機会の確保",
+      "再挑戦への希望",
+    ];
+
+    for (const text of articleSnippets) {
+      const segments = tokenizeJapanese(text);
+      assertTokenizerInvariants(text, segments);
+
+      const runs = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+      for (const run of runs) {
+        expect(/[A-Za-z0-9０-９]/.test(run)).toBe(false);
+        if (isPureKanji(run)) {
+          expect(Array.from(run).length).toBeLessThanOrEqual(MAX_PURE_KANJI_CLICKABLE_RUN);
+        }
+      }
+    }
+  });
 });
 
 function kanjiRuns(text: string): string[] {
@@ -193,6 +227,13 @@ function assertTokenizerInvariants(
       }
     }
   }
+}
+
+function isPureKanji(value: string): boolean {
+  if (!value) {
+    return false;
+  }
+  return Array.from(value).every((char) => KANJI_REGEX.test(char));
 }
 
 function generateDeterministicString(pool: string[], seed: number, length: number): string {
