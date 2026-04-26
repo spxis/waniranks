@@ -170,16 +170,6 @@ export default function ViewGlyphModalHost() {
         setIndex((prev) => Math.min(items.length - 1, prev + 1));
         return;
       }
-
-      event.preventDefault();
-    };
-
-    const onKeyUpCapture = (event: KeyboardEvent) => {
-      event.stopPropagation();
-      if (typeof event.stopImmediatePropagation === "function") {
-        event.stopImmediatePropagation();
-      }
-      event.preventDefault();
     };
 
     const { overflow, overscrollBehavior } = document.body.style;
@@ -187,11 +177,9 @@ export default function ViewGlyphModalHost() {
     document.body.style.overscrollBehavior = "contain";
 
     window.addEventListener("keydown", onKeyDownCapture, true);
-    window.addEventListener("keyup", onKeyUpCapture, true);
 
     return () => {
       window.removeEventListener("keydown", onKeyDownCapture, true);
-      window.removeEventListener("keyup", onKeyUpCapture, true);
       document.body.style.overflow = overflow;
       document.body.style.overscrollBehavior = overscrollBehavior;
     };
@@ -263,6 +251,19 @@ export default function ViewGlyphModalHost() {
             {selector.map((entry, entryIndex) => {
               const selected = entry.itemIndex === index;
               const unavailable = !entry.exists || entry.itemIndex === null;
+              const isVocabulary = entry.kind === "vocabulary";
+              const isSessionEntry = entry.origin === "session";
+              const selectedClass = selected
+                ? isVocabulary
+                  ? "border-vocabulary bg-vocabulary text-white"
+                  : "border-kanji bg-kanji text-white"
+                : "";
+              const baseClass = unavailable
+                ? "border-hot/45 bg-hot/10 text-hot/75"
+                : isVocabulary
+                  ? "border-vocabulary/55 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20"
+                  : "border-kanji/55 bg-kanji/10 text-kanji hover:bg-kanji/20";
+              const sessionClass = isSessionEntry && !selected ? "ring-1 ring-current/35" : "";
               return (
                 <button
                   key={`${entry.label}-${entry.kind}-${entryIndex}`}
@@ -274,13 +275,7 @@ export default function ViewGlyphModalHost() {
                     setIndex(entry.itemIndex);
                   }}
                   disabled={entry.itemIndex === null}
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-black uppercase tracking-[0.08em] transition ${
-                    unavailable
-                      ? "border-hot/40 bg-hot/10 text-hot/70"
-                      : selected
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-line bg-surface-muted text-foreground/80 hover:border-accent hover:text-accent"
-                  } ${entry.itemIndex === null ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-base font-black tracking-[0.04em] transition ${selected ? selectedClass : baseClass} ${sessionClass} ${entry.itemIndex === null ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
                   title={
                     unavailable
                       ? `${entry.label} not found in WaniKani`
@@ -288,7 +283,7 @@ export default function ViewGlyphModalHost() {
                   }
                 >
                   <span>{entry.label}</span>
-                  {unavailable ? <span className="text-[10px]">missing</span> : null}
+                  {unavailable ? <span className="text-xs">missing</span> : null}
                 </button>
               );
             })}

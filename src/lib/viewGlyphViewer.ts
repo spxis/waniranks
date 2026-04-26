@@ -7,6 +7,7 @@ export type ViewGlyphSelectorEntry = {
   itemIndex: number | null;
   kind: "vocabulary" | "kanji";
   exists: boolean;
+  origin?: "current" | "session";
 };
 
 export type ViewGlyphViewerPayload = {

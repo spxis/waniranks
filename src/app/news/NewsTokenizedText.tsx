@@ -86,9 +86,9 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
         return (
           <span
             key={index}
-            role="button"
             tabIndex={isLoading ? -1 : 0}
             aria-disabled={isLoading}
+            aria-label={`Look up ${segment.text}`}
             onClick={tryOpen}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {

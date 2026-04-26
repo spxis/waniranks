@@ -28,6 +28,7 @@ type ResolvedLookup = {
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const OPEN_COOLDOWN_MS = 1000;
 const MIN_LOOKUP_GAP_MS = 600;
+const MAX_SESSION_KANJI = 48;
 
 const inFlightLookupByRun = new Map<string, Promise<ResolvedLookup | null>>();
 let activeOpenRequest: {
@@ -39,6 +40,8 @@ let activeOpenRequest: {
 let requestSequence = 0;
 let lastLookupAtMs = 0;
 const recentOpenAtByRun = new Map<string, number>();
+const sessionKanjiOrder: string[] = [];
+const sessionKnownItemByKanji = new Map<string, StudyQueueItem>();
 
 export function availabilityForRun(run: string): "unknown" | "known" | "missing" {
   return runAvailabilityFromCache(run);
@@ -107,17 +110,18 @@ export async function openNewsGlyphRun(run: string): Promise<boolean> {
     const { accountId, result } = resolved;
 
     const { items, selector } = buildViewerState(value, result);
+    const currentSelector = selector.filter((entry) => entry.origin !== "session");
 
     recordNewsKanjiClick({
       run: value,
       hasVocabulary: Boolean(result.vocabulary?.subjectId),
-      knownCount: selector.filter((entry) => entry.exists).length,
-      totalCount: selector.length,
+      knownCount: currentSelector.filter((entry) => entry.exists).length,
+      totalCount: currentSelector.length,
     });
 
     recordNewsGlyphViews({
       run: value,
-      glyphs: selector
+      glyphs: currentSelector
         .filter((entry) => entry.exists)
         .map((entry) => ({ label: entry.label, type: entry.kind })),
     });
@@ -251,6 +255,7 @@ function buildViewerState(
       kind: "vocabulary",
       exists: true,
       itemIndex: 0,
+      origin: "current",
     });
   } else {
     selector.push({
@@ -258,6 +263,7 @@ function buildViewerState(
       kind: "vocabulary",
       exists: false,
       itemIndex: null,
+      origin: "current",
     });
   }
 
@@ -268,12 +274,14 @@ function buildViewerState(
 
   for (const char of Array.from(run).filter((entry) => KANJI_REGEX.test(entry))) {
     const info = kanjiByChar.get(char);
+    rememberSessionKanji(char);
     if (!info || info.subjectId === null) {
       selector.push({
         label: char,
         kind: "kanji",
         exists: false,
         itemIndex: null,
+        origin: "current",
       });
       continue;
     }
@@ -286,15 +294,68 @@ function buildViewerState(
       items.push(toStudyQueueItem(info));
     }
 
+    sessionKnownItemByKanji.set(char, toStudyQueueItem(info));
+
     selector.push({
       label: char,
       kind: "kanji",
       exists: true,
       itemIndex: index,
+      origin: "current",
+    });
+  }
+
+  const currentRunKanji = new Set(selector.filter((entry) => entry.kind === "kanji").map((entry) => entry.label));
+  for (const char of sessionKanjiOrder) {
+    if (currentRunKanji.has(char)) {
+      continue;
+    }
+
+    const knownItem = sessionKnownItemByKanji.get(char);
+    if (!knownItem) {
+      selector.push({
+        label: char,
+        kind: "kanji",
+        exists: false,
+        itemIndex: null,
+        origin: "session",
+      });
+      continue;
+    }
+
+    const key = `k:${char}`;
+    let index = indexByKey.get(key);
+    if (index === undefined) {
+      index = items.length;
+      indexByKey.set(key, index);
+      items.push(knownItem);
+    }
+
+    selector.push({
+      label: char,
+      kind: "kanji",
+      exists: true,
+      itemIndex: index,
+      origin: "session",
     });
   }
 
   return { items, selector };
+}
+
+function rememberSessionKanji(char: string): void {
+  const existingIndex = sessionKanjiOrder.indexOf(char);
+  if (existingIndex >= 0) {
+    sessionKanjiOrder.splice(existingIndex, 1);
+  }
+  sessionKanjiOrder.push(char);
+
+  if (sessionKanjiOrder.length > MAX_SESSION_KANJI) {
+    const removed = sessionKanjiOrder.shift();
+    if (removed) {
+      sessionKnownItemByKanji.delete(removed);
+    }
+  }
 }
 
 function toStudyQueueItem(item: LookupGlyphItem): StudyQueueItem {
