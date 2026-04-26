@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import jlptReadings from "@/data/jlptReadings.json";
-import kanjiLevels from "@/data/kanjiLevels.json";
 import type { NewsArticleBlock } from "@/lib/news/newsTypes";
 
 import { openNewsGlyphRun } from "./newsGlyphRunner";
@@ -23,7 +22,6 @@ type KanjiEntry = {
 };
 
 type JlptRecord = Record<string, { nLevel?: number }>;
-type GradeRecord = Record<string, { schoolGrade?: number | null }>;
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 
@@ -34,6 +32,7 @@ export function countUniqueArticleKanji(blocks: NewsArticleBlock[]): number {
 export default function NewsKanjiOverviewPanel({ blocks }: Props) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [resolvedWkLevels, setResolvedWkLevels] = useState<Record<string, number | null>>({});
+  const [resolvedGrades, setResolvedGrades] = useState<Record<string, number | null>>({});
 
   const orderedChars = useMemo(() => extractArticleKanji(blocks), [blocks]);
   const charsKey = useMemo(() => orderedChars.join(""), [orderedChars]);
@@ -53,9 +52,8 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
       return;
     }
 
-    const cached = buildWkLevelByChar();
     const unresolved = orderedChars.filter(
-      (char) => !cached.has(char) && !(char in resolvedWkLevels),
+      (char) => !(char in resolvedWkLevels) || !(char in resolvedGrades),
     );
     if (unresolved.length === 0) {
       return;
@@ -69,13 +67,18 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
     })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as
-          | { levels?: Record<string, number | null> }
+          | { levels?: Record<string, number | null>; grades?: Record<string, number | null> }
           | null;
-        if (!response.ok || !payload?.levels || cancelled) {
+        if (!response.ok || cancelled) {
           return;
         }
 
-        setResolvedWkLevels((prev) => ({ ...prev, ...payload.levels }));
+        if (payload?.levels) {
+          setResolvedWkLevels((prev) => ({ ...prev, ...payload.levels }));
+        }
+        if (payload?.grades) {
+          setResolvedGrades((prev) => ({ ...prev, ...payload.grades }));
+        }
       })
       .catch(() => {
         // Keep panel functional even if this enrichment request fails.
@@ -84,12 +87,11 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [charsKey, orderedChars, refreshKey, resolvedWkLevels]);
+  }, [charsKey, orderedChars, refreshKey, resolvedGrades, resolvedWkLevels]);
 
   const entries = useMemo(() => {
     const wkByChar = buildWkLevelByChar();
     const jlptByChar = jlptReadings as JlptRecord;
-    const gradeByChar = kanjiLevels as GradeRecord;
 
     return orderedChars.map((char) => ({
       char,
@@ -98,12 +100,9 @@ export default function NewsKanjiOverviewPanel({ blocks }: Props) {
           ? (jlptByChar[char]?.nLevel as number)
           : null,
       wkLevel: wkByChar.get(char) ?? resolvedWkLevels[char] ?? null,
-      schoolGrade:
-        typeof gradeByChar[char]?.schoolGrade === "number"
-          ? (gradeByChar[char]?.schoolGrade as number)
-          : null,
+      schoolGrade: resolvedGrades[char] ?? null,
     }));
-  }, [orderedChars, refreshKey, resolvedWkLevels]);
+  }, [orderedChars, refreshKey, resolvedGrades, resolvedWkLevels]);
 
   if (entries.length === 0) {
     return null;

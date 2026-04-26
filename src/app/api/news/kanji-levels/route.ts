@@ -57,7 +57,20 @@ export async function POST(request: Request) {
 
     const levels = await lookupKanjiLevelsByChars(chars, token);
 
-    return NextResponse.json({ levels }, { status: 200 });
+    const jlptRows = await prisma.jlptKanji.findMany({
+      where: { kanji: { in: chars } },
+      select: { kanji: true, schoolGrade: true },
+    });
+
+    const grades: Record<string, number | null> = {};
+    for (const char of chars) {
+      grades[char] = null;
+    }
+    for (const row of jlptRows) {
+      grades[row.kanji] = typeof row.schoolGrade === "number" ? row.schoolGrade : null;
+    }
+
+    return NextResponse.json({ levels, grades }, { status: 200 });
   } catch (error) {
     console.error("[news/kanji-levels] failed", error);
     return NextResponse.json({ error: "Lookup failed." }, { status: 500 });
