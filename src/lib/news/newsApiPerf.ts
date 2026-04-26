@@ -1,6 +1,12 @@
 type PerfMeta = Record<string, number | string | boolean | null | undefined>;
 
-const PERF_FLAG = process.env.NEWS_API_PERF_LOG === "1";
+function isPerfEnabled(): boolean {
+  if (typeof process === "undefined") {
+    return false;
+  }
+
+  return process.env?.NEWS_API_PERF_LOG === "1";
+}
 
 export function logNewsApiPerf(
   route: string,
@@ -8,7 +14,7 @@ export function logNewsApiPerf(
   status: number,
   meta?: PerfMeta,
 ): void {
-  if (!PERF_FLAG) {
+  if (!isPerfEnabled()) {
     return;
   }
 
