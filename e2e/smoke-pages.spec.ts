@@ -103,6 +103,13 @@ test("home page loads", async ({ browser, baseURL }) => {
   });
 });
 
+test("news reader page loads", async ({ browser, baseURL }) => {
+  const url = `${baseURL}/news`;
+  await assertPageLoads(browser, url, async (page) => {
+    await expect(page.getByRole("heading", { name: "News Reader" })).toBeVisible();
+  });
+});
+
 test("user drilldown tabs load", async ({ browser, baseURL }) => {
   for (const user of smokeUsers) {
     for (const tab of tabs) {
