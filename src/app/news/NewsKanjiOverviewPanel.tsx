@@ -220,7 +220,7 @@ function GroupColumn({
               {group.entries.map((entry) => (
                 <div key={`${group.label}-${entry.char}`} className="relative inline-flex">
                   {entry.occurrenceCount > 1 ? (
-                    <span className="pointer-events-none absolute -right-1 -top-1 z-10 min-w-4 -translate-y-1/2 translate-x-1/2 rounded-full border border-line bg-surface px-1 py-0.5 text-center text-[9px] font-bold leading-none text-foreground/75 shadow-sm">
+                    <span className="pointer-events-none absolute right-0 top-0 z-10 min-w-4 -translate-y-1/3 translate-x-1/3 rounded-full border border-line bg-surface px-1 py-0.5 text-center text-[9px] font-bold leading-none text-foreground/75 shadow-sm">
                       {entry.occurrenceCount}
                     </span>
                   ) : null}
