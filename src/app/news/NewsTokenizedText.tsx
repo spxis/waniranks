@@ -96,7 +96,7 @@ export default function NewsTokenizedText({ text, emphasizeKanji }: Props) {
             {isLoading ? (
               <span
                 aria-hidden="true"
-                className="ml-1 inline-block h-3 w-3 animate-spin rounded-full border-2 border-accent/35 border-t-accent"
+                className="pointer-events-none absolute -right-2 -top-1 h-3 w-3 animate-spin rounded-full border-2 border-accent/35 border-t-accent"
               />
             ) : null}
           </button>
