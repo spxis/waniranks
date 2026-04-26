@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-export const ADMIN_SESSION_COOKIE_NAME = "waniranks_admin_session";
+export const ADMIN_SESSION_COOKIE_NAME = "umakuma_admin_session";
 export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 function getSessionSecret(): string {

@@ -1,8 +1,8 @@
-# WaniRanks Architecture
+# UmaKuma Architecture
 
 ## Overview
 
-WaniRanks is a Next.js App Router application with:
+UmaKuma is a Next.js App Router application with:
 
 - Public leaderboard page at `/`
 - Private admin page at `/admin`

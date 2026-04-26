@@ -150,7 +150,7 @@ export function useStudyReviewSubmission({
             kind: "error",
             message: submitError instanceof Error ? submitError.message : "Could not submit review.",
           });
-          console.error("[WaniRanks] Review submission failed for assignment", assignmentId, submitError);
+          console.error("[UmaKuma] Review submission failed for assignment", assignmentId, submitError);
         });
     },
     [

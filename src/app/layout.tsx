@@ -28,7 +28,7 @@ const jpSerif = Noto_Serif_JP({
 });
 
 export const metadata: Metadata = {
-  title: "WaniRanks",
+  title: "UmaKuma",
   description: "Family WaniKani leaderboard",
 };
 

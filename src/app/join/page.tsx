@@ -93,7 +93,7 @@ export default function JoinPage() {
 
         <section className="animate-enter rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] backdrop-blur sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Open signup</p>
-          <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">Join WaniRanks</h1>
+          <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">Join UmaKuma</h1>
           <p className="mt-3 text-sm text-slate-700 sm:text-base">
             First choose how to access your account. Invite code works without Google.
           </p>

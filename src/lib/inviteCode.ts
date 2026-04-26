@@ -4,7 +4,7 @@ const INVITE_CODE_LENGTH = 6;
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function getInviteCodeSecret(): string {
-  return process.env.INVITE_CODE_SECRET ?? process.env.AUTH_SECRET ?? "waniranks-invite-code-fallback";
+  return process.env.INVITE_CODE_SECRET ?? process.env.AUTH_SECRET ?? "umakuma-invite-code-fallback";
 }
 
 export function normalizeInviteCode(input: string): string {

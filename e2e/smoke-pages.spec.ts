@@ -99,7 +99,7 @@ test.beforeAll(async ({ request }) => {
 test("home page loads", async ({ browser, baseURL }) => {
   const url = `${baseURL}/`;
   await assertPageLoads(browser, url, async (page) => {
-    await expect(page.locator("body")).toContainText("WaniRanks");
+    await expect(page.locator("body")).toContainText("UmaKuma");
   });
 });
 

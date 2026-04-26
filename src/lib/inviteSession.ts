@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-export const INVITE_SESSION_COOKIE_NAME = "waniranks_invite_session";
+export const INVITE_SESSION_COOKIE_NAME = "umakuma_invite_session";
 export const INVITE_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 type InviteSessionPayload = {

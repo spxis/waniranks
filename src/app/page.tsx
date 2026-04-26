@@ -192,7 +192,7 @@ export default async function Home() {
                 Family Statboard
               </p>
               <h1 className="mt-2 text-4xl leading-[0.9] text-foreground sm:text-6xl lg:text-7xl">
-                WaniRanks
+                UmaKuma
               </h1>
               <p className="mt-4 max-w-2xl text-base text-foreground/75 sm:text-lg">
                 Live level race for your household. Keep it competitive, track progress,

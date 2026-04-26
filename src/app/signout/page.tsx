@@ -42,7 +42,7 @@ export default async function SignOutPage({ searchParams }: PageProps) {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Session</p>
           <h1 className="mt-2 text-4xl leading-[0.95] text-foreground sm:text-5xl">Sign out</h1>
           <p className="mt-3 text-sm text-slate-700 sm:text-base">
-            This will end your Google session for WaniRanks{clearAdmin ? " and clear remembered admin access on this device" : ""}.
+            This will end your Google session for UmaKuma{clearAdmin ? " and clear remembered admin access on this device" : ""}.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-2">

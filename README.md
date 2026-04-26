@@ -1,4 +1,4 @@
-WaniRanks is a family WaniKani leaderboard app.
+UmaKuma is a family WaniKani leaderboard app.
 
 - Public page: everyone can view rankings.
 - Admin page: only you can add/update account tokens.
@@ -71,7 +71,7 @@ git push origin main
 2. Confirm deployment started/completed in Vercel CLI.
 
 ```bash
-vercel list waniranks
+vercel list umakuma
 vercel inspect <latest-deployment-url>
 ```
 
@@ -79,7 +79,7 @@ vercel inspect <latest-deployment-url>
 
 Primary alias:
 
-- `https://waniranks.vercel.app`
+- `https://umakuma.vercel.app`
 
 ### Important GitHub Scope Note
 
@@ -121,7 +121,7 @@ Admin access is Google OAuth allowlist only.
 
 1. Create OAuth Client credentials in Google Cloud Console.
 2. Add authorized redirect URI:
-	- `https://waniranks.vercel.app/api/auth/callback/google`
+	- `https://umakuma.vercel.app/api/auth/callback/google`
 3. Set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET`, and `ADMIN_GOOGLE_ALLOWED_EMAILS` in Vercel.
 4. Open `/admin` and click `Sign in with Google`.
 
