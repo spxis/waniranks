@@ -2,6 +2,7 @@
 
 import { formatRelativeFromNow } from "@/lib/timeFormat";
 
+import { newsGlyphButtonClass } from "./newsGlyphBoxStyle";
 import type { NewsKanjiHistoryEntry } from "./newsKanjiHistory";
 
 type Props = {
@@ -10,6 +11,21 @@ type Props = {
   onRemove: (run: string) => void;
   onClear: () => void;
 };
+
+const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+
+function uniqueKanji(run: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const char of Array.from(run)) {
+    if (!KANJI_REGEX.test(char) || seen.has(char)) {
+      continue;
+    }
+    seen.add(char);
+    out.push(char);
+  }
+  return out;
+}
 
 export default function NewsKanjiHistoryPanel({
   entries,
@@ -43,12 +59,35 @@ export default function NewsKanjiHistoryPanel({
       <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {entries.map((entry) => (
           <li key={entry.run} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-muted">
-            <button type="button" onClick={() => onSelect(entry.run)} className="flex-1 text-left">
-              <p className="line-clamp-1 text-xl font-bold text-foreground">{entry.run}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {entry.hasVocabulary ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelect(entry.run)}
+                    className={newsGlyphButtonClass({ type: "vocabulary", size: "normal" })}
+                    title={`Open vocabulary ${entry.run}`}
+                  >
+                    {entry.run}
+                  </button>
+                ) : null}
+
+                {uniqueKanji(entry.run).map((char) => (
+                  <button
+                    key={`${entry.run}-${char}`}
+                    type="button"
+                    onClick={() => onSelect(char)}
+                    className={newsGlyphButtonClass({ type: "kanji", size: "compact" })}
+                    title={`Open kanji ${char}`}
+                  >
+                    {char}
+                  </button>
+                ))}
+              </div>
               <p className="mt-0.5 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-foreground/55">
                 {entry.hasVocabulary ? "vocab" : "kanji only"} · {entry.knownCount}/{entry.totalCount} known · {entry.clickCount} clicks · {formatRelativeFromNow(entry.lastClickedAt)}
               </p>
-            </button>
+            </div>
             <button
               type="button"
               onClick={() => onRemove(entry.run)}
