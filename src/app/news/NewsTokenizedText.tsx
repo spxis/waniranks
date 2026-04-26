@@ -28,7 +28,7 @@ type Props = {
 };
 
 const pageSessionSeenGlyphs = new Set<string>();
-type JlptRecord = Record<string, { nLevel?: number; readings?: string[] }>;
+type JlptRecord = Record<string, { nLevel?: number }>;
 
 export default function NewsTokenizedText({ text, emphasizeKanji, kanjiDowngrade }: Props) {
   const segments = tokenizeJapanese(text);
@@ -245,11 +245,7 @@ function downgradeKanjiChar(char: string, threshold: number): string {
     return char;
   }
 
-  const fallback = sanitizeKanaReading(jlptByChar[char]?.readings?.[0] ?? "");
-  return fallback.length > 0 ? fallback : "・";
-}
-
-function sanitizeKanaReading(value: string): string {
-  return value.replace(/\./g, "").replace(/[^ぁ-んァ-ンー]/g, "");
+  // A single neutral mask avoids showing incorrect out-of-context readings.
+  return "・";
 }
 
