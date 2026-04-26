@@ -30,55 +30,43 @@ export default function ExplorerTabs({
   const previousPageKeyRef = useRef<string | null>(null);
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
+  const [isHydrated, setIsHydrated] = useState(false);
   const [dashboardTab, setDashboardTab] = useState<string>("main");
-  const [studyMode, setStudyMode] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.localStorage.getItem("wr:study-mode") === "1";
-  });
-  const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">(() => {
-    if (typeof window === "undefined") {
-      return "study";
-    }
-
-    const raw = new URLSearchParams(window.location.search).get("tab");
-    if (raw === "jlpt") return "jlpt";
-    if (raw === "level") return "level";
-    return "study";
-  });
-  const [showEnglish, setShowEnglish] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    try {
-      return window.localStorage.getItem(showEnglishStorageKey) === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [studyMode, setStudyMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">("study");
+  const [showEnglish, setShowEnglish] = useState(false);
   const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
-  const [queueMode, setQueueMode] = useState<"review" | "lesson">(() => {
+  const [queueMode, setQueueMode] = useState<"review" | "lesson">("review");
+  const [initialViewerMode, setInitialViewerMode] = useState<"detail" | "flash" | null>(null);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
-      return "review";
+      return;
     }
 
-    const urlMode = new URLSearchParams(window.location.search).get("mode");
-    if (urlMode === "review" || urlMode === "lesson") return urlMode;
-    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === "lesson"
-      ? "lesson"
-      : "review";
-  });
-  const initialViewerMode = (() => {
-    if (typeof window === "undefined") {
-      return null;
+    const params = new URLSearchParams(window.location.search);
+    const rawTab = params.get("tab");
+    const tab = rawTab === "jlpt" ? "jlpt" : rawTab === "level" ? "level" : "study";
+    setActiveTab(tab);
+
+    const urlMode = params.get("mode");
+    if (urlMode === "review" || urlMode === "lesson") {
+      setQueueMode(urlMode);
+    } else {
+      setQueueMode(
+        window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === "lesson"
+          ? "lesson"
+          : "review",
+      );
     }
 
-    const viewer = new URLSearchParams(window.location.search).get("viewer");
-    return viewer === "detail" || viewer === "flash" ? viewer : null;
-  })();
+    setStudyMode(window.localStorage.getItem("wr:study-mode") === "1");
+    setShowEnglish(window.localStorage.getItem(showEnglishStorageKey) === "1");
+
+    const viewer = params.get("viewer");
+    setInitialViewerMode(viewer === "detail" || viewer === "flash" ? viewer : null);
+    setIsHydrated(true);
+  }, [accountId, showEnglishStorageKey]);
 
   const { data: fetchedStudyCounts } = useSWR<{ reviews: number; lessons: number }>(
     `/api/study/${accountId}/counts`,
@@ -163,7 +151,7 @@ export default function ExplorerTabs({
   }, [accountId, countsStorageKey]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -172,10 +160,10 @@ export default function ExplorerTabs({
     } catch {
       // Ignore storage errors in restricted browsing modes.
     }
-  }, [studyMode]);
+  }, [isHydrated, studyMode]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -184,10 +172,10 @@ export default function ExplorerTabs({
     } catch {
       // Ignore storage errors in restricted browsing modes.
     }
-  }, [accountId, queueMode]);
+  }, [accountId, isHydrated, queueMode]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -208,10 +196,10 @@ export default function ExplorerTabs({
       const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
       window.history.replaceState(null, "", next);
     }
-  }, [activeTab, queueMode]);
+  }, [activeTab, isHydrated, queueMode]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -229,10 +217,10 @@ export default function ExplorerTabs({
       );
       previousPageKeyRef.current = pageKey;
     }
-  }, [activeTab, queueMode]);
+  }, [activeTab, isHydrated, queueMode]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -241,10 +229,10 @@ export default function ExplorerTabs({
     } catch {
       // Ignore storage errors in restricted browsing modes.
     }
-  }, [showEnglish, showEnglishStorageKey]);
+  }, [isHydrated, showEnglish, showEnglishStorageKey]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -259,10 +247,10 @@ export default function ExplorerTabs({
     return () => {
       window.removeEventListener("popstate", onPopState);
     };
-  }, []);
+  }, [isHydrated]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isHydrated || typeof window === "undefined") {
       return;
     }
 
@@ -277,7 +265,7 @@ export default function ExplorerTabs({
         detail: { query, scope: activeTab },
       }),
     );
-  }, [activeTab]);
+  }, [activeTab, isHydrated]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

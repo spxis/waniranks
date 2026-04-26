@@ -70,7 +70,9 @@ async function assertPageLoads(
   });
 
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(3_000);
+  await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {
+    // Some pages keep lightweight polling alive; proceed with assertions.
+  });
 
   await expect(page.getByText("This page couldn't load")).toHaveCount(0);
   await expect(page.getByText("Internal Server Error")).toHaveCount(0);
@@ -116,7 +118,10 @@ test("user drilldown tabs load", async ({ browser, baseURL }) => {
       const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=${tab.key}#explorer`;
       await assertPageLoads(browser, url, async (page) => {
         await expect(page.locator("h1")).toContainText(/.+/);
-        await expect(page.getByRole("tab", { name: tab.label })).toHaveAttribute("aria-selected", "true");
+        const explorerTabs = page.getByRole("tablist", { name: "Explorer tabs" });
+        await expect(
+          explorerTabs.getByRole("tab", { name: tab.label, exact: true }),
+        ).toHaveAttribute("aria-selected", "true");
       });
     }
   }
