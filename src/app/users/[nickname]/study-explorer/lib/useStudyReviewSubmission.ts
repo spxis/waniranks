@@ -94,7 +94,15 @@ export function useStudyReviewSubmission({
     async (assignmentId: number, result: "correct" | "wrong") => {
       const { itemForSubmit, nextFocusedItem } = getSubmissionContext(assignmentId);
 
-      onSetReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: result }));
+      onSetSubmitInFlight({
+        assignmentId,
+        result,
+        itemLabel: itemForSubmit
+          ? `${itemForSubmit.characters} (${studyItemEnglishTitle(itemForSubmit)})`
+          : "item",
+      });
+      onSetSubmittingByAssignmentId((prev) => new Set(prev).add(assignmentId));
+
       if (itemForSubmit) {
         onSetModalSessionItemByAssignmentId((prev) => ({ ...prev, [assignmentId]: itemForSubmit }));
       }
@@ -139,6 +147,8 @@ export function useStudyReviewSubmission({
           window.setTimeout(resolve, POST_SUBMIT_DELAY_MS);
         });
 
+        onSetReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: result }));
+
         onSetHiddenSubmittedAssignmentIds((prev) => {
           const next = new Set(prev);
           next.add(assignmentId);
@@ -177,6 +187,13 @@ export function useStudyReviewSubmission({
           message: submitError instanceof Error ? submitError.message : "Could not submit review.",
         });
         console.error("[UmaKuma] Review submission failed for assignment", assignmentId, submitError);
+      } finally {
+        onSetSubmittingByAssignmentId((prev) => {
+          const next = new Set(prev);
+          next.delete(assignmentId);
+          return next;
+        });
+        onSetSubmitInFlight(null);
       }
     },
     [
