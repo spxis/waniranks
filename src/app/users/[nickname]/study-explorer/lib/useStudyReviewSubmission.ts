@@ -10,6 +10,8 @@ import type {
 } from "./studyExplorerTypes";
 import { studyItemEnglishTitle } from "./studyExplorerUtils";
 
+const POST_SUBMIT_DELAY_MS = 500;
+
 type Args = {
   accountId: string;
   modalItems: StudyQueueItem[];
@@ -91,78 +93,73 @@ export function useStudyReviewSubmission({
     async (assignmentId: number, result: "correct" | "wrong") => {
       const { itemForSubmit, nextFocusedItem } = getSubmissionContext(assignmentId);
 
-      // Optimistic: update UI immediately before the network call
+      onSetReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: result }));
       if (itemForSubmit) {
         onSetModalSessionItemByAssignmentId((prev) => ({ ...prev, [assignmentId]: itemForSubmit }));
       }
 
-      onSetReviewOutcomeByAssignmentId((prev) => ({ ...prev, [assignmentId]: result }));
-      onSetHiddenSubmittedAssignmentIds((prev) => {
-        const next = new Set(prev);
-        next.add(assignmentId);
-        return next;
-      });
-      onSetLoadedItems((prev) => prev.filter((item) => item.assignmentId !== assignmentId));
-      onSetTotalItems((prev) => Math.max(0, prev - 1));
-      onSetPersistedCounts((prev) =>
-        prev
-          ? { ...prev, reviews: Math.max(0, prev.reviews - 1), all: Math.max(0, prev.all - 1) }
-          : prev,
-      );
-      onSetHasPendingStudySubmissions(true);
-      onSetSelectedId(nextFocusedItem?.subjectId ?? null);
-      onSetRevealedAssignmentIds((prev) => {
-        const next = new Set(prev);
-        next.delete(assignmentId);
-        return next;
-      });
-      removeFromModalSession(assignmentId);
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("wr:study-review-submitted", {
-            detail: { accountId, subjectId: itemForSubmit?.subjectId },
-          }),
-        );
-      }
-
-      // Fire network call in background — don't block UI
-      fetch(`/api/study/${accountId}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assignmentId, result }),
-      })
-        .then(async (response) => {
-          const payload = (await response.json()) as {
-            error?: string;
-            review?: ReviewSrsTransition;
-          };
-
-          if (!response.ok) {
-            throw new Error(payload.error ?? "Could not submit review.");
-          }
-
-          if (payload.review && (payload.review.transition === "promoted" || payload.review.transition === "demoted")) {
-            onSetLatestReviewTransition(payload.review);
-          }
-        })
-        .catch((submitError: unknown) => {
-          // Rollback optimistic removal so the item reappears
-          onSetHiddenSubmittedAssignmentIds((prev) => {
-            const next = new Set(prev);
-            next.delete(assignmentId);
-            return next;
-          });
-          onSetReviewOutcomeByAssignmentId((prev) => {
-            const { [assignmentId]: _, ...rest } = prev;
-            return rest;
-          });
-          onSetSubmitFeedback({
-            kind: "error",
-            message: submitError instanceof Error ? submitError.message : "Could not submit review.",
-          });
-          console.error("[UmaKuma] Review submission failed for assignment", assignmentId, submitError);
+      try {
+        const response = await fetch(`/api/study/${accountId}/review`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assignmentId, result }),
         });
+        const payload = (await response.json()) as {
+          error?: string;
+          review?: ReviewSrsTransition;
+        };
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Could not submit review.");
+        }
+
+        if (payload.review && (payload.review.transition === "promoted" || payload.review.transition === "demoted")) {
+          onSetLatestReviewTransition(payload.review);
+        }
+
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, POST_SUBMIT_DELAY_MS);
+        });
+
+        onSetHiddenSubmittedAssignmentIds((prev) => {
+          const next = new Set(prev);
+          next.add(assignmentId);
+          return next;
+        });
+        onSetLoadedItems((prev) => prev.filter((item) => item.assignmentId !== assignmentId));
+        onSetTotalItems((prev) => Math.max(0, prev - 1));
+        onSetPersistedCounts((prev) =>
+          prev
+            ? { ...prev, reviews: Math.max(0, prev.reviews - 1), all: Math.max(0, prev.all - 1) }
+            : prev,
+        );
+        onSetHasPendingStudySubmissions(true);
+        onSetSelectedId(nextFocusedItem?.subjectId ?? null);
+        onSetRevealedAssignmentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(assignmentId);
+          return next;
+        });
+        removeFromModalSession(assignmentId);
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("wr:study-review-submitted", {
+              detail: { accountId, subjectId: itemForSubmit?.subjectId },
+            }),
+          );
+        }
+      } catch (submitError: unknown) {
+        onSetReviewOutcomeByAssignmentId((prev) => {
+          const { [assignmentId]: _, ...rest } = prev;
+          return rest;
+        });
+        onSetSubmitFeedback({
+          kind: "error",
+          message: submitError instanceof Error ? submitError.message : "Could not submit review.",
+        });
+        console.error("[UmaKuma] Review submission failed for assignment", assignmentId, submitError);
+      }
     },
     [
       accountId,
