@@ -140,6 +140,42 @@ input[type="reset"] {
   animation: score-flash 350ms ease-out;
 }
 
+@keyframes srs-shift-positive {
+  0% {
+    background: rgba(16, 185, 129, 0);
+  }
+
+  28% {
+    background: rgba(16, 185, 129, 0.28);
+  }
+
+  100% {
+    background: rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes srs-shift-negative {
+  0% {
+    background: rgba(239, 68, 68, 0);
+  }
+
+  28% {
+    background: rgba(239, 68, 68, 0.28);
+  }
+
+  100% {
+    background: rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-srs-shift-positive {
+  animation: srs-shift-positive 850ms ease-out both;
+}
+
+.animate-srs-shift-negative {
+  animation: srs-shift-negative 850ms ease-out both;
+}
+
 button,
 [role="button"],
 .subject-pill,

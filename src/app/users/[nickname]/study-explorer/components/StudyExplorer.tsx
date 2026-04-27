@@ -11,6 +11,7 @@ import type {
   StudyCounts,
   StudyExplorerProps,
   StudyQueueItem,
+  ReviewSrsTransition,
   StudySrsFilter,
   StudyTypeFilter,
   SubmitFeedback,
@@ -81,6 +82,7 @@ export default function StudyExplorer({
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
   const [revealedAssignmentIds, setRevealedAssignmentIds] = useState<Set<number>>(new Set());
   const [submitFeedback, setSubmitFeedback] = useState<SubmitFeedback | null>(null);
+  const [latestReviewTransition, setLatestReviewTransition] = useState<ReviewSrsTransition | null>(null);
   const [submitInFlight, setSubmitInFlight] = useState<SubmitInFlight | null>(null);
   const [reviewOutcomeByAssignmentId, setReviewOutcomeByAssignmentId] = useState<Record<number, ReviewOutcome>>({});
   const [modalSessionOrderByAssignmentId, setModalSessionOrderByAssignmentId] = useState<number[] | null>(null);
@@ -401,6 +403,7 @@ export default function StudyExplorer({
     onSetTotalItems: setTotalItems,
     onSetPersistedCounts: setPersistedCounts,
     onSetSubmitFeedback: setSubmitFeedback,
+    onSetLatestReviewTransition: setLatestReviewTransition,
     onSetSubmitInFlight: setSubmitInFlight,
     onSetSubmittingByAssignmentId: setSubmittingByAssignmentId,
     onSetRevealedAssignmentIds: setRevealedAssignmentIds,
@@ -468,6 +471,7 @@ export default function StudyExplorer({
         isSubmittingSelected={isSubmittingSelected}
         submitInFlight={submitInFlight}
         submitFeedback={submitFeedback}
+        latestReviewTransition={latestReviewTransition}
         reviewOutcomeByAssignmentId={reviewOutcomeByAssignmentId}
         onSetReviewOutcomeByAssignmentId={setReviewOutcomeByAssignmentId}
         onSetSelectedId={setSelectedId}

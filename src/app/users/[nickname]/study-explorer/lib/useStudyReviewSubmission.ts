@@ -4,6 +4,7 @@ import type {
   ReviewOutcome,
   StudyCounts,
   StudyQueueItem,
+  ReviewSrsTransition,
   SubmitFeedback,
   SubmitInFlight,
 } from "./studyExplorerTypes";
@@ -19,6 +20,7 @@ type Args = {
   onSetTotalItems: React.Dispatch<React.SetStateAction<number>>;
   onSetPersistedCounts: React.Dispatch<React.SetStateAction<StudyCounts | null>>;
   onSetSubmitFeedback: React.Dispatch<React.SetStateAction<SubmitFeedback | null>>;
+  onSetLatestReviewTransition: React.Dispatch<React.SetStateAction<ReviewSrsTransition | null>>;
   onSetSubmitInFlight: React.Dispatch<React.SetStateAction<SubmitInFlight | null>>;
   onSetSubmittingByAssignmentId: React.Dispatch<React.SetStateAction<Set<number>>>;
   onSetRevealedAssignmentIds: React.Dispatch<React.SetStateAction<Set<number>>>;
@@ -40,6 +42,7 @@ export function useStudyReviewSubmission({
   onSetTotalItems,
   onSetPersistedCounts,
   onSetSubmitFeedback,
+  onSetLatestReviewTransition,
   onSetSubmitInFlight,
   onSetSubmittingByAssignmentId,
   onSetRevealedAssignmentIds,
@@ -130,9 +133,17 @@ export function useStudyReviewSubmission({
         body: JSON.stringify({ assignmentId, result }),
       })
         .then(async (response) => {
+          const payload = (await response.json()) as {
+            error?: string;
+            review?: ReviewSrsTransition;
+          };
+
           if (!response.ok) {
-            const payload = (await response.json()) as { error?: string };
             throw new Error(payload.error ?? "Could not submit review.");
+          }
+
+          if (payload.review && (payload.review.transition === "promoted" || payload.review.transition === "demoted")) {
+            onSetLatestReviewTransition(payload.review);
           }
         })
         .catch((submitError: unknown) => {
@@ -165,6 +176,7 @@ export function useStudyReviewSubmission({
       onSetReviewOutcomeByAssignmentId,
       onSetSelectedId,
       onSetSubmitFeedback,
+      onSetLatestReviewTransition,
       onSetSubmitInFlight,
       onSetSubmittingByAssignmentId,
       onSetTotalItems,

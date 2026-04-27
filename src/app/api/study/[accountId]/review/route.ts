@@ -6,6 +6,7 @@ import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { recordStudyReviewAttempt, recordSubmissionSnapshot } from "@/lib/studyHistory";
 import { clearStudyQueueCache } from "@/lib/studyQueueCache";
+import { srsLabel } from "@/lib/wanikani/helpers";
 import { postWaniKani } from "@/lib/wanikani/http";
 
 type RouteContext = {
@@ -20,11 +21,15 @@ const reviewSchema = z.object({
 type ReviewSubmissionResponse = {
   data?: {
     subject_id?: number;
+    starting_srs_stage?: number;
+    ending_srs_stage?: number;
   };
   resources_updated?: {
     assignment?: {
       data?: {
+        subject_id?: number;
         subject_type?: string;
+        srs_stage?: number;
       };
     };
     review_statistic?: {
@@ -44,6 +49,56 @@ type ReviewSubmissionResponse = {
     };
   };
 };
+
+type ReviewSrsGrouping = "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+
+function toStageOrNull(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  const stage = Math.trunc(value);
+  return stage >= 0 ? stage : null;
+}
+
+function toGrouping(stage: number | null): ReviewSrsGrouping | null {
+  if (stage === null) {
+    return null;
+  }
+
+  return srsLabel(stage, stage <= 0);
+}
+
+function transitionDirection(params: {
+  previousGrouping: ReviewSrsGrouping | null;
+  newGrouping: ReviewSrsGrouping | null;
+}): "promoted" | "demoted" | "unchanged" | "unknown" {
+  const { previousGrouping, newGrouping } = params;
+  if (!previousGrouping || !newGrouping) {
+    return "unknown";
+  }
+
+  if (previousGrouping === newGrouping) {
+    return "unchanged";
+  }
+
+  const groupingOrder: ReviewSrsGrouping[] = [
+    "locked",
+    "apprentice",
+    "guru",
+    "master",
+    "enlightened",
+    "burned",
+  ];
+  const previousIndex = groupingOrder.indexOf(previousGrouping);
+  const nextIndex = groupingOrder.indexOf(newGrouping);
+
+  if (previousIndex < 0 || nextIndex < 0) {
+    return "unknown";
+  }
+
+  return nextIndex > previousIndex ? "promoted" : "demoted";
+}
 
 export async function POST(request: Request, context: RouteContext) {
   try {
@@ -135,9 +190,32 @@ export async function POST(request: Request, context: RouteContext) {
       console.error("Failed to persist local study history", historyError);
     });
 
+    const previousSrsStage = toStageOrNull(submissionResponse?.data?.starting_srs_stage);
+    const newSrsStage =
+      toStageOrNull(submissionResponse?.data?.ending_srs_stage) ??
+      toStageOrNull(submissionResponse?.resources_updated?.assignment?.data?.srs_stage);
+    const previousGrouping = toGrouping(previousSrsStage);
+    const newGrouping = toGrouping(newSrsStage);
+    const transition = transitionDirection({ previousGrouping, newGrouping });
+
     clearStudyQueueCache(accountId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      review: {
+        assignmentId: parsed.data.assignmentId,
+        subjectId:
+          typeof subjectId === "number" && Number.isInteger(subjectId) && subjectId > 0
+            ? subjectId
+            : null,
+        subjectType,
+        previousSrsStage,
+        newSrsStage,
+        previousGrouping,
+        newGrouping,
+        transition,
+      },
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Could not submit review result." }, { status: 500 });

@@ -1,6 +1,7 @@
 import StudyReviewModal from "./StudyReviewModal";
 import type {
   ReviewOutcome,
+  ReviewSrsTransition,
   StudyQueueItem,
   SubmitFeedback,
   SubmitInFlight,
@@ -24,6 +25,7 @@ type Props = {
   isSubmittingSelected: boolean;
   submitInFlight: SubmitInFlight | null;
   submitFeedback: SubmitFeedback | null;
+  latestReviewTransition: ReviewSrsTransition | null;
   reviewOutcomeByAssignmentId: Record<number, ReviewOutcome>;
   onSetReviewOutcomeByAssignmentId: React.Dispatch<React.SetStateAction<Record<number, ReviewOutcome>>>;
   onSetSelectedId: React.Dispatch<React.SetStateAction<number | null>>;
@@ -53,6 +55,7 @@ export default function StudyExplorerModal({
   isSubmittingSelected,
   submitInFlight,
   submitFeedback,
+  latestReviewTransition,
   reviewOutcomeByAssignmentId,
   onSetReviewOutcomeByAssignmentId,
   onSetSelectedId,
@@ -84,6 +87,7 @@ export default function StudyExplorerModal({
       isSubmittingSelected={isSubmittingSelected}
       submitInFlight={submitInFlight}
       submitFeedback={submitFeedback}
+      latestReviewTransition={latestReviewTransition}
       reviewOutcomeByAssignmentId={reviewOutcomeByAssignmentId}
       onMarkSkipped={(assignmentId: number) => {
         onSetReviewOutcomeByAssignmentId((prev) => {

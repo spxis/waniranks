@@ -1,5 +1,6 @@
 import type {
   ReviewOutcome,
+  ReviewSrsTransition,
   StudyQueueItem,
   SubmitFeedback,
   SubmitInFlight,
@@ -29,6 +30,7 @@ export type StudyReviewModalProps = {
   isSubmittingSelected: boolean;
   submitInFlight: SubmitInFlight | null;
   submitFeedback: SubmitFeedback | null;
+  latestReviewTransition: ReviewSrsTransition | null;
   reviewOutcomeByAssignmentId: Record<number, ReviewOutcome>;
   onMarkSkipped: (assignmentId: number) => void;
   onClose: () => void;

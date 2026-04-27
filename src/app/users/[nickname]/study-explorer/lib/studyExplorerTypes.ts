@@ -48,6 +48,18 @@ export type SubmitFeedback = {
   message: string;
 };
 
+export type ReviewSrsGrouping = "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+
+export type ReviewSrsTransition = {
+  assignmentId: number;
+  subjectId: number | null;
+  previousSrsStage: number | null;
+  newSrsStage: number | null;
+  previousGrouping: ReviewSrsGrouping | null;
+  newGrouping: ReviewSrsGrouping | null;
+  transition: "promoted" | "demoted" | "unchanged" | "unknown";
+};
+
 export type SubmitInFlight = {
   assignmentId: number;
   result: "correct" | "wrong" | "start-lesson" | "reset-to-lessons";

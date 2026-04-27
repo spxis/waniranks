@@ -24,6 +24,7 @@ export default function StudyReviewModal({
   isSubmittingSelected,
   submitInFlight,
   submitFeedback,
+  latestReviewTransition,
   reviewOutcomeByAssignmentId,
   onMarkSkipped,
   onClose,
@@ -66,6 +67,11 @@ export default function StudyReviewModal({
 
   const [flashRevealKey, setFlashRevealKey] = useState<string | null>(null);
   const [flashCycleDoneKey, setFlashCycleDoneKey] = useState<string | null>(null);
+  const [visibleTransitionCue, setVisibleTransitionCue] = useState<{
+    assignmentId: number;
+    tone: "positive" | "negative";
+    message: string;
+  } | null>(null);
   const flashTouchStartRef = useRef<{ x: number; y: number; ts: number } | null>(null);
 
   const currentFlashKey = `${viewerMode}:${selectedItem?.assignmentId ?? "none"}`;
@@ -175,6 +181,46 @@ export default function StudyReviewModal({
       document.body.style.overscrollBehavior = overscrollBehavior;
     };
   }, [selectedItem]);
+
+  useEffect(() => {
+    if (!latestReviewTransition) {
+      return;
+    }
+
+    if (latestReviewTransition.transition !== "promoted" && latestReviewTransition.transition !== "demoted") {
+      return;
+    }
+
+    const toTitle = (value: string | null): string => {
+      if (!value) {
+        return "Unknown";
+      }
+      return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+    };
+
+    const nextGroupingLabel = toTitle(latestReviewTransition.newGrouping);
+    const nextStageLabel =
+      typeof latestReviewTransition.newSrsStage === "number"
+        ? ` (SRS ${latestReviewTransition.newSrsStage})`
+        : "";
+    const verb = latestReviewTransition.transition === "promoted" ? "Promoted" : "Dropped";
+
+    setVisibleTransitionCue({
+      assignmentId: latestReviewTransition.assignmentId,
+      tone: latestReviewTransition.transition === "promoted" ? "positive" : "negative",
+      message: `${verb} to ${nextGroupingLabel}${nextStageLabel}`,
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      setVisibleTransitionCue((current) =>
+        current?.assignmentId === latestReviewTransition.assignmentId ? null : current,
+      );
+    }, 900);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [latestReviewTransition]);
 
   useStudyReviewModalKeyboard({
     selectedItem,
@@ -339,6 +385,20 @@ export default function StudyReviewModal({
           onTouchStart={handleFlashTouchStart}
           onTouchEnd={handleFlashTouchEnd}
         >
+          {visibleTransitionCue ? (
+            <div
+              className={`pointer-events-none absolute inset-0 z-10 rounded-[1.25rem] ${
+                visibleTransitionCue.tone === "positive"
+                  ? "animate-srs-shift-positive"
+                  : "animate-srs-shift-negative"
+              }`}
+            >
+              <div className="absolute inset-x-0 top-4 mx-auto w-fit rounded-full border border-line bg-surface/92 px-4 py-1.5 text-xs font-black uppercase tracking-[0.08em] text-foreground shadow-[0_10px_24px_rgba(0,0,0,0.2)]">
+                {visibleTransitionCue.message}
+              </div>
+            </div>
+          ) : null}
+
           <StudyReviewModalSection
             accountId={accountId}
             studyMode={studyMode}
