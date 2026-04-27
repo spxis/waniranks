@@ -1,4 +1,4 @@
-import type { StudyQueueItem, SubmitInFlight } from "../lib/studyExplorerTypes";
+import type { StudyQueueItem } from "../lib/studyExplorerTypes";
 
 import type { RelatedReference } from "./StudyReviewModal.types";
 import LevelExplorerReviewStatsCard from "../../level-explorer/components/LevelExplorerReviewStatsCard";
@@ -22,7 +22,6 @@ type Props = {
   viewerMode: "detail" | "flash";
   selectedItem: StudyQueueItem;
   submitFeedback: { kind: "success" | "error"; message: string } | null;
-  submitInFlight: SubmitInFlight | null;
   isSubmittingSelected: boolean;
   detailsRevealed: boolean;
   useStudyFlashLayout: boolean;
@@ -60,7 +59,6 @@ export default function StudyReviewModalMetaPanels({
   viewerMode,
   selectedItem,
   submitFeedback,
-  submitInFlight,
   isSubmittingSelected,
   detailsRevealed,
   useStudyFlashLayout,
@@ -131,15 +129,6 @@ export default function StudyReviewModalMetaPanels({
   }
 
   const wordExamples = parseWordExamples(selectedItem.jlptMeta?.wordExamples);
-  const submitActionLabel =
-    submitInFlight?.result === "correct"
-      ? "CORRECT"
-      : submitInFlight?.result === "wrong"
-        ? "WRONG"
-        : submitInFlight?.result === "reset-to-lessons"
-          ? "RESET"
-        : "LESSON";
-
   return (
     <>
       {!suppressDetails && ((!studyMode && viewerMode === "flash") || useStudyFlashLayout ? null : detailsRevealed ? (
@@ -323,14 +312,15 @@ export default function StudyReviewModalMetaPanels({
       ) : null)}
 
       {selectedItem.queueType === "review" && studyMode && (!requiresReveal || isAnswerRevealed) && !useStudyFlashLayout && !isOutcomeFinal ? (
-        <div className="mt-auto grid w-full gap-2 pt-3">
+        <div className="relative mt-auto grid w-full gap-2 pt-3">
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => onSubmit(selectedItem.assignmentId, "wrong")}
+              disabled={isSubmittingSelected}
               aria-keyshortcuts="1"
               title="Wrong (Key: 1)"
-              className="min-h-[4.25rem] w-full rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-red-800"
+              className="min-h-[4.25rem] w-full rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-red-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="block">Wrong</span>
               <span className="mt-1 block text-xl leading-none">{wrong}</span>
@@ -338,9 +328,10 @@ export default function StudyReviewModalMetaPanels({
             <button
               type="button"
               onClick={() => onSubmit(selectedItem.assignmentId, "correct")}
+              disabled={isSubmittingSelected}
               aria-keyshortcuts="2"
               title="Correct (Key: 2)"
-              className="min-h-[4.25rem] w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-800"
+              className="min-h-[4.25rem] w-full rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-4 py-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="block">Correct</span>
               <span className="mt-1 block text-xl leading-none">{correct}</span>
@@ -349,23 +340,33 @@ export default function StudyReviewModalMetaPanels({
           <button
             type="button"
             onClick={onSkipCurrent}
-            className="min-h-[4rem] w-full rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black uppercase tracking-[0.1em] text-amber-800"
+            disabled={isSubmittingSelected}
+            className="min-h-[4rem] w-full rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black uppercase tracking-[0.1em] text-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="block">Skipped</span>
             <span className="mt-1 block text-xl leading-none">{skipped}</span>
           </button>
+
+          {isSubmittingSelected ? (
+            <div className="absolute inset-0 z-20 rounded-2xl bg-surface/55 backdrop-blur-[1px]" />
+          ) : null}
         </div>
       ) : null}
 
       {selectedItem.queueType === "lesson" && !isOutcomeFinal ? (
-        <div className="mt-auto w-full pt-3">
+        <div className="relative mt-auto w-full pt-3">
           <button
             type="button"
             onClick={() => onStartLesson(selectedItem.assignmentId)}
-            className="min-h-[4.25rem] w-full rounded-2xl border-2 border-accent/50 bg-accent/10 px-4 py-4 text-base font-black uppercase tracking-[0.1em] text-accent"
+            disabled={isSubmittingSelected}
+            className="min-h-[4.25rem] w-full rounded-2xl border-2 border-accent/50 bg-accent/10 px-4 py-4 text-base font-black uppercase tracking-[0.1em] text-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add To My Reviews
           </button>
+
+          {isSubmittingSelected ? (
+            <div className="absolute inset-0 z-20 rounded-2xl bg-surface/55 backdrop-blur-[1px]" />
+          ) : null}
         </div>
       ) : null}
 
@@ -386,14 +387,6 @@ export default function StudyReviewModalMetaPanels({
         </p>
       ) : null}
 
-      {isSubmittingSelected ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-surface/80 backdrop-blur-[1px]">
-          <div className="inline-flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] text-foreground">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
-            {submitInFlight ? `Submitting ${submitActionLabel} for ${submitInFlight.itemLabel}...` : "Submitting..."}
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

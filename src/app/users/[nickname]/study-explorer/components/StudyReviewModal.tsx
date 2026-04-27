@@ -408,7 +408,6 @@ export default function StudyReviewModal({
             selectedItem={selectedItem}
             selectedOutcome={selectedOutcome}
             isSubmittingSelected={isSubmittingSelected}
-            submitInFlight={submitInFlight}
             submitFeedback={submitFeedback}
             requiresReveal={requiresReveal}
             isAnswerRevealed={isAnswerRevealed}

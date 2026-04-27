@@ -1,4 +1,4 @@
-import type { ReviewOutcome, StudyQueueItem, SubmitInFlight } from "../lib/studyExplorerTypes";
+import type { ReviewOutcome, StudyQueueItem } from "../lib/studyExplorerTypes";
 import { useGlyphFontPreference } from "@/lib/glyphFontPreference";
 import { openViewGlyphViewer } from "@/lib/viewGlyphViewer";
 
@@ -26,7 +26,6 @@ type Props = {
   selectedItem: StudyQueueItem;
   selectedOutcome: ReviewOutcome | undefined;
   isSubmittingSelected: boolean;
-  submitInFlight: SubmitInFlight | null;
   submitFeedback: { kind: "success" | "error"; message: string } | null;
   requiresReveal: boolean;
   isAnswerRevealed: boolean;
@@ -76,7 +75,6 @@ export default function StudyReviewModalSection({
   selectedItem,
   selectedOutcome,
   isSubmittingSelected,
-  submitInFlight,
   submitFeedback,
   requiresReveal,
   isAnswerRevealed,
@@ -323,11 +321,12 @@ export default function StudyReviewModalSection({
                 ) : null}
               </div>
 
-              <div className="h-full rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
+              <div className="relative h-full rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
                 {!detailsRevealed ? (
                   <button
                     type="button"
                     onClick={() => onReveal(selectedItem.assignmentId)}
+                    disabled={isSubmittingSelected}
                     className="flex h-full w-full cursor-pointer flex-col items-center justify-center rounded-2xl bg-surface-muted text-center transition-colors hover:bg-sky-100/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   >
                     <p className="text-sm font-black uppercase tracking-[0.12em] text-foreground/80 sm:text-base">Show Answer</p>
@@ -344,11 +343,11 @@ export default function StudyReviewModalSection({
                 ) : (
                   <div className="grid h-full grid-rows-2 gap-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full cursor-pointer rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-red-800 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 sm:px-4 sm:py-4">
+                      <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "wrong")} disabled={isSubmittingSelected} aria-keyshortcuts="1" title="Wrong (Key: 1)" className="h-full w-full cursor-pointer rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-red-800 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4">
                         <span className="block">Wrong</span>
                         <span className="mt-1 block text-xl leading-none">{wrong}</span>
                       </button>
-                      <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full cursor-pointer rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:px-4 sm:py-4">
+                      <button type="button" onClick={() => onSubmit(selectedItem.assignmentId, "correct")} disabled={isSubmittingSelected} aria-keyshortcuts="2" title="Correct (Key: 2)" className="h-full w-full cursor-pointer rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4">
                         <span className="block">Correct</span>
                         <span className="mt-1 block text-xl leading-none">{correct}</span>
                       </button>
@@ -356,13 +355,18 @@ export default function StudyReviewModalSection({
                     <button
                       type="button"
                       onClick={onSkipCurrent}
-                      className="h-full w-full cursor-pointer rounded-2xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-amber-800 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 sm:px-4 sm:py-3"
+                      disabled={isSubmittingSelected}
+                      className="h-full w-full cursor-pointer rounded-2xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-sm font-black uppercase tracking-[0.1em] text-amber-800 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-3"
                     >
                       <span className="block">Skipped</span>
                       <span className="mt-1 block text-xl leading-none">{skipped}</span>
                     </button>
                   </div>
                 )}
+
+                {isSubmittingSelected ? (
+                  <div className="absolute inset-3 z-10 rounded-2xl bg-surface/55 backdrop-blur-[1px] sm:inset-4" />
+                ) : null}
               </div>
             </div>
           </>
@@ -436,7 +440,6 @@ export default function StudyReviewModalSection({
         viewerMode={viewerMode}
         selectedItem={selectedItem}
         submitFeedback={submitFeedback}
-        submitInFlight={submitInFlight}
         isSubmittingSelected={isSubmittingSelected}
         detailsRevealed={detailsRevealed}
         useStudyFlashLayout={useStudyFlashLayout}
