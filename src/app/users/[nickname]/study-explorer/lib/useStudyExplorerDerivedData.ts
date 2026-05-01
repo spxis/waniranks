@@ -237,11 +237,21 @@ export function useStudyExplorerDerivedData({
     return out;
   }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, typeFilter, effectiveShowLocked]);
 
-  const srsCounts = srsCountsFromServer ?? srsCountsFromLoaded;
+  const canUseServerSrsCounts =
+    queueMode === "review" && viewedLevel === null && typeFilter === "all" && !effectiveRecentOnly && effectiveShowLocked;
+
+  const srsCounts = canUseServerSrsCounts ? (srsCountsFromServer ?? srsCountsFromLoaded) : srsCountsFromLoaded;
 
   const srsStageCounts = useMemo(() => {
     const fromServer = data?.srsStageCounts ?? cachedQueueData?.srsStageCounts;
-    if (fromServer) {
+    if (
+      fromServer &&
+      queueMode === "review" &&
+      viewedLevel === null &&
+      typeFilter === "all" &&
+      !effectiveRecentOnly &&
+      effectiveShowLocked
+    ) {
       return fromServer;
     }
 
