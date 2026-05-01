@@ -67,6 +67,16 @@ export async function GET(request: Request, context: RouteContext) {
           levelCounts: cached.levelCounts ?? {},
           typeCounts: cached.typeCounts ?? { all: 0, radical: 0, kanji: 0, vocabulary: 0 },
           typeCountsByLevel: cached.typeCountsByLevel ?? {},
+          srsCounts: cached.srsCounts ?? {
+            all: 0,
+            locked: 0,
+            apprentice: 0,
+            guru: 0,
+            master: 0,
+            enlightened: 0,
+            burned: 0,
+          },
+          srsStageCounts: cached.srsStageCounts ?? {},
           pagination: {
             offset,
             limit: limit ?? cachedItems.length,
@@ -361,7 +371,43 @@ export async function GET(request: Request, context: RouteContext) {
       return acc;
     }, {});
 
-    setCachedStudyQueue(accountId, mode, items, counts, levelCounts, typeCounts, typeCountsByLevel);
+    const emptySrsCounts = {
+      all: 0,
+      locked: 0,
+      apprentice: 0,
+      guru: 0,
+      master: 0,
+      enlightened: 0,
+      burned: 0,
+    };
+
+    const srsCounts = items.reduce<typeof emptySrsCounts>((acc, item) => {
+      acc.all += 1;
+      acc[item.status] = (acc[item.status] ?? 0) + 1;
+      return acc;
+    }, { ...emptySrsCounts });
+
+    const srsStageCounts = items.reduce<Record<number, number>>((acc, item) => {
+      const stage = item.srsStage;
+      if (!Number.isInteger(stage) || stage <= 0) {
+        return acc;
+      }
+
+      acc[stage] = (acc[stage] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    setCachedStudyQueue(
+      accountId,
+      mode,
+      items,
+      counts,
+      levelCounts,
+      typeCounts,
+      typeCountsByLevel,
+      srsCounts,
+      srsStageCounts,
+    );
 
     const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
 
@@ -372,6 +418,8 @@ export async function GET(request: Request, context: RouteContext) {
         levelCounts,
         typeCounts,
         typeCountsByLevel,
+        srsCounts,
+        srsStageCounts,
         pagination: {
           offset,
           limit: limit ?? items.length,

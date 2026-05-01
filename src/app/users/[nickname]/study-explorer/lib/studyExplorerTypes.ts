@@ -28,6 +28,16 @@ export type QueueResponse = {
       vocabulary: number;
     }
   >;
+  srsCounts?: {
+    all: number;
+    locked: number;
+    apprentice: number;
+    guru: number;
+    master: number;
+    enlightened: number;
+    burned: number;
+  };
+  srsStageCounts?: Record<number, number>;
   pagination?: {
     offset: number;
     limit: number;
@@ -82,5 +92,7 @@ export type StudyExplorerProps = {
 export type StudyTypeFilter = "all" | "radical" | "kanji" | "vocabulary";
 export type StudySrsFilter = Extract<
   SrsFilter,
-  "all" | "locked" | "apprentice" | "guru" | "master" | "enlightened"
+  "all" | "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned"
 >;
+
+export type StudySrsStageFilter = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;

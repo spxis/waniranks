@@ -1,6 +1,12 @@
 import { useMemo } from "react";
 
-import type { QueueResponse, StudyQueueItem, StudySrsFilter, StudyTypeFilter } from "./studyExplorerTypes";
+import type {
+  QueueResponse,
+  StudyQueueItem,
+  StudySrsFilter,
+  StudySrsStageFilter,
+  StudyTypeFilter,
+} from "./studyExplorerTypes";
 import { filterStudyItems, isRecentStudyItem } from "./studyExplorerUtils";
 
 type Args = {
@@ -10,6 +16,7 @@ type Args = {
   viewedLevel: number | null;
   typeFilter: StudyTypeFilter;
   effectiveSrsFilter: StudySrsFilter;
+  effectiveSrsStageFilter: StudySrsStageFilter | null;
   effectiveShowLocked: boolean;
   effectiveRecentOnly: boolean;
   searchQuery: string;
@@ -30,6 +37,7 @@ export function useStudyExplorerDerivedData({
   viewedLevel,
   typeFilter,
   effectiveSrsFilter,
+  effectiveSrsStageFilter,
   effectiveShowLocked,
   effectiveRecentOnly,
   searchQuery,
@@ -68,6 +76,7 @@ export function useStudyExplorerDerivedData({
         viewedLevel,
         typeFilter,
         effectiveSrsFilter,
+        effectiveSrsStageFilter,
         effectiveShowLocked,
         effectiveRecentOnly,
         searchQuery,
@@ -78,6 +87,7 @@ export function useStudyExplorerDerivedData({
       viewedLevel,
       typeFilter,
       effectiveSrsFilter,
+      effectiveSrsStageFilter,
       effectiveShowLocked,
       effectiveRecentOnly,
       searchQuery,
@@ -173,6 +183,7 @@ export function useStudyExplorerDerivedData({
       if (item.queueType !== queueMode) continue;
       if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
       if (effectiveSrsFilter !== "all" && item.status !== effectiveSrsFilter) continue;
+      if (effectiveSrsStageFilter !== null && item.srsStage !== effectiveSrsStageFilter) continue;
       if (!effectiveShowLocked && item.status === "locked") continue;
 
       out.all += 1;
@@ -181,13 +192,33 @@ export function useStudyExplorerDerivedData({
       else out.vocabulary += 1;
     }
     return out;
-  }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, effectiveSrsFilter, effectiveShowLocked]);
+  }, [
+    loadedItems,
+    queueMode,
+    effectiveRecentOnly,
+    viewedLevel,
+    effectiveSrsFilter,
+    effectiveSrsStageFilter,
+    effectiveShowLocked,
+  ]);
 
   const typeCounts =
     queueMode === "lesson" && lessonTypeCountsFromServer ? lessonTypeCountsFromServer : loadedTypeCounts;
 
-  const srsCounts = useMemo(() => {
-    const out = { all: 0, locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0 };
+  const srsCountsFromServer = useMemo(() => {
+    return data?.srsCounts ?? cachedQueueData?.srsCounts ?? null;
+  }, [cachedQueueData?.srsCounts, data?.srsCounts]);
+
+  const srsCountsFromLoaded = useMemo(() => {
+    const out = {
+      all: 0,
+      locked: 0,
+      apprentice: 0,
+      guru: 0,
+      master: 0,
+      enlightened: 0,
+      burned: 0,
+    };
     for (const item of loadedItems) {
       if (effectiveRecentOnly && !isRecentStudyItem(item)) continue;
       if (item.queueType !== queueMode) continue;
@@ -201,9 +232,45 @@ export function useStudyExplorerDerivedData({
       if (item.status === "guru") out.guru += 1;
       if (item.status === "master") out.master += 1;
       if (item.status === "enlightened") out.enlightened += 1;
+      if (item.status === "burned") out.burned += 1;
     }
     return out;
   }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, typeFilter, effectiveShowLocked]);
+
+  const srsCounts = srsCountsFromServer ?? srsCountsFromLoaded;
+
+  const srsStageCounts = useMemo(() => {
+    const fromServer = data?.srsStageCounts ?? cachedQueueData?.srsStageCounts;
+    if (fromServer) {
+      return fromServer;
+    }
+
+    const fromLoaded: Record<number, number> = {};
+    for (const item of loadedItems) {
+      if (effectiveRecentOnly && !isRecentStudyItem(item)) continue;
+      if (item.queueType !== queueMode) continue;
+      if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
+      if (typeFilter !== "all" && item.subjectType !== typeFilter) continue;
+      if (!effectiveShowLocked && item.status === "locked") continue;
+
+      if (!Number.isInteger(item.srsStage) || item.srsStage <= 0) {
+        continue;
+      }
+
+      fromLoaded[item.srsStage] = (fromLoaded[item.srsStage] ?? 0) + 1;
+    }
+
+    return fromLoaded;
+  }, [
+    cachedQueueData?.srsStageCounts,
+    data?.srsStageCounts,
+    loadedItems,
+    queueMode,
+    effectiveRecentOnly,
+    viewedLevel,
+    typeFilter,
+    effectiveShowLocked,
+  ]);
 
   const modalItems = useMemo(() => {
     if (!modalSessionOrderByAssignmentId || selectedId === null) {
@@ -248,6 +315,7 @@ export function useStudyExplorerDerivedData({
     loadedTypeCounts,
     typeCounts,
     srsCounts,
+    srsStageCounts,
     modalItems,
     selectedItem,
     isSelectedSubmitted,

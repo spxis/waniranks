@@ -13,6 +13,7 @@ import type {
   StudyQueueItem,
   ReviewSrsTransition,
   StudySrsFilter,
+  StudySrsStageFilter,
   StudyTypeFilter,
   SubmitFeedback,
   SubmitInFlight,
@@ -21,6 +22,8 @@ import {
   fetchStudyQueue,
   readStoredQueue,
 } from "../lib/studyExplorerUtils";
+import { sameAssignmentList } from "../lib/studyExplorerEffectsComparators";
+import { normalizeSrsStageFilter } from "../lib/studyExplorerSrs";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
 import { useStudyExplorerDerivedData } from "../lib/useStudyExplorerDerivedData";
@@ -29,20 +32,6 @@ import { useStudyQueueInfiniteLoad } from "../lib/useStudyQueueInfiniteLoad";
 const REVIEW_API_PAGE_SIZE = 120;
 const LESSON_API_PAGE_SIZE = 200;
 const EMPTY_TYPE_COUNTS_BY_LEVEL: Record<number, { all: number; radical: number; kanji: number; vocabulary: number }> = {};
-
-function sameAssignmentList(a: StudyQueueItem[], b: StudyQueueItem[]): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  for (let index = 0; index < a.length; index += 1) {
-    if (a[index]?.assignmentId !== b[index]?.assignmentId) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 export default function StudyExplorer({
   accountId,
@@ -58,6 +47,7 @@ export default function StudyExplorer({
   const selectedSubjectStorageKey = `wr:study-selected-subject:${accountId}:${queueMode}`;
   const typeFilterStorageKey = `wr:study-type-filter:${accountId}:${queueMode}`;
   const viewedLevelStorageKey = `wr:study-viewed-level:${accountId}:${queueMode}`;
+  const srsStageFilterStorageKey = `wr:study-srs-stage-filter:${accountId}:${queueMode}`;
   const recentOnlyStorageKey = `wr:study-recent-only:${accountId}:${queueMode}`;
   const showLockedStorageKey = `wr:study-show-locked:${accountId}:${queueMode}`;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -78,6 +68,7 @@ export default function StudyExplorer({
   const [hasHydratedViewedLevel, setHasHydratedViewedLevel] = useState(false);
   const [typeFilter, setTypeFilter] = useState<StudyTypeFilter>("all");
   const [srsFilter, setSrsFilter] = useState<StudySrsFilter>("all");
+  const [srsStageFilter, setSrsStageFilter] = useState<StudySrsStageFilter | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
   const [revealedAssignmentIds, setRevealedAssignmentIds] = useState<Set<number>>(new Set());
@@ -100,6 +91,8 @@ export default function StudyExplorer({
   const effectiveSrsFilter: StudySrsFilter = queueMode === "lesson" ? "all" : srsFilter;
   const effectiveRecentOnly = queueMode === "lesson" ? false : recentOnly;
   const effectiveShowLocked = queueMode === "lesson" ? true : showLocked;
+  const effectiveSrsStageFilter: StudySrsStageFilter | null =
+    queueMode === "lesson" ? null : srsStageFilter;
   const initialPageSize = queueMode === "lesson" ? LESSON_API_PAGE_SIZE : REVIEW_API_PAGE_SIZE;
 
   useLayoutEffect(() => {
@@ -226,6 +219,7 @@ export default function StudyExplorer({
     loadedTypeCounts,
     typeCounts,
     srsCounts,
+    srsStageCounts,
     modalItems,
     selectedItem,
     isSelectedSubmitted,
@@ -241,6 +235,7 @@ export default function StudyExplorer({
     viewedLevel,
     typeFilter,
     effectiveSrsFilter,
+    effectiveSrsStageFilter,
     effectiveShowLocked,
     effectiveRecentOnly,
     searchQuery,
@@ -291,11 +286,13 @@ export default function StudyExplorer({
     selectedSubjectStorageKey,
     typeFilterStorageKey,
     viewedLevelStorageKey,
+    srsStageFilterStorageKey,
     recentOnlyStorageKey,
     showLockedStorageKey,
     viewedLevel,
     typeFilter,
     srsFilter,
+    srsStageFilter,
     recentOnly,
     showLocked,
     hasHydratedTypeFilter,
@@ -309,6 +306,8 @@ export default function StudyExplorer({
     levelCounts: lessonLevelCountsFromServer,
     typeCounts: data?.typeCounts ?? cachedQueueData?.typeCounts ?? loadedTypeCounts,
     typeCountsByLevel: typeCountsByLevelForEffects,
+    srsCounts: data?.srsCounts ?? cachedQueueData?.srsCounts,
+    srsStageCounts: data?.srsStageCounts ?? cachedQueueData?.srsStageCounts,
     dataItems: data?.items,
     dataPaginationTotal: data?.pagination?.total,
     dataCounts: data?.counts,
@@ -323,9 +322,19 @@ export default function StudyExplorer({
     setSearchQuery,
     setViewedLevel,
     setSrsFilter,
+    setSrsStageFilter,
     setShowLocked,
     lastHandledStudyQueryRef,
   });
+
+  const handleSetSrsFilter = useCallback(
+    (nextFilter: StudySrsFilter) => {
+      setSrsFilter(nextFilter);
+
+      setSrsStageFilter((current) => normalizeSrsStageFilter(nextFilter, current));
+    },
+    [setSrsFilter],
+  );
 
   useEffect(() => {
     try {
@@ -426,10 +435,12 @@ export default function StudyExplorer({
         viewedLevel={viewedLevel}
         typeFilter={typeFilter}
         srsFilter={effectiveSrsFilter}
+        srsStageFilter={effectiveSrsStageFilter}
         queueMode={queueMode}
         lessonLevelCounts={lessonLevelCounts}
         typeCounts={typeCounts}
         srsCounts={srsCounts}
+        srsStageCounts={srsStageCounts}
         filteredItems={filteredItems}
         totalItems={totalItems}
         hasMorePages={hasMorePages}
@@ -445,7 +456,8 @@ export default function StudyExplorer({
         sentinelRef={sentinelRef}
         onSetViewedLevel={setViewedLevel}
         onSetTypeFilter={setTypeFilter}
-        onSetSrsFilter={setSrsFilter}
+        onSetSrsFilter={handleSetSrsFilter}
+        onSetSrsStageFilter={setSrsStageFilter}
         onToggleShowEnglish={onToggleShowEnglish}
         onToggleShowLocked={() => setShowLocked((prev) => !prev)}
         onToggleRecentOnly={() => setRecentOnly((prev) => !prev)}

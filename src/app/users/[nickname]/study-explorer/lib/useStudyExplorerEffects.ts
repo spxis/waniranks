@@ -1,6 +1,20 @@
 import { useCallback, useEffect } from "react";
 
-import type { QueueResponse, StudyCounts, StudyQueueItem, StudyTypeFilter } from "./studyExplorerTypes";
+import type {
+  QueueResponse,
+  StudyCounts,
+  StudyQueueItem,
+  StudySrsFilter,
+  StudySrsStageFilter,
+  StudyTypeFilter,
+} from "./studyExplorerTypes";
+import {
+  sameAssignmentList,
+  sameCounts,
+  sameLevelCounts,
+  sameTypeCounts,
+  sameTypeCountsByLevel,
+} from "./studyExplorerEffectsComparators";
 import { persistQueue, readStoredQueue } from "./studyExplorerUtils";
 
 type Args = {
@@ -10,11 +24,13 @@ type Args = {
   selectedSubjectStorageKey: string;
   typeFilterStorageKey: string;
   viewedLevelStorageKey: string;
+  srsStageFilterStorageKey: string;
   recentOnlyStorageKey: string;
   showLockedStorageKey: string;
   viewedLevel: number | null;
   typeFilter: StudyTypeFilter;
-  srsFilter: "all" | "locked" | "apprentice" | "guru" | "master" | "enlightened";
+  srsFilter: StudySrsFilter;
+  srsStageFilter: StudySrsStageFilter | null;
   recentOnly: boolean;
   showLocked: boolean;
   hasHydratedTypeFilter: boolean;
@@ -31,6 +47,18 @@ type Args = {
     number,
     { all: number; radical: number; kanji: number; vocabulary: number }
   >;
+  srsCounts:
+    | {
+        all: number;
+        locked: number;
+        apprentice: number;
+        guru: number;
+        master: number;
+        enlightened: number;
+        burned: number;
+      }
+    | undefined;
+  srsStageCounts: Record<number, number> | undefined;
   dataItems: StudyQueueItem[] | undefined;
   dataPaginationTotal: number | undefined;
   dataCounts: StudyCounts | undefined;
@@ -44,98 +72,11 @@ type Args = {
   setLoadMoreError: React.Dispatch<React.SetStateAction<string | null>>;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   setViewedLevel: React.Dispatch<React.SetStateAction<number | null>>;
-  setSrsFilter: React.Dispatch<
-    React.SetStateAction<"all" | "locked" | "apprentice" | "guru" | "master" | "enlightened">
-  >;
+  setSrsFilter: React.Dispatch<React.SetStateAction<StudySrsFilter>>;
+  setSrsStageFilter: React.Dispatch<React.SetStateAction<StudySrsStageFilter | null>>;
   setShowLocked: React.Dispatch<React.SetStateAction<boolean>>;
   lastHandledStudyQueryRef: React.MutableRefObject<string>;
 };
-
-function sameAssignmentList(a: StudyQueueItem[], b: StudyQueueItem[]): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  for (let index = 0; index < a.length; index += 1) {
-    if (a[index]?.assignmentId !== b[index]?.assignmentId) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function sameCounts(a: StudyCounts | null | undefined, b: StudyCounts | null | undefined): boolean {
-  if (!a && !b) {
-    return true;
-  }
-
-  if (!a || !b) {
-    return false;
-  }
-
-  return a.all === b.all && a.reviews === b.reviews && a.lessons === b.lessons;
-}
-
-function sameTypeCounts(
-  a: { all: number; radical: number; kanji: number; vocabulary: number } | undefined,
-  b: { all: number; radical: number; kanji: number; vocabulary: number } | undefined,
-): boolean {
-  if (!a && !b) {
-    return true;
-  }
-
-  if (!a || !b) {
-    return false;
-  }
-
-  return (
-    a.all === b.all &&
-    a.radical === b.radical &&
-    a.kanji === b.kanji &&
-    a.vocabulary === b.vocabulary
-  );
-}
-
-function sameLevelCounts(a: Record<number, number> | undefined, b: Record<number, number> | undefined): boolean {
-  const aEntries = Object.entries(a ?? {});
-  const bEntries = Object.entries(b ?? {});
-
-  if (aEntries.length !== bEntries.length) {
-    return false;
-  }
-
-  const bMap = new Map(bEntries);
-  for (const [key, value] of aEntries) {
-    if (Number(bMap.get(key)) !== Number(value)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function sameTypeCountsByLevel(
-  a: Record<number, { all: number; radical: number; kanji: number; vocabulary: number }> | undefined,
-  b: Record<number, { all: number; radical: number; kanji: number; vocabulary: number }> | undefined,
-): boolean {
-  const aEntries = Object.entries(a ?? {});
-  const bEntries = Object.entries(b ?? {});
-
-  if (aEntries.length !== bEntries.length) {
-    return false;
-  }
-
-  const bMap = new Map(bEntries);
-  for (const [key, value] of aEntries) {
-    const other = bMap.get(key);
-    if (!other || !sameTypeCounts(value, other)) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 export function useStudyExplorerEffects({
   accountId,
@@ -144,11 +85,13 @@ export function useStudyExplorerEffects({
   selectedSubjectStorageKey,
   typeFilterStorageKey,
   viewedLevelStorageKey,
+  srsStageFilterStorageKey,
   recentOnlyStorageKey,
   showLockedStorageKey,
   viewedLevel,
   typeFilter,
   srsFilter,
+  srsStageFilter,
   recentOnly,
   showLocked,
   hasHydratedTypeFilter,
@@ -162,6 +105,8 @@ export function useStudyExplorerEffects({
   levelCounts,
   typeCounts,
   typeCountsByLevel,
+  srsCounts,
+  srsStageCounts,
   dataItems,
   dataPaginationTotal,
   dataCounts,
@@ -176,6 +121,7 @@ export function useStudyExplorerEffects({
   setSearchQuery,
   setViewedLevel,
   setSrsFilter,
+  setSrsStageFilter,
   setShowLocked,
   lastHandledStudyQueryRef,
 }: Args) {
@@ -280,11 +226,31 @@ export function useStudyExplorerEffects({
 
   useEffect(() => {
     const urlSrs = new URLSearchParams(window.location.search).get("srs");
-    const validSrs = ["apprentice", "guru", "master", "enlightened", "locked"];
+    const validSrs = ["apprentice", "guru", "master", "enlightened", "locked", "burned"];
     if (urlSrs && validSrs.includes(urlSrs)) {
-      setSrsFilter(urlSrs as "apprentice" | "guru" | "master" | "enlightened" | "locked");
+      setSrsFilter(urlSrs as "apprentice" | "guru" | "master" | "enlightened" | "locked" | "burned");
+      return;
     }
+
+    setSrsFilter("all");
   }, [setSrsFilter]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = Number(params.get("srsStage"));
+    if (Number.isInteger(fromUrl) && fromUrl >= 1 && fromUrl <= 9) {
+      setSrsStageFilter(fromUrl as StudySrsStageFilter);
+      return;
+    }
+
+    const stored = Number(window.localStorage.getItem(srsStageFilterStorageKey));
+    if (Number.isInteger(stored) && stored >= 1 && stored <= 9) {
+      setSrsStageFilter(stored as StudySrsStageFilter);
+      return;
+    }
+
+    setSrsStageFilter(null);
+  }, [setSrsStageFilter, srsStageFilterStorageKey]);
 
   useEffect(() => {
     if (!hasHydratedTypeFilter) return;
@@ -310,6 +276,15 @@ export function useStudyExplorerEffects({
   }, [showLocked, showLockedStorageKey]);
 
   useEffect(() => {
+    if (srsStageFilter === null) {
+      window.localStorage.removeItem(srsStageFilterStorageKey);
+      return;
+    }
+
+    window.localStorage.setItem(srsStageFilterStorageKey, String(srsStageFilter));
+  }, [srsStageFilter, srsStageFilterStorageKey]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (viewedLevel !== null) params.set("level", String(viewedLevel));
     else params.delete("level");
@@ -317,13 +292,15 @@ export function useStudyExplorerEffects({
     else params.delete("type");
     if (srsFilter !== "all") params.set("srs", srsFilter);
     else params.delete("srs");
+    if (srsStageFilter !== null) params.set("srsStage", String(srsStageFilter));
+    else params.delete("srsStage");
     if (recentOnly) params.set("recent", "1");
     else params.delete("recent");
     if (!showLocked) params.set("hideLocked", "1");
     else params.delete("hideLocked");
     const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
     window.history.replaceState(null, "", next);
-  }, [viewedLevel, typeFilter, srsFilter, recentOnly, showLocked]);
+  }, [viewedLevel, typeFilter, srsFilter, srsStageFilter, recentOnly, showLocked]);
 
   useEffect(() => {
     if (!dataCounts) return;
@@ -369,6 +346,8 @@ export function useStudyExplorerEffects({
       levelCounts,
       typeCounts,
       typeCountsByLevel,
+      srsCounts,
+      srsStageCounts,
       pagination: {
         offset: 0,
         limit: loadedItems.length,
@@ -386,6 +365,8 @@ export function useStudyExplorerEffects({
       levelCounts,
       typeCounts,
       typeCountsByLevel,
+      srsCounts,
+      srsStageCounts,
     );
     setCachedQueueData((prev) => {
       if (!prev) {
@@ -420,6 +401,8 @@ export function useStudyExplorerEffects({
     totalItems,
     typeCounts,
     typeCountsByLevel,
+    srsCounts,
+    srsStageCounts,
   ]);
 
   useEffect(() => {
@@ -459,6 +442,7 @@ export function useStudyExplorerEffects({
     setViewedLevel(null);
     setTypeFilter("all");
     setSrsFilter("all");
+    setSrsStageFilter(null);
     setShowLocked(true);
     setRecentOnly(false);
     setSelectedId(null);
@@ -475,13 +459,23 @@ export function useStudyExplorerEffects({
     params.delete("level");
     params.delete("type");
     params.delete("srs");
+    params.delete("srsStage");
     params.delete("recent");
     params.delete("hideLocked");
     const query = params.toString();
     const next = `${window.location.pathname}${query ? `?${query}` : ""}#explorer`;
     window.history.pushState(null, "", next);
     window.dispatchEvent(new CustomEvent("wr:explorer-search-clear", { detail: { scope: "all" } }));
-  }, [setRecentOnly, setSearchQuery, setSelectedId, setShowLocked, setSrsFilter, setTypeFilter, setViewedLevel]);
+  }, [
+    setRecentOnly,
+    setSearchQuery,
+    setSelectedId,
+    setShowLocked,
+    setSrsFilter,
+    setSrsStageFilter,
+    setTypeFilter,
+    setViewedLevel,
+  ]);
 
   return { clearAllFilters };
 }

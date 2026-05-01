@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 import type {
   ReviewOutcome,
@@ -11,7 +11,7 @@ import type {
 import { studyItemEnglishTitle } from "./studyExplorerUtils";
 
 const POST_SUBMIT_DELAY_MS = 500;
-const REVIEW_SUBMIT_TIMEOUT_MS = 1500;
+const REVIEW_SUBMIT_TIMEOUT_MS = 10000;
 
 type Args = {
   accountId: string;
@@ -56,6 +56,8 @@ export function useStudyReviewSubmission({
   onSetModalSessionOrderByAssignmentId,
   onSetModalSessionItemByAssignmentId,
 }: Args) {
+  const inFlightAssignmentIdsRef = useRef<Set<number>>(new Set());
+
   const removeFromModalSession = useCallback(
     (assignmentId: number) => {
       onSetModalSessionOrderByAssignmentId((prev) =>
@@ -92,6 +94,11 @@ export function useStudyReviewSubmission({
 
   const submitReview = useCallback(
     async (assignmentId: number, result: "correct" | "wrong") => {
+      if (inFlightAssignmentIdsRef.current.has(assignmentId)) {
+        return;
+      }
+      inFlightAssignmentIdsRef.current.add(assignmentId);
+
       const { itemForSubmit, nextFocusedItem } = getSubmissionContext(assignmentId);
 
       onSetSubmitInFlight({
@@ -188,6 +195,7 @@ export function useStudyReviewSubmission({
         });
         console.error("[UmaKuma] Review submission failed for assignment", assignmentId, submitError);
       } finally {
+        inFlightAssignmentIdsRef.current.delete(assignmentId);
         onSetSubmittingByAssignmentId((prev) => {
           const next = new Set(prev);
           next.delete(assignmentId);
@@ -213,6 +221,7 @@ export function useStudyReviewSubmission({
       onSetSubmittingByAssignmentId,
       onSetTotalItems,
       removeFromModalSession,
+      inFlightAssignmentIdsRef,
     ],
   );
 

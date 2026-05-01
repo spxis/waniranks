@@ -6,6 +6,7 @@ import type {
   StudyCounts,
   StudyQueueItem,
   StudySrsFilter,
+  StudySrsStageFilter,
   StudyTypeFilter,
 } from "./studyExplorerTypes";
 
@@ -107,6 +108,16 @@ export function persistQueue(
     number,
     { all: number; radical: number; kanji: number; vocabulary: number }
   >,
+  srsCounts?: {
+    all: number;
+    locked: number;
+    apprentice: number;
+    guru: number;
+    master: number;
+    enlightened: number;
+    burned: number;
+  },
+  srsStageCounts?: Record<number, number>,
 ): void {
   if (typeof window === "undefined") {
     return;
@@ -124,6 +135,8 @@ export function persistQueue(
       levelCounts,
       typeCounts,
       typeCountsByLevel,
+      srsCounts,
+      srsStageCounts,
       pagination: {
         offset: 0,
         limit: items.length,
@@ -169,6 +182,7 @@ export function filterStudyItems(
   viewedLevel: number | null,
   typeFilter: StudyTypeFilter,
   srsFilter: StudySrsFilter,
+  srsStageFilter: StudySrsStageFilter | null,
   showLocked: boolean,
   recentOnly: boolean,
   searchQuery: string,
@@ -196,6 +210,10 @@ export function filterStudyItems(
     }
 
     if (srsFilter !== "all" && item.status !== srsFilter) {
+      return false;
+    }
+
+    if (srsStageFilter !== null && item.srsStage !== srsStageFilter) {
       return false;
     }
 

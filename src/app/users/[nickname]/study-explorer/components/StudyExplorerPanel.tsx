@@ -22,6 +22,7 @@ import {
 import type {
   StudyQueueItem,
   StudySrsFilter,
+  StudySrsStageFilter,
   StudyTypeFilter,
 } from "../lib/studyExplorerTypes";
 import { useStudyBulkReset } from "../lib/useStudyBulkReset";
@@ -53,6 +54,7 @@ type Props = {
   viewedLevel: number | null;
   typeFilter: StudyTypeFilter;
   srsFilter: StudySrsFilter;
+  srsStageFilter: StudySrsStageFilter | null;
   queueMode: "review" | "lesson";
   lessonLevelCounts: Record<number, number>;
   typeCounts: { all: number; radical: number; kanji: number; vocabulary: number };
@@ -63,7 +65,9 @@ type Props = {
     guru: number;
     master: number;
     enlightened: number;
+    burned: number;
   };
+  srsStageCounts: Record<number, number>;
   filteredItems: StudyQueueItem[];
   totalItems: number;
   hasMorePages: boolean;
@@ -80,6 +84,7 @@ type Props = {
   onSetViewedLevel: (level: number | null) => void;
   onSetTypeFilter: (filter: StudyTypeFilter) => void;
   onSetSrsFilter: (filter: StudySrsFilter) => void;
+  onSetSrsStageFilter: (filter: StudySrsStageFilter | null) => void;
   onToggleShowEnglish: () => void;
   onToggleShowLocked: () => void;
   onToggleRecentOnly: () => void;
@@ -96,10 +101,12 @@ export default function StudyExplorerPanel({
   viewedLevel,
   typeFilter,
   srsFilter,
+  srsStageFilter,
   queueMode,
   lessonLevelCounts,
   typeCounts,
   srsCounts,
+  srsStageCounts,
   filteredItems,
   totalItems,
   hasMorePages,
@@ -116,6 +123,7 @@ export default function StudyExplorerPanel({
   onSetViewedLevel,
   onSetTypeFilter,
   onSetSrsFilter,
+  onSetSrsStageFilter,
   onToggleShowEnglish,
   onToggleShowLocked,
   onToggleRecentOnly,
@@ -139,7 +147,21 @@ export default function StudyExplorerPanel({
   const srsStatuses =
     queueMode === "lesson"
       ? ([] as const)
-      : (["all", "apprentice", "guru", "master", "enlightened"] as const);
+      : (["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const);
+  const srsStageOptions: ReadonlyArray<StudySrsStageFilter> =
+    srsFilter === "apprentice"
+      ? ([1, 2, 3, 4] as const)
+      : srsFilter === "guru"
+        ? ([5, 6] as const)
+        : srsFilter === "master"
+          ? ([7] as const)
+          : srsFilter === "enlightened"
+            ? ([8] as const)
+            : srsFilter === "burned"
+              ? ([9] as const)
+              : srsFilter === "locked"
+                ? ([] as const)
+                : ([1, 2, 3, 4, 5, 6, 7, 8, 9] as const);
   const lessonLevelOptions = Object.entries(lessonLevelCounts)
     .map(([level, count]) => [Number(level), count] as const)
     .filter(([, count]) => count > 0)
@@ -216,17 +238,41 @@ export default function StudyExplorerPanel({
           />
 
           {srsStatuses.length > 0 ? (
-            <div className="ml-auto flex flex-wrap justify-end gap-2">
-              {srsStatuses.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => onSetSrsFilter(status)}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsFilter === status)}`}
-                >
-                  {srsFilterButtonLabel(status)} ({formatNumber(srsCounts[status])})
-                </button>
-              ))}
+            <div className="ml-auto grid gap-2 justify-items-end">
+              <div className="flex flex-wrap justify-end gap-2">
+                {srsStatuses.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => onSetSrsFilter(status)}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsFilter === status)}`}
+                  >
+                    {srsFilterButtonLabel(status)} ({formatNumber(srsCounts[status])})
+                  </button>
+                ))}
+              </div>
+
+              {srsStageOptions.length > 0 ? (
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onSetSrsStageFilter(null)}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsStageFilter === null)}`}
+                  >
+                    All SRS Stages
+                  </button>
+                  {srsStageOptions.map((stage) => (
+                    <button
+                      key={stage}
+                      type="button"
+                      onClick={() => onSetSrsStageFilter(stage)}
+                      className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsStageFilter === stage)}`}
+                    >
+                      SRS {stage} ({formatNumber(srsStageCounts[stage] ?? 0)})
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

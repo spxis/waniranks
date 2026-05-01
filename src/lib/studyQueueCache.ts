@@ -21,6 +21,16 @@ type CachedStudyQueue = {
       vocabulary: number;
     }
   >;
+  srsCounts?: {
+    all: number;
+    locked: number;
+    apprentice: number;
+    guru: number;
+    master: number;
+    enlightened: number;
+    burned: number;
+  };
+  srsStageCounts?: Record<number, number>;
   cachedAtMs: number;
 };
 
@@ -87,6 +97,16 @@ export function setCachedStudyQueue(
     number,
     { all: number; radical: number; kanji: number; vocabulary: number }
   >,
+  srsCounts?: {
+    all: number;
+    locked: number;
+    apprentice: number;
+    guru: number;
+    master: number;
+    enlightened: number;
+    burned: number;
+  },
+  srsStageCounts?: Record<number, number>,
 ): void {
   cache.set(cacheKey(accountId, mode), {
     items,
@@ -94,6 +114,8 @@ export function setCachedStudyQueue(
     levelCounts,
     typeCounts,
     typeCountsByLevel,
+    srsCounts,
+    srsStageCounts,
     cachedAtMs: Date.now(),
   });
   trimOldestEntries(cache, MAX_QUEUE_CACHE_KEYS);
