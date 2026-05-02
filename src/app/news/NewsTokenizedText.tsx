@@ -1,12 +1,19 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import jlptReadings from "@/data/jlptReadings.json";
 import type { NewsKanjiCapBasis, NewsKanjiCapGrade, NewsKanjiCapJlpt, NewsKanjiCapWk } from "./newsReadingPrefs";
-import { ensureKanjiLevels, ensureRunReadings, getCachedKanjiLevels, getCachedRunReadings, hasFreshKanjiLevel, hasFreshRunReading, isKanjiLevelPending, isRunReadingPending, shouldRefreshKanjiLevel, shouldRefreshRunReading } from "./newsEnrichmentCache";
+import { ensureKanjiLevels, ensureRunReadings, getCachedKanjiLevels, getCachedRunReadings, hasFreshKanjiLevel, hasFreshRunReading, isRunReadingPending, shouldRefreshKanjiLevel, shouldRefreshRunReading } from "./newsEnrichmentCache";
 import { availabilityForRun, openNewsGlyphCandidatesWithOptions, prefetchNewsGlyphCandidates } from "./newsGlyphRunner";
-import { NEWS_KANJI_HISTORY_EVENT, readNewsKanjiHistory } from "./newsKanjiHistory";
+import { NEWS_KANJI_HISTORY_EVENT } from "./newsKanjiHistory";
 import { buildCandidatesFromSelectedText, buildLookupCandidates } from "./newsLookupCandidates";
 import { tokenizeJapanese } from "./newsTokenize";
+import {
+  collectSeenGlyphs,
+  extractKanjiTokens,
+  isCapEnabled,
+  isSegmentLevelPending,
+  NEWS_TOKENIZED_KANJI_REGEX,
+  shouldDeemphasizeSegment,
+} from "./newsTokenizedTextHelpers";
 
 type Props = {
   text: string;
@@ -18,10 +25,7 @@ type Props = {
   largeArticleMode: boolean;
 };
 
-type JlptRecord = Record<string, { nLevel?: number }>;
 const pageSessionSeenGlyphs = new Set<string>();
-const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
-const jlptByChar = jlptReadings as JlptRecord;
 const STARTUP_PREFETCH_LIMIT = 10;
 
 export default function NewsTokenizedText({
@@ -157,7 +161,7 @@ export default function NewsTokenizedText({
     const unique = new Set<string>();
     for (const run of articleKanjiRuns) {
       for (const char of Array.from(run)) {
-        if (KANJI_REGEX.test(char)) {
+        if (NEWS_TOKENIZED_KANJI_REGEX.test(char)) {
           unique.add(char);
         }
       }
@@ -400,140 +404,3 @@ export default function NewsTokenizedText({
   );
 }
 
-function collectSeenGlyphs(): Set<string> {
-  const seen = new Set<string>();
-  for (const entry of readNewsKanjiHistory()) {
-    const run = entry.run.trim();
-    if (!run) {
-      continue;
-    }
-    seen.add(run);
-    for (const token of extractKanjiTokens(run)) {
-      seen.add(token);
-    }
-  }
-  return seen;
-}
-
-function extractKanjiTokens(value: string): string[] {
-  return Array.from(value).filter((char) => KANJI_REGEX.test(char));
-}
-
-function isCapEnabled(
-  basis: NewsKanjiCapBasis,
-  jlptCap: NewsKanjiCapJlpt,
-  wkCap: NewsKanjiCapWk,
-  gradeCap: NewsKanjiCapGrade,
-): boolean {
-  if (basis === "jlpt") {
-    return jlptCap !== "all";
-  }
-  if (basis === "wk") {
-    return wkCap !== "all";
-  }
-  return gradeCap !== "all";
-}
-
-function shouldDeemphasizeSegment(
-  value: string,
-  settings: {
-    basis: NewsKanjiCapBasis;
-    jlptCap: NewsKanjiCapJlpt;
-    wkCap: NewsKanjiCapWk;
-    gradeCap: NewsKanjiCapGrade;
-    wkByChar: Record<string, number | null>;
-    gradeByChar: Record<string, number | null>;
-  },
-): boolean {
-  const chars = Array.from(value).filter((char) => KANJI_REGEX.test(char));
-  if (chars.length === 0) {
-    return false;
-  }
-
-  if (settings.basis === "jlpt") {
-    const threshold = jlptThresholdFromMode(settings.jlptCap);
-    if (threshold === null) {
-      return false;
-    }
-    return chars.some((char) => isJlptHarderThanThreshold(char, threshold));
-  }
-
-  if (settings.basis === "wk") {
-    const threshold = wkThresholdFromMode(settings.wkCap);
-    if (threshold === null) {
-      return false;
-    }
-    return chars.some((char) => {
-      const wkLevel = settings.wkByChar[char];
-      return typeof wkLevel === "number" && wkLevel > threshold;
-    });
-  }
-
-  const threshold = gradeThresholdFromMode(settings.gradeCap);
-  if (threshold === null) {
-    return false;
-  }
-  return chars.some((char) => {
-    const grade = settings.gradeByChar[char];
-    return typeof grade === "number" && grade > threshold;
-  });
-}
-
-function isSegmentLevelPending(
-  value: string,
-  settings: {
-    basis: NewsKanjiCapBasis;
-    wkByChar: Record<string, number | null>;
-    gradeByChar: Record<string, number | null>;
-  },
-): boolean {
-  if (settings.basis === "jlpt") {
-    return false;
-  }
-
-  const chars = Array.from(value).filter((char) => KANJI_REGEX.test(char));
-  if (settings.basis === "wk") {
-    return chars.some((char) => isKanjiLevelPending(char) || !(char in settings.wkByChar));
-  }
-  return chars.some((char) => isKanjiLevelPending(char) || !(char in settings.gradeByChar));
-}
-
-function jlptThresholdFromMode(mode: NewsKanjiCapJlpt): number | null {
-  if (mode === "all") {
-    return null;
-  }
-
-  const parsed = Number(mode.slice(1));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function wkThresholdFromMode(mode: NewsKanjiCapWk): number | null {
-  if (mode === "all") {
-    return null;
-  }
-
-  const parsed = Number(mode);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function gradeThresholdFromMode(mode: NewsKanjiCapGrade): number | null {
-  if (mode === "all") {
-    return null;
-  }
-
-  const parsed = Number(mode);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isJlptHarderThanThreshold(char: string, threshold: number): boolean {
-  if (!KANJI_REGEX.test(char)) {
-    return false;
-  }
-
-  const nLevel = jlptByChar[char]?.nLevel;
-  if (typeof nLevel !== "number") {
-    return false;
-  }
-
-  return nLevel < threshold;
-}

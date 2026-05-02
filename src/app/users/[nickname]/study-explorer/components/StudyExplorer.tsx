@@ -22,11 +22,11 @@ import {
   fetchStudyQueue,
   readStoredQueue,
 } from "../lib/studyExplorerUtils";
-import { sameAssignmentList } from "../lib/studyExplorerEffectsComparators";
 import { normalizeSrsStageFilter } from "../lib/studyExplorerSrs";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
 import { useStudyExplorerDerivedData } from "../lib/useStudyExplorerDerivedData";
+import { useStudyQueuePagination } from "../lib/useStudyQueuePagination";
 import { useStudyQueueInfiniteLoad } from "../lib/useStudyQueueInfiniteLoad";
 
 const REVIEW_API_PAGE_SIZE = 120;
@@ -347,47 +347,34 @@ export default function StudyExplorer({
       // Ignore storage errors in restricted browsing modes.
     }
   }, [selectedId, selectedSubjectStorageKey]);
+  const hasActiveFilterConstraints =
+    viewedLevel !== null ||
+    typeFilter !== "all" ||
+    effectiveSrsFilter !== "all" ||
+    effectiveSrsStageFilter !== null ||
+    !effectiveShowLocked ||
+    effectiveRecentOnly ||
+    searchQuery.trim().length > 0;
 
-
-  const loadMorePage = useCallback(async () => {
-    if (isLoadingMore || !hasMorePages) return;
-
-    setIsLoadingMore(true);
-    setLoadMoreError(null);
-    try {
-      const payload = await fetchStudyQueue(
-        `/api/study/${accountId}/queue?mode=${queueMode}&limit=${initialPageSize}&offset=${loadedItems.length}`,
-      );
-      const payloadVisibleItems = payload.items.filter(
-        (item) => !hiddenSubmittedAssignmentIds.has(item.assignmentId),
-      );
-      const existingIds = new Set(loadedItems.map((item) => item.assignmentId));
-      const uniquePayloadItems = payloadVisibleItems.filter((item) => !existingIds.has(item.assignmentId));
-      const mergedVisibleCount = loadedItems.length + uniquePayloadItems.length;
-
-      setLoadedItems((prev) => {
-        const existing = new Set(prev.map((item) => item.assignmentId));
-        const merged = [...prev, ...payloadVisibleItems.filter((item) => !existing.has(item.assignmentId))];
-        return sameAssignmentList(prev, merged) ? prev : merged;
-      });
-      const nextTotalRaw = payload.pagination?.total ?? totalItems;
-      setTotalItems(Math.max(nextTotalRaw, mergedVisibleCount));
-      if (payload.counts) setPersistedCounts(payload.counts);
-    } catch (loadError) {
-      setLoadMoreError(loadError instanceof Error ? loadError.message : "Could not load more study items.");
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [
+  const { loadMorePage } = useStudyQueuePagination({
     accountId,
     queueMode,
-    loadedItems.length,
-    hasMorePages,
-    hiddenSubmittedAssignmentIds,
     initialPageSize,
-    isLoadingMore,
+    loadedItems,
     totalItems,
-  ]);
+    hasMorePages,
+    isLoadingMore,
+    isLoading,
+    isValidating,
+    hiddenSubmittedAssignmentIds,
+    filteredItemsLength: filteredItems.length,
+    hasActiveFilterConstraints,
+    onSetIsLoadingMore: setIsLoadingMore,
+    onSetLoadMoreError: setLoadMoreError,
+    onSetLoadedItems: setLoadedItems,
+    onSetTotalItems: setTotalItems,
+    onSetPersistedCounts: setPersistedCounts,
+  });
 
   useStudyQueueInfiniteLoad({
     sentinelRef,
@@ -423,40 +410,6 @@ export default function StudyExplorer({
     onSetModalSessionOrderByAssignmentId: setModalSessionOrderByAssignmentId,
     onSetModalSessionItemByAssignmentId: setModalSessionItemByAssignmentId,
   });
-
-  const hasActiveFilterConstraints =
-    viewedLevel !== null ||
-    typeFilter !== "all" ||
-    effectiveSrsFilter !== "all" ||
-    effectiveSrsStageFilter !== null ||
-    !effectiveShowLocked ||
-    effectiveRecentOnly ||
-    searchQuery.trim().length > 0;
-
-  useEffect(() => {
-    if (!hasActiveFilterConstraints) {
-      return;
-    }
-
-    if (isLoading || isValidating || isLoadingMore || !hasMorePages) {
-      return;
-    }
-
-    if (loadedItems.length === 0 || filteredItems.length > 0) {
-      return;
-    }
-
-    void loadMorePage();
-  }, [
-    filteredItems.length,
-    hasActiveFilterConstraints,
-    hasMorePages,
-    isLoading,
-    isLoadingMore,
-    isValidating,
-    loadMorePage,
-    loadedItems.length,
-  ]);
 
   return (
     <section className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
