@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -30,9 +31,12 @@ export default async function NewsPage() {
   const linkedAccount = email
     ? await prisma.account.findFirst({
         where: { joinedByEmail: email },
-        select: { wkLevel: true },
+        select: { wkLevel: true, wkUsername: true },
       })
     : null;
+  if (linkedAccount?.wkUsername) {
+    redirect(`/users/${encodeURIComponent(linkedAccount.wkUsername)}?dashboard=read&read=news`);
+  }
   const userWkLevel = typeof linkedAccount?.wkLevel === "number" ? linkedAccount.wkLevel : null;
 
   return (

@@ -9,6 +9,11 @@ import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserReadPanel from "./UserReadPanel";
 import UserDashboardTabs from "./UserDashboardTabs";
+import {
+  getNewsDevSampleUrls,
+  resolveInitialDashboardTab,
+  resolveInitialReadTab,
+} from "./userReadConfig";
 import { resolveViewerMenuInfo } from "./userPageAuth";
 import type {
   ItemSpreadGroupDetails,
@@ -19,7 +24,7 @@ import type {
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
-  searchParams: Promise<{ srs?: string; tab?: string }>;
+  searchParams: Promise<{ srs?: string; tab?: string; dashboard?: string; read?: string }>;
 };
 
 type LevelKanjiItem = {
@@ -56,17 +61,6 @@ type JlptKanjiRow = {
   wordExamples: unknown;
 };
 
-function getDevSampleUrls(): string[] {
-  if (process.env.NODE_ENV === "production") {
-    return [];
-  }
-  const raw = process.env.NEWS_DEV_SAMPLE_URLS ?? "";
-  return raw
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
-}
-
 export default async function UserDetailPage({ params, searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   const viewerEmail = session?.user?.email?.trim().toLowerCase() ?? null;
@@ -98,6 +92,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
         | "burned"
         | "locked")
     : "all";
+  const initialDashboardTab = resolveInitialDashboardTab(query);
+  const initialReadTab = resolveInitialReadTab(query);
 
   const account = await prisma.account.findFirst({
     where: { wkUsername: userKey },
@@ -448,6 +444,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           availableProgressLevels={availableProgressLevels}
           levelProgressByLevel={levelProgressByLevel}
           viewerMenuInfo={viewerMenuInfo}
+          initialDashboardTab={initialDashboardTab}
           learnContent={(
             <ExplorerTabs
               accountId={account.id}
@@ -484,7 +481,13 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               userKanjiItems={userKanjiIndex}
             />
           )}
-          readContent={<UserReadPanel userWkLevel={account.wkLevel} devSampleUrls={getDevSampleUrls()} />}
+          readContent={(
+            <UserReadPanel
+              userWkLevel={account.wkLevel}
+              devSampleUrls={getNewsDevSampleUrls()}
+              initialTab={initialReadTab}
+            />
+          )}
         />
       </main>
     </div>

@@ -12,10 +12,15 @@ type ReadPanelTab = "news" | "history" | "stats";
 type UserReadPanelProps = {
   userWkLevel: number | null;
   devSampleUrls?: string[];
+  initialTab?: ReadPanelTab;
 };
 
-export default function UserReadPanel({ userWkLevel, devSampleUrls = [] }: UserReadPanelProps) {
-  const [activeTab, setActiveTab] = useState<ReadPanelTab>("news");
+export default function UserReadPanel({
+  userWkLevel,
+  devSampleUrls = [],
+  initialTab = "news",
+}: UserReadPanelProps) {
+  const [activeTab, setActiveTab] = useState<ReadPanelTab>(initialTab);
 
   return (
     <section className="space-y-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6">

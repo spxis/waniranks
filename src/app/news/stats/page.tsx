@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 import NewsStatsClient from "./NewsStatsClient";
 
@@ -13,6 +15,16 @@ export const metadata: Metadata = {
 
 export default async function NewsStatsPage() {
   const session = await getServerSession(authOptions);
+  const email = session?.user?.email?.trim().toLowerCase() ?? null;
+  const linkedAccount = email
+    ? await prisma.account.findFirst({
+        where: { joinedByEmail: email },
+        select: { wkUsername: true },
+      })
+    : null;
+  if (linkedAccount?.wkUsername) {
+    redirect(`/users/${encodeURIComponent(linkedAccount.wkUsername)}?dashboard=read&read=stats`);
+  }
 
   return (
     <div className="relative min-h-full overflow-hidden pb-12">

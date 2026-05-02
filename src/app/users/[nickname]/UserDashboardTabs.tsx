@@ -51,6 +51,7 @@ export default function UserDashboardTabs({
   availableProgressLevels = [],
   levelProgressByLevel = {},
   viewerMenuInfo,
+  initialDashboardTab,
   learnContent,
   readContent,
 }: Props) {
@@ -65,7 +66,7 @@ export default function UserDashboardTabs({
       ).sort((a, b) => a - b),
     [availableProgressLevels, wkLevel],
   );
-  const [activeTab, setActiveTab] = useState<TabId>("learn");
+  const [activeTab, setActiveTab] = useState<TabId>(initialDashboardTab);
   const levelProgressStorageKey = `wr:user:${accountId}:level-progress-level`;
   const [selectedProgressLevel, setSelectedProgressLevel] = useState<number>(wkLevel);
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -82,14 +83,18 @@ export default function UserDashboardTabs({
     { refreshInterval: 15_000, revalidateOnFocus: true },
   );
   useEffect(() => {
+    if (initialDashboardTab !== "learn") {
+      setActiveTab(initialDashboardTab);
+      return;
+    }
+
     const storedTab = getStoredEnum(
       tabStorageKey,
       ["learn", "stats", "read"] as const,
       "learn",
     );
     setActiveTab(storedTab);
-
-  }, [tabStorageKey]);
+  }, [initialDashboardTab, tabStorageKey]);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(levelProgressStorageKey);
