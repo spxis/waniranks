@@ -81,7 +81,7 @@ export default function UserDashboardTabs({
   useEffect(() => {
     const storedTab = getStoredEnum(
       tabStorageKey,
-      ["learn", "stats", "item-spread", "level-progress", "read"] as const,
+      ["learn", "stats", "read"] as const,
       "learn",
     );
     setActiveTab(storedTab);
@@ -211,8 +211,6 @@ export default function UserDashboardTabs({
               options={[
                 { value: "learn", label: "Learn" },
                 { value: "stats", label: "Stats" },
-                { value: "item-spread", label: "Item Spread" },
-                { value: "level-progress", label: "Level Progress" },
                 { value: "read", label: "Read" },
               ]}
             />
@@ -244,8 +242,6 @@ export default function UserDashboardTabs({
             options={[
               { value: "learn", label: "Learn" },
               { value: "stats", label: "Stats" },
-              { value: "item-spread", label: "Items" },
-              { value: "level-progress", label: "Level" },
               { value: "read", label: "Read" },
             ]}
           />
@@ -340,24 +336,6 @@ export default function UserDashboardTabs({
             passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
           />
         </>
-      ) : null}
-      {activeTab === "item-spread" ? (
-        <ItemSpreadTabPanel itemSpread={itemSpread} itemSpreadDetails={itemSpreadDetails} />
-      ) : null}
-      {activeTab === "level-progress" ? (
-        <LevelProgressTabPanel
-          accountId={accountId}
-          currentWkLevel={wkLevel}
-          wkLevel={selectedProgressLevel}
-          levelOptions={safeProgressLevels}
-          levelProgressByLevel={levelProgressByLevel}
-          onSelectLevel={setSelectedProgressLevel}
-          levelRadicalProgress={selectedLevelProgress.radical}
-          levelKanjiProgress={selectedLevelProgress.kanji}
-          levelVocabularyProgress={selectedLevelProgress.vocabulary}
-          remainingToLevelUp={selectedLevelProgress.remainingToLevelUp}
-          passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
-        />
       ) : null}
       {activeTab === "read" ? (
         <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6" role="tabpanel">
