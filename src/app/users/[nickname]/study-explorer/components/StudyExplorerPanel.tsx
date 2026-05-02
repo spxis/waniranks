@@ -240,16 +240,22 @@ export default function StudyExplorerPanel({
           {srsStatuses.length > 0 ? (
             <div className="ml-auto grid gap-2 justify-items-end">
               <div className="flex flex-wrap justify-end gap-2">
-                {srsStatuses.map((status) => (
+                {srsStatuses.map((status) => {
+                  const count = srsCounts[status];
+                  const disabled = status !== "all" && count === 0;
+
+                  return (
                   <button
                     key={status}
                     type="button"
                     onClick={() => onSetSrsFilter(status)}
-                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsFilter === status)}`}
+                    disabled={disabled}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)}`}
                   >
-                    {srsFilterButtonLabel(status)} ({formatNumber(srsCounts[status])})
+                    {srsFilterButtonLabel(status)} ({formatNumber(count)})
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               {srsStageOptions.length > 0 ? (
@@ -261,16 +267,22 @@ export default function StudyExplorerPanel({
                   >
                     All SRS Stages
                   </button>
-                  {srsStageOptions.map((stage) => (
+                  {srsStageOptions.map((stage) => {
+                    const count = srsStageCounts[stage] ?? 0;
+                    const disabled = count === 0;
+
+                    return (
                     <button
                       key={stage}
                       type="button"
                       onClick={() => onSetSrsStageFilter(stage)}
-                      className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(srsStageFilter === stage)}`}
+                      disabled={disabled}
+                      className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(srsStageFilter === stage)}`}
                     >
-                      SRS {stage} ({formatNumber(srsStageCounts[stage] ?? 0)})
+                      SRS {stage} ({formatNumber(count)})
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : null}
             </div>

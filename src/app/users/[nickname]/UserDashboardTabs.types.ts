@@ -60,7 +60,7 @@ export type ItemSpreadGroupDetails = Record<
   }
 >;
 
-export type TabId = "main" | "item-spread" | "level-progress";
+export type TabId = "learn" | "stats" | "read";
 
 export type UserDashboardTabsProps = {
   accountId: string;

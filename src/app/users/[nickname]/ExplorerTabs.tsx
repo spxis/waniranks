@@ -31,7 +31,7 @@ export default function ExplorerTabs({
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
   const [isHydrated, setIsHydrated] = useState(false);
-  const [dashboardTab, setDashboardTab] = useState<string>("main");
+  const [dashboardTab, setDashboardTab] = useState<string>("learn");
   const [studyMode, setStudyMode] = useState(false);
   const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">("study");
   const [showEnglish, setShowEnglish] = useState(false);
@@ -271,7 +271,7 @@ export default function ExplorerTabs({
     if (typeof window === "undefined") return;
     const onDashboardTabChange = (event: Event) => {
       const custom = event as CustomEvent<{ tab?: string }>;
-      setDashboardTab(custom.detail?.tab ?? "main");
+      setDashboardTab(custom.detail?.tab ?? "learn");
     };
     window.addEventListener("wr:dashboard-tab-change", onDashboardTabChange as EventListener);
     return () => {
@@ -279,7 +279,7 @@ export default function ExplorerTabs({
     };
   }, []);
 
-  if (dashboardTab !== "main") return null;
+  if (dashboardTab !== "learn") return null;
 
   function tabClass(tab: "study" | "level" | "jlpt"): string {
     const active = activeTab === tab;
@@ -306,20 +306,20 @@ export default function ExplorerTabs({
           <button
             type="button"
             role="tab"
-            aria-selected={activeTab === "level"}
-            className={tabClass("level")}
-            onClick={() => setActiveTab("level")}
-          >
-            WaniKani Explorer
-          </button>
-          <button
-            type="button"
-            role="tab"
             aria-selected={activeTab === "study"}
             className={tabClass("study")}
             onClick={() => setActiveTab("study")}
           >
             Study
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "level"}
+            className={tabClass("level")}
+            onClick={() => setActiveTab("level")}
+          >
+            WaniKani Explorer
           </button>
           <button
             type="button"

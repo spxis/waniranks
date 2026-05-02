@@ -62,11 +62,9 @@ export default function UserDashboardTabs({
       ).sort((a, b) => a - b),
     [availableProgressLevels, wkLevel],
   );
-  const [activeTab, setActiveTab] = useState<TabId>("main");
+  const [activeTab, setActiveTab] = useState<TabId>("learn");
   const levelProgressStorageKey = `wr:user:${accountId}:level-progress-level`;
   const [selectedProgressLevel, setSelectedProgressLevel] = useState<number>(wkLevel);
-  const actionButtonBaseClass =
-    "inline-flex h-10 shrink-0 select-none items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-60";
   const [nowMs, setNowMs] = useState(() => Date.now());
   const { data: liveData, mutate } = useSWR<LiveData>(
     `/api/accounts/${accountId}/live`,
@@ -83,8 +81,8 @@ export default function UserDashboardTabs({
   useEffect(() => {
     const storedTab = getStoredEnum(
       tabStorageKey,
-      ["main", "item-spread", "level-progress"] as const,
-      "main",
+      ["learn", "stats", "read"] as const,
+      "learn",
     );
     setActiveTab(storedTab);
 
@@ -211,9 +209,9 @@ export default function UserDashboardTabs({
               size="md"
               asTabs
               options={[
-                { value: "main", label: "Main Data" },
-                { value: "item-spread", label: "Item Spread" },
-                { value: "level-progress", label: "Level Progress" },
+                { value: "learn", label: "Learn" },
+                { value: "stats", label: "Stats" },
+                { value: "read", label: "Read" },
               ]}
             />
             <UserAdminRefreshButton
@@ -242,9 +240,9 @@ export default function UserDashboardTabs({
             size="md"
             asTabs
             options={[
-              { value: "main", label: "Main" },
-              { value: "item-spread", label: "Items" },
-              { value: "level-progress", label: "Level" },
+              { value: "learn", label: "Learn" },
+              { value: "stats", label: "Stats" },
+              { value: "read", label: "Read" },
             ]}
           />
         </div>
@@ -303,7 +301,7 @@ export default function UserDashboardTabs({
           </p>
         </div>
       </div>
-      {activeTab === "main" ? (
+      {activeTab === "learn" ? (
         <MainTabPanel
           wkLevel={wkLevel}
           levelKanjiLearned={levelKanjiLearned}
@@ -321,23 +319,51 @@ export default function UserDashboardTabs({
           vocabularyCount={vocabularyCount}
         />
       ) : null}
-      {activeTab === "item-spread" ? (
-        <ItemSpreadTabPanel itemSpread={itemSpread} itemSpreadDetails={itemSpreadDetails} />
+      {activeTab === "stats" ? (
+        <>
+          <ItemSpreadTabPanel itemSpread={itemSpread} itemSpreadDetails={itemSpreadDetails} />
+          <LevelProgressTabPanel
+            accountId={accountId}
+            currentWkLevel={wkLevel}
+            wkLevel={selectedProgressLevel}
+            levelOptions={safeProgressLevels}
+            levelProgressByLevel={levelProgressByLevel}
+            onSelectLevel={setSelectedProgressLevel}
+            levelRadicalProgress={selectedLevelProgress.radical}
+            levelKanjiProgress={selectedLevelProgress.kanji}
+            levelVocabularyProgress={selectedLevelProgress.vocabulary}
+            remainingToLevelUp={selectedLevelProgress.remainingToLevelUp}
+            passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
+          />
+        </>
       ) : null}
-      {activeTab === "level-progress" ? (
-        <LevelProgressTabPanel
-          accountId={accountId}
-          currentWkLevel={wkLevel}
-          wkLevel={selectedProgressLevel}
-          levelOptions={safeProgressLevels}
-          levelProgressByLevel={levelProgressByLevel}
-          onSelectLevel={setSelectedProgressLevel}
-          levelRadicalProgress={selectedLevelProgress.radical}
-          levelKanjiProgress={selectedLevelProgress.kanji}
-          levelVocabularyProgress={selectedLevelProgress.vocabulary}
-          remainingToLevelUp={selectedLevelProgress.remainingToLevelUp}
-          passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
-        />
+      {activeTab === "read" ? (
+        <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6" role="tabpanel">
+          <h2 className="text-2xl font-black text-foreground">Read</h2>
+          <p className="mt-2 text-sm text-foreground/75">
+            Open the News Reader to practice reading and track your article history and stats.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/news"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+            >
+              Read News
+            </Link>
+            <Link
+              href="/news/history"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+            >
+              News History
+            </Link>
+            <Link
+              href="/news/stats"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+            >
+              News Stats
+            </Link>
+          </div>
+        </div>
       ) : null}
     </section>
   );
