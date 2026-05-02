@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { getStoredEnum, setStoredEnum } from "@/lib/clientStorage";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 import SegmentedControl from "@/app/shared/SegmentedControl";
-import UserAdminRefreshButton from "./UserAdminRefreshButton";
+import UserHeaderMenu from "./UserHeaderMenu";
 import {
   ItemSpreadTabPanel,
   LevelProgressTabPanel,
@@ -50,6 +50,7 @@ export default function UserDashboardTabs({
   passedLevelUpGate,
   availableProgressLevels = [],
   levelProgressByLevel = {},
+  viewerMenuInfo,
 }: Props) {
   const tabStorageKey = `wr:user:${accountId}:dashboard-tab`;
   const safeProgressLevels = useMemo(
@@ -214,23 +215,11 @@ export default function UserDashboardTabs({
                 { value: "read", label: "Read" },
               ]}
             />
-            <UserAdminRefreshButton
-              accountId={accountId}
-              label={"\u21BB"}
-              ariaLabel="Refresh"
-              iconOnly
-              showMessage={false}
-              buttonClassName="inline-flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
-            />
+            <UserHeaderMenu accountId={accountId} viewerMenuInfo={viewerMenuInfo} />
           </div>
-          <UserAdminRefreshButton
-            accountId={accountId}
-            label={"\u21BB"}
-            ariaLabel="Refresh"
-            iconOnly
-            showMessage={false}
-            buttonClassName="inline-flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border border-line bg-surface text-lg font-bold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
-          />
+          <div className="ml-auto sm:hidden">
+            <UserHeaderMenu accountId={accountId} viewerMenuInfo={viewerMenuInfo} />
+          </div>
         </div>
         <div className="sm:hidden">
           <SegmentedControl
@@ -301,17 +290,6 @@ export default function UserDashboardTabs({
           </p>
         </div>
       </div>
-      {activeTab === "learn" ? (
-        <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6" role="tabpanel">
-          <h2 className="text-2xl font-black text-foreground">Learn</h2>
-          <p className="mt-2 text-sm text-foreground/75">
-            Use Study, WaniKani Explorer, and JLPT Explorer below to review, drill, and explore.
-          </p>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
-            Stats were moved to the Stats tab for a cleaner learn flow.
-          </p>
-        </div>
-      ) : null}
       {activeTab === "stats" ? (
         <div className="mt-4 space-y-4" role="tabpanel">
           <section className="rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">

@@ -62,6 +62,13 @@ export type ItemSpreadGroupDetails = Record<
 
 export type TabId = "learn" | "stats" | "read";
 
+export type ViewerMenuInfo = {
+  provider: "google" | "invite";
+  name: string;
+  email: string | null;
+  wkUsername: string | null;
+};
+
 export type UserDashboardTabsProps = {
   accountId: string;
   nickname: string;
@@ -97,6 +104,7 @@ export type UserDashboardTabsProps = {
   passedLevelUpGate: boolean;
   availableProgressLevels: number[];
   levelProgressByLevel: Record<number, LevelProgressSnapshot>;
+  viewerMenuInfo: ViewerMenuInfo | null;
 };
 
 export type LiveData = {

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserDashboardTabs from "./UserDashboardTabs";
+import { resolveViewerMenuInfo } from "./userPageAuth";
 import type {
   ItemSpreadGroupDetails,
   LevelProgressSnapshot,
@@ -57,6 +58,10 @@ type JlptKanjiRow = {
 export default async function UserDetailPage({ params, searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   const viewerEmail = session?.user?.email?.trim().toLowerCase() ?? null;
+  const viewerMenuInfo = await resolveViewerMenuInfo({
+    viewerEmail,
+    sessionName: session?.user?.name?.trim() ?? null,
+  });
   const { nickname } = await params;
   const userKey = decodeURIComponent(nickname);
   const query = await searchParams;
@@ -430,6 +435,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           passedLevelUpGate={passedLevelUpGate}
           availableProgressLevels={availableProgressLevels}
           levelProgressByLevel={levelProgressByLevel}
+          viewerMenuInfo={viewerMenuInfo}
         />
 
         <ExplorerTabs
