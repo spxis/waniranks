@@ -7,6 +7,7 @@ import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
 import { prisma } from "@/lib/prisma";
 import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
+import UserReadPanel from "./UserReadPanel";
 import UserDashboardTabs from "./UserDashboardTabs";
 import { resolveViewerMenuInfo } from "./userPageAuth";
 import type {
@@ -54,6 +55,17 @@ type JlptKanjiRow = {
   notes: string[];
   wordExamples: unknown;
 };
+
+function getDevSampleUrls(): string[] {
+  if (process.env.NODE_ENV === "production") {
+    return [];
+  }
+  const raw = process.env.NEWS_DEV_SAMPLE_URLS ?? "";
+  return raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
 
 export default async function UserDetailPage({ params, searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
@@ -472,6 +484,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               userKanjiItems={userKanjiIndex}
             />
           )}
+          readContent={<UserReadPanel userWkLevel={account.wkLevel} devSampleUrls={getDevSampleUrls()} />}
         />
       </main>
     </div>

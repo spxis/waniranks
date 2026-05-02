@@ -108,6 +108,7 @@ export type UserDashboardTabsProps = {
   levelProgressByLevel: Record<number, LevelProgressSnapshot>;
   viewerMenuInfo: ViewerMenuInfo | null;
   learnContent: ReactNode;
+  readContent: ReactNode;
 };
 
 export type LiveData = {

@@ -52,6 +52,7 @@ export default function UserDashboardTabs({
   levelProgressByLevel = {},
   viewerMenuInfo,
   learnContent,
+  readContent,
 }: Props) {
   const tabStorageKey = `wr:user:${accountId}:dashboard-tab`;
   const safeProgressLevels = useMemo(
@@ -184,7 +185,8 @@ export default function UserDashboardTabs({
     remainingToLevelUp,
     passedLevelUpGate,
   };
-  return (
+
+  const headerSection = (
     <section className="rounded-[2rem] border border-line bg-surface/90 p-3 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-8">
       <div className="flex flex-col gap-2 sm:gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -293,13 +295,19 @@ export default function UserDashboardTabs({
           </p>
         </div>
       </div>
+    </section>
+  );
+
+  return (
+    <>
+      {headerSection}
       {activeTab === "learn" ? (
-        <div className="mt-4" role="tabpanel">
+        <section className="mt-4" role="tabpanel">
           {learnContent}
-        </div>
+        </section>
       ) : null}
       {activeTab === "stats" ? (
-        <div className="mt-4 space-y-4" role="tabpanel">
+        <section className="mt-4 space-y-4" role="tabpanel">
           <section className="rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/65">Snapshot</p>
             <MainTabPanel
@@ -341,36 +349,13 @@ export default function UserDashboardTabs({
             passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
           />
           </section>
-        </div>
+        </section>
       ) : null}
       {activeTab === "read" ? (
-        <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6" role="tabpanel">
-          <h2 className="text-2xl font-black text-foreground">Read</h2>
-          <p className="mt-2 text-sm text-foreground/75">
-            Open the News Reader to practice reading and track your article history and stats.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/news"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
-            >
-              Read News
-            </Link>
-            <Link
-              href="/news/history"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
-            >
-              News History
-            </Link>
-            <Link
-              href="/news/stats"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
-            >
-              News Stats
-            </Link>
-          </div>
-        </div>
+        <section className="mt-4" role="tabpanel">
+          {readContent}
+        </section>
       ) : null}
-    </section>
+    </>
   );
 }
