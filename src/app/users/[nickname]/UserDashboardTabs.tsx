@@ -302,26 +302,45 @@ export default function UserDashboardTabs({
         </div>
       </div>
       {activeTab === "learn" ? (
-        <MainTabPanel
-          wkLevel={wkLevel}
-          levelKanjiLearned={levelKanjiLearned}
-          levelKanjiTotal={levelKanjiTotal}
-          levelKanjiLocked={levelKanjiLocked}
-          totalLearnedKanji={totalLearnedKanji}
-          estimatedHoursRemaining={estimatedHoursRemaining}
-          apprenticeCount={apprenticeCount}
-          guruCount={guruCount}
-          masterCount={masterCount}
-          enlightenedCount={enlightenedCount}
-          burnedCount={burnedCount}
-          radicalCount={radicalCount}
-          totalKanjiCount={totalKanjiCount}
-          vocabularyCount={vocabularyCount}
-        />
+        <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6" role="tabpanel">
+          <h2 className="text-2xl font-black text-foreground">Learn</h2>
+          <p className="mt-2 text-sm text-foreground/75">
+            Use Study, WaniKani Explorer, and JLPT Explorer below to review, drill, and explore.
+          </p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
+            Stats were moved to the Stats tab for a cleaner learn flow.
+          </p>
+        </div>
       ) : null}
       {activeTab === "stats" ? (
-        <>
+        <div className="mt-4 space-y-4" role="tabpanel">
+          <section className="rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/65">Snapshot</p>
+            <MainTabPanel
+              wkLevel={wkLevel}
+              levelKanjiLearned={levelKanjiLearned}
+              levelKanjiTotal={levelKanjiTotal}
+              levelKanjiLocked={levelKanjiLocked}
+              totalLearnedKanji={totalLearnedKanji}
+              estimatedHoursRemaining={estimatedHoursRemaining}
+              apprenticeCount={apprenticeCount}
+              guruCount={guruCount}
+              masterCount={masterCount}
+              enlightenedCount={enlightenedCount}
+              burnedCount={burnedCount}
+              radicalCount={radicalCount}
+              totalKanjiCount={totalKanjiCount}
+              vocabularyCount={vocabularyCount}
+            />
+          </section>
+
+          <section className="rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/65">Item spread</p>
           <ItemSpreadTabPanel itemSpread={itemSpread} itemSpreadDetails={itemSpreadDetails} />
+          </section>
+
+          <section className="rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/65">Level progress</p>
           <LevelProgressTabPanel
             accountId={accountId}
             currentWkLevel={wkLevel}
@@ -335,7 +354,8 @@ export default function UserDashboardTabs({
             remainingToLevelUp={selectedLevelProgress.remainingToLevelUp}
             passedLevelUpGate={selectedLevelProgress.passedLevelUpGate}
           />
-        </>
+          </section>
+        </div>
       ) : null}
       {activeTab === "read" ? (
         <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6" role="tabpanel">

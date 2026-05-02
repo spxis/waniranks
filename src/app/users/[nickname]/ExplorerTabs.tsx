@@ -284,8 +284,8 @@ export default function ExplorerTabs({
   function tabClass(tab: "study" | "level" | "jlpt"): string {
     const active = activeTab === tab;
     return active
-      ? "rounded-full border border-accent bg-accent px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-white"
-      : "rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted";
+      ? "inline-flex h-8 items-center justify-center rounded-full border border-accent bg-accent px-4 text-xs font-bold uppercase tracking-[0.1em] text-white"
+      : "inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted";
   }
 
   function queueModeSegmentClass(mode: "review" | "lesson", activeMode: "review" | "lesson"): string {
@@ -302,7 +302,11 @@ export default function ExplorerTabs({
   return (
     <section className="space-y-3">
       <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Explorer tabs">
+        <div
+          className="inline-flex flex-wrap items-center rounded-full border border-line bg-surface p-1"
+          role="tablist"
+          aria-label="Explorer tabs"
+        >
           <button
             type="button"
             role="tab"
