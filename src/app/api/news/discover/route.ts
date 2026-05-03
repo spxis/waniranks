@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { authOptions } from "@/lib/auth";
 import { logNewsApiPerf } from "@/lib/news/newsApiPerf";
 import { discoverArticleLinks, type DiscoverError } from "@/lib/news/newsDiscover";
+import { emitSumilabuTelemetry } from "@/lib/sumilabuTelemetry";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,18 @@ export async function POST(request: Request) {
     logNewsApiPerf("/api/news/discover", startedAtMs, status, {
       traceId,
       ...(meta ?? {}),
+    });
+    void emitSumilabuTelemetry({
+      event: "news_discover",
+      status: status >= 500 ? "error" : status >= 400 ? "warn" : "ok",
+      severity: status >= 500 ? "error" : status >= 400 ? "warning" : "info",
+      durationMs: Date.now() - startedAtMs,
+      tags: {
+        route: "/api/news/discover",
+        trace_id: traceId,
+        http_status: status,
+      },
+      telemetry: meta,
     });
     return NextResponse.json(body, { status });
   };
@@ -53,11 +66,13 @@ export async function POST(request: Request) {
         parseMessage: result.error.kind === "parse_failed" ? (result.error.message ?? null) : null,
         errorStatus: "status" in result.error ? (result.error.status ?? null) : null,
         hostname,
+        url: parsed.data.url,
       });
     }
 
     return respond(result.payload, 200, {
       links: result.payload.links.length,
+      hostname: safeHostname(parsed.data.url),
     });
   } catch (error) {
     console.error("[news/discover] failed", { traceId, error });

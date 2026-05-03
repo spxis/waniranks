@@ -114,6 +114,13 @@ Required Vercel environment variables:
 - `ADMIN_GOOGLE_ALLOWED_EMAILS` (comma-separated admin emails, e.g. `you@gmail.com,partner@gmail.com`)
 - `LEADERBOARD_REFRESH_INTERVAL_MS` (optional, default `300000`)
 - `LEADERBOARD_REQUEST_GAP_MS` (optional, default `1000`)
+- `SUMILABU_TELEMETRY_URL` (optional, default `https://api.sumilabu.com/api/v1/telemetry/events`)
+- `SUMILABU_INGEST_TOKEN` (required to enable telemetry posting)
+- `SUMILABU_PROJECT_KEY` (optional, default `umakuma`)
+- `SUMILABU_SOURCE_TYPE` (optional, default `server`)
+- `SUMILABU_SOURCE_ID` (optional, default `umakuma-web`)
+- `SUMILABU_DISPLAY_NAME` (optional, default `UmaKuma`)
+- `SUMILABU_SERVICE` (optional, default `next-api`)
 
 ## Admin Auth
 

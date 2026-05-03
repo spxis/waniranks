@@ -5,6 +5,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { logNewsApiPerf } from "@/lib/news/newsApiPerf";
 import { extractArticle, type NewsExtractError } from "@/lib/news/newsExtract";
+import { emitSumilabuTelemetry } from "@/lib/sumilabuTelemetry";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,17 @@ export async function POST(request: Request) {
   const startedAtMs = Date.now();
   const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
     logNewsApiPerf("/api/news/extract", startedAtMs, status, meta);
+    void emitSumilabuTelemetry({
+      event: "news_extract",
+      status: status >= 500 ? "error" : status >= 400 ? "warn" : "ok",
+      severity: status >= 500 ? "error" : status >= 400 ? "warning" : "info",
+      durationMs: Date.now() - startedAtMs,
+      tags: {
+        route: "/api/news/extract",
+        http_status: status,
+      },
+      telemetry: meta,
+    });
     return NextResponse.json(body, { status });
   };
 
@@ -36,6 +48,7 @@ export async function POST(request: Request) {
       const { status, message } = mapErrorToResponse(result.error);
       return respond({ error: message }, status, {
         errorKind: result.error.kind,
+        url: parsed.data.url,
       });
     }
 
@@ -45,6 +58,7 @@ export async function POST(request: Request) {
       {
         blocks: result.article.blocks.length,
         textLength: result.article.textLength,
+        sourceUrl: parsed.data.url,
       },
     );
   } catch (error) {
