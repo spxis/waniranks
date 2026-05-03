@@ -7,8 +7,8 @@ import UserAdminRefreshButton from "./UserAdminRefreshButton";
 import type { ViewerMenuInfo } from "./UserDashboardTabs.types";
 
 type UserHeaderMenuProps = {
-  accountId: string;
-  viewedWkUsername: string;
+  accountId?: string;
+  viewedWkUsername?: string;
   viewerMenuInfo: ViewerMenuInfo | null;
 };
 
@@ -150,17 +150,31 @@ export default function UserHeaderMenu({ accountId, viewedWkUsername, viewerMenu
             <section className="border-t border-line pt-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/60">Navigation</p>
               <div className="mt-2 space-y-2">
+                {viewedWkUsername ? (
+                  <Link
+                    href={`/users/${encodeURIComponent(viewedWkUsername)}/history`}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                  >
+                    History
+                  </Link>
+                ) : null}
                 <Link
-                  href={`/users/${encodeURIComponent(viewedWkUsername)}/history`}
+                  href="/"
                   className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
                 >
-                  History
+                  Leaderboard
                 </Link>
                 <Link
                   href="/admin"
                   className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
                 >
                   Admin
+                </Link>
+                <Link
+                  href="/admin/users"
+                  className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                >
+                  Manage users
                 </Link>
                 {viewerMenuInfo?.wkUsername ? (
                   <Link
@@ -197,13 +211,15 @@ export default function UserHeaderMenu({ accountId, viewedWkUsername, viewerMenu
             <section className="border-t border-line pt-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/60">Actions</p>
               <div className="mt-2 space-y-2">
-                <UserAdminRefreshButton
-                  accountId={accountId}
-                  label="Refresh user"
-                  ariaLabel="Refresh user"
-                  showMessage={false}
-                  buttonClassName="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
-                />
+                {accountId ? (
+                  <UserAdminRefreshButton
+                    accountId={accountId}
+                    label="Refresh user"
+                    ariaLabel="Refresh user"
+                    showMessage={false}
+                    buttonClassName="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                  />
+                ) : null}
 
                 {viewerMenuInfo?.provider === "google" ? (
                   <Link

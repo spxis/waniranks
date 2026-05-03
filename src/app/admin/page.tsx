@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useState } from "react";
 
 import AdminControlRoom from "./AdminControlRoom";
 import type { AdminSessionStatus, Status } from "./AdminPage.types";
+import type { ViewerMenuInfo } from "../users/[nickname]/UserDashboardTabs.types";
+import UserHeaderMenu from "../users/[nickname]/UserHeaderMenu";
 
 export default function AdminPage() {
   const [nickname, setNickname] = useState("");
@@ -20,6 +22,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [jlptRefreshing, setJlptRefreshing] = useState(false);
   const [jlptEnriching, setJlptEnriching] = useState(false);
+
+  const viewerMenuInfo: ViewerMenuInfo | null = signedIn
+    ? {
+        provider: "google",
+        name: userName?.trim() || userEmail?.split("@")[0] || "Google user",
+        email: userEmail,
+        wkUsername: null,
+      }
+    : null;
 
   useEffect(() => {
     async function getAdminSessionStatus() {
@@ -173,7 +184,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+    <div className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <div className="noise-overlay pointer-events-none absolute inset-0" />
       <main className="relative mx-auto w-full max-w-6xl space-y-5">
         <div className="flex flex-wrap items-center gap-2">
@@ -183,12 +194,9 @@ export default function AdminPage() {
           >
             Back to leaderboard
           </Link>
-          <Link
-            href="/admin/users"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Manage users
-          </Link>
+          <div className="ml-auto">
+            <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+          </div>
         </div>
 
         <AdminControlRoom

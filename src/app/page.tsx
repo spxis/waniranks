@@ -1,7 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Link from "next/link";
+import { authOptions } from "@/lib/auth";
 import { refreshDueAccounts } from "@/lib/sync";
 import LeaderboardAdminActions from "./LeaderboardAdminActions";
+import UserHeaderMenu from "./users/[nickname]/UserHeaderMenu";
+import { resolveViewerMenuInfo } from "./users/[nickname]/userPageAuth";
 import LeaderboardTable from "./leaderboard/components/LeaderboardTable";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +55,13 @@ function formatNumber(input: number): string {
 }
 
 export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const viewerEmail = session?.user?.email?.trim().toLowerCase() ?? null;
+  const viewerMenuInfo = await resolveViewerMenuInfo({
+    viewerEmail,
+    sessionName: session?.user?.name?.trim() ?? null,
+  });
+
   let leaderboard: LeaderboardRow[] = [];
   let setupMessage = "";
   let runtimeError = "";
@@ -207,6 +218,7 @@ export default async function Home() {
                 Join Board
               </Link>
               <LeaderboardAdminActions />
+              <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
             </div>
           </div>
 

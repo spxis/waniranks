@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 
 import AdminAccountsSection, { type AdminAccount } from "../AdminAccountsSection";
 import type { AdminSessionStatus, Status } from "../AdminPage.types";
+import type { ViewerMenuInfo } from "../../users/[nickname]/UserDashboardTabs.types";
+import UserHeaderMenu from "../../users/[nickname]/UserHeaderMenu";
 
 export default function AdminUsersPage() {
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
@@ -14,6 +16,15 @@ export default function AdminUsersPage() {
   const [generatedInviteCodesByAccountId, setGeneratedInviteCodesByAccountId] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
+
+  const viewerMenuInfo: ViewerMenuInfo | null = viewerEmail
+    ? {
+        provider: "google",
+        name: viewerEmail.split("@")[0] || "Google user",
+        email: viewerEmail,
+        wkUsername: null,
+      }
+    : null;
 
   async function loadAccounts() {
     const response = await fetch("/api/accounts", {
@@ -158,7 +169,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+    <div className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <main className="relative mx-auto w-full max-w-6xl space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           <Link
@@ -173,6 +184,9 @@ export default function AdminUsersPage() {
           >
             Leaderboard
           </Link>
+          <div className="ml-auto">
+            <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+          </div>
         </div>
 
         {checkingSession ? (
