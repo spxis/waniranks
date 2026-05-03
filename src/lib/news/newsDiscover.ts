@@ -56,6 +56,7 @@ export type DiscoverError =
   | { kind: "invalid_url" }
   | { kind: "blocked_host" }
   | { kind: "no_links" }
+  | { kind: "parse_failed"; message?: string }
   | NewsHttpError;
 
 export type DiscoverPayload = {
@@ -136,8 +137,8 @@ export async function discoverArticleLinks(rawUrl: string): Promise<DiscoverResu
     return { ok: true, payload };
   } catch {
     // Some publisher responses can include malformed HTML/URL values that break parsing.
-    // Return typed fetch failure so callers surface a user-facing status instead of 500.
-    return { ok: false, error: { kind: "fetch_failed" } };
+    // Return a typed parse failure so API routes can log and surface traceable diagnostics.
+    return { ok: false, error: { kind: "parse_failed" } };
   }
 }
 
