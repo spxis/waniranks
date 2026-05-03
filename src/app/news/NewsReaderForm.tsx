@@ -13,7 +13,7 @@ type Props = {
   loading: boolean;
   discoverLoading: boolean;
   devSampleUrls: string[];
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (explicitSubmit: boolean) => void;
 };
 
 export default function NewsReaderForm({
@@ -26,8 +26,17 @@ export default function NewsReaderForm({
   devSampleUrls,
   onSubmit,
 }: Props) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nativeEvent = event.nativeEvent as SubmitEvent;
+    const submitter = nativeEvent.submitter;
+    const explicitSubmit =
+      submitter instanceof HTMLButtonElement && submitter.dataset.submitIntent === "news-submit";
+    onSubmit(explicitSubmit);
+  }
+
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <label
           htmlFor="news-url"
@@ -69,6 +78,7 @@ export default function NewsReaderForm({
         />
         <button
           type="submit"
+          data-submit-intent="news-submit"
           disabled={(loading || discoverLoading) || !url.trim()}
           className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-accent px-6 text-sm font-bold uppercase tracking-[0.14em] text-surface transition hover:bg-accent-2 disabled:opacity-50"
         >

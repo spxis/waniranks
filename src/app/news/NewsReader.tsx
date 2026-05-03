@@ -67,6 +67,8 @@ type FetchDiscoverOptions = {
   navigation?: "replace" | "push";
 };
 
+const NEWS_SCAN_TIMEOUT_MS = 8_000;
+
 export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -250,11 +252,18 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
         }
       }
 
+      let timeout: number | undefined;
       try {
+        const controller = new AbortController();
+        timeout = window.setTimeout(() => {
+          controller.abort();
+        }, NEWS_SCAN_TIMEOUT_MS);
+
         const response = await fetch("/api/news/discover", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: trimmed }),
+          signal: controller.signal,
         });
 
         const payload = (await response.json().catch(() => null)) as
@@ -276,9 +285,16 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
           fetchedAt: data.fetchedAt,
         });
         refreshDiscoverSessions();
-      } catch {
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          setDiscoverError("Scan timed out. Try a narrower section URL or try again.");
+          return;
+        }
         setDiscoverError("Network problem — try again.");
       } finally {
+        if (timeout !== undefined) {
+          window.clearTimeout(timeout);
+        }
         setDiscoverLoading(false);
       }
     },
@@ -319,8 +335,10 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
     void fetchArticle(param, "replace");
   }, [searchParams, fetchArticle]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleSubmit(explicitSubmit: boolean) {
+    if (!explicitSubmit) {
+      return;
+    }
     if (mode === "site") await fetchDiscover(url, { navigation: "push" });
     else await fetchArticle(url, "push");
   }
