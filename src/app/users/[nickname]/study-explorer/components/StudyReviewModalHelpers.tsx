@@ -184,29 +184,6 @@ function renderSegmentedReading(reading: string): JSX.Element {
   );
 }
 
-function renderSegmentedReadingList(value: string): JSX.Element {
-  const normalized = value.trim();
-  if (!normalized || normalized === "-") {
-    return <>{value}</>;
-  }
-
-  const readings = normalized
-    .split(",")
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
-
-  return (
-    <>
-      {readings.map((reading, index) => (
-        <span key={`${reading}-${index}`}>
-          {index > 0 ? <span className="text-foreground/65">, </span> : null}
-          {renderSegmentedReading(reading)}
-        </span>
-      ))}
-    </>
-  );
-}
-
 function pronunciationForReading(reading: string): string | null {
   const trimmed = reading.trim();
   if (!trimmed || trimmed === "-") {

@@ -7,9 +7,7 @@ import { itemMatchesLevelSearch } from "./levelExplorerSelectors";
 type BuildActionsArgs = {
   maxLevel: number;
   initialLevel: number;
-  levelOptions: number[];
   stickyMerge: boolean;
-  selectedLevels: Set<number>;
   searchAvailableLevels: Set<number> | null;
   snapshotsByLevel: Map<number, Snapshot>;
   subjectById: Map<number, LevelItem>;
@@ -33,9 +31,7 @@ type BuildActionsArgs = {
 export function buildLevelExplorerActions({
   maxLevel,
   initialLevel,
-  levelOptions,
   stickyMerge,
-  selectedLevels,
   searchAvailableLevels,
   snapshotsByLevel,
   subjectById,

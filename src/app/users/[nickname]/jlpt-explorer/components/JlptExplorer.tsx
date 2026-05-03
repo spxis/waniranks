@@ -86,7 +86,10 @@ export default function JlptExplorer({
   }, [firstPageData, hasInitialItems]);
 
   const effectiveItems = hasInitialItems ? items : pagedItems;
-  const effectiveUserKanjiItems = hasInitialUserKanji ? userKanjiItems : (userIndexData?.userKanjiItems ?? []);
+  const effectiveUserKanjiItems = useMemo(
+    () => (hasInitialUserKanji ? userKanjiItems : (userIndexData?.userKanjiItems ?? [])),
+    [hasInitialUserKanji, userKanjiItems, userIndexData?.userKanjiItems],
+  );
   const isLoadingData = !hasInitialItems && !firstPageData;
   const hasMoreRemote = !hasInitialItems && effectiveItems.length < remoteTotal;
 

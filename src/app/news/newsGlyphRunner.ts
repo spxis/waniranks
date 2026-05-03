@@ -133,7 +133,6 @@ export async function openNewsGlyphCandidatesWithOptions(
       return false;
     }
 
-    const value = selected.run;
     const lastOpenAt = recentOpenAtByRun.get(displayRun) ?? 0;
     if (Date.now() - lastOpenAt < OPEN_COOLDOWN_MS) {
       return false;

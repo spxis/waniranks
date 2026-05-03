@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { canAccessAccount } from "@/lib/accountAccess";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { getCachedStudyQueue, setCachedStudyQueue } from "@/lib/studyQueueCache";
@@ -10,7 +11,6 @@ import {
   hydrateMissingSubjects,
   normalizeSubjectType,
   queueRowsFromState,
-  type QueueMode,
   type SubjectData,
 } from "./queueRouteUtils";
 import { hydrateQueueSyncState } from "./queueRouteSync";
@@ -20,14 +20,19 @@ type RouteContext = {
 };
 
 export async function GET(request: Request, context: RouteContext) {
-  try {
-    const url = new URL(request.url);
-    const modeParam = url.searchParams.get("mode");
-    const mode = modeParam === "lesson" ? "lesson" : modeParam === "all" ? "all" : "review";
-    const limitParam = Number(url.searchParams.get("limit") ?? "");
-    const offsetParam = Number(url.searchParams.get("offset") ?? "");
-    const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
-    const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
+  return withApiRouteTelemetry({
+    route: "/api/study/[accountId]/queue",
+    method: "GET",
+    request,
+    execute: async () => {
+      try {
+        const url = new URL(request.url);
+        const modeParam = url.searchParams.get("mode");
+        const mode = modeParam === "lesson" ? "lesson" : modeParam === "all" ? "all" : "review";
+        const limitParam = Number(url.searchParams.get("limit") ?? "");
+        const offsetParam = Number(url.searchParams.get("offset") ?? "");
+        const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
+        const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
 
     const { accountId } = await context.params;
     if (!(await canAccessAccount(request, accountId))) {
@@ -434,8 +439,10 @@ export async function GET(request: Request, context: RouteContext) {
         },
       },
     );
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Could not fetch study queue." }, { status: 500 });
-  }
+      } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: "Could not fetch study queue." }, { status: 500 });
+      }
+    },
+  });
 }

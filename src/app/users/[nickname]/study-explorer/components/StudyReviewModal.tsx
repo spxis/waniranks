@@ -22,7 +22,6 @@ export default function StudyReviewModal({
   isSelectedSubmitted,
   isAnswerRevealed,
   isSubmittingSelected,
-  submitInFlight,
   submitFeedback,
   latestReviewTransition,
   reviewOutcomeByAssignmentId,
@@ -61,8 +60,10 @@ export default function StudyReviewModal({
       return;
     }
 
-    setViewerMode(forcedViewerMode);
-    setStoredEnum(viewerModeStorageKey, forcedViewerMode);
+    queueMicrotask(() => {
+      setViewerMode(forcedViewerMode);
+      setStoredEnum(viewerModeStorageKey, forcedViewerMode);
+    });
   }, [forcedViewerMode]);
 
   const [flashRevealKey, setFlashRevealKey] = useState<string | null>(null);
@@ -205,10 +206,12 @@ export default function StudyReviewModal({
         : "";
     const verb = latestReviewTransition.transition === "promoted" ? "Promoted" : "Dropped";
 
-    setVisibleTransitionCue({
-      assignmentId: latestReviewTransition.assignmentId,
-      tone: latestReviewTransition.transition === "promoted" ? "positive" : "negative",
-      message: `${verb} to ${nextGroupingLabel}${nextStageLabel}`,
+    queueMicrotask(() => {
+      setVisibleTransitionCue({
+        assignmentId: latestReviewTransition.assignmentId,
+        tone: latestReviewTransition.transition === "promoted" ? "positive" : "negative",
+        message: `${verb} to ${nextGroupingLabel}${nextStageLabel}`,
+      });
     });
 
     const timeoutId = window.setTimeout(() => {

@@ -23,20 +23,22 @@ export function useStudyBulkReset({ filteredItems }: Args) {
   const [bulkAnchorIndex, setBulkAnchorIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    setSelectedSubjectIds((prev) => {
-      if (prev.size === 0) {
-        return prev;
-      }
-
-      const available = new Set(filteredItems.map((item) => item.subjectId));
-      const next = new Set<number>();
-      for (const subjectId of prev.values()) {
-        if (available.has(subjectId)) {
-          next.add(subjectId);
+    queueMicrotask(() => {
+      setSelectedSubjectIds((prev) => {
+        if (prev.size === 0) {
+          return prev;
         }
-      }
 
-      return next.size === prev.size ? prev : next;
+        const available = new Set(filteredItems.map((item) => item.subjectId));
+        const next = new Set<number>();
+        for (const subjectId of prev.values()) {
+          if (available.has(subjectId)) {
+            next.add(subjectId);
+          }
+        }
+
+        return next.size === prev.size ? prev : next;
+      });
     });
   }, [filteredItems]);
 

@@ -11,8 +11,6 @@ import {
   readingDualScriptCard,
   readingWithPronunciation,
   readingsWithPronunciationList,
-  relatedTileLabelClass,
-  relatedTiles,
   relatedTilesClickable,
 } from "./StudyReviewModalHelpers";
 
@@ -29,7 +27,6 @@ type Props = {
   requiresReveal: boolean;
   isAnswerRevealed: boolean;
   isOutcomeFinal: boolean;
-  allMeanings: string[];
   showEnglish: boolean;
   primaryReadingHiragana: string;
   primaryReadingKatakana: string;
@@ -48,7 +45,6 @@ type Props = {
   onSubmit: (assignmentId: number, result: "correct" | "wrong") => void;
   onSkipCurrent: () => void;
   onStartLesson: (assignmentId: number) => void;
-  onResetToLessons: (assignmentId: number) => void;
   onToggleUsedKanjiCollapsed: () => void;
   onToggleUsedInWordsCollapsed: () => void;
 };
@@ -66,7 +62,6 @@ export default function StudyReviewModalMetaPanels({
   requiresReveal,
   isAnswerRevealed,
   isOutcomeFinal,
-  allMeanings,
   showEnglish,
   primaryReadingHiragana,
   primaryReadingKatakana,
@@ -85,7 +80,6 @@ export default function StudyReviewModalMetaPanels({
   onSubmit,
   onSkipCurrent,
   onStartLesson,
-  onResetToLessons,
   onToggleUsedKanjiCollapsed,
   onToggleUsedInWordsCollapsed,
 }: Props) {

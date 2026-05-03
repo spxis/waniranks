@@ -30,45 +30,55 @@ export default function ExplorerTabs({
   const previousPageKeyRef = useRef<string | null>(null);
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
-  const [isHydrated, setIsHydrated] = useState(false);
+  const isHydrated = typeof window !== "undefined";
   const [dashboardTab, setDashboardTab] = useState<string>("learn");
-  const [studyMode, setStudyMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">("study");
-  const [showEnglish, setShowEnglish] = useState(false);
-  const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
-  const [queueMode, setQueueMode] = useState<"review" | "lesson">("review");
-  const [initialViewerMode, setInitialViewerMode] = useState<"detail" | "flash" | null>(null);
-
-  useEffect(() => {
+  const [studyMode, setStudyMode] = useState(() => {
     if (typeof window === "undefined") {
-      return;
+      return false;
+    }
+
+    return window.localStorage.getItem("wr:study-mode") === "1";
+  });
+  const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">(() => {
+    if (typeof window === "undefined") {
+      return "study";
+    }
+    const rawTab = new URLSearchParams(window.location.search).get("tab");
+    return rawTab === "jlpt" ? "jlpt" : rawTab === "level" ? "level" : "study";
+  });
+  const [showEnglish, setShowEnglish] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.localStorage.getItem(showEnglishStorageKey) === "1";
+  });
+  const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
+  const [queueMode, setQueueMode] = useState<"review" | "lesson">(() => {
+    if (typeof window === "undefined") {
+      return "review";
     }
 
     const params = new URLSearchParams(window.location.search);
-    const rawTab = params.get("tab");
-    const tab = rawTab === "jlpt" ? "jlpt" : rawTab === "level" ? "level" : "study";
-    setActiveTab(tab);
-
     const urlMode = params.get("mode");
     if (urlMode === "review" || urlMode === "lesson") {
-      setQueueMode(urlMode);
-    } else {
-      setQueueMode(
-        window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === "lesson"
-          ? "lesson"
-          : "review",
-      );
+      return urlMode;
     }
 
-    setStudyMode(window.localStorage.getItem("wr:study-mode") === "1");
-    setShowEnglish(window.localStorage.getItem(showEnglishStorageKey) === "1");
+    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === "lesson"
+      ? "lesson"
+      : "review";
+  });
+  const [initialViewerMode] = useState<"detail" | "flash" | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
 
-    const viewer = params.get("viewer");
-    setInitialViewerMode(viewer === "detail" || viewer === "flash" ? viewer : null);
-    setIsHydrated(true);
-  }, [accountId, showEnglishStorageKey]);
+    const viewer = new URLSearchParams(window.location.search).get("viewer");
+    return viewer === "detail" || viewer === "flash" ? viewer : null;
+  });
 
-  const { data: fetchedStudyCounts } = useSWR<{ reviews: number; lessons: number }>(
+  useSWR<{ reviews: number; lessons: number }>(
     `/api/study/${accountId}/counts`,
     async (url: string) => {
       const response = await fetch(url, { cache: "no-store" });
@@ -82,28 +92,23 @@ export default function ExplorerTabs({
     {
       revalidateOnFocus: true,
       refreshInterval: 30_000,
+      onSuccess: (nextCounts) => {
+        setStudyCounts(nextCounts);
+        try {
+          window.localStorage.setItem(
+            countsStorageKey,
+            JSON.stringify({
+              reviews: nextCounts.reviews,
+              lessons: nextCounts.lessons,
+              all: nextCounts.reviews + nextCounts.lessons,
+            }),
+          );
+        } catch {
+          // Ignore storage errors in restricted browsing modes.
+        }
+      },
     },
   );
-
-  useEffect(() => {
-    if (!fetchedStudyCounts) {
-      return;
-    }
-
-    setStudyCounts(fetchedStudyCounts);
-    try {
-      window.localStorage.setItem(
-        countsStorageKey,
-        JSON.stringify({
-          reviews: fetchedStudyCounts.reviews,
-          lessons: fetchedStudyCounts.lessons,
-          all: fetchedStudyCounts.reviews + fetchedStudyCounts.lessons,
-        }),
-      );
-    } catch {
-      // Ignore storage errors in restricted browsing modes.
-    }
-  }, [countsStorageKey, fetchedStudyCounts]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

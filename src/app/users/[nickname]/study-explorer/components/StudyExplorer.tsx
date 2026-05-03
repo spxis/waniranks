@@ -97,11 +97,13 @@ export default function StudyExplorer({
 
   useLayoutEffect(() => {
     const cached = readStoredQueue(accountId, queueMode);
-    setCachedQueueData(cached);
-    setLoadedItems(cached?.items ?? []);
-    setTotalItems(cached?.pagination?.total ?? cached?.items.length ?? 0);
-    setPersistedCounts(cached?.counts ?? null);
-    setLoadMoreError(null);
+    queueMicrotask(() => {
+      setCachedQueueData(cached);
+      setLoadedItems(cached?.items ?? []);
+      setTotalItems(cached?.pagination?.total ?? cached?.items.length ?? 0);
+      setPersistedCounts(cached?.counts ?? null);
+      setLoadMoreError(null);
+    });
   }, [accountId, queueMode]);
 
   const { data, error, isLoading, isValidating, mutate: mutateQueue } = useSWR(
@@ -251,31 +253,35 @@ export default function StudyExplorer({
 
   useEffect(() => {
     if (selectedId === null) {
-      setModalSessionOrderByAssignmentId(null);
-      setModalSessionItemByAssignmentId({});
+      queueMicrotask(() => {
+        setModalSessionOrderByAssignmentId(null);
+        setModalSessionItemByAssignmentId({});
+      });
       return;
     }
 
-    setModalSessionOrderByAssignmentId((prev) => {
-      if (prev && prev.length > 0) {
-        return prev;
-      }
-      if (filteredItems.length === 0) {
-        return prev;
-      }
-      return filteredItems.map((item) => item.assignmentId);
-    });
+    queueMicrotask(() => {
+      setModalSessionOrderByAssignmentId((prev) => {
+        if (prev && prev.length > 0) {
+          return prev;
+        }
+        if (filteredItems.length === 0) {
+          return prev;
+        }
+        return filteredItems.map((item) => item.assignmentId);
+      });
 
-    setModalSessionItemByAssignmentId((prev) => {
-      if (filteredItems.length === 0) {
-        return prev;
-      }
+      setModalSessionItemByAssignmentId((prev) => {
+        if (filteredItems.length === 0) {
+          return prev;
+        }
 
-      const next = { ...prev };
-      for (const item of filteredItems) {
-        next[item.assignmentId] = item;
-      }
-      return next;
+        const next = { ...prev };
+        for (const item of filteredItems) {
+          next[item.assignmentId] = item;
+        }
+        return next;
+      });
     });
   }, [filteredItems, selectedId]);
 

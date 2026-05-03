@@ -75,7 +75,6 @@ export default function LevelExplorerItemsGrid({
   subjectById,
   selectedSubjectIds,
   isResetting,
-  resetFeedback,
   recentOnly,
   showLocked,
   sentinelRef,
@@ -89,8 +88,6 @@ export default function LevelExplorerItemsGrid({
   onSelectSubjectIds,
   onSelectVisibleSubjects,
   onClearSelection,
-  onResetSelected,
-  onResetSingle,
   onJumpToRelatedSubject,
   onJumpToKanji,
 }: Props) {
@@ -112,8 +109,6 @@ export default function LevelExplorerItemsGrid({
   const selectedPreview = useMemo(() => {
     return selectedItems.map((item) => item.characters);
   }, [selectedItems]);
-
-  const selectedDetails = useMemo(() => selectedItems.map((item) => `${item.characters} • ${shortSubjectTypeLabel(item.subjectType)} • ${typeof item.wkLevel === "number" ? `L${item.wkLevel}` : "L?"} • SRS ${item.srsStage}`), [selectedItems]);
 
   const applyBulkSelection = ({
     subjectId,

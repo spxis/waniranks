@@ -33,7 +33,9 @@ export default function ExplorerConfirmDialog({
 
   useEffect(() => {
     if (!open) {
-      setTypedPhrase("");
+      queueMicrotask(() => {
+        setTypedPhrase("");
+      });
     }
   }, [open]);
 

@@ -210,18 +210,7 @@ export default function LevelExplorerContent({
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [filteredItems, gridColumns, onMarkHistoryPush, onSetSelectedSubjectId, selectedItem]);
-
-  useEffect(() => {
-    if (!studyMode || !selectedItem) {
-      setPeekSubjectId(null);
-      return;
-    }
-
-    if (peekSubjectId !== selectedItem.subjectId) {
-      setPeekSubjectId(null);
-    }
-  }, [peekSubjectId, selectedItem, studyMode]);
+  }, [canToggleEnglish, filteredItems, gridColumns, onMarkHistoryPush, onSetSelectedSubjectId, onToggleShowEnglish, selectedItem]);
 
   const {
     selectedSubjectIds,

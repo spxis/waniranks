@@ -117,17 +117,21 @@ export default function LevelExplorerReviewStatsCard({
   useEffect(() => {
     const cached = reviewStatsHistoryCache.get(cacheKey);
     if (cached && Date.now() - cached.fetchedAt < HISTORY_CACHE_TTL_MS) {
-      setHistory(cached.history);
-      setTransitions(cached.transitions);
-      setError(null);
-      setLoading(false);
+      queueMicrotask(() => {
+        setHistory(cached.history);
+        setTransitions(cached.transitions);
+        setError(null);
+        setLoading(false);
+      });
       return;
     }
 
-    setHistory(null);
-    setTransitions([]);
-    setError(null);
-    setLoading(true);
+    queueMicrotask(() => {
+      setHistory(null);
+      setTransitions([]);
+      setError(null);
+      setLoading(true);
+    });
 
     fetch(`/api/study/${accountId}/subjects/${subjectId}/history?refresh=1&transitions=1`)
       .then(async (res) => {

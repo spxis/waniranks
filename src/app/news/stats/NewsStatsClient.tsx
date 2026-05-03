@@ -19,6 +19,7 @@ type WindowRange = "7d" | "30d" | "all";
 export default function NewsStatsClient() {
   const [range, setRange] = useState<WindowRange>("30d");
   const [stats, setStats] = useState<NewsGlyphStatEntry[]>([]);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
     const refresh = () => {
@@ -31,20 +32,29 @@ export default function NewsStatsClient() {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 30_000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const filtered = useMemo(() => {
-    const threshold = range === "all" ? null : Date.now() - (range === "7d" ? 7 : 30) * 24 * 60 * 60 * 1000;
+    const threshold = range === "all" ? null : nowMs - (range === "7d" ? 7 : 30) * 24 * 60 * 60 * 1000;
     return stats.filter((entry) => {
       if (!threshold) {
         return true;
       }
       return Date.parse(entry.lastViewedAt) >= threshold;
     });
-  }, [range, stats]);
+  }, [nowMs, range, stats]);
 
   const top = filtered.slice(0, 25);
   const maxViews = Math.max(1, ...top.map((entry) => entry.viewCount));
 
-  const series = useMemo(() => {
+  const series = (() => {
     const events = readNewsGlyphEvents();
     const byDay = new Map<string, number>();
     for (const event of events) {
@@ -54,7 +64,7 @@ export default function NewsStatsClient() {
     return Array.from(byDay.entries())
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .slice(-30);
-  }, [stats]);
+  })();
 
   const seriesMax = Math.max(1, ...series.map(([, count]) => count));
 

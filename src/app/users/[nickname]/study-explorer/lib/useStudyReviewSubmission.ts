@@ -186,7 +186,9 @@ export function useStudyReviewSubmission({
         }
       } catch (submitError: unknown) {
         onSetReviewOutcomeByAssignmentId((prev) => {
-          const { [assignmentId]: _, ...rest } = prev;
+          const next = { ...prev };
+          delete next[assignmentId];
+          const rest = next;
           return rest;
         });
         onSetSubmitFeedback({
@@ -337,7 +339,6 @@ export function useStudyReviewSubmission({
       }
     },
     [
-      accountId,
       getSubmissionContext,
       onSetRevealedAssignmentIds,
       onSetSubmitFeedback,

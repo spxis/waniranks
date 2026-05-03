@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import LevelExplorerContent from "./LevelExplorerContent";
-import type { LevelItem, Snapshot, SrsFilter } from "../../explorerTypes";
+import type { Snapshot, SrsFilter } from "../../explorerTypes";
 import { stripHtml } from "../lib/levelExplorerDisplay";
 import { buildLevelExplorerActions } from "../lib/levelExplorerControllerActions";
 import { buildLevelExplorerControllerHandlers } from "../lib/levelExplorerControllerHandlers";
@@ -84,10 +84,10 @@ export default function LevelExplorerController({
   const [searchMatchedSubjectIds, setSearchMatchedSubjectIds] = useState<Set<number> | null>(null);
   const [searchAvailableLevels, setSearchAvailableLevels] = useState<Set<number> | null>(null);
   const [gridColumns, setGridColumns] = useState(1);
+  const [pendingHistoryMode, setPendingHistoryMode] = useState<"replace" | "push">("replace");
 
   const applyingUrlStateRef = useRef(false);
   const hasHydratedUrlStateRef = useRef(false);
-  const pendingHistoryModeRef = useRef<"replace" | "push">("replace");
   const lastHandledFindQueryRef = useRef("");
 
   useEffect(() => {
@@ -122,7 +122,8 @@ export default function LevelExplorerController({
     accountId,
     initialLevel: initialSnapshot.level,
     storageKeys,
-    pendingHistoryModeRef,
+    pendingHistoryMode,
+    setPendingHistoryMode,
     selectedLevels,
     selectedSubjectId,
     srsFilter,
@@ -209,9 +210,7 @@ export default function LevelExplorerController({
   const actions = buildLevelExplorerActions({
     maxLevel,
     initialLevel: initialSnapshot.level,
-    levelOptions,
     stickyMerge,
-    selectedLevels,
     searchAvailableLevels,
     snapshotsByLevel,
     subjectById,
@@ -254,7 +253,7 @@ export default function LevelExplorerController({
     }
 
     writeUrlState();
-  }, [selectedLevels, selectedSubjectId, srsFilter, typeFilter, jlptFilter, reviewTimingFilter, stickyMerge]);
+  }, [selectedLevels, selectedSubjectId, srsFilter, typeFilter, jlptFilter, reviewTimingFilter, stickyMerge, writeUrlState]);
 
   useLevelExplorerStorageHydration({
     storageKeys,
@@ -288,7 +287,7 @@ export default function LevelExplorerController({
     if (current && (!snapshotHasComponentKanjiData(current) || !snapshotHasJlptMetaData(current))) {
       void ensureLevelLoaded(initialSnapshot.level, true);
     }
-  }, [initialSnapshot.level, snapshotsByLevel]);
+  }, [ensureLevelLoaded, initialSnapshot.level, snapshotsByLevel]);
 
   useLevelExplorerSelectionReconcile({
     selectedItem,

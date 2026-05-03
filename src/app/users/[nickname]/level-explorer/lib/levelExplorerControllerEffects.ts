@@ -37,7 +37,14 @@ export function useLevelExplorerUrlHydration({
   ensureLevelLoaded,
   applyingUrlStateRef,
   hasHydratedUrlStateRef,
-  ...setters
+  setSelectedLevels,
+  setSelectedSubjectId,
+  setSrsFilter,
+  setTypeFilter,
+  setJlptFilter,
+  setReviewTimingFilter,
+  setRecentOnly,
+  setStickyMerge,
 }: {
   maxLevel: number;
   initialLevel: number;
@@ -59,14 +66,14 @@ export function useLevelExplorerUrlHydration({
         : new Set([levelsArray[levelsArray.length - 1] ?? initialLevel]);
 
       const params = new URLSearchParams(window.location.search);
-      setters.setSelectedLevels(normalizedLevels);
-      if (params.has("subject")) setters.setSelectedSubjectId(parsed.subjectId);
-      if (params.has("srs")) setters.setSrsFilter(parsed.srs);
-      if (params.has("type")) setters.setTypeFilter(parsed.type);
-      if (params.has("jlpt")) setters.setJlptFilter(parsed.jlpt);
-      if (params.has("review")) setters.setReviewTimingFilter(parsed.review);
-      if (params.has("recent")) setters.setRecentOnly(parsed.recentOnly);
-      if (params.has("sticky")) setters.setStickyMerge(parsed.stickyMerge);
+      setSelectedLevels(normalizedLevels);
+      if (params.has("subject")) setSelectedSubjectId(parsed.subjectId);
+      if (params.has("srs")) setSrsFilter(parsed.srs);
+      if (params.has("type")) setTypeFilter(parsed.type);
+      if (params.has("jlpt")) setJlptFilter(parsed.jlpt);
+      if (params.has("review")) setReviewTimingFilter(parsed.review);
+      if (params.has("recent")) setRecentOnly(parsed.recentOnly);
+      if (params.has("sticky")) setStickyMerge(parsed.stickyMerge);
 
       for (const level of normalizedLevels.values()) {
         await ensureLevelLoaded(level);
@@ -83,7 +90,21 @@ export function useLevelExplorerUrlHydration({
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [
+    applyingUrlStateRef,
+    ensureLevelLoaded,
+    hasHydratedUrlStateRef,
+    initialLevel,
+    maxLevel,
+    setJlptFilter,
+    setRecentOnly,
+    setReviewTimingFilter,
+    setSelectedLevels,
+    setSelectedSubjectId,
+    setSrsFilter,
+    setStickyMerge,
+    setTypeFilter,
+  ]);
 }
 
 export function useLevelExplorerStorageHydration({
@@ -179,7 +200,19 @@ export function useLevelExplorerStorageHydration({
     } catch {
       // Ignore storage errors in restricted browsing modes.
     }
-  }, [storageKeys]);
+  }, [
+    setFiltersCollapsed,
+    setJlptFilter,
+    setRecentOnly,
+    setReviewTimingFilter,
+    setSelectedSubjectId,
+    setShowLocked,
+    setSrsFilter,
+    setStickyMerge,
+    setTypeFilter,
+    setVisibleTypes,
+    storageKeys,
+  ]);
 }
 
 export function useLevelExplorerGridColumns(setGridColumns: Dispatch<SetStateAction<number>>) {
@@ -322,7 +355,21 @@ export function useLevelExplorerSelectionReconcile({
     if (!passesReviewTimingFilter(selectedItemFromAll, reviewTimingFilter)) {
       setReviewTimingFilter("all");
     }
-  }, [selectedItem, selectedItemFromAll, typeFilter, visibleTypes, srsFilter, jlptFilter, reviewTimingFilter]);
+  }, [
+    hasHydratedUrlStateRef,
+    jlptFilter,
+    reviewTimingFilter,
+    selectedItem,
+    selectedItemFromAll,
+    setJlptFilter,
+    setReviewTimingFilter,
+    setSrsFilter,
+    setTypeFilter,
+    setVisibleTypesAndPersist,
+    srsFilter,
+    typeFilter,
+    visibleTypes,
+  ]);
 }
 
 export function useLevelExplorerSearchEvents({

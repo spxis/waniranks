@@ -75,8 +75,6 @@ export default function LevelExplorerDetailSection({
   onJumpToRelatedSubject,
   onJumpToKanji,
   onResetToLessons = null,
-  resetDisabled = false,
-  resetBusy = false,
 }: Props) {
   const { fontFamily } = useGlyphFontPreference();
   const isStudyHidden = studyMode && !revealStudyReading;

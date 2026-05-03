@@ -126,7 +126,7 @@ export default function StudyReviewModalSection({
   const selectedMeaningExplanation = stripHtml(selectedItem.meaningExplanation) || "-";
   const selectedReadingExplanationRaw = stripHtml(selectedItem.readingExplanation);
   const showReadingExplanation = selectedReadingExplanationRaw.length > 0;
-  const { mode: glyphFontMode, fontFamily: glyphFontFamily, toggle: toggleGlyphFont } = useGlyphFontPreference();
+  const { fontFamily: glyphFontFamily, toggle: toggleGlyphFont } = useGlyphFontPreference();
 
   const sanitizedRelatedItems = (items: RelatedReference[] | undefined) =>
     (items ?? []).map((item) => ({ ...item, wkLevel: null }));

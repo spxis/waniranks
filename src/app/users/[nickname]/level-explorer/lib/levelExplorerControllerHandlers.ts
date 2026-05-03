@@ -1,4 +1,4 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import type { Snapshot, SrsFilter } from "../../explorerTypes";
 import { buildLevelExplorerUrl } from "./levelExplorerState";
@@ -11,7 +11,8 @@ type Params = {
   accountId: string;
   initialLevel: number;
   storageKeys: { typeVisibility: string; stickyMerge: string; filtersCollapsed: string };
-  pendingHistoryModeRef: MutableRefObject<"replace" | "push">;
+  pendingHistoryMode: "replace" | "push";
+  setPendingHistoryMode: Dispatch<SetStateAction<"replace" | "push">>;
   selectedLevels: Set<number>;
   selectedSubjectId: number | null;
   srsFilter: SrsFilter;
@@ -38,7 +39,8 @@ export function buildLevelExplorerControllerHandlers({
   accountId,
   initialLevel,
   storageKeys,
-  pendingHistoryModeRef,
+  pendingHistoryMode,
+  setPendingHistoryMode,
   selectedLevels,
   selectedSubjectId,
   srsFilter,
@@ -61,7 +63,7 @@ export function buildLevelExplorerControllerHandlers({
   setSrsFilter,
 }: Params) {
   const markHistoryPush = () => {
-    pendingHistoryModeRef.current = "push";
+    setPendingHistoryMode("push");
   };
 
   const writeUrlState = () => {
@@ -82,12 +84,12 @@ export function buildLevelExplorerControllerHandlers({
     const next = `${window.location.pathname}?${nextSearch}${window.location.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (next === current) {
-      pendingHistoryModeRef.current = "replace";
+      setPendingHistoryMode("replace");
       return;
     }
 
-    const mode = pendingHistoryModeRef.current;
-    pendingHistoryModeRef.current = "replace";
+    const mode = pendingHistoryMode;
+    setPendingHistoryMode("replace");
     if (mode === "push") {
       window.history.pushState(null, "", next);
       return;

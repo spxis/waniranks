@@ -11,7 +11,6 @@ import {
 import { jlptStatusClass } from "../lib/jlptExplorerContentHelpers";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import JlptExplorerDetailSection from "./JlptExplorerDetailSection";
-import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
 import type {
   KanjiStats,
   JlptExplorerContentProps as Props,
@@ -26,7 +25,6 @@ export default function JlptExplorerContent({
   counts,
   selectedLevels,
   stickyLevels,
-  wkFilter,
   wkLevelFilter,
   availableWkLevels,
   gradeFilter,
@@ -43,7 +41,6 @@ export default function JlptExplorerContent({
   onLoadMoreRemote,
   onSetSelectedLevels,
   onToggleNLevel,
-  onSetWkFilter,
   onSetWkLevelFilter,
   onSetGradeFilter,
   onSetStickyLevels,
@@ -67,15 +64,15 @@ export default function JlptExplorerContent({
     return m ? m[1] : null;
   }
   useEffect(() => {
-    setKanjiStats(null);
-    setKanjiStatsError(null);
-    setStatsOpen(false);
     if (!selectedItem) return;
     const selectedSubjectId = userKanjiByChar.get(selectedItem.kanji)?.subjectId;
     if (!selectedSubjectId) return;
     const accountId = getAccountIdFromUrl();
     if (!accountId) return;
-    setKanjiStatsLoading(true);
+    queueMicrotask(() => {
+      setKanjiStatsLoading(true);
+      setKanjiStatsError(null);
+    });
     fetch(`/api/study/${accountId}/subjects/${selectedSubjectId}/history?refresh=1`)
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to load stats");
@@ -86,7 +83,7 @@ export default function JlptExplorerContent({
         setKanjiStats(payload.history || null);
         setKanjiStatsLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setKanjiStatsError("Could not load kanji stats");
         setKanjiStatsLoading(false);
       });

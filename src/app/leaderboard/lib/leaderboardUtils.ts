@@ -3,7 +3,6 @@ import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
 import type {
   ALL_SORT_KEYS,
-  ALL_TABS,
   GuruedItemSummary,
   LeaderboardRow,
   LeaderboardTab,
