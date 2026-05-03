@@ -135,11 +135,82 @@ export async function discoverArticleLinks(rawUrl: string): Promise<DiscoverResu
     };
 
     return { ok: true, payload };
-  } catch {
+  } catch (error) {
+    const fallbackLinks = discoverLinksWithRegex(fetched.html, fetched.finalUrl);
+    if (fallbackLinks.length > 0) {
+      return {
+        ok: true,
+        payload: {
+          baseUrl: fetched.finalUrl,
+          links: fallbackLinks.slice(0, MAX_RESULTS),
+          fetchedAt: new Date().toISOString(),
+        },
+      };
+    }
+
     // Some publisher responses can include malformed HTML/URL values that break parsing.
     // Return a typed parse failure so API routes can log and surface traceable diagnostics.
-    return { ok: false, error: { kind: "parse_failed" } };
+    return {
+      ok: false,
+      error: {
+        kind: "parse_failed",
+        message: error instanceof Error ? error.message : String(error),
+      },
+    };
   }
+}
+
+function discoverLinksWithRegex(html: string, baseUrl: string): DiscoveredLink[] {
+  let base: URL;
+  try {
+    base = new URL(baseUrl);
+  } catch {
+    return [];
+  }
+
+  const baseHost = base.hostname.toLowerCase();
+  const seen = new Map<string, DiscoveredLink>();
+  const anchorRegex = /<a\b[^>]*href\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
+
+  for (const match of html.matchAll(anchorRegex)) {
+    const href = match[2] ?? "";
+    const rawText = match[3] ?? "";
+
+    const target = resolveUrl(href, baseUrl);
+    if (!target) {
+      continue;
+    }
+    if (target.hostname.toLowerCase() !== baseHost) {
+      continue;
+    }
+    if (!looksLikeArticlePath(target)) {
+      continue;
+    }
+    if (hasExcludedExtension(target.pathname)) {
+      continue;
+    }
+
+    const cleanUrl = stripTrackingParams(target).toString();
+    if (seen.has(cleanUrl)) {
+      continue;
+    }
+
+    const title = normalizeWhitespace(stripHtmlTags(rawText));
+    if (!title || title.length < MIN_TITLE_LENGTH) {
+      continue;
+    }
+
+    seen.set(cleanUrl, { url: cleanUrl, title });
+    if (seen.size >= MAX_RESULTS) {
+      break;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function stripHtmlTags(input: string): string {
+  return input.replace(/<[^>]*>/g, " ");
 }
 
 function parseAllowedUrl(input: string): URL | null {

@@ -45,10 +45,12 @@ export async function POST(request: Request) {
         hostname,
         status,
         errorKind: result.error.kind,
+        parseMessage: result.error.kind === "parse_failed" ? (result.error.message ?? null) : null,
         errorStatus: "status" in result.error ? (result.error.status ?? null) : null,
       });
       return respond({ error: `${message} (trace: ${traceId})` }, status, {
         errorKind: result.error.kind,
+        parseMessage: result.error.kind === "parse_failed" ? (result.error.message ?? null) : null,
         errorStatus: "status" in result.error ? (result.error.status ?? null) : null,
         hostname,
       });
