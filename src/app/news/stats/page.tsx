@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { authOptions } from "@/lib/auth";
+import { INVITE_SESSION_COOKIE_NAME, verifyInviteSessionToken } from "@/lib/inviteSession";
 import { prisma } from "@/lib/prisma";
 
 import NewsStatsClient from "./NewsStatsClient";
@@ -24,6 +26,18 @@ export default async function NewsStatsPage() {
     : null;
   if (linkedAccount?.wkUsername) {
     redirect(`/users/${encodeURIComponent(linkedAccount.wkUsername)}?dashboard=read&read=stats`);
+  }
+  const cookieStore = await cookies();
+  const inviteToken = cookieStore.get(INVITE_SESSION_COOKIE_NAME)?.value ?? null;
+  const invitePayload = inviteToken ? verifyInviteSessionToken(inviteToken) : null;
+  if (invitePayload?.accountId) {
+    const inviteAccount = await prisma.account.findUnique({
+      where: { id: invitePayload.accountId },
+      select: { wkUsername: true, inviteCodeHash: true },
+    });
+    if (inviteAccount?.wkUsername && inviteAccount.inviteCodeHash) {
+      redirect(`/users/${encodeURIComponent(inviteAccount.wkUsername)}?dashboard=read&read=stats`);
+    }
   }
 
   return (

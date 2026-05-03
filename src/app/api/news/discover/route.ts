@@ -69,7 +69,10 @@ function mapErrorToResponse(error: DiscoverError): { status: number; message: st
       }
       return {
         status: 502,
-        message: error.status === 408 ? "The site took too long to respond." : "Couldn't reach that page.",
+        message:
+          error.status === 408
+            ? "The site took too long to respond."
+            : "Couldn't reach that page from our server. Some publishers block automated scanning. Try Article mode with a direct article URL.",
       };
     case "too_large":
       return { status: 413, message: "That page is too large to scan." };
