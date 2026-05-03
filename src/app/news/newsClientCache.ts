@@ -155,7 +155,7 @@ export function deleteDiscoverCache(url: string): void {
 }
 
 export function clearDiscoverCache(): void {
-  setStoredJson<DiscoverCacheStore>(DISCOVER_CACHE_KEY, {});
+  setStoredJson(DISCOVER_CACHE_KEY, {});
 }
 
 function pruneDiscoverStore(store: DiscoverCacheStore): void {
