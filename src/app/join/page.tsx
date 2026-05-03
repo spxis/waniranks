@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
 import InviteCodeAccessPanel from "../InviteCodeAccessPanel";
 
@@ -106,7 +105,8 @@ export default function JoinPage() {
             <button
               type="button"
               onClick={() => {
-                void signIn("google", { callbackUrl: "/join" }, { prompt: "select_account" });
+                const callbackUrl = encodeURIComponent("/join");
+                window.location.href = `/api/auth/signin/google?callbackUrl=${callbackUrl}`;
               }}
               className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
             >
