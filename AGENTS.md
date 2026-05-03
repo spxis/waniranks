@@ -41,13 +41,16 @@ This file is the single source of truth for agent behavior in this repo.
 | Dev | `pnpm dev` |
 | Build | `pnpm build` |
 | Lint | `pnpm lint` |
+| Lint (auto-fix) | `pnpm lint:fix` |
 | LOC gate | `pnpm loc:check` |
+| Quality check (lint + LOC) | `pnpm quality:check` |
+| Quality fix then check | `pnpm quality:fix` |
 | Smoke (dev server) | `pnpm test:smoke:local` |
 | Smoke (prod build) | `pnpm test:smoke:build` |
 | Prisma push / studio | `pnpm db:push` / `pnpm db:studio` |
 | Seed JLPT | `pnpm db:seed:jlpt` |
 
-Run `pnpm lint` and `pnpm loc:check` after non-trivial `src/` edits.
+Run `pnpm quality:check` after non-trivial `src/` edits. If lint issues are auto-fixable, run `pnpm quality:fix` first.
 
 ## Repo map
 

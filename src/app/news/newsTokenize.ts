@@ -29,7 +29,7 @@ export function tokenizeJapanese(text: string): NewsTextSegment[] {
   while (index < chars.length) {
     const char = chars[index] ?? "";
     if (!KANJI_REGEX.test(char)) {
-      let start = index;
+      const start = index;
       index += 1;
       while (index < chars.length && !KANJI_REGEX.test(chars[index] ?? "")) {
         index += 1;

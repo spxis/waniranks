@@ -1,18 +1,18 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import type { DiscoveredLink, DiscoverPayload } from "@/lib/news/newsDiscover";
 import type { NewsArticle } from "@/lib/news/newsTypes";
 import { getStoredEnum, setStoredEnum } from "@/lib/clientStorage";
-
 import NewsArticleView from "./NewsArticleView";
 import type { ArticlePanelTab } from "./NewsArticleView";
+import NewsDiscoverSessions from "./NewsDiscoverSessions";
+import NewsReaderForm from "./NewsReaderForm";
 import NewsHistoryPanel from "./NewsHistoryPanel";
 import NewsKanjiHistoryPanel from "./NewsKanjiHistoryPanel";
+import { NewsReaderErrorState, NewsReaderLoadingState } from "./NewsReaderStatus";
 import NewsSiteLinks from "./NewsSiteLinks";
-import SegmentedControl from "../shared/SegmentedControl";
 import NewsStatsClient from "./stats/NewsStatsClient";
 import {
   clearNewsHistory,
@@ -30,16 +30,20 @@ import {
   type NewsKanjiHistoryEntry,
 } from "./newsKanjiHistory";
 import {
+  clearDiscoverCache,
+  deleteDiscoverCache,
+  listDiscoverCache,
+  type DiscoverCacheSession,
   readArticleCache,
   readDiscoverCache,
   writeArticleCache,
   writeDiscoverCache,
 } from "./newsClientCache";
+import { fallbackNewsError } from "./newsReaderUtils";
 
 type Mode = "article" | "site";
 const NEWS_READER_MODE_KEY = "uk:news-reader-mode";
 const NEWS_READER_TAB_KEY = "uk:news-reader-tab";
-
 type DiscoverState = {
   baseUrl: string | null;
   links: DiscoveredLink[];
@@ -47,22 +51,28 @@ type DiscoverState = {
   cachedAgeMs?: number;
   fetchedAt?: string;
 };
-
-const EMPTY_DISCOVER: DiscoverState = {
-  baseUrl: null,
-  links: [],
-  cached: false,
-};
+const EMPTY_DISCOVER: DiscoverState = { baseUrl: null, links: [], cached: false };
 
 type Props = {
   devSampleUrls?: string[];
   userWkLevel?: number | null;
 };
+type RouteChanges = {
+  url?: string | null;
+  site?: string | null;
+};
+type FetchDiscoverOptions = {
+  forceRefresh?: boolean;
+  preserveArticle?: boolean;
+  navigation?: "replace" | "push";
+};
 
 export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialUrlParam = searchParams.get("url") ?? "";
+  const initialSiteParam = searchParams.get("site") ?? "";
 
   const [mode, setMode] = useState<Mode>(() =>
     getStoredEnum<Mode>(NEWS_READER_MODE_KEY, ["article", "site"], "article"),
@@ -77,6 +87,8 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
   const [history, setHistory] = useState<NewsHistoryEntry[]>([]);
   const [kanjiHistory, setKanjiHistory] = useState<NewsKanjiHistoryEntry[]>([]);
   const [discover, setDiscover] = useState<DiscoverState>(EMPTY_DISCOVER);
+  const [discoverSessions, setDiscoverSessions] = useState<DiscoverCacheSession[]>([]);
+  const [activeDiscoverQuery, setActiveDiscoverQuery] = useState<string | null>(initialSiteParam || null);
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [discoverError, setDiscoverError] = useState<string | null>(null);
   const lastFetchedUrl = useRef<string | null>(null);
@@ -84,6 +96,14 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
   useEffect(() => {
     setHistory(readNewsHistory());
   }, []);
+
+  const refreshDiscoverSessions = useCallback(() => {
+    setDiscoverSessions(listDiscoverCache());
+  }, []);
+
+  useEffect(() => {
+    refreshDiscoverSessions();
+  }, [refreshDiscoverSessions]);
 
   useEffect(() => {
     setStoredEnum(NEWS_READER_MODE_KEY, mode);
@@ -104,8 +124,35 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
     };
   }, []);
 
+  const updateRoute = useCallback(
+    (changes: RouteChanges, method: "replace" | "push" = "replace") => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (changes.url !== undefined) {
+        if (changes.url) params.set("url", changes.url);
+        else params.delete("url");
+      }
+      if (changes.site !== undefined) {
+        if (changes.site) params.set("site", changes.site);
+        else params.delete("site");
+      }
+
+      const query = params.toString();
+      const next = query ? `${pathname}?${query}` : pathname;
+      const currentQuery = searchParams.toString();
+      const current = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+      if (next === current) return;
+
+      if (method === "push") {
+        router.push(next, { scroll: false });
+      } else {
+        router.replace(next, { scroll: false });
+      }
+    },
+    [pathname, router, searchParams],
+  );
+
   const fetchArticle = useCallback(
-    async (target: string) => {
+    async (target: string, navigation: "replace" | "push" = "replace") => {
       const trimmed = target.trim();
       if (!trimmed) {
         return;
@@ -115,7 +162,6 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
       setLoading(true);
       setError(null);
       setArticle(null);
-      setDiscover(EMPTY_DISCOVER);
       setDiscoverError(null);
 
       const cached = readArticleCache(trimmed);
@@ -128,10 +174,7 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
             siteName: cached.siteName,
           }),
         );
-        const nextUrl = `/news?url=${encodeURIComponent(trimmed)}`;
-        if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
-          router.replace(nextUrl, { scroll: false });
-        }
+        updateRoute({ url: trimmed, site: activeDiscoverQuery === null ? undefined : activeDiscoverQuery }, navigation);
         setLoading(false);
         return;
       }
@@ -161,96 +204,125 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
             siteName: payload.article.siteName,
           }),
         );
-        const next = `/news?url=${encodeURIComponent(trimmed)}`;
-        if (`${window.location.pathname}${window.location.search}` !== next) {
-          router.replace(next, { scroll: false });
-        }
+        updateRoute({ url: trimmed, site: activeDiscoverQuery === null ? undefined : activeDiscoverQuery }, navigation);
       } catch {
         setError("Network problem — try again.");
       } finally {
         setLoading(false);
       }
     },
-    [router],
+    [activeDiscoverQuery, updateRoute],
   );
 
-  const fetchDiscover = useCallback(async (target: string) => {
-    const trimmed = target.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    setDiscoverLoading(true);
-    setDiscoverError(null);
-    setDiscover(EMPTY_DISCOVER);
-    setArticle(null);
-    setError(null);
-
-    const cached = readDiscoverCache(trimmed);
-    if (cached) {
-      setDiscover({
-        baseUrl: cached.baseUrl,
-        links: cached.links,
-        cached: true,
-        cachedAgeMs: cached.cachedAgeMs,
-        fetchedAt: cached.fetchedAt,
-      });
-      setDiscoverLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/news/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: trimmed }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | (DiscoverPayload & { error?: string })
-        | { error?: string }
-        | null;
-
-      if (!response.ok || !payload || !("links" in payload) || !payload.links) {
-        setDiscoverError(
-          (payload as { error?: string } | null)?.error ??
-            fallbackNewsError("scan", response.status),
-        );
+  const fetchDiscover = useCallback(
+    async (target: string, options: FetchDiscoverOptions = {}) => {
+      const trimmed = target.trim();
+      if (!trimmed) {
         return;
       }
 
-      const data = payload as DiscoverPayload;
-      writeDiscoverCache(trimmed, data.baseUrl, data.links);
-      setDiscover({
-        baseUrl: data.baseUrl,
-        links: data.links,
-        cached: false,
-        fetchedAt: data.fetchedAt,
-      });
-    } catch {
-      setDiscoverError("Network problem — try again.");
-    } finally {
-      setDiscoverLoading(false);
-    }
-  }, []);
+      const { forceRefresh = false, preserveArticle = false, navigation = "replace" } = options;
+
+      setDiscoverLoading(true);
+      setDiscoverError(null);
+      setDiscover(EMPTY_DISCOVER);
+      setActiveDiscoverQuery(trimmed);
+      if (!preserveArticle) {
+        setArticle(null);
+        setError(null);
+        lastFetchedUrl.current = null;
+      }
+      updateRoute({ site: trimmed, url: preserveArticle ? undefined : null }, navigation);
+
+      if (!forceRefresh) {
+        const cached = readDiscoverCache(trimmed);
+        if (cached) {
+          setDiscover({
+            baseUrl: cached.baseUrl,
+            links: cached.links,
+            cached: true,
+            cachedAgeMs: cached.cachedAgeMs,
+            fetchedAt: cached.fetchedAt,
+          });
+          refreshDiscoverSessions();
+          setDiscoverLoading(false);
+          return;
+        }
+      }
+
+      try {
+        const response = await fetch("/api/news/discover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: trimmed }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as
+          | (DiscoverPayload & { error?: string })
+          | { error?: string }
+          | null;
+
+        if (!response.ok || !payload || !("links" in payload) || !payload.links) {
+          setDiscoverError((payload as { error?: string } | null)?.error ?? fallbackNewsError("scan", response.status));
+          return;
+        }
+
+        const data = payload as DiscoverPayload;
+        writeDiscoverCache(trimmed, data.baseUrl, data.links);
+        setDiscover({
+          baseUrl: data.baseUrl,
+          links: data.links,
+          cached: false,
+          fetchedAt: data.fetchedAt,
+        });
+        refreshDiscoverSessions();
+      } catch {
+        setDiscoverError("Network problem — try again.");
+      } finally {
+        setDiscoverLoading(false);
+      }
+    },
+    [refreshDiscoverSessions, updateRoute],
+  );
 
   useEffect(() => {
+    const siteParam = searchParams.get("site")?.trim() ?? "";
+    if (siteParam) {
+      setActiveDiscoverQuery(siteParam);
+      const cachedDiscover = readDiscoverCache(siteParam);
+      if (cachedDiscover) {
+        setDiscover({
+          baseUrl: cachedDiscover.baseUrl,
+          links: cachedDiscover.links,
+          cached: true,
+          cachedAgeMs: cachedDiscover.cachedAgeMs,
+          fetchedAt: cachedDiscover.fetchedAt,
+        });
+      }
+    }
+
     const param = searchParams.get("url") ?? "";
-    if (!param || param === lastFetchedUrl.current) {
+    if (!param) {
+      setArticle(null);
+      setLoading(false);
+      setError(null);
+      lastFetchedUrl.current = null;
       return;
     }
+
+    if (param === lastFetchedUrl.current) {
+      return;
+    }
+
     setUrl(param);
     setMode("article");
-    void fetchArticle(param);
+    void fetchArticle(param, "replace");
   }, [searchParams, fetchArticle]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mode === "site") {
-      await fetchDiscover(url);
-    } else {
-      await fetchArticle(url);
-    }
+    if (mode === "site") await fetchDiscover(url, { navigation: "push" });
+    else await fetchArticle(url, "push");
   }
 
   function handleSelectHistory(target: string) {
@@ -260,93 +332,75 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
     void fetchArticle(target);
   }
 
-  function handleRemoveHistory(target: string) {
-    setHistory(removeNewsView(target));
-  }
+  function handleRemoveHistory(target: string) { setHistory(removeNewsView(target)); }
 
-  function handleClearHistory() {
-    clearNewsHistory();
-    setHistory([]);
-  }
+  function handleClearHistory() { clearNewsHistory(); setHistory([]); }
 
   function handleSelectDiscovered(target: string) {
     setUrl(target);
     setMode("article");
     setActiveTab("article");
-    void fetchArticle(target);
+    void fetchArticle(target, "push");
+  }
+
+  function handleOpenDiscoverSession(target: string) { setMode("site"); setUrl(target); void fetchDiscover(target, { navigation: "push" }); }
+
+  function handleRefreshDiscoverSession(target: string) {
+    setMode("site");
+    setUrl(target);
+    void fetchDiscover(target, {
+      forceRefresh: true,
+      preserveArticle: true,
+      navigation: "replace",
+    });
+  }
+
+  function handleRemoveDiscoverSession(target: string) {
+    deleteDiscoverCache(target);
+    refreshDiscoverSessions();
+    if (activeDiscoverQuery === target) {
+      setDiscover(EMPTY_DISCOVER);
+      setDiscoverError(null);
+      setActiveDiscoverQuery(null);
+      updateRoute({ site: null, url: null }, "replace");
+    }
+  }
+
+  function handleClearDiscoverSessions() {
+    clearDiscoverCache();
+    setDiscoverSessions([]);
+    setDiscover(EMPTY_DISCOVER);
+    setDiscoverError(null);
+    setActiveDiscoverQuery(null);
+    updateRoute({ site: null, url: null }, "replace");
   }
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <label
-            htmlFor="news-url"
-            className="block text-xs font-bold uppercase tracking-[0.14em] text-foreground/70"
-          >
-            {mode === "site" ? "Section / homepage URL" : "Article URL"}
-          </label>
-          <SegmentedControl
-            ariaLabel="News mode"
-            value={mode}
-            onChange={setMode}
-            size="sm"
-            options={[
-              { value: "article", label: "Article", activeClassName: "bg-accent text-surface", inactiveClassName: "text-foreground/70 hover:text-accent" },
-              { value: "site", label: "Site", activeClassName: "bg-accent text-surface", inactiveClassName: "text-foreground/70 hover:text-accent" },
-            ]}
-          />
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
-            id="news-url"
-            type="url"
-            inputMode="url"
-            placeholder="https://..."
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            className="h-11 flex-1 rounded-full border border-line bg-surface px-5 text-sm text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
-            required
-          />
-          <button
-            type="submit"
-            disabled={(loading || discoverLoading) || !url.trim()}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-accent px-6 text-sm font-bold uppercase tracking-[0.14em] text-surface transition hover:bg-accent-2 disabled:opacity-50"
-          >
-            {mode === "site"
-              ? discoverLoading
-                ? "Scanning…"
-                : "Find articles"
-              : loading
-                ? "Reading…"
-                : "Read"}
-          </button>
-        </div>
-        <p className="text-xs text-foreground/60">
-          You provide the link, so you take responsibility for the source. Articles you read are cached locally in your browser to avoid re-fetching the same page.
-        </p>
-        {devSampleUrls.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/55">
-              Dev samples
-            </span>
-            {devSampleUrls.map((sample) => (
-              <button
-                key={sample}
-                type="button"
-                onClick={() => setUrl(sample)}
-                className="rounded-full border border-line bg-surface-muted px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-accent hover:text-accent"
-              >
-                {hostnameOf(sample)}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </form>
+      <NewsReaderForm
+        mode={mode}
+        onChangeMode={setMode}
+        url={url}
+        onChangeUrl={setUrl}
+        loading={loading}
+        discoverLoading={discoverLoading}
+        devSampleUrls={devSampleUrls}
+        onSubmit={handleSubmit}
+      />
 
-      {loading ? <LoadingState label="Fetching the article…" /> : null}
+      <NewsDiscoverSessions
+        sessions={discoverSessions}
+        activeQueryUrl={activeDiscoverQuery}
+        loading={discoverLoading}
+        onOpen={handleOpenDiscoverSession}
+        onRefresh={handleRefreshDiscoverSession}
+        onRemove={handleRemoveDiscoverSession}
+        onClearAll={handleClearDiscoverSessions}
+      />
 
-      {error ? <ErrorState message={error} /> : null}
+      {loading ? <NewsReaderLoadingState label="Fetching the article..." /> : null}
+
+      {error ? <NewsReaderErrorState message={error} /> : null}
 
       {article && !loading ? (
         <NewsArticleView
@@ -388,6 +442,10 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
           onDismiss={() => {
             setDiscover(EMPTY_DISCOVER);
             setDiscoverError(null);
+            if (activeDiscoverQuery) {
+              updateRoute({ site: null }, "replace");
+              setActiveDiscoverQuery(null);
+            }
           }}
         />
       ) : null}
@@ -401,57 +459,4 @@ export default function NewsReader({ devSampleUrls = [], userWkLevel = null }: P
       />
     </div>
   );
-}
-
-function LoadingState({ label }: { label: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-line bg-surface-muted p-6 text-center text-sm font-semibold uppercase tracking-[0.14em] text-foreground/60">
-      {label}
-    </div>
-  );
-}
-
-function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl border border-hot/60 bg-hot/10 p-4 text-sm text-foreground">
-      {message}
-    </div>
-  );
-}
-
-function hostnameOf(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
-
-function fallbackNewsError(mode: "read" | "scan", status: number): string {
-  if (status === 403) {
-    return "That site blocked server access (403). Try another source or a direct article URL.";
-  }
-  if (status === 408) {
-    return "That site took too long to respond. Try again in a moment.";
-  }
-  if (status === 413) {
-    return mode === "scan"
-      ? "That page is too large to scan safely. Try a narrower section URL."
-      : "That page is too large to read safely.";
-  }
-  if (status === 415) {
-    return "That URL did not return an HTML page.";
-  }
-  if (status === 422) {
-    return mode === "scan"
-      ? "No article links were found on that page. Try a section or homepage URL."
-      : "That page did not look like an article.";
-  }
-  if (status === 429) {
-    return "That site is rate limiting requests right now. Please wait and try again.";
-  }
-  if (status >= 500) {
-    return `Request failed on the server (HTTP ${status}). Please try again.`;
-  }
-  return mode === "scan" ? "Couldn't scan that page." : "Couldn't read that article.";
 }

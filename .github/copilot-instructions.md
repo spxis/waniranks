@@ -26,14 +26,17 @@ saves tool calls on every request.
 | Dev server | `pnpm dev` |
 | Build | `pnpm build` |
 | Lint | `pnpm lint` |
+| Lint (auto-fix) | `pnpm lint:fix` |
 | LOC gate (≤500 lines under `src/`) | `pnpm loc:check` |
+| Quality check (lint + LOC) | `pnpm quality:check` |
+| Quality fix then check | `pnpm quality:fix` |
 | Smoke against dev | `pnpm test:smoke:local` |
 | Smoke against prod build | `pnpm test:smoke:build` |
 | Prisma push | `pnpm db:push` |
 | Prisma studio | `pnpm db:studio` |
 | Seed JLPT | `pnpm db:seed:jlpt` |
 
-Always run `pnpm loc:check` and `pnpm lint` after non-trivial edits in `src/`.
+Always run `pnpm quality:check` after non-trivial edits in `src/`. If lint issues are auto-fixable, run `pnpm quality:fix` first.
 
 ## Repo map (where things live)
 

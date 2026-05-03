@@ -17,6 +17,7 @@ type ArticleCacheEntry = {
 
 type DiscoverCacheEntry = {
   fetchedAtMs: number;
+  queryUrl?: string;
   baseUrl: string;
   links: DiscoveredLink[];
 };
@@ -83,6 +84,15 @@ export type DiscoverCacheHit = {
   cachedAgeMs: number;
 };
 
+export type DiscoverCacheSession = {
+  queryUrl: string;
+  baseUrl: string;
+  links: DiscoveredLink[];
+  fetchedAt: string;
+  fetchedAtMs: number;
+  cachedAgeMs: number;
+};
+
 export function readDiscoverCache(url: string): DiscoverCacheHit | null {
   const store = getStoredJson<DiscoverCacheStore>(DISCOVER_CACHE_KEY, {});
   const entry = store[normalizeKey(url)];
@@ -109,13 +119,43 @@ export function writeDiscoverCache(
   links: DiscoveredLink[],
 ): void {
   const store = getStoredJson<DiscoverCacheStore>(DISCOVER_CACHE_KEY, {});
+  const queryUrl = url.trim();
   store[normalizeKey(url)] = {
     fetchedAtMs: Date.now(),
+    queryUrl,
     baseUrl,
     links,
   };
   pruneDiscoverStore(store);
   setStoredJson(DISCOVER_CACHE_KEY, store);
+}
+
+export function listDiscoverCache(): DiscoverCacheSession[] {
+  const store = getStoredJson<DiscoverCacheStore>(DISCOVER_CACHE_KEY, {});
+  pruneDiscoverStore(store);
+  setStoredJson(DISCOVER_CACHE_KEY, store);
+
+  const now = Date.now();
+  return Object.entries(store)
+    .map(([key, entry]) => ({
+      queryUrl: entry.queryUrl?.trim() || key,
+      baseUrl: entry.baseUrl,
+      links: entry.links,
+      fetchedAt: new Date(entry.fetchedAtMs).toISOString(),
+      fetchedAtMs: entry.fetchedAtMs,
+      cachedAgeMs: now - entry.fetchedAtMs,
+    }))
+    .sort((a, b) => b.fetchedAtMs - a.fetchedAtMs);
+}
+
+export function deleteDiscoverCache(url: string): void {
+  const store = getStoredJson<DiscoverCacheStore>(DISCOVER_CACHE_KEY, {});
+  delete store[normalizeKey(url)];
+  setStoredJson(DISCOVER_CACHE_KEY, store);
+}
+
+export function clearDiscoverCache(): void {
+  setStoredJson<DiscoverCacheStore>(DISCOVER_CACHE_KEY, {});
 }
 
 function pruneDiscoverStore(store: DiscoverCacheStore): void {
