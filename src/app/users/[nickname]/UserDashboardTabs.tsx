@@ -190,14 +190,32 @@ export default function UserDashboardTabs({
   const headerSection = (
     <section className="rounded-[2rem] border border-line bg-surface/90 p-3 shadow-[0_24px_80px_rgba(15,111,255,0.15)] sm:p-5">
       <div className="flex flex-col gap-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">User detail</p>
-          <Link
-            href="/"
-            className="inline-flex h-8 select-none items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition hover:bg-surface-muted"
-          >
-            Leaderboard
-          </Link>
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.14em] text-accent">
+            View user:
+            <span className="ml-1 text-sm font-black normal-case tracking-normal text-foreground">{nickname}</span>
+          </p>
+          {viewerMatchesAccount ? (
+            <span className="inline-flex shrink-0 select-none items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-800">
+              Me
+            </span>
+          ) : null}
+          <div className="ml-auto flex items-center gap-2">
+            <Link
+              href="/"
+              className="inline-flex h-8 select-none items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition hover:bg-surface-muted"
+            >
+              Leaderboard
+            </Link>
+            <UserHeaderMenu
+              accountId={accountId}
+              viewedWkUsername={wkUsername}
+              viewerMenuInfo={viewerMenuInfo}
+              hidden={activeTab === "learn" && flashViewerOpen}
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
           <SegmentedControl
             ariaLabel="User dashboard tabs"
             value={activeTab}
@@ -210,8 +228,14 @@ export default function UserDashboardTabs({
               { value: "read", label: "Read" },
             ]}
           />
+          <p className="ml-auto shrink-0 text-right text-sm font-black uppercase tracking-[0.06em] text-foreground sm:text-xl">
+            <span>Rank #{globalRank}</span>
+            <span className="ml-1 text-xs font-bold text-foreground/65 sm:ml-2 sm:text-sm">
+              of {formatNumber(totalPlayers)}
+            </span>
+          </p>
           {totalPlayers > 1 ? (
-            <div className="ml-auto flex items-center gap-2 text-xs font-bold uppercase tracking-[0.08em] text-foreground/70">
+            <div className="hidden items-center gap-2 text-xs font-bold uppercase tracking-[0.08em] text-foreground/70 sm:flex">
               <Link
                 href={`/users/${encodeURIComponent(previousUser?.wkUsername ?? wkUsername)}`}
                 className="rounded-full border border-line bg-surface px-2 py-0.5 select-none hover:bg-surface-muted"
@@ -228,30 +252,6 @@ export default function UserDashboardTabs({
               </Link>
             </div>
           ) : null}
-          <UserHeaderMenu
-            accountId={accountId}
-            viewedWkUsername={wkUsername}
-            viewerMenuInfo={viewerMenuInfo}
-            hidden={activeTab === "learn" && flashViewerOpen}
-          />
-        </div>
-        <div className="flex w-full items-start gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-2xl leading-[0.95] text-foreground sm:text-4xl">{nickname}</h1>
-            {viewerMatchesAccount ? (
-              <span className="inline-flex select-none items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-800">
-                Me
-              </span>
-            ) : null}
-          </div>
-          <div className="ml-auto shrink-0 text-right">
-            <p className="text-lg font-black uppercase tracking-[0.06em] text-foreground sm:text-3xl">
-              <span>Rank #{globalRank}</span>
-              <span className="ml-1 text-sm font-bold text-foreground/65 sm:ml-2 sm:text-base">
-                of {formatNumber(totalPlayers)}
-              </span>
-            </p>
-          </div>
         </div>
         <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-sm text-foreground/70">
