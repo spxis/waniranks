@@ -203,3 +203,21 @@ test("study keeps srs stage filter on reload", async ({ browser, baseURL }) => {
     await expect(srs6Button).toHaveClass(/bg-accent/);
   });
 });
+
+test("study keeps srsStage on fresh reload for full query shape", async ({ browser, baseURL }) => {
+  const user = smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?mode=review&levels=17&subject=209&jlpt=all&review=all&sticky=0&srs=guru&type=kanji&level=17&srsStage=6&recent=0`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {
+      // Some pages keep lightweight polling alive; proceed with assertions.
+    });
+
+    const params = new URL(page.url()).searchParams;
+    expect(params.get("srs"), "srs should remain guru after reload").toBe("guru");
+    expect(params.get("level"), "level should remain 17 after reload").toBe("17");
+    expect(params.get("type"), "type should remain kanji after reload").toBe("kanji");
+    expect(params.get("srsStage"), "srsStage should remain 6 after reload").toBe("6");
+  });
+});

@@ -5,6 +5,7 @@ import LevelExplorerScreen from "./LevelExplorerScreen";
 
 type Props = {
   accountId: string;
+  isActive?: boolean;
   maxLevel: number;
   accountPendingReviews: number;
   initialSnapshot: Snapshot;

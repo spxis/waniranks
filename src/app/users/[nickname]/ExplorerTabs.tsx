@@ -408,6 +408,7 @@ export default function ExplorerTabs({
       <div className={activeTab === "level" ? "block" : "hidden"}>
         <LevelExplorer
           accountId={accountId}
+          isActive={activeTab === "level"}
           maxLevel={maxLevel}
           accountPendingReviews={accountPendingReviews}
           initialSnapshot={initialSnapshot}

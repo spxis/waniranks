@@ -5,6 +5,7 @@ import LevelExplorerController from "./LevelExplorerController";
 
 type Props = {
   accountId: string;
+  isActive?: boolean;
   maxLevel: number;
   accountPendingReviews: number;
   initialSnapshot: Snapshot;

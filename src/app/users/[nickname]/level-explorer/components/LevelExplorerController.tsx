@@ -49,6 +49,7 @@ import {
 
 type Props = {
   accountId: string;
+  isActive?: boolean;
   maxLevel: number;
   accountPendingReviews: number;
   initialSnapshot: Snapshot;
@@ -61,6 +62,7 @@ type Props = {
 
 export default function LevelExplorerController({
   accountId,
+  isActive = true,
   maxLevel,
   accountPendingReviews,
   initialSnapshot,
@@ -332,6 +334,10 @@ export default function LevelExplorerController({
   });
 
   useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+
     if (!hasHydratedUrlStateRef.current) {
       return;
     }
@@ -343,6 +349,7 @@ export default function LevelExplorerController({
 
     writeUrlState();
   }, [
+    isActive,
     pendingHistoryMode,
     selectedLevels,
     selectedSubjectId,
