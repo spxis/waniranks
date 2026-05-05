@@ -1,4 +1,4 @@
-import { badgeClass, formatNumber } from "../level-explorer/lib/levelExplorerDisplay";
+import { badgeClass, disabledBadgeClass, formatNumber } from "../level-explorer/lib/levelExplorerDisplay";
 
 import SubjectTypeFilterButton from "./SubjectTypeFilterButton";
 
@@ -19,6 +19,7 @@ type Props = {
   onClickType: (type: SubjectType) => void;
   className?: string;
   showPlaceholderCounts?: boolean;
+  disabled?: boolean;
 };
 
 export default function SubjectTypeFilterGroup({
@@ -31,17 +32,18 @@ export default function SubjectTypeFilterGroup({
   onClickType,
   className,
   showPlaceholderCounts = false,
+  disabled = false,
 }: Props) {
   const formatCount = (value: number): string => (showPlaceholderCounts ? "..." : formatNumber(value));
+  const allDisabledStyle = disabled && !allActive;
 
   return (
     <div className={className ?? "flex flex-wrap gap-2"}>
       <button
         type="button"
+        disabled={disabled}
         onClick={onClickAll}
-        className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
-          allActive,
-        )}`}
+        className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${allDisabledStyle ? disabledBadgeClass() : `${badgeClass(allActive)}${disabled ? " cursor-not-allowed opacity-70" : ""}`}`}
       >
         {allLabel} ({formatCount(allCount ?? counts.all)})
       </button>
@@ -51,6 +53,7 @@ export default function SubjectTypeFilterGroup({
           type={type}
           countLabel={formatCount(counts[type])}
           active={activeTypes[type]}
+          disabled={disabled}
           onClick={() => onClickType(type)}
         />
       ))}
