@@ -128,24 +128,10 @@ export default function StudyHistoryTable({
   const totals = data?.totals ?? {};
   const totalAttempts = Object.values(totals).reduce((sum, value) => sum + value, 0);
 
-  useEffect(() => {
-    setPage(1);
-  }, [resultFilter, levelFilter, srsBucketFilter]);
-
-  useEffect(() => {
-    if (!data || data.attempts.length === 0) {
-      setSelectedAttemptId(null);
-      return;
-    }
-
-    setSelectedAttemptId((prev) => {
-      if (!prev) {
-        return prev;
-      }
-
-      return data.attempts.some((row) => row.id === prev) ? prev : null;
-    });
-  }, [data]);
+  const selectedAttemptIdForModal =
+    selectedAttemptId && data?.attempts.some((row) => row.id === selectedAttemptId)
+      ? selectedAttemptId
+      : null;
 
   useEffect(() => {
     if (!collapsible || typeof window === "undefined") {
@@ -168,6 +154,21 @@ export default function StudyHistoryTable({
     }
 
     setSortDir((prev) => (prev === "desc" ? "asc" : "desc"));
+  }
+
+  function handleSetResultFilter(value: "all" | "correct" | "wrong" | "skipped") {
+    setPage(1);
+    setResultFilter(value);
+  }
+
+  function handleSetLevelFilter(value: number | "all") {
+    setPage(1);
+    setLevelFilter(value);
+  }
+
+  function handleSetSrsBucketFilter(value: HistorySrsBucket | "all") {
+    setPage(1);
+    setSrsBucketFilter(value);
   }
 
   const typeColor: Record<string, string> = {
@@ -205,12 +206,12 @@ export default function StudyHistoryTable({
         setPageSize={setPageSize}
         setPage={setPage}
         resultFilter={resultFilter}
-        setResultFilter={setResultFilter}
+        setResultFilter={handleSetResultFilter}
         levelFilter={levelFilter}
-        setLevelFilter={setLevelFilter}
+        setLevelFilter={handleSetLevelFilter}
         availableLevels={data?.availableLevels ?? []}
         srsBucketFilter={srsBucketFilter}
-        setSrsBucketFilter={setSrsBucketFilter}
+        setSrsBucketFilter={handleSetSrsBucketFilter}
         availableSrsBuckets={data?.availableSrsBuckets ?? []}
       />
 
@@ -419,7 +420,7 @@ export default function StudyHistoryTable({
       {data ? (
         <HistoryItemDetailModal
           attempts={data.attempts}
-          selectedAttemptId={selectedAttemptId}
+          selectedAttemptId={selectedAttemptIdForModal}
           onSelectAttemptId={setSelectedAttemptId}
           onClose={() => {
             setSelectedAttemptId(null);

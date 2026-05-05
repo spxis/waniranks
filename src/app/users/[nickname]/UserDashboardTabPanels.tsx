@@ -249,17 +249,14 @@ export function LevelProgressTabPanel({
   remainingToLevelUp,
   passedLevelUpGate,
 }: LevelProgressTabPanelProps) {
-  const [viewMode, setViewMode] = useState<"browser" | "last5">("browser");
   const storageKey = `wr:user:${accountId}:level-progress-view`;
-  useEffect(() => {
+  const [viewMode, setViewMode] = useState<"browser" | "last5">(() => {
     if (typeof window === "undefined") {
-      return;
+      return "browser";
     }
     const stored = window.localStorage.getItem(storageKey);
-    if (stored === "browser" || stored === "last5") {
-      setViewMode(stored);
-    }
-  }, [storageKey]);
+    return stored === "browser" || stored === "last5" ? stored : "browser";
+  });
   useEffect(() => {
     if (typeof window === "undefined") {
       return;

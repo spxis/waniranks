@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 type AppErrorProps = {
@@ -29,12 +30,12 @@ export default function AppError({ error, reset }: AppErrorProps) {
             >
               Retry
             </button>
-            <a
+            <Link
               href="/"
               className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted"
             >
               Back to Leaderboard
-            </a>
+            </Link>
           </div>
           {process.env.NODE_ENV !== "production" ? (
             <pre className="mt-5 max-h-72 overflow-auto rounded-xl border border-red-200 bg-white/80 p-3 text-xs leading-5 text-red-900">
