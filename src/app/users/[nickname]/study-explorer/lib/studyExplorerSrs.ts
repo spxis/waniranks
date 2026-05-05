@@ -4,8 +4,12 @@ export function normalizeSrsStageFilter(
   nextFilter: StudySrsFilter,
   currentStage: StudySrsStageFilter | null,
 ): StudySrsStageFilter | null {
-  if (nextFilter === "all" || currentStage === null) {
-    return nextFilter === "all" ? null : currentStage;
+  if (currentStage === null) {
+    return null;
+  }
+
+  if (nextFilter === "all") {
+    return currentStage;
   }
 
   if (nextFilter === "apprentice" && currentStage >= 1 && currentStage <= 4) return currentStage;
