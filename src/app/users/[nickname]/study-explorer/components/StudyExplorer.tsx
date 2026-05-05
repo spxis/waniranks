@@ -18,9 +18,11 @@ import type {
   SubmitFeedback,
   SubmitInFlight,
 } from "../lib/studyExplorerTypes";
-import { fetchStudyQueue, readStoredQueue } from "../lib/studyExplorerUtils";
+import {
+  fetchStudyQueue,
+  readStoredQueue,
+} from "../lib/studyExplorerUtils";
 import { normalizeSrsStageFilter } from "../lib/studyExplorerSrs";
-import { readInitialFiltersFromUrl } from "../lib/studyExplorerInitialFilters";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
 import { useStudyExplorerDerivedData } from "../lib/useStudyExplorerDerivedData";
@@ -42,7 +44,6 @@ export default function StudyExplorer({
   studyMode,
   queueMode,
 }: StudyExplorerProps) {
-  const initialClientFilters = readInitialFiltersFromUrl(queueMode);
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const selectedSubjectStorageKey = `wr:study-selected-subject:${accountId}:${queueMode}`;
   const typeFilterStorageKey = `wr:study-type-filter:${accountId}:${queueMode}`;
@@ -63,19 +64,12 @@ export default function StudyExplorer({
   );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
-  const [viewedLevel, setViewedLevel] = useState<number | null>(
-    initialClientFilters?.viewedLevel ?? initialFilters?.viewedLevel ?? null,
-  );
+
+  const [viewedLevel, setViewedLevel] = useState<number | null>(initialFilters?.viewedLevel ?? null);
   const [hasHydratedViewedLevel, setHasHydratedViewedLevel] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<StudyTypeFilter>(
-    initialClientFilters?.typeFilter ?? initialFilters?.typeFilter ?? "all",
-  );
-  const [srsFilter, setSrsFilter] = useState<StudySrsFilter>(
-    initialClientFilters?.srsFilter ?? initialFilters?.srsFilter ?? "all",
-  );
-  const [srsStageFilter, setSrsStageFilter] = useState<StudySrsStageFilter | null>(
-    initialClientFilters?.srsStageFilter ?? initialFilters?.srsStageFilter ?? null,
-  );
+  const [typeFilter, setTypeFilter] = useState<StudyTypeFilter>(initialFilters?.typeFilter ?? "all");
+  const [srsFilter, setSrsFilter] = useState<StudySrsFilter>(initialFilters?.srsFilter ?? "all");
+  const [srsStageFilter, setSrsStageFilter] = useState<StudySrsStageFilter | null>(initialFilters?.srsStageFilter ?? null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [submittingByAssignmentId, setSubmittingByAssignmentId] = useState<Set<number>>(new Set());
   const [revealedAssignmentIds, setRevealedAssignmentIds] = useState<Set<number>>(new Set());
@@ -87,10 +81,12 @@ export default function StudyExplorer({
   const [modalSessionItemByAssignmentId, setModalSessionItemByAssignmentId] = useState<Record<number, StudyQueueItem>>({});
   const [hiddenSubmittedAssignmentIds, setHiddenSubmittedAssignmentIds] = useState<Set<number>>(new Set());
   const [hasPendingStudySubmissions, setHasPendingStudySubmissions] = useState(false);
-  const [showLocked, setShowLocked] = useState(initialClientFilters?.showLocked ?? initialFilters?.showLocked ?? true);
-  const [recentOnly, setRecentOnly] = useState(initialClientFilters?.recentOnly ?? initialFilters?.recentOnly ?? false);
+  const [showLocked, setShowLocked] = useState(initialFilters?.showLocked ?? true);
+  const [recentOnly, setRecentOnly] = useState(initialFilters?.recentOnly ?? false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [forcedViewerMode, setForcedViewerMode] = useState<"detail" | "flash" | null>(initialViewerMode);
+  const [forcedViewerMode, setForcedViewerMode] = useState<"detail" | "flash" | null>(
+    initialViewerMode,
+  );
   const [hasHydratedTypeFilter, setHasHydratedTypeFilter] = useState(false);
   const isModalOpen = selectedId !== null;
   const effectiveSrsFilter: StudySrsFilter = queueMode === "lesson" ? "all" : srsFilter;
