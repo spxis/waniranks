@@ -208,15 +208,22 @@ export default function StudyExplorerPanel({
                 All Levels
               </button>
               {levelOptions.map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => onSetViewedLevel(level)}
-                  disabled={!availableLevels.has(level)}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${!availableLevels.has(level) ? disabledBadgeClass() : badgeClass(viewedLevel === level)}`}
-                >
-                  L{level}
-                </button>
+                (() => {
+                  const isSelected = viewedLevel === level;
+                  const unavailable = hasData && !isSelected && !availableLevels.has(level);
+
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => onSetViewedLevel(level)}
+                      disabled={unavailable}
+                      className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${unavailable ? disabledBadgeClass() : badgeClass(isSelected)}`}
+                    >
+                      L{level}
+                    </button>
+                  );
+                })()
               ))}
             </>
           )}
@@ -243,7 +250,8 @@ export default function StudyExplorerPanel({
               <div className="flex flex-wrap justify-end gap-2">
                 {srsStatuses.map((status) => {
                   const count = srsCounts[status];
-                  const disabled = status !== "all" && count === 0;
+                  const isSelected = srsFilter === status;
+                  const disabled = hasData && !isSelected && status !== "all" && count === 0;
 
                   return (
                   <button
@@ -251,7 +259,7 @@ export default function StudyExplorerPanel({
                     type="button"
                     onClick={() => onSetSrsFilter(status)}
                     disabled={disabled}
-                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)}`}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
                     {srsFilterButtonLabel(status)} ({formatNumber(count)})
                   </button>
@@ -269,7 +277,8 @@ export default function StudyExplorerPanel({
                 </button>
                 {srsStageOptions.map((stage) => {
                   const count = srsStageCounts[stage] ?? 0;
-                  const disabled = count === 0;
+                  const isSelected = srsStageFilter === stage;
+                  const disabled = hasData && !isSelected && count === 0;
 
                   return (
                   <button
@@ -277,7 +286,7 @@ export default function StudyExplorerPanel({
                     type="button"
                     onClick={() => onSetSrsStageFilter(stage)}
                     disabled={disabled}
-                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(srsStageFilter === stage)}`}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
                     SRS {stage} ({formatNumber(count)})
                   </button>
