@@ -20,7 +20,6 @@ type Props = {
   className?: string;
   showPlaceholderCounts?: boolean;
   disabled?: boolean;
-  disableInactiveOnly?: boolean;
 };
 
 export default function SubjectTypeFilterGroup({
@@ -34,18 +33,18 @@ export default function SubjectTypeFilterGroup({
   className,
   showPlaceholderCounts = false,
   disabled = false,
-  disableInactiveOnly = false,
 }: Props) {
   const formatCount = (value: number): string => (showPlaceholderCounts ? "..." : formatNumber(value));
-  const allDisabled = disabled && (!disableInactiveOnly || !allActive);
 
   return (
     <div className={className ?? "flex flex-wrap gap-2"}>
       <button
         type="button"
-        disabled={allDisabled}
+        disabled={disabled}
         onClick={onClickAll}
-        className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${allDisabled ? "opacity-45" : badgeClass(allActive)}`}
+        className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
+          allActive,
+        )}`}
       >
         {allLabel} ({formatCount(allCount ?? counts.all)})
       </button>
@@ -55,7 +54,7 @@ export default function SubjectTypeFilterGroup({
           type={type}
           countLabel={formatCount(counts[type])}
           active={activeTypes[type]}
-          disabled={disabled && (!disableInactiveOnly || !activeTypes[type])}
+          disabled={disabled}
           onClick={() => onClickType(type)}
         />
       ))}
