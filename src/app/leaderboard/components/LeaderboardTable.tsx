@@ -25,9 +25,15 @@ import {
 
 type Props = {
   rows: LeaderboardRow[];
+  canViewAllUserPages: boolean;
+  viewerWkUsername: string | null;
 };
 
-export default function LeaderboardTable({ rows }: Props) {
+export default function LeaderboardTable({
+  rows,
+  canViewAllUserPages,
+  viewerWkUsername,
+}: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(() => {
     if (typeof window === "undefined") {
@@ -370,6 +376,8 @@ export default function LeaderboardTable({ rows }: Props) {
         activeTab={activeTab}
         activeSort={activeSort}
         sortedRows={sortedRows}
+        canViewAllUserPages={canViewAllUserPages}
+        viewerWkUsername={viewerWkUsername}
         filteredExpanded={filteredExpanded}
         showItemSpreadPanel={showItemSpreadPanel}
         showLevelProgressPanel={showLevelProgressPanel}
@@ -389,6 +397,8 @@ export default function LeaderboardTable({ rows }: Props) {
       <LeaderboardMobile
         activeTab={activeTab}
         sortedRows={sortedRows}
+        canViewAllUserPages={canViewAllUserPages}
+        viewerWkUsername={viewerWkUsername}
         filteredExpanded={filteredExpanded}
         onToggleRow={toggle}
         canRefreshAdmin={adminAuthorized}

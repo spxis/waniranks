@@ -45,22 +45,24 @@ export default function LeaderboardAdminActions() {
     }
   }
 
+  if (checking || !authorized) {
+    return null;
+  }
+
   return (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
-      {checking ? null : authorized ? (
-        <button
-          type="button"
-          onClick={() => {
-            refreshLeaderboard().catch(() => {
-              // Handled in refreshLeaderboard.
-            });
-          }}
-          disabled={refreshing}
-          className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {refreshing ? "Refreshing..." : "Refresh"}
-        </button>
-      ) : null}
+    <div className="inline-flex shrink-0 items-center">
+      <button
+        type="button"
+        onClick={() => {
+          refreshLeaderboard().catch(() => {
+            // Handled in refreshLeaderboard.
+          });
+        }}
+        disabled={refreshing}
+        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface px-5 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {refreshing ? "Refreshing..." : "Refresh"}
+      </button>
     </div>
   );
 }

@@ -19,6 +19,8 @@ import {
 type Props = {
   activeTab: LeaderboardTab;
   sortedRows: LeaderboardRow[];
+  canViewAllUserPages: boolean;
+  viewerWkUsername: string | null;
   filteredExpanded: Set<string>;
   onToggleRow: (id: string) => void;
   canRefreshAdmin: boolean;
@@ -29,26 +31,51 @@ type Props = {
 export default function LeaderboardMobile({
   activeTab,
   sortedRows,
+  canViewAllUserPages,
+  viewerWkUsername,
   filteredExpanded,
   onToggleRow,
   canRefreshAdmin,
   refreshingRowIds,
   onRefreshUser,
 }: Props) {
+  const normalizedViewerWkUsername = viewerWkUsername?.trim().toLowerCase() ?? null;
+
+  function canViewRowPage(rowWkUsername: string): boolean {
+    if (canViewAllUserPages) {
+      return true;
+    }
+
+    if (!normalizedViewerWkUsername) {
+      return false;
+    }
+
+    return rowWkUsername.trim().toLowerCase() === normalizedViewerWkUsername;
+  }
+
   return (
     <div className="space-y-4 md:hidden">
       {sortedRows.map((row, index) => (
         <article key={row.id} className="rounded-2xl border border-line bg-surface/90 p-4 shadow-[0_10px_24px_rgba(8,16,36,0.06)]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="text-3xl font-black text-foreground hover:text-accent">
-                #{index + 1} {row.nickname}
-              </Link>
-              <p className="mt-0.5 text-sm text-foreground/60">
-                <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">
-                  @{row.wkUsername}
-                </Link>
-              </p>
+              {canViewRowPage(row.wkUsername) ? (
+                <>
+                  <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="text-3xl font-black text-foreground hover:text-accent">
+                    #{index + 1} {row.nickname}
+                  </Link>
+                  <p className="mt-0.5 text-sm text-foreground/60">
+                    <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">
+                      @{row.wkUsername}
+                    </Link>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-black text-foreground">#{index + 1} {row.nickname}</p>
+                  <p className="mt-0.5 text-sm text-foreground/60">@{row.wkUsername}</p>
+                </>
+              )}
             </div>
             <button
               type="button"

@@ -1,8 +1,30 @@
 import { cookies } from "next/headers";
 
+import { isAdminEmail } from "@/lib/auth";
 import { INVITE_SESSION_COOKIE_NAME, verifyInviteSessionToken } from "@/lib/inviteSession";
 import { prisma } from "@/lib/prisma";
 import type { ViewerMenuInfo } from "./UserDashboardTabs.types";
+
+function normalizeUsername(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toLowerCase() ?? "";
+  return normalized.length > 0 ? normalized : null;
+}
+
+export function canViewUserPage(input: {
+  viewerEmail: string | null;
+  viewerMenuInfo: ViewerMenuInfo | null;
+  targetWkUsername: string;
+}): boolean {
+  const { viewerEmail, viewerMenuInfo, targetWkUsername } = input;
+
+  if (isAdminEmail(viewerEmail)) {
+    return true;
+  }
+
+  const viewerUsername = normalizeUsername(viewerMenuInfo?.wkUsername);
+  const targetUsername = normalizeUsername(targetWkUsername);
+  return Boolean(viewerUsername && targetUsername && viewerUsername === targetUsername);
+}
 
 export async function resolveViewerMenuInfo(input: {
   viewerEmail: string | null;

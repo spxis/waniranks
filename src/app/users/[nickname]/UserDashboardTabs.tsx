@@ -51,6 +51,7 @@ export default function UserDashboardTabs({
   availableProgressLevels = [],
   levelProgressByLevel = {},
   viewerMenuInfo,
+  canViewAllUserPages,
   initialDashboardTab,
   learnContent,
   readContent,
@@ -228,7 +229,7 @@ export default function UserDashboardTabs({
               of {formatNumber(totalPlayers)}
             </span>
           </p>
-          {totalPlayers > 1 ? (
+          {canViewAllUserPages && totalPlayers > 1 ? (
             <div className="hidden items-center gap-2 text-xs font-bold uppercase tracking-[0.08em] text-foreground/70 sm:flex">
               <Link
                 href={`/users/${encodeURIComponent(previousUser?.wkUsername ?? wkUsername)}`}

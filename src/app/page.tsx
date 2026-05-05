@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
-import { authOptions } from "@/lib/auth";
+import { authOptions, isAdminEmail } from "@/lib/auth";
 import { refreshDueAccounts } from "@/lib/sync";
 import LeaderboardAdminActions from "./LeaderboardAdminActions";
 import UserHeaderMenu from "./users/[nickname]/UserHeaderMenu";
@@ -61,6 +61,8 @@ export default async function Home() {
     viewerEmail,
     sessionName: session?.user?.name?.trim() ?? null,
   });
+  const canViewAllUserPages = isAdminEmail(viewerEmail);
+  const viewerWkUsername = viewerMenuInfo?.wkUsername ?? null;
 
   let leaderboard: LeaderboardRow[] = [];
   let setupMessage = "";
@@ -267,6 +269,8 @@ export default async function Home() {
             </div>
           ) : (
             <LeaderboardTable
+              canViewAllUserPages={canViewAllUserPages}
+              viewerWkUsername={viewerWkUsername}
               rows={leaderboard.map((row) => ({
                 ...row,
                 lastActivityAt: row.lastActivityAt ? row.lastActivityAt.toISOString() : null,

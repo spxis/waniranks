@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-
-import { authOptions } from "@/lib/auth";
+import { authOptions, isAdminEmail } from "@/lib/auth";
 import { decryptToken } from "@/lib/crypto";
 import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
 import { prisma } from "@/lib/prisma";
@@ -9,18 +8,9 @@ import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserReadPanel from "./UserReadPanel";
 import UserDashboardTabs from "./UserDashboardTabs";
-import {
-  getNewsDevSampleUrls,
-  resolveInitialDashboardTab,
-  resolveInitialReadTab,
-} from "./userReadConfig";
-import { resolveViewerMenuInfo } from "./userPageAuth";
-import type {
-  ItemSpreadGroupDetails,
-  LevelProgressSnapshot,
-  SrsGroupKey,
-  TypeProgress,
-} from "./UserDashboardTabs.types";
+import { getNewsDevSampleUrls, resolveInitialDashboardTab, resolveInitialReadTab } from "./userReadConfig";
+import { canViewUserPage, resolveViewerMenuInfo } from "./userPageAuth";
+import type { ItemSpreadGroupDetails, LevelProgressSnapshot, SrsGroupKey, TypeProgress } from "./UserDashboardTabs.types";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
@@ -128,6 +118,15 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   });
 
   if (!account) {
+    notFound();
+  }
+
+  const canViewThisPage = canViewUserPage({
+    viewerEmail,
+    viewerMenuInfo,
+    targetWkUsername: account.wkUsername,
+  });
+  if (!canViewThisPage) {
     notFound();
   }
 
@@ -444,6 +443,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           availableProgressLevels={availableProgressLevels}
           levelProgressByLevel={levelProgressByLevel}
           viewerMenuInfo={viewerMenuInfo}
+          canViewAllUserPages={isAdminEmail(viewerEmail)}
           initialDashboardTab={initialDashboardTab}
           learnContent={(
             <ExplorerTabs

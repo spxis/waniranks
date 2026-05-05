@@ -25,6 +25,8 @@ type Props = {
   activeTab: LeaderboardTab;
   activeSort: SortState;
   sortedRows: LeaderboardRow[];
+  canViewAllUserPages: boolean;
+  viewerWkUsername: string | null;
   filteredExpanded: Set<string>;
   canRefreshAdmin: boolean;
   refreshingRowIds: Set<string>;
@@ -52,6 +54,8 @@ export default function LeaderboardDesktop({
   activeTab,
   activeSort,
   sortedRows,
+  canViewAllUserPages,
+  viewerWkUsername,
   filteredExpanded,
   canRefreshAdmin,
   refreshingRowIds,
@@ -63,6 +67,20 @@ export default function LeaderboardDesktop({
   onToggleItemSpreadPanel,
   onToggleLevelProgressPanel,
 }: Props) {
+  const normalizedViewerWkUsername = viewerWkUsername?.trim().toLowerCase() ?? null;
+
+  function canViewRowPage(rowWkUsername: string): boolean {
+    if (canViewAllUserPages) {
+      return true;
+    }
+
+    if (!normalizedViewerWkUsername) {
+      return false;
+    }
+
+    return rowWkUsername.trim().toLowerCase() === normalizedViewerWkUsername;
+  }
+
   return (
     <div className="hidden overflow-x-auto md:block">
       <table className="min-w-full">
@@ -128,8 +146,17 @@ export default function LeaderboardDesktop({
               <tr className="transition hover:bg-surface-muted/80">
                 <td className="px-4 py-3 font-black">#{index + 1}</td>
                 <td className="px-4 py-3 text-lg font-black text-foreground">
-                  <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">{row.nickname}</Link>
-                  <p className="text-xs font-semibold text-foreground/60"><Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">@{row.wkUsername}</Link></p>
+                  {canViewRowPage(row.wkUsername) ? (
+                    <>
+                      <Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">{row.nickname}</Link>
+                      <p className="text-xs font-semibold text-foreground/60"><Link href={`/users/${encodeURIComponent(row.wkUsername)}`} className="hover:text-accent">@{row.wkUsername}</Link></p>
+                    </>
+                  ) : (
+                    <>
+                      <p>{row.nickname}</p>
+                      <p className="text-xs font-semibold text-foreground/60">@{row.wkUsername}</p>
+                    </>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-lg font-black text-accent"><p>{row.wkLevel}</p><p className={`mt-0.5 text-[10px] font-semibold ${deltaClass(row.dailyDelta?.wkLevel)}`}>{formatDelta(row.dailyDelta?.wkLevel)}</p></td>
                 {activeTab === "overall" ? (

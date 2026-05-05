@@ -1,14 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
 
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import StudyHistoryTable from "@/app/shared/StudyHistoryTable";
+import { canViewUserPage, resolveViewerMenuInfo } from "../userPageAuth";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
 };
 
 export default async function UserHistoryPage({ params }: PageProps) {
+  const session = await getServerSession(authOptions);
+  const viewerEmail = session?.user?.email?.trim().toLowerCase() ?? null;
+  const viewerMenuInfo = await resolveViewerMenuInfo({
+    viewerEmail,
+    sessionName: session?.user?.name?.trim() ?? null,
+  });
+
   const { nickname } = await params;
   const userKey = decodeURIComponent(nickname);
 
@@ -18,6 +28,15 @@ export default async function UserHistoryPage({ params }: PageProps) {
   });
 
   if (!account) {
+    notFound();
+  }
+
+  const canViewThisPage = canViewUserPage({
+    viewerEmail,
+    viewerMenuInfo,
+    targetWkUsername: account.wkUsername,
+  });
+  if (!canViewThisPage) {
     notFound();
   }
 

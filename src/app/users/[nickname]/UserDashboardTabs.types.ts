@@ -107,6 +107,7 @@ export type UserDashboardTabsProps = {
   availableProgressLevels: number[];
   levelProgressByLevel: Record<number, LevelProgressSnapshot>;
   viewerMenuInfo: ViewerMenuInfo | null;
+  canViewAllUserPages: boolean;
   initialDashboardTab: TabId;
   learnContent: ReactNode;
   readContent: ReactNode;
