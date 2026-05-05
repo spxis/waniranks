@@ -201,12 +201,6 @@ export default function UserDashboardTabs({
             </span>
           ) : null}
           <div className="ml-auto flex items-center gap-2">
-            <Link
-              href="/"
-              className="inline-flex h-8 select-none items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition hover:bg-surface-muted"
-            >
-              Leaderboard
-            </Link>
             <UserHeaderMenu
               accountId={accountId}
               viewedWkUsername={wkUsername}

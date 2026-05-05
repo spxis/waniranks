@@ -73,7 +73,7 @@ export default function NewsReaderForm({
           placeholder="https://..."
           value={url}
           onChange={(event) => onChangeUrl(event.target.value)}
-          className="h-12 flex-1 rounded-full border border-line bg-surface px-5 text-sm text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
+          className="h-12 w-full rounded-full border border-line bg-surface px-5 text-sm text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none sm:flex-1"
           required
         />
         <button
