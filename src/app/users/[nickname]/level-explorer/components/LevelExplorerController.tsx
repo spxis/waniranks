@@ -248,12 +248,27 @@ export default function LevelExplorerController({
   });
 
   useEffect(() => {
-    if (!hasHydratedUrlStateRef.current || applyingUrlStateRef.current) {
+    if (!hasHydratedUrlStateRef.current) {
+      return;
+    }
+
+    // Allow explicit user actions (push mode) to update URL even if hydration is still settling.
+    if (applyingUrlStateRef.current && pendingHistoryMode !== "push") {
       return;
     }
 
     writeUrlState();
-  }, [selectedLevels, selectedSubjectId, srsFilter, typeFilter, jlptFilter, reviewTimingFilter, stickyMerge, writeUrlState]);
+  }, [
+    pendingHistoryMode,
+    selectedLevels,
+    selectedSubjectId,
+    srsFilter,
+    typeFilter,
+    jlptFilter,
+    reviewTimingFilter,
+    stickyMerge,
+    writeUrlState,
+  ]);
 
   useLevelExplorerStorageHydration({
     storageKeys,

@@ -126,3 +126,25 @@ test("user drilldown tabs load", async ({ browser, baseURL }) => {
     }
   }
 });
+
+test("study keeps all type filter on reload", async ({ browser, baseURL }) => {
+  const user = smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=study&srs=all&jlpt=all&review=all&sticky=0&recent=0#explorer`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    const allTypeButton = page.getByRole("button", { name: /^All\s+L\d+\s+\(\d+\)$/i });
+    await expect(allTypeButton).toBeVisible();
+
+    await allTypeButton.click();
+    await expect.poll(() => new URL(page.url()).searchParams.get("type")).not.toBe("radical");
+    await page.waitForTimeout(150);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {
+      // Some pages keep lightweight polling alive; proceed with assertions.
+    });
+
+    const typeFilter = new URL(page.url()).searchParams.get("type");
+    expect(typeFilter, "type filter should stay all/empty after reload").not.toBe("radical");
+  });
+});
