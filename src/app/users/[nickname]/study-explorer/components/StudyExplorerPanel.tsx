@@ -144,7 +144,8 @@ export default function StudyExplorerPanel({
 
   const showLoadingIndicator = (isLoading || isValidating || !hasData) && filteredItems.length === 0 && !errorMessage;
   const showTypeCountPlaceholders = !hasData && typeCounts.all === 0 && filteredItems.length === 0 && !errorMessage;
-  const showSrsCountPlaceholders = !hasData && filteredItems.length === 0 && !errorMessage;
+  const showSrsCountPlaceholders =
+    queueMode === "lesson" || (!hasData && filteredItems.length === 0 && !errorMessage);
   const formatSrsCount = (count: number) => (showSrsCountPlaceholders ? "..." : formatNumber(count));
   const showFilterPagingState =
     queueMode === "lesson" && viewedLevel !== null && hasMorePages && filteredItems.length === 0;
