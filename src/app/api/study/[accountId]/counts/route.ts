@@ -4,56 +4,65 @@ import { canAccessAccount } from "@/lib/accountAccess";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { fetchAssignmentCount } from "../queue/queueRouteUtils";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 type RouteContext = {
   params: Promise<{ accountId: string }>;
 };
 
 export async function GET(request: Request, context: RouteContext) {
-  try {
-    const { accountId } = await context.params;
-    if (!(await canAccessAccount(request, accountId))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/study/[accountId]/counts",
+    method: "GET",
+    request: request,
+    execute: async () => {
 
-    const account = await prisma.account.findUnique({
-      where: { id: accountId },
-      select: {
-        tokenEncrypted: true,
-        tokenIv: true,
-        tokenTag: true,
-      },
-    });
+try {
+                const { accountId } = await context.params;
+                if (!(await canAccessAccount(request, accountId))) {
+                  return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+                }
 
-    if (!account) {
-      return NextResponse.json({ error: "Account not found." }, { status: 404 });
-    }
+                const account = await prisma.account.findUnique({
+                  where: { id: accountId },
+                  select: {
+                    tokenEncrypted: true,
+                    tokenIv: true,
+                    tokenTag: true,
+                  },
+                });
 
-    const token = decryptToken({
-      encrypted: account.tokenEncrypted,
-      iv: account.tokenIv,
-      tag: account.tokenTag,
-    });
+                if (!account) {
+                  return NextResponse.json({ error: "Account not found." }, { status: 404 });
+                }
 
-    const [reviews, lessons] = await Promise.all([
-      fetchAssignmentCount("/assignments?immediately_available_for_review=true", token),
-      fetchAssignmentCount("/assignments?srs_stages=0", token),
-    ]);
+                const token = decryptToken({
+                  encrypted: account.tokenEncrypted,
+                  iv: account.tokenIv,
+                  tag: account.tokenTag,
+                });
 
-    return NextResponse.json(
-      {
-        reviews,
-        lessons,
-        all: reviews + lessons,
-      },
-      {
-        headers: {
-          "Cache-Control": "private, max-age=20, stale-while-revalidate=40",
-        },
-      },
-    );
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Could not fetch study counts." }, { status: 500 });
-  }
+                const [reviews, lessons] = await Promise.all([
+                  fetchAssignmentCount("/assignments?immediately_available_for_review=true", token),
+                  fetchAssignmentCount("/assignments?srs_stages=0", token),
+                ]);
+
+                return NextResponse.json(
+                  {
+                    reviews,
+                    lessons,
+                    all: reviews + lessons,
+                  },
+                  {
+                    headers: {
+                      "Cache-Control": "private, max-age=20, stale-while-revalidate=40",
+                    },
+                  },
+                );
+              } catch (error) {
+                console.error(error);
+                return NextResponse.json({ error: "Could not fetch study counts." }, { status: 500 });
+              }
+    },
+  });
 }

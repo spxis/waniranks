@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 function isAuthorizedCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -31,43 +32,51 @@ async function fetchJlptList(nLevel: number): Promise<string[]> {
 }
 
 export async function POST(request: Request) {
-  try {
-    if (!isAuthorizedCron(request) && !(await isAuthorizedAdmin(request))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/jlpt/refresh",
+    method: "POST",
+    request: request,
+    execute: async () => {
 
-    const levels = [1, 2, 3, 4, 5] as const;
-    const records: Array<{ kanji: string; nLevel: number }> = [];
+try {
+                if (!isAuthorizedCron(request) && !(await isAuthorizedAdmin(request))) {
+                  return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+                }
 
-    for (const nLevel of levels) {
-      const list = await fetchJlptList(nLevel);
-      for (const kanji of list) {
-        records.push({ kanji, nLevel });
-      }
-    }
+                const levels = [1, 2, 3, 4, 5] as const;
+                const records: Array<{ kanji: string; nLevel: number }> = [];
 
-    const nextKanjiSet = new Set(records.map((record) => record.kanji));
+                for (const nLevel of levels) {
+                  const list = await fetchJlptList(nLevel);
+                  for (const kanji of list) {
+                    records.push({ kanji, nLevel });
+                  }
+                }
 
-    await prisma.jlptKanji.createMany({ data: records, skipDuplicates: true });
+                const nextKanjiSet = new Set(records.map((record) => record.kanji));
 
-    for (const record of records) {
-      await prisma.jlptKanji.update({
-        where: { kanji: record.kanji },
-        data: { nLevel: record.nLevel },
-      });
-    }
+                await prisma.jlptKanji.createMany({ data: records, skipDuplicates: true });
 
-    await prisma.jlptKanji.deleteMany({
-      where: {
-        kanji: {
-          notIn: Array.from(nextKanjiSet),
-        },
-      },
-    });
+                for (const record of records) {
+                  await prisma.jlptKanji.update({
+                    where: { kanji: record.kanji },
+                    data: { nLevel: record.nLevel },
+                  });
+                }
 
-    return NextResponse.json({ ok: true, count: records.length });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "JLPT refresh failed." }, { status: 500 });
-  }
+                await prisma.jlptKanji.deleteMany({
+                  where: {
+                    kanji: {
+                      notIn: Array.from(nextKanjiSet),
+                    },
+                  },
+                });
+
+                return NextResponse.json({ ok: true, count: records.length });
+              } catch (error) {
+                console.error(error);
+                return NextResponse.json({ error: "JLPT refresh failed." }, { status: 500 });
+              }
+    },
+  });
 }

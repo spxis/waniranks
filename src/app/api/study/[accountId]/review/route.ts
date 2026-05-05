@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { canAccessAccount } from "@/lib/accountAccess";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { recordStudyReviewAttempt, recordSubmissionSnapshot } from "@/lib/studyHistory";
@@ -101,11 +102,16 @@ function transitionDirection(params: {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  try {
-    const { accountId } = await context.params;
-    if (!(await canAccessAccount(request, accountId))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/study/[accountId]/review",
+    method: "POST",
+    request,
+    execute: async () => {
+      try {
+        const { accountId } = await context.params;
+        if (!(await canAccessAccount(request, accountId))) {
+          return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+        }
 
     const json = await request.json();
     const parsed = reviewSchema.safeParse(json);
@@ -218,6 +224,8 @@ export async function POST(request: Request, context: RouteContext) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Could not submit review result." }, { status: 500 });
-  }
+        return NextResponse.json({ error: "Could not submit review result." }, { status: 500 });
+      }
+    },
+  });
 }

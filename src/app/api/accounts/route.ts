@@ -6,6 +6,7 @@ import { saveAccountFromToken } from "@/lib/accountUpsert";
 import { isAuthorizedAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { clearExpiredSyncLocks } from "@/lib/sync";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 const createAccountSchema = z.object({
   nickname: z.string().trim().min(2).max(32),
@@ -13,124 +14,140 @@ const createAccountSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  try {
-    if (!(await isAuthorizedAdmin(request))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/accounts",
+    method: "POST",
+    request: request,
+    execute: async () => {
 
-    const json = await request.json();
-    const parsed = createAccountSchema.safeParse(json);
+try {
+                if (!(await isAuthorizedAdmin(request))) {
+                  return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+                }
 
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
-    }
+                const json = await request.json();
+                const parsed = createAccountSchema.safeParse(json);
 
-    const { nickname, token } = parsed.data;
-    const account = await saveAccountFromToken({
-      token,
-      nickname,
-    });
+                if (!parsed.success) {
+                  return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
+                }
 
-    return NextResponse.json({ account }, { status: 201 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Could not save token. Confirm env vars and token validity." },
-      { status: 500 },
-    );
-  }
+                const { nickname, token } = parsed.data;
+                const account = await saveAccountFromToken({
+                  token,
+                  nickname,
+                });
+
+                return NextResponse.json({ account }, { status: 201 });
+              } catch (error) {
+                console.error(error);
+                return NextResponse.json(
+                  { error: "Could not save token. Confirm env vars and token validity." },
+                  { status: 500 },
+                );
+              }
+    },
+  });
 }
 
 export async function GET(request: Request) {
-  try {
-    if (!(await isAuthorizedAdmin(request))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/accounts",
+    method: "GET",
+    request: request,
+    execute: async () => {
 
-    await clearExpiredSyncLocks();
+try {
+                if (!(await isAuthorizedAdmin(request))) {
+                  return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+                }
 
-    let accounts;
+                await clearExpiredSyncLocks();
 
-    try {
-      accounts = await prisma.account.findMany(({
-        orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
-        select: {
-          id: true,
-          nickname: true,
-          wkUsername: true,
-          wkLevel: true,
-          reviewCount: true,
-          burnedCount: true,
-          pendingReviews: true,
-          radicalCount: true,
-          vocabularyCount: true,
-          apprenticeCount: true,
-          guruCount: true,
-          masterCount: true,
-          enlightenedCount: true,
-          levelKanjiTotal: true,
-          levelKanjiLearned: true,
-          levelKanjiGuruPlus: true,
-          levelKanjiLocked: true,
-          estimatedHoursRemaining: true,
-          lastActivityAt: true,
-          score: true,
-          lastSyncedAt: true,
-          lastSyncStatus: true,
-          isSyncing: true,
-          syncLockUntil: true,
-          joinedByName: true,
-          joinedByEmail: true,
-          inviteCodeUpdatedAt: true,
-          createdAt: true,
-        },
-      } as unknown) as Prisma.AccountFindManyArgs);
-    } catch (error) {
-      // Fallback for environments where new invite-code columns are not yet migrated.
-      const fallbackAccounts = await prisma.account.findMany({
-        orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
-        select: {
-          id: true,
-          nickname: true,
-          wkUsername: true,
-          wkLevel: true,
-          reviewCount: true,
-          burnedCount: true,
-          pendingReviews: true,
-          radicalCount: true,
-          vocabularyCount: true,
-          apprenticeCount: true,
-          guruCount: true,
-          masterCount: true,
-          enlightenedCount: true,
-          levelKanjiTotal: true,
-          levelKanjiLearned: true,
-          levelKanjiGuruPlus: true,
-          levelKanjiLocked: true,
-          estimatedHoursRemaining: true,
-          lastActivityAt: true,
-          score: true,
-          lastSyncedAt: true,
-          lastSyncStatus: true,
-          isSyncing: true,
-          syncLockUntil: true,
-          createdAt: true,
-        },
-      });
+                let accounts;
 
-      accounts = fallbackAccounts.map((row) => ({
-        ...row,
-        joinedByName: null,
-        joinedByEmail: null,
-        inviteCodeUpdatedAt: null,
-      }));
-      console.warn("/api/accounts falling back due schema mismatch", error);
-    }
+                try {
+                  accounts = await prisma.account.findMany(({
+                    orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
+                    select: {
+                      id: true,
+                      nickname: true,
+                      wkUsername: true,
+                      wkLevel: true,
+                      reviewCount: true,
+                      burnedCount: true,
+                      pendingReviews: true,
+                      radicalCount: true,
+                      vocabularyCount: true,
+                      apprenticeCount: true,
+                      guruCount: true,
+                      masterCount: true,
+                      enlightenedCount: true,
+                      levelKanjiTotal: true,
+                      levelKanjiLearned: true,
+                      levelKanjiGuruPlus: true,
+                      levelKanjiLocked: true,
+                      estimatedHoursRemaining: true,
+                      lastActivityAt: true,
+                      score: true,
+                      lastSyncedAt: true,
+                      lastSyncStatus: true,
+                      isSyncing: true,
+                      syncLockUntil: true,
+                      joinedByName: true,
+                      joinedByEmail: true,
+                      inviteCodeUpdatedAt: true,
+                      createdAt: true,
+                    },
+                  } as unknown) as Prisma.AccountFindManyArgs);
+                } catch (error) {
+                  // Fallback for environments where new invite-code columns are not yet migrated.
+                  const fallbackAccounts = await prisma.account.findMany({
+                    orderBy: [{ score: "desc" }, { wkLevel: "desc" }],
+                    select: {
+                      id: true,
+                      nickname: true,
+                      wkUsername: true,
+                      wkLevel: true,
+                      reviewCount: true,
+                      burnedCount: true,
+                      pendingReviews: true,
+                      radicalCount: true,
+                      vocabularyCount: true,
+                      apprenticeCount: true,
+                      guruCount: true,
+                      masterCount: true,
+                      enlightenedCount: true,
+                      levelKanjiTotal: true,
+                      levelKanjiLearned: true,
+                      levelKanjiGuruPlus: true,
+                      levelKanjiLocked: true,
+                      estimatedHoursRemaining: true,
+                      lastActivityAt: true,
+                      score: true,
+                      lastSyncedAt: true,
+                      lastSyncStatus: true,
+                      isSyncing: true,
+                      syncLockUntil: true,
+                      createdAt: true,
+                    },
+                  });
 
-    return NextResponse.json({ accounts });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Could not fetch accounts." }, { status: 500 });
-  }
+                  accounts = fallbackAccounts.map((row) => ({
+                    ...row,
+                    joinedByName: null,
+                    joinedByEmail: null,
+                    inviteCodeUpdatedAt: null,
+                  }));
+                  console.warn("/api/accounts falling back due schema mismatch", error);
+                }
+
+                return NextResponse.json({ accounts });
+              } catch (error) {
+                console.error(error);
+                return NextResponse.json({ error: "Could not fetch accounts." }, { status: 500 });
+              }
+    },
+  });
 }
 

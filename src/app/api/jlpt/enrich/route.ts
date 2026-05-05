@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { prisma } from "@/lib/prisma";
 
 type KanjiApiPayload = {
@@ -133,10 +134,15 @@ async function fetchKanjiDetails(kanji: string) {
 }
 
 export async function POST(request: Request) {
-  try {
-    if (!(await isAuthorizedAdmin(request))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/jlpt/enrich",
+    method: "POST",
+    request,
+    execute: async () => {
+      try {
+        if (!(await isAuthorizedAdmin(request))) {
+          return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+        }
 
     let body: { limit?: number; onlyMissing?: boolean } = {};
     try {
@@ -209,6 +215,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "JLPT enrichment failed." }, { status: 500 });
-  }
+        return NextResponse.json({ error: "JLPT enrichment failed." }, { status: 500 });
+      }
+    },
+  });
 }

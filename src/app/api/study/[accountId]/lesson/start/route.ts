@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { canAccessAccount } from "@/lib/accountAccess";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { clearStudyQueueCache } from "@/lib/studyQueueCache";
@@ -16,11 +17,16 @@ const lessonStartSchema = z.object({
 });
 
 export async function POST(request: Request, context: RouteContext) {
-  try {
-    const { accountId } = await context.params;
-    if (!(await canAccessAccount(request, accountId))) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/study/[accountId]/lesson/start",
+    method: "POST",
+    request,
+    execute: async () => {
+      try {
+        const { accountId } = await context.params;
+        if (!(await canAccessAccount(request, accountId))) {
+          return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+        }
 
     const json = await request.json();
     const parsed = lessonStartSchema.safeParse(json);
@@ -70,6 +76,8 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Could not start lesson." }, { status: 500 });
-  }
+        return NextResponse.json({ error: "Could not start lesson." }, { status: 500 });
+      }
+    },
+  });
 }

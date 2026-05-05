@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { logNewsApiPerf } from "@/lib/news/newsApiPerf";
 import { extractArticle, type NewsExtractError } from "@/lib/news/newsExtract";
 import { emitSumilabuTelemetry } from "@/lib/sumilabuTelemetry";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 export const runtime = "nodejs";
 
@@ -14,63 +15,71 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const startedAtMs = Date.now();
-  const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
-    logNewsApiPerf("/api/news/extract", startedAtMs, status, meta);
-    void emitSumilabuTelemetry({
-      event: "news_extract",
-      status: status >= 500 ? "error" : status >= 400 ? "warn" : "ok",
-      severity: status >= 500 ? "error" : status >= 400 ? "warning" : "info",
-      durationMs: Date.now() - startedAtMs,
-      tags: {
-        route: "/api/news/extract",
-        http_status: status,
-      },
-      telemetry: meta,
-    });
-    return NextResponse.json(body, { status });
-  };
+  return withApiRouteTelemetry({
+    route: "/api/news/extract",
+    method: "POST",
+    request: request,
+    execute: async () => {
 
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return respond({ error: "Unauthorized." }, 401);
-    }
+const startedAtMs = Date.now();
+              const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
+                logNewsApiPerf("/api/news/extract", startedAtMs, status, meta);
+                void emitSumilabuTelemetry({
+                  event: "news_extract",
+                  status: status >= 500 ? "error" : status >= 400 ? "warn" : "ok",
+                  severity: status >= 500 ? "error" : status >= 400 ? "warning" : "info",
+                  durationMs: Date.now() - startedAtMs,
+                  tags: {
+                    route: "/api/news/extract",
+                    http_status: status,
+                  },
+                  telemetry: meta,
+                });
+                return NextResponse.json(body, { status });
+              };
 
-    const json = await request.json().catch(() => null);
-    const parsed = requestSchema.safeParse(json);
-    if (!parsed.success) {
-      return respond({ error: "Invalid request payload." }, 400);
-    }
+              try {
+                const session = await getServerSession(authOptions);
+                if (!session?.user?.email) {
+                  return respond({ error: "Unauthorized." }, 401);
+                }
 
-    const result = await extractArticle(parsed.data.url);
-    if (!result.ok) {
-      const { status, message } = mapErrorToResponse(result.error);
-      return respond({ error: message }, status, {
-        errorKind: result.error.kind,
-        url: parsed.data.url,
-      });
-    }
+                const json = await request.json().catch(() => null);
+                const parsed = requestSchema.safeParse(json);
+                if (!parsed.success) {
+                  return respond({ error: "Invalid request payload." }, 400);
+                }
 
-    return respond(
-      { article: result.article },
-      200,
-      {
-        blocks: result.article.blocks.length,
-        textLength: result.article.textLength,
-        sourceUrl: parsed.data.url,
-      },
-    );
-  } catch (error) {
-    console.error("[news/extract] failed", error);
-    return respond(
-      {
-        error:
-          "Server could not parse that page. Try the clean article URL (without tracking params) or use site mode first.",
-      },
-      500,
-    );
-  }
+                const result = await extractArticle(parsed.data.url);
+                if (!result.ok) {
+                  const { status, message } = mapErrorToResponse(result.error);
+                  return respond({ error: message }, status, {
+                    errorKind: result.error.kind,
+                    url: parsed.data.url,
+                  });
+                }
+
+                return respond(
+                  { article: result.article },
+                  200,
+                  {
+                    blocks: result.article.blocks.length,
+                    textLength: result.article.textLength,
+                    sourceUrl: parsed.data.url,
+                  },
+                );
+              } catch (error) {
+                console.error("[news/extract] failed", error);
+                return respond(
+                  {
+                    error:
+                      "Server could not parse that page. Try the clean article URL (without tracking params) or use site mode first.",
+                  },
+                  500,
+                );
+              }
+    },
+  });
 }
 
 function mapErrorToResponse(error: NewsExtractError): { status: number; message: string } {

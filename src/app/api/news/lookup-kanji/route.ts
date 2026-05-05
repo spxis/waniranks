@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { decryptToken } from "@/lib/crypto";
 import { lookupRunInWaniKani } from "@/lib/news/newsKanjiLookup";
 import { prisma } from "@/lib/prisma";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 export const runtime = "nodejs";
 
@@ -16,52 +17,60 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email?.trim().toLowerCase() ?? null;
-    if (!email) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  return withApiRouteTelemetry({
+    route: "/api/news/lookup-kanji",
+    method: "POST",
+    request: request,
+    execute: async () => {
 
-    const json = await request.json().catch(() => null);
-    const parsed = requestSchema.safeParse(json);
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
-    }
+try {
+                const session = await getServerSession(authOptions);
+                const email = session?.user?.email?.trim().toLowerCase() ?? null;
+                if (!email) {
+                  return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+                }
 
-    const run = parsed.data.run;
-    if (!KANJI_RUN_REGEX.test(run)) {
-      return NextResponse.json({ error: "No kanji to look up." }, { status: 400 });
-    }
+                const json = await request.json().catch(() => null);
+                const parsed = requestSchema.safeParse(json);
+                if (!parsed.success) {
+                  return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
+                }
 
-    const account = await prisma.account.findFirst({
-      where: { joinedByEmail: email },
-      select: {
-        id: true,
-        tokenEncrypted: true,
-        tokenIv: true,
-        tokenTag: true,
-      },
-    });
+                const run = parsed.data.run;
+                if (!KANJI_RUN_REGEX.test(run)) {
+                  return NextResponse.json({ error: "No kanji to look up." }, { status: 400 });
+                }
 
-    if (!account) {
-      return NextResponse.json(
-        { error: "No linked WaniKani account." },
-        { status: 404 },
-      );
-    }
+                const account = await prisma.account.findFirst({
+                  where: { joinedByEmail: email },
+                  select: {
+                    id: true,
+                    tokenEncrypted: true,
+                    tokenIv: true,
+                    tokenTag: true,
+                  },
+                });
 
-    const token = decryptToken({
-      encrypted: account.tokenEncrypted,
-      iv: account.tokenIv,
-      tag: account.tokenTag,
-    });
+                if (!account) {
+                  return NextResponse.json(
+                    { error: "No linked WaniKani account." },
+                    { status: 404 },
+                  );
+                }
 
-    const result = await lookupRunInWaniKani(run, token);
+                const token = decryptToken({
+                  encrypted: account.tokenEncrypted,
+                  iv: account.tokenIv,
+                  tag: account.tokenTag,
+                });
 
-    return NextResponse.json({ accountId: account.id, result }, { status: 200 });
-  } catch (error) {
-    console.error("[news/lookup-kanji] failed", error);
-    return NextResponse.json({ error: "Lookup failed." }, { status: 500 });
-  }
+                const result = await lookupRunInWaniKani(run, token);
+
+                return NextResponse.json({ accountId: account.id, result }, { status: 200 });
+              } catch (error) {
+                console.error("[news/lookup-kanji] failed", error);
+                return NextResponse.json({ error: "Lookup failed." }, { status: 500 });
+              }
+    },
+  });
 }

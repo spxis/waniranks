@@ -5,6 +5,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { logNewsApiPerf } from "@/lib/news/newsApiPerf";
 import { readingKanaForRun } from "@/lib/news/newsReadingKana";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 export const runtime = "nodejs";
 
@@ -13,40 +14,48 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const startedAtMs = Date.now();
-  const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
-    logNewsApiPerf("/api/news/readings", startedAtMs, status, meta);
-    return NextResponse.json(body, { status });
-  };
+  return withApiRouteTelemetry({
+    route: "/api/news/readings",
+    method: "POST",
+    request: request,
+    execute: async () => {
 
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return respond({ error: "Unauthorized." }, 401);
-    }
+const startedAtMs = Date.now();
+              const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
+                logNewsApiPerf("/api/news/readings", startedAtMs, status, meta);
+                return NextResponse.json(body, { status });
+              };
 
-    const json = await request.json().catch(() => null);
-    const parsed = requestSchema.safeParse(json);
-    if (!parsed.success) {
-      return respond({ error: "Invalid request payload." }, 400);
-    }
+              try {
+                const session = await getServerSession(authOptions);
+                if (!session?.user?.email) {
+                  return respond({ error: "Unauthorized." }, 401);
+                }
 
-    const uniqueRuns = Array.from(new Set(parsed.data.runs.map((run) => run.trim()).filter(Boolean)));
+                const json = await request.json().catch(() => null);
+                const parsed = requestSchema.safeParse(json);
+                if (!parsed.success) {
+                  return respond({ error: "Invalid request payload." }, 400);
+                }
 
-    const entries = await Promise.all(
-      uniqueRuns.map(async (run) => {
-        const reading = await readingKanaForRun(run).catch(() => null);
-        return [run, reading] as const;
-      }),
-    );
+                const uniqueRuns = Array.from(new Set(parsed.data.runs.map((run) => run.trim()).filter(Boolean)));
 
-    return respond(
-      { readings: Object.fromEntries(entries) },
-      200,
-      { runs: uniqueRuns.length },
-    );
-  } catch (error) {
-    console.error("[news/readings] failed", error);
-    return respond({ error: "Couldn't build readings." }, 500);
-  }
+                const entries = await Promise.all(
+                  uniqueRuns.map(async (run) => {
+                    const reading = await readingKanaForRun(run).catch(() => null);
+                    return [run, reading] as const;
+                  }),
+                );
+
+                return respond(
+                  { readings: Object.fromEntries(entries) },
+                  200,
+                  { runs: uniqueRuns.length },
+                );
+              } catch (error) {
+                console.error("[news/readings] failed", error);
+                return respond({ error: "Couldn't build readings." }, 500);
+              }
+    },
+  });
 }

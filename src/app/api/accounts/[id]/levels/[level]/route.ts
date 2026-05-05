@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { getLevelKanjiSnapshot } from "@/lib/wanikani";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 type RouteContext = {
   params: Promise<{ id: string; level: string }>;
@@ -165,154 +166,162 @@ function snapshotHasDrilldownFields(items: unknown): boolean {
 }
 
 export async function GET(request: Request, context: RouteContext) {
-  try {
-    const url = new URL(request.url);
-    const limitParam = Number(url.searchParams.get("limit") ?? "");
-    const offsetParam = Number(url.searchParams.get("offset") ?? "");
-    const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
-    const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
+  return withApiRouteTelemetry({
+    route: "/api/accounts/[id]/levels/[level]",
+    method: "GET",
+    request: request,
+    execute: async () => {
 
-    const { id, level: rawLevel } = await context.params;
-    const level = Number(rawLevel);
+try {
+                const url = new URL(request.url);
+                const limitParam = Number(url.searchParams.get("limit") ?? "");
+                const offsetParam = Number(url.searchParams.get("offset") ?? "");
+                const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
+                const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
 
-    if (!Number.isInteger(level) || level < 1 || level > 60) {
-      return NextResponse.json({ error: "Invalid level." }, { status: 400 });
-    }
+                const { id, level: rawLevel } = await context.params;
+                const level = Number(rawLevel);
 
-    const cached = await prisma.levelSnapshot.findUnique({
-      where: {
-        accountId_level: {
-          accountId: id,
-          level,
-        },
-      },
-      select: {
-        level: true,
-        kanjiTotal: true,
-        kanjiLearned: true,
-        kanjiGuruPlus: true,
-        kanjiLocked: true,
-        estimatedHoursRemaining: true,
-        items: true,
-        syncedAt: true,
-      },
-    });
+                if (!Number.isInteger(level) || level < 1 || level > 60) {
+                  return NextResponse.json({ error: "Invalid level." }, { status: 400 });
+                }
 
-    const now = Date.now();
-    if (
-      cached &&
-      now - cached.syncedAt.getTime() < LEVEL_CACHE_MS &&
-      snapshotHasDrilldownFields(cached.items)
-    ) {
-      const items = cached.items as unknown[];
-      const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
+                const cached = await prisma.levelSnapshot.findUnique({
+                  where: {
+                    accountId_level: {
+                      accountId: id,
+                      level,
+                    },
+                  },
+                  select: {
+                    level: true,
+                    kanjiTotal: true,
+                    kanjiLearned: true,
+                    kanjiGuruPlus: true,
+                    kanjiLocked: true,
+                    estimatedHoursRemaining: true,
+                    items: true,
+                    syncedAt: true,
+                  },
+                });
 
-      return NextResponse.json({
-        snapshot: {
-          level: cached.level,
-          kanjiTotal: cached.kanjiTotal,
-          kanjiLearned: cached.kanjiLearned,
-          kanjiGuruPlus: cached.kanjiGuruPlus,
-          kanjiLocked: cached.kanjiLocked,
-          estimatedHoursRemaining: cached.estimatedHoursRemaining,
-          items: pagedItems,
-          syncedAt: cached.syncedAt,
-          fromCache: true,
-        },
-        pagination: {
-          offset,
-          limit: limit ?? items.length,
-          total: items.length,
-          hasMore: limit === null ? false : offset + limit < items.length,
-        },
-      });
-    }
+                const now = Date.now();
+                if (
+                  cached &&
+                  now - cached.syncedAt.getTime() < LEVEL_CACHE_MS &&
+                  snapshotHasDrilldownFields(cached.items)
+                ) {
+                  const items = cached.items as unknown[];
+                  const pagedItems = limit === null ? items : items.slice(offset, offset + limit);
 
-    const account = await prisma.account.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        tokenEncrypted: true,
-        tokenIv: true,
-        tokenTag: true,
-      },
-    });
+                  return NextResponse.json({
+                    snapshot: {
+                      level: cached.level,
+                      kanjiTotal: cached.kanjiTotal,
+                      kanjiLearned: cached.kanjiLearned,
+                      kanjiGuruPlus: cached.kanjiGuruPlus,
+                      kanjiLocked: cached.kanjiLocked,
+                      estimatedHoursRemaining: cached.estimatedHoursRemaining,
+                      items: pagedItems,
+                      syncedAt: cached.syncedAt,
+                      fromCache: true,
+                    },
+                    pagination: {
+                      offset,
+                      limit: limit ?? items.length,
+                      total: items.length,
+                      hasMore: limit === null ? false : offset + limit < items.length,
+                    },
+                  });
+                }
 
-    if (!account) {
-      return NextResponse.json({ error: "Account not found." }, { status: 404 });
-    }
+                const account = await prisma.account.findUnique({
+                  where: { id },
+                  select: {
+                    id: true,
+                    tokenEncrypted: true,
+                    tokenIv: true,
+                    tokenTag: true,
+                  },
+                });
 
-    const token = decryptToken({
-      encrypted: account.tokenEncrypted,
-      iv: account.tokenIv,
-      tag: account.tokenTag,
-    });
+                if (!account) {
+                  return NextResponse.json({ error: "Account not found." }, { status: 404 });
+                }
 
-    const snapshot = await getLevelKanjiSnapshot(token, level);
+                const token = decryptToken({
+                  encrypted: account.tokenEncrypted,
+                  iv: account.tokenIv,
+                  tag: account.tokenTag,
+                });
 
-    const saved = await prisma.levelSnapshot.upsert({
-      where: {
-        accountId_level: {
-          accountId: id,
-          level,
-        },
-      },
-      update: {
-        kanjiTotal: snapshot.kanjiTotal,
-        kanjiLearned: snapshot.kanjiLearned,
-        kanjiGuruPlus: snapshot.kanjiGuruPlus,
-        kanjiLocked: snapshot.kanjiLocked,
-        estimatedHoursRemaining: snapshot.estimatedHoursRemaining,
-        items: snapshot.items,
-        syncedAt: new Date(),
-      },
-      create: {
-        accountId: id,
-        level,
-        kanjiTotal: snapshot.kanjiTotal,
-        kanjiLearned: snapshot.kanjiLearned,
-        kanjiGuruPlus: snapshot.kanjiGuruPlus,
-        kanjiLocked: snapshot.kanjiLocked,
-        estimatedHoursRemaining: snapshot.estimatedHoursRemaining,
-        items: snapshot.items,
-        syncedAt: new Date(),
-      },
-      select: {
-        level: true,
-        kanjiTotal: true,
-        kanjiLearned: true,
-        kanjiGuruPlus: true,
-        kanjiLocked: true,
-        estimatedHoursRemaining: true,
-        items: true,
-        syncedAt: true,
-      },
-    });
+                const snapshot = await getLevelKanjiSnapshot(token, level);
 
-    const savedItems = saved.items as unknown[];
-    const pagedItems = limit === null ? savedItems : savedItems.slice(offset, offset + limit);
+                const saved = await prisma.levelSnapshot.upsert({
+                  where: {
+                    accountId_level: {
+                      accountId: id,
+                      level,
+                    },
+                  },
+                  update: {
+                    kanjiTotal: snapshot.kanjiTotal,
+                    kanjiLearned: snapshot.kanjiLearned,
+                    kanjiGuruPlus: snapshot.kanjiGuruPlus,
+                    kanjiLocked: snapshot.kanjiLocked,
+                    estimatedHoursRemaining: snapshot.estimatedHoursRemaining,
+                    items: snapshot.items,
+                    syncedAt: new Date(),
+                  },
+                  create: {
+                    accountId: id,
+                    level,
+                    kanjiTotal: snapshot.kanjiTotal,
+                    kanjiLearned: snapshot.kanjiLearned,
+                    kanjiGuruPlus: snapshot.kanjiGuruPlus,
+                    kanjiLocked: snapshot.kanjiLocked,
+                    estimatedHoursRemaining: snapshot.estimatedHoursRemaining,
+                    items: snapshot.items,
+                    syncedAt: new Date(),
+                  },
+                  select: {
+                    level: true,
+                    kanjiTotal: true,
+                    kanjiLearned: true,
+                    kanjiGuruPlus: true,
+                    kanjiLocked: true,
+                    estimatedHoursRemaining: true,
+                    items: true,
+                    syncedAt: true,
+                  },
+                });
 
-    return NextResponse.json({
-      snapshot: {
-        level: saved.level,
-        kanjiTotal: saved.kanjiTotal,
-        kanjiLearned: saved.kanjiLearned,
-        kanjiGuruPlus: saved.kanjiGuruPlus,
-        kanjiLocked: saved.kanjiLocked,
-        estimatedHoursRemaining: saved.estimatedHoursRemaining,
-        items: pagedItems,
-        syncedAt: saved.syncedAt,
-        fromCache: false,
-      },
-      pagination: {
-        offset,
-        limit: limit ?? savedItems.length,
-        total: savedItems.length,
-        hasMore: limit === null ? false : offset + limit < savedItems.length,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Could not fetch level snapshot." }, { status: 500 });
-  }
+                const savedItems = saved.items as unknown[];
+                const pagedItems = limit === null ? savedItems : savedItems.slice(offset, offset + limit);
+
+                return NextResponse.json({
+                  snapshot: {
+                    level: saved.level,
+                    kanjiTotal: saved.kanjiTotal,
+                    kanjiLearned: saved.kanjiLearned,
+                    kanjiGuruPlus: saved.kanjiGuruPlus,
+                    kanjiLocked: saved.kanjiLocked,
+                    estimatedHoursRemaining: saved.estimatedHoursRemaining,
+                    items: pagedItems,
+                    syncedAt: saved.syncedAt,
+                    fromCache: false,
+                  },
+                  pagination: {
+                    offset,
+                    limit: limit ?? savedItems.length,
+                    total: savedItems.length,
+                    hasMore: limit === null ? false : offset + limit < savedItems.length,
+                  },
+                });
+              } catch (error) {
+                console.error(error);
+                return NextResponse.json({ error: "Could not fetch level snapshot." }, { status: 500 });
+              }
+    },
+  });
 }

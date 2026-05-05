@@ -4,6 +4,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 
 import { authOptions } from "@/lib/auth";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { logNewsApiPerf } from "@/lib/news/newsApiPerf";
 import { discoverArticleLinks, type DiscoverError } from "@/lib/news/newsDiscover";
 import { emitSumilabuTelemetry } from "@/lib/sumilabuTelemetry";
@@ -15,29 +16,34 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const startedAtMs = Date.now();
-  const traceId = randomUUID().slice(0, 8);
-  const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
-    logNewsApiPerf("/api/news/discover", startedAtMs, status, {
-      traceId,
-      ...(meta ?? {}),
-    });
-    void emitSumilabuTelemetry({
-      event: "news_discover",
-      status: status >= 500 ? "error" : status >= 400 ? "warn" : "ok",
-      severity: status >= 500 ? "error" : status >= 400 ? "warning" : "info",
-      durationMs: Date.now() - startedAtMs,
-      tags: {
-        route: "/api/news/discover",
-        trace_id: traceId,
-        http_status: status,
-      },
-      telemetry: meta,
-    });
-    return NextResponse.json(body, { status });
-  };
+  return withApiRouteTelemetry({
+    route: "/api/news/discover",
+    method: "POST",
+    request,
+    execute: async () => {
+      const startedAtMs = Date.now();
+      const traceId = randomUUID().slice(0, 8);
+      const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
+        logNewsApiPerf("/api/news/discover", startedAtMs, status, {
+          traceId,
+          ...(meta ?? {}),
+        });
+        void emitSumilabuTelemetry({
+          event: "news_discover",
+          status: status >= 500 ? "error" : status >= 400 ? "warn" : "ok",
+          severity: status >= 500 ? "error" : status >= 400 ? "warning" : "info",
+          durationMs: Date.now() - startedAtMs,
+          tags: {
+            route: "/api/news/discover",
+            trace_id: traceId,
+            http_status: status,
+          },
+          telemetry: meta,
+        });
+        return NextResponse.json(body, { status });
+      };
 
-  try {
+      try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return respond({ error: "Unauthorized." }, 401);
@@ -74,16 +80,18 @@ export async function POST(request: Request) {
       links: result.payload.links.length,
       hostname: safeHostname(parsed.data.url),
     });
-  } catch (error) {
-    console.error("[news/discover] failed", { traceId, error });
-    return respond(
-      {
-        error:
-          `Server could not scan that page. Try a site homepage URL or wait a moment and retry. (trace: ${traceId})`,
-      },
-      500,
-    );
-  }
+      } catch (error) {
+        console.error("[news/discover] failed", { traceId, error });
+        return respond(
+          {
+            error:
+              `Server could not scan that page. Try a site homepage URL or wait a moment and retry. (trace: ${traceId})`,
+          },
+          500,
+        );
+      }
+    },
+  });
 }
 
 function mapErrorToResponse(error: DiscoverError): { status: number; message: string } {

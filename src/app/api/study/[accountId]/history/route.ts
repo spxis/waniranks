@@ -2,20 +2,29 @@ import { NextResponse } from "next/server";
 
 import { canAccessAccount } from "@/lib/accountAccess";
 import { getStudyHistoryPage, parseStudyHistoryQuery } from "@/lib/studyHistoryView";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 type RouteContext = {
   params: Promise<{ accountId: string }>;
 };
 
 export async function GET(request: Request, context: RouteContext) {
-  const { accountId } = await context.params;
-  if (!(await canAccessAccount(request, accountId))) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  return withApiRouteTelemetry({
+    route: "/api/study/[accountId]/history",
+    method: "GET",
+    request: request,
+    execute: async () => {
 
-  const url = new URL(request.url);
-  const query = parseStudyHistoryQuery(url);
-  const payload = await getStudyHistoryPage({ ...query, accountId });
+const { accountId } = await context.params;
+              if (!(await canAccessAccount(request, accountId))) {
+                return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+              }
 
-  return NextResponse.json(payload);
+              const url = new URL(request.url);
+              const query = parseStudyHistoryQuery(url);
+              const payload = await getStudyHistoryPage({ ...query, accountId });
+
+              return NextResponse.json(payload);
+    },
+  });
 }

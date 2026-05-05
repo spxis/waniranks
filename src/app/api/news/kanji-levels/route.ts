@@ -7,6 +7,7 @@ import { decryptToken } from "@/lib/crypto";
 import { logNewsApiPerf } from "@/lib/news/newsApiPerf";
 import { lookupKanjiLevelsByChars } from "@/lib/news/newsKanjiLookup";
 import { prisma } from "@/lib/prisma";
+import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 export const runtime = "nodejs";
 
@@ -17,71 +18,79 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const startedAtMs = Date.now();
-  const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
-    logNewsApiPerf("/api/news/kanji-levels", startedAtMs, status, meta);
-    return NextResponse.json(body, { status });
-  };
+  return withApiRouteTelemetry({
+    route: "/api/news/kanji-levels",
+    method: "POST",
+    request: request,
+    execute: async () => {
 
-  try {
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email?.trim().toLowerCase() ?? null;
-    if (!email) {
-      return respond({ error: "Unauthorized." }, 401);
-    }
+const startedAtMs = Date.now();
+              const respond = (body: unknown, status: number, meta?: Record<string, number | string | boolean | null>) => {
+                logNewsApiPerf("/api/news/kanji-levels", startedAtMs, status, meta);
+                return NextResponse.json(body, { status });
+              };
 
-    const json = await request.json().catch(() => null);
-    const parsed = requestSchema.safeParse(json);
-    if (!parsed.success) {
-      return respond({ error: "Invalid request payload." }, 400);
-    }
+              try {
+                const session = await getServerSession(authOptions);
+                const email = session?.user?.email?.trim().toLowerCase() ?? null;
+                if (!email) {
+                  return respond({ error: "Unauthorized." }, 401);
+                }
 
-    const chars = Array.from(new Set(parsed.data.chars.map((char) => char.trim()))).filter((char) =>
-      KANJI_REGEX.test(char),
-    );
+                const json = await request.json().catch(() => null);
+                const parsed = requestSchema.safeParse(json);
+                if (!parsed.success) {
+                  return respond({ error: "Invalid request payload." }, 400);
+                }
 
-    if (chars.length === 0) {
-      return respond({ error: "No kanji to look up." }, 400);
-    }
+                const chars = Array.from(new Set(parsed.data.chars.map((char) => char.trim()))).filter((char) =>
+                  KANJI_REGEX.test(char),
+                );
 
-    const account = await prisma.account.findFirst({
-      where: { joinedByEmail: email },
-      select: {
-        id: true,
-        tokenEncrypted: true,
-        tokenIv: true,
-        tokenTag: true,
-      },
-    });
+                if (chars.length === 0) {
+                  return respond({ error: "No kanji to look up." }, 400);
+                }
 
-    if (!account) {
-      return respond({ error: "No linked WaniKani account." }, 404);
-    }
+                const account = await prisma.account.findFirst({
+                  where: { joinedByEmail: email },
+                  select: {
+                    id: true,
+                    tokenEncrypted: true,
+                    tokenIv: true,
+                    tokenTag: true,
+                  },
+                });
 
-    const token = decryptToken({
-      encrypted: account.tokenEncrypted,
-      iv: account.tokenIv,
-      tag: account.tokenTag,
-    });
+                if (!account) {
+                  return respond({ error: "No linked WaniKani account." }, 404);
+                }
 
-    const levels = await lookupKanjiLevelsByChars(chars, token);
+                const token = decryptToken({
+                  encrypted: account.tokenEncrypted,
+                  iv: account.tokenIv,
+                  tag: account.tokenTag,
+                });
 
-    const jlptRows = await prisma.jlptKanji.findMany({
-      where: { kanji: { in: chars } },
-      select: { kanji: true, schoolGrade: true },
-    });
+                const levels = await lookupKanjiLevelsByChars(chars, token);
 
-    const grades: Record<string, number | null> = {};
-    for (const char of chars) {
-      grades[char] = null;
-    }
-    for (const row of jlptRows) {
-      grades[row.kanji] = typeof row.schoolGrade === "number" ? row.schoolGrade : null;
-    }
+                const jlptRows = await prisma.jlptKanji.findMany({
+                  where: { kanji: { in: chars } },
+                  select: { kanji: true, schoolGrade: true },
+                });
 
-    return respond({ levels, grades }, 200, { chars: chars.length });
-  } catch (error) {
-    console.error("[news/kanji-levels] failed", error);
-    return respond({ error: "Lookup failed." }, 500);
-  }
+                const grades: Record<string, number | null> = {};
+                for (const char of chars) {
+                  grades[char] = null;
+                }
+                for (const row of jlptRows) {
+                  grades[row.kanji] = typeof row.schoolGrade === "number" ? row.schoolGrade : null;
+                }
+
+                return respond({ levels, grades }, 200, { chars: chars.length });
+              } catch (error) {
+                console.error("[news/kanji-levels] failed", error);
+                return respond({ error: "Lookup failed." }, 500);
+              }
+    },
+  });
 }
