@@ -27,6 +27,7 @@ type Args = {
   srsStageFilterStorageKey: string;
   recentOnlyStorageKey: string;
   showLockedStorageKey: string;
+  maxLevel: number;
   viewedLevel: number | null;
   typeFilter: StudyTypeFilter;
   srsFilter: StudySrsFilter;
@@ -88,6 +89,7 @@ export function useStudyExplorerEffects({
   srsStageFilterStorageKey,
   recentOnlyStorageKey,
   showLockedStorageKey,
+  maxLevel,
   viewedLevel,
   typeFilter,
   srsFilter,
@@ -168,7 +170,8 @@ export function useStudyExplorerEffects({
     if (urlLevel !== null) {
       const parsed = Number(urlLevel);
       if (Number.isInteger(parsed) && parsed > 0) {
-        setViewedLevel(parsed);
+        const boundedLevel = queueMode === "review" && parsed > maxLevel ? null : parsed;
+        setViewedLevel(boundedLevel);
         setHasHydratedViewedLevel(true);
         return;
       }
@@ -183,7 +186,8 @@ export function useStudyExplorerEffects({
 
     const parsed = Number(raw);
     if (Number.isInteger(parsed) && parsed > 0) {
-      setViewedLevel(parsed);
+      const boundedLevel = queueMode === "review" && parsed > maxLevel ? null : parsed;
+      setViewedLevel(boundedLevel);
       setHasHydratedViewedLevel(true);
       return;
     }
@@ -191,7 +195,7 @@ export function useStudyExplorerEffects({
     window.localStorage.removeItem(viewedLevelStorageKey);
     setViewedLevel(null);
     setHasHydratedViewedLevel(true);
-  }, [setHasHydratedViewedLevel, setViewedLevel, viewedLevelStorageKey]);
+  }, [maxLevel, queueMode, setHasHydratedViewedLevel, setViewedLevel, viewedLevelStorageKey]);
 
   useEffect(() => {
     const urlRecent = new URLSearchParams(window.location.search).get("recent");

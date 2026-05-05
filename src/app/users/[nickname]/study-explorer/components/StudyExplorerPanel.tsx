@@ -160,6 +160,8 @@ export default function StudyExplorerPanel({
               : srsFilter === "locked"
                 ? ([] as const)
                 : ([1, 2, 3, 4, 5, 6, 7, 8, 9] as const);
+  const hasSrsStageOptions = srsStageOptions.length > 0;
+  const allSrsStagesSelected = srsStageFilter === null || !hasSrsStageOptions;
   const lessonLevelOptions = Object.entries(lessonLevelCounts)
     .map(([level, count]) => [Number(level), count] as const)
     .filter(([, count]) => count > 0)
@@ -256,34 +258,32 @@ export default function StudyExplorerPanel({
               })}
             </div>
 
-            {srsStageOptions.length > 0 ? (
-              <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => onSetSrsStageFilter(null)}
-                  disabled={queueMode === "lesson"}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${queueMode === "lesson" ? disabledBadgeClass() : badgeClass(srsStageFilter === null)}`}
-                >
-                  All SRS Stages
-                </button>
-                {srsStageOptions.map((stage) => {
-                  const count = srsStageCounts[stage] ?? 0;
-                  const disabled = queueMode === "lesson" || count === 0;
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => onSetSrsStageFilter(null)}
+                disabled={queueMode === "lesson"}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${queueMode === "lesson" ? disabledBadgeClass() : badgeClass(allSrsStagesSelected)}`}
+              >
+                All SRS Stages
+              </button>
+              {srsStageOptions.map((stage) => {
+                const count = srsStageCounts[stage] ?? 0;
+                const disabled = queueMode === "lesson" || count === 0;
 
-                  return (
-                  <button
-                    key={stage}
-                    type="button"
-                    onClick={() => onSetSrsStageFilter(stage)}
-                    disabled={disabled}
-                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(srsStageFilter === stage)}`}
-                  >
-                    SRS {stage} ({formatNumber(count)})
-                  </button>
-                  );
-                })}
-              </div>
-            ) : null}
+                return (
+                <button
+                  key={stage}
+                  type="button"
+                  onClick={() => onSetSrsStageFilter(stage)}
+                  disabled={disabled}
+                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled ? disabledBadgeClass() : badgeClass(srsStageFilter === stage)}`}
+                >
+                  SRS {stage} ({formatNumber(count)})
+                </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </header>

@@ -93,7 +93,7 @@ export default function StudyExplorer({
   const effectiveRecentOnly = queueMode === "lesson" ? false : recentOnly;
   const effectiveShowLocked = queueMode === "lesson" ? true : showLocked;
   const effectiveSrsStageFilter: StudySrsStageFilter | null =
-    queueMode === "lesson" ? null : srsStageFilter;
+    queueMode === "lesson" ? null : normalizeSrsStageFilter(srsFilter, srsStageFilter);
   const initialPageSize = queueMode === "lesson" ? LESSON_API_PAGE_SIZE : REVIEW_API_PAGE_SIZE;
 
   useLayoutEffect(() => {
@@ -296,10 +296,11 @@ export default function StudyExplorer({
     srsStageFilterStorageKey,
     recentOnlyStorageKey,
     showLockedStorageKey,
+    maxLevel,
     viewedLevel,
     typeFilter,
     srsFilter,
-    srsStageFilter,
+    srsStageFilter: effectiveSrsStageFilter,
     recentOnly,
     showLocked,
     hasHydratedTypeFilter,
