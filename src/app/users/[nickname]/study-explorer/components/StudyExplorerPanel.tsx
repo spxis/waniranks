@@ -378,7 +378,7 @@ export default function StudyExplorerPanel({
         <div className={`relative ${showLoadingOverlay ? "min-h-[14rem]" : ""}`}>
           {filteredItems.length > 0 ? (
             <>
-            <div className="grid grid-cols-2 gap-3 max-[425px]:grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))] lg:grid-cols-4">
               {filteredItems.map((item, index) => {
                 const reviewBadge = item.queueType === "review" ? formatNextReviewBadge(item.availableAt) : null;
 
