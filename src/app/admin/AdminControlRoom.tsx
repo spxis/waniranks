@@ -1,7 +1,11 @@
-import { signIn } from "next-auth/react";
-
 import AdminStatusBadge from "./AdminStatusBadge";
 import type { AdminControlRoomProps } from "./AdminControlRoom.types";
+
+function startGoogleSignIn(callbackPath: string, prompt?: "select_account") {
+  const callbackUrl = encodeURIComponent(callbackPath);
+  const promptQuery = prompt ? `&prompt=${encodeURIComponent(prompt)}` : "";
+  window.location.assign(`/api/auth/signin/google?callbackUrl=${callbackUrl}${promptQuery}`);
+}
 
 export default function AdminControlRoom({
   nickname,
@@ -47,7 +51,7 @@ export default function AdminControlRoom({
           <button
             type="button"
             onClick={() => {
-              void signIn("google", { callbackUrl: "/admin" }, { prompt: "select_account" });
+              startGoogleSignIn("/admin", "select_account");
             }}
             className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
           >

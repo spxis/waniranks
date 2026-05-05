@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
 import InviteCodeAccessPanel from "../InviteCodeAccessPanel";
 
@@ -17,6 +16,11 @@ type SessionStatus = {
     email?: string | null;
   } | null;
 };
+
+function startGoogleSignIn(callbackPath: string) {
+  const callbackUrl = encodeURIComponent(callbackPath);
+  window.location.assign(`/api/auth/signin/google?callbackUrl=${callbackUrl}`);
+}
 
 export default function JoinPage() {
   const [accessDenied, setAccessDenied] = useState(false);
@@ -118,7 +122,7 @@ export default function JoinPage() {
               <button
                 type="button"
                 onClick={() => {
-                  void signIn("google", { callbackUrl: "/join" });
+                  startGoogleSignIn("/join");
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
               >
