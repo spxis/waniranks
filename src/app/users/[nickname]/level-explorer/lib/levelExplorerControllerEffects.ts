@@ -31,6 +31,20 @@ type BaseSetters = {
   setStickyMerge: Dispatch<SetStateAction<boolean>>;
 };
 
+function setsEqual(left: Set<number>, right: Set<number>): boolean {
+  if (left.size !== right.size) {
+    return false;
+  }
+
+  for (const value of left) {
+    if (!right.has(value)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function useLevelExplorerUrlHydration({
   maxLevel,
   initialLevel,
@@ -52,6 +66,12 @@ export function useLevelExplorerUrlHydration({
   applyingUrlStateRef: MutableRefObject<boolean>;
   hasHydratedUrlStateRef: MutableRefObject<boolean>;
 } & BaseSetters) {
+  const ensureLevelLoadedRef = useRef(ensureLevelLoaded);
+
+  useEffect(() => {
+    ensureLevelLoadedRef.current = ensureLevelLoaded;
+  }, [ensureLevelLoaded]);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -66,7 +86,7 @@ export function useLevelExplorerUrlHydration({
         : new Set([levelsArray[levelsArray.length - 1] ?? initialLevel]);
 
       const params = new URLSearchParams(window.location.search);
-      setSelectedLevels(normalizedLevels);
+      setSelectedLevels((prev) => (setsEqual(prev, normalizedLevels) ? prev : normalizedLevels));
       if (params.has("subject")) setSelectedSubjectId(parsed.subjectId);
       if (params.has("srs")) setSrsFilter(parsed.srs);
       if (params.has("type")) setTypeFilter(parsed.type);
@@ -76,7 +96,7 @@ export function useLevelExplorerUrlHydration({
       if (params.has("sticky")) setStickyMerge(parsed.stickyMerge);
 
       for (const level of normalizedLevels.values()) {
-        await ensureLevelLoaded(level);
+        await ensureLevelLoadedRef.current(level);
       }
 
       applyingUrlStateRef.current = false;
@@ -92,7 +112,6 @@ export function useLevelExplorerUrlHydration({
     return () => window.removeEventListener("popstate", onPopState);
   }, [
     applyingUrlStateRef,
-    ensureLevelLoaded,
     hasHydratedUrlStateRef,
     initialLevel,
     maxLevel,

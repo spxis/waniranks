@@ -49,6 +49,15 @@ type CachedHistoryPayload = {
 const HISTORY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const reviewStatsHistoryCache = new Map<string, CachedHistoryPayload>();
 
+async function fetchSubjectHistoryPayload(url: string): Promise<{ history?: SubjectHistory; transitions?: ApiReviewTransition[] }> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Could not load review stats");
+  }
+
+  return response.json() as Promise<{ history?: SubjectHistory; transitions?: ApiReviewTransition[] }>;
+}
+
 function formatGraphDateLabel(input: string): string {
   const parsed = new Date(input);
   if (Number.isNaN(parsed.getTime())) {
@@ -115,48 +124,88 @@ export default function LevelExplorerReviewStatsCard({
   const [refreshNonce, setRefreshNonce] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
     const cached = reviewStatsHistoryCache.get(cacheKey);
     if (cached && Date.now() - cached.fetchedAt < HISTORY_CACHE_TTL_MS) {
       queueMicrotask(() => {
+        if (cancelled) {
+          return;
+        }
         setHistory(cached.history);
         setTransitions(cached.transitions);
         setError(null);
         setLoading(false);
       });
-      return;
+
+      return () => {
+        cancelled = true;
+      };
     }
 
     queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
       setHistory(null);
       setTransitions([]);
       setError(null);
       setLoading(true);
     });
 
-    fetch(`/api/study/${accountId}/subjects/${subjectId}/history?refresh=1&transitions=1`)
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error("Could not load review stats");
-        }
-        return res.json() as Promise<{ history?: SubjectHistory; transitions?: ApiReviewTransition[] }>;
-      })
+    fetchSubjectHistoryPayload(`/api/study/${accountId}/subjects/${subjectId}/history`)
       .then((data) => {
+        if (cancelled) {
+          return;
+        }
+
         const nextHistory = data.history ?? null;
         const nextTransitions = Array.isArray(data.transitions) ? data.transitions : [];
         setHistory(nextHistory);
         setTransitions(nextTransitions);
+        setError(null);
         reviewStatsHistoryCache.set(cacheKey, {
           fetchedAt: Date.now(),
           history: nextHistory,
           transitions: nextTransitions,
         });
+
+        void fetchSubjectHistoryPayload(`/api/study/${accountId}/subjects/${subjectId}/history?refresh=1&transitions=1`)
+          .then((freshData) => {
+            if (cancelled) {
+              return;
+            }
+
+            const freshHistory = freshData.history ?? null;
+            const freshTransitions = Array.isArray(freshData.transitions) ? freshData.transitions : [];
+            setHistory(freshHistory);
+            setTransitions(freshTransitions);
+            reviewStatsHistoryCache.set(cacheKey, {
+              fetchedAt: Date.now(),
+              history: freshHistory,
+              transitions: freshTransitions,
+            });
+          })
+          .catch(() => {
+            // Keep existing local data when background refresh fails.
+          });
       })
       .catch(() => {
+        if (cancelled) {
+          return;
+        }
         setError("Could not load review stats");
       })
       .finally(() => {
+        if (cancelled) {
+          return;
+        }
         setLoading(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [accountId, subjectId, cacheKey, refreshNonce]);
 
   useEffect(() => {
