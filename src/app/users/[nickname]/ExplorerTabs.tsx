@@ -13,6 +13,8 @@ type Props = {
   accountId: string;
   maxLevel: number;
   accountPendingReviews: number;
+  initialQueueMode?: "review" | "lesson" | null;
+  initialStudyMode?: boolean | null;
   initialSnapshot: Snapshot;
   initialSrsFilter: SrsFilter;
   jlptItems: JlptItem[];
@@ -31,6 +33,8 @@ export default function ExplorerTabs({
   accountId,
   maxLevel,
   accountPendingReviews,
+  initialQueueMode = null,
+  initialStudyMode = null,
   initialSnapshot,
   initialSrsFilter,
   jlptItems,
@@ -40,15 +44,23 @@ export default function ExplorerTabs({
   const previousPageKeyRef = useRef<string | null>(null);
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
-  const canRenderStudyModeState = typeof window !== "undefined";
   const isHydrated = typeof window !== "undefined";
   const [dashboardTab, setDashboardTab] = useState<string>("learn");
   const [studyMode, setStudyMode] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
+    if (typeof initialStudyMode === "boolean") {
+      return initialStudyMode;
     }
 
-    return window.localStorage.getItem("wr:study-mode") === "1";
+    if (typeof window === "undefined") {
+      return true;
+    }
+
+    const stored = window.localStorage.getItem("wr:study-mode");
+    if (stored === null) {
+      return true;
+    }
+
+    return stored === "1";
   });
   const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">(() => {
     if (typeof window === "undefined") {
@@ -66,6 +78,10 @@ export default function ExplorerTabs({
   });
   const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
   const [queueMode, setQueueMode] = useState<"review" | "lesson">(() => {
+    if (initialQueueMode === "review" || initialQueueMode === "lesson") {
+      return initialQueueMode;
+    }
+
     if (typeof window === "undefined") {
       return "review";
     }
@@ -208,11 +224,17 @@ export default function ExplorerTabs({
       params.set("mode", queueMode);
       changed = true;
     }
+    const studyModeInUrl = params.get("studyMode");
+    const nextStudyMode = studyMode ? "on" : "off";
+    if (studyModeInUrl !== nextStudyMode) {
+      params.set("studyMode", nextStudyMode);
+      changed = true;
+    }
     if (changed) {
       const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
       window.history.replaceState(null, "", next);
     }
-  }, [activeTab, isHydrated, queueMode]);
+  }, [activeTab, isHydrated, queueMode, studyMode]);
 
   useEffect(() => {
     if (!isHydrated || typeof window === "undefined") {
@@ -257,6 +279,12 @@ export default function ExplorerTabs({
       setActiveTab(params.get("tab") === "jlpt" ? "jlpt" : params.get("tab") === "level" ? "level" : "study");
       const urlMode = params.get("mode");
       if (urlMode === "review" || urlMode === "lesson") setQueueMode(urlMode);
+      const urlStudyMode = params.get("studyMode");
+      if (urlStudyMode === "on" || urlStudyMode === "1") {
+        setStudyMode(true);
+      } else if (urlStudyMode === "off" || urlStudyMode === "0") {
+        setStudyMode(false);
+      }
     };
 
     window.addEventListener("popstate", onPopState);
@@ -382,12 +410,12 @@ export default function ExplorerTabs({
             type="button"
             onClick={() => setStudyMode((prev) => !prev)}
             className={`inline-flex h-10 items-center justify-center rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition ${
-              canRenderStudyModeState && studyMode
+              studyMode
                 ? "border-hot bg-hot text-white"
                 : "border-line bg-surface text-foreground hover:bg-surface-muted"
             }`}
           >
-            {canRenderStudyModeState ? `Study Mode ${studyMode ? "On" : "Off"}` : "Study Mode"}
+            {`Study Mode ${studyMode ? "On" : "Off"}`}
           </button>
         </div>
       </div>

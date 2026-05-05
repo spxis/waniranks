@@ -20,7 +20,7 @@ import type { ItemSpreadGroupDetails, LevelProgressSnapshot, SrsGroupKey, TypePr
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
-  searchParams: Promise<{ srs?: string; tab?: string; dashboard?: string; read?: string }>;
+  searchParams: Promise<{ srs?: string; tab?: string; dashboard?: string; read?: string; studyMode?: string; mode?: string }>;
 };
 
 type LevelKanjiItem = {
@@ -72,6 +72,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const initialSrsFilter = resolveInitialSrsFilter(query);
   const initialDashboardTab = resolveInitialDashboardTab(query);
   const initialReadTab = resolveInitialReadTab(query);
+  const initialQueueMode = query.mode === "lesson" ? "lesson" : query.mode === "review" ? "review" : null;
+  const initialStudyMode = query.studyMode === "on" || query.studyMode === "1" ? true : query.studyMode === "off" || query.studyMode === "0" ? false : null;
   const initialStudyFilters = resolveInitialStudyFilters(query);
 
   const account = await prisma.account.findFirst({
@@ -439,6 +441,8 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               accountId={account.id}
               maxLevel={account.wkLevel}
               accountPendingReviews={account.pendingReviews}
+              initialQueueMode={initialQueueMode}
+              initialStudyMode={initialStudyMode}
               initialStudyFilters={{
                 viewedLevel: initialStudyFilters.viewedLevel,
                 typeFilter: initialStudyFilters.typeFilter,

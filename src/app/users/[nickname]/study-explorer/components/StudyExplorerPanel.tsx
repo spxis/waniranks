@@ -19,31 +19,9 @@ import {
   typeCardClass,
   typeGlyphBoxClass,
 } from "../../level-explorer/lib/levelExplorerDisplay";
-import type {
-  StudyQueueItem,
-  StudySrsFilter,
-  StudySrsStageFilter,
-  StudyTypeFilter,
-} from "../lib/studyExplorerTypes";
+import type { StudyQueueItem, StudySrsFilter, StudySrsStageFilter, StudyTypeFilter } from "../lib/studyExplorerTypes";
 import { useStudyBulkReset } from "../lib/useStudyBulkReset";
 import { badgeClass, disabledBadgeClass } from "../lib/studyExplorerUtils";
-
-function StudySkeletonCards() {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
-      {Array.from({ length: 4 }, (_, index) => (
-        <div key={`study-skeleton-${index}`} className="rounded-2xl border border-line bg-surface p-3 animate-pulse">
-          <div className="flex items-center justify-between">
-            <div className="h-4 w-8 rounded bg-surface-muted" />
-            <div className="h-6 w-24 rounded-full bg-surface-muted" />
-          </div>
-          <div className="mt-3 h-8 w-40 rounded bg-surface-muted" />
-          <div className="mt-3 h-[9.75rem] rounded-xl border border-line/50 bg-surface-muted" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 type Props = {
   canToggleEnglish: boolean;
@@ -146,6 +124,11 @@ export default function StudyExplorerPanel({
   const showTypeCountPlaceholders = !hasData && typeCounts.all === 0 && filteredItems.length === 0 && !errorMessage;
   const showFilterPagingState =
     queueMode === "lesson" && viewedLevel !== null && hasMorePages && filteredItems.length === 0;
+  const showLoadingOverlay = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
+  const displayErrorMessage =
+    errorMessage === "Failed to fetch"
+      ? "Couldn't refresh your study queue. Check your connection and try again."
+      : errorMessage;
   const srsStatuses = ["all", "apprentice", "guru", "master", "enlightened", "burned", "locked"] as const;
   const srsStageOptions: ReadonlyArray<StudySrsStageFilter> =
     srsFilter === "apprentice"
@@ -315,13 +298,25 @@ export default function StudyExplorerPanel({
         </div>
       </header>
 
-      {errorMessage ? <p className="px-5 py-4 text-sm text-red-700">{errorMessage}</p> : null}
+      {displayErrorMessage ? (
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl border border-red-300/70 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
+            {displayErrorMessage}
+          </div>
+        </div>
+      ) : null}
 
       <div className="p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
-            Showing {formatNumber(filteredItems.length)} matching items · {formatNumber(totalItems)} total in queue
-          </p>
+          {showLoadingOverlay ? (
+            <p aria-hidden="true" className="text-xs font-semibold uppercase tracking-[0.08em] opacity-0 select-none">
+              Loading
+            </p>
+          ) : (
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
+              Showing {formatNumber(filteredItems.length)} matching items · {formatNumber(totalItems)} total in queue
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -380,19 +375,9 @@ export default function StudyExplorerPanel({
           />
         ) : null}
 
-        {showLoadingIndicator || showFilterPagingState ? (
-          <div className="mb-3 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/75">
-            <div className="flex items-center gap-2">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
-              <span>{showFilterPagingState ? "Loading selected level..." : "Loading study queue..."}</span>
-            </div>
-          </div>
-        ) : null}
-
-        {isLoading && !hasData ? <StudySkeletonCards /> : null}
-
-        {filteredItems.length > 0 ? (
-          <>
+        <div className={`relative ${showLoadingOverlay ? "min-h-[14rem]" : ""}`}>
+          {filteredItems.length > 0 ? (
+            <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {filteredItems.map((item, index) => {
                 const reviewBadge = item.queueType === "review" ? formatNextReviewBadge(item.availableAt) : null;
@@ -479,19 +464,32 @@ export default function StudyExplorerPanel({
                       : "Scroll to load more..."}
               </div>
             ) : null}
-          </>
-        ) : showLoadingIndicator || showFilterPagingState ? null : (
-          <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
-            No study items match the current filters.{" "}
-            <button
-              type="button"
-              onClick={onClearAllFilters}
-              className="font-bold text-accent underline underline-offset-2 hover:text-accent-2"
-            >
-              Clear filters
-            </button>
+            </>
+          ) : showLoadingOverlay ? null : (
+            <div className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-foreground/70">
+              No study items match the current filters.{" "}
+              <button
+                type="button"
+                onClick={onClearAllFilters}
+                className="font-bold text-accent underline underline-offset-2 hover:text-accent-2"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+
+          <div
+            aria-hidden={!showLoadingOverlay}
+            className={`absolute inset-0 z-10 rounded-2xl border border-line bg-surface/70 backdrop-blur-[1px] transition-opacity duration-200 ${showLoadingOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          >
+            <div className="flex h-full items-center justify-center px-4 text-center text-base font-bold text-foreground/85">
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+                  <span>{showFilterPagingState ? "Loading selected level..." : "Loading study queue..."}</span>
+                </span>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </>
   );
