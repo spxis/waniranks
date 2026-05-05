@@ -58,12 +58,14 @@ export function useLevelExplorerUrlHydration({
   setReviewTimingFilter,
   setRecentOnly,
   setStickyMerge,
+  skipInitialApply = false,
 }: {
   maxLevel: number;
   initialLevel: number;
   ensureLevelLoaded: (level: number) => Promise<Snapshot | undefined>;
   applyingUrlStateRef: MutableRefObject<boolean>;
   hasHydratedUrlStateRef: MutableRefObject<boolean>;
+  skipInitialApply?: boolean;
 } & BaseSetters) {
   const ensureLevelLoadedRef = useRef(ensureLevelLoaded);
 
@@ -84,15 +86,14 @@ export function useLevelExplorerUrlHydration({
         ? new Set(levelsArray)
         : new Set([levelsArray[levelsArray.length - 1] ?? initialLevel]);
 
-      const params = new URLSearchParams(window.location.search);
       setSelectedLevels((prev) => (setsEqual(prev, normalizedLevels) ? prev : normalizedLevels));
-      if (params.has("subject")) setSelectedSubjectId(parsed.subjectId);
-      if (params.has("srs")) setSrsFilter(parsed.srs);
-      if (params.has("type")) setTypeFilter(parsed.type);
-      if (params.has("jlpt")) setJlptFilter(parsed.jlpt);
-      if (params.has("review")) setReviewTimingFilter(parsed.review);
-      if (params.has("recent")) setRecentOnly(parsed.recentOnly);
-      if (params.has("sticky")) setStickyMerge(parsed.stickyMerge);
+      setSelectedSubjectId(parsed.subjectId);
+      setSrsFilter(parsed.srs);
+      setTypeFilter(parsed.type);
+      setJlptFilter(parsed.jlpt);
+      setReviewTimingFilter(parsed.review);
+      setRecentOnly(parsed.recentOnly);
+      setStickyMerge(parsed.stickyMerge);
 
       for (const level of normalizedLevels.values()) {
         await ensureLevelLoadedRef.current(level);
@@ -102,7 +103,9 @@ export function useLevelExplorerUrlHydration({
       hasHydratedUrlStateRef.current = true;
     };
 
-    void applyFromUrl();
+    if (!skipInitialApply) {
+      void applyFromUrl();
+    }
 
     const onPopState = () => {
       void applyFromUrl();
@@ -122,6 +125,7 @@ export function useLevelExplorerUrlHydration({
     setSrsFilter,
     setStickyMerge,
     setTypeFilter,
+    skipInitialApply,
   ]);
 }
 

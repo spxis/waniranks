@@ -148,3 +148,31 @@ test("study keeps all type filter on reload", async ({ browser, baseURL }) => {
     expect(typeFilter, "type filter should stay all/empty after reload").not.toBe("radical");
   });
 });
+
+test("study keeps explicit level and vocab type on reload", async ({ browser, baseURL }) => {
+  const user = smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=study&levels=10&type=vocabulary&srs=all&jlpt=all&review=all&sticky=0&recent=0#explorer`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    const levelButton = page.getByRole("button", { name: /^L10$/i });
+    const vocabButton = page.getByRole("button", { name: /^vocab\s*\(\d+\)$/i });
+
+    await expect(levelButton).toBeVisible();
+    await expect(vocabButton).toBeVisible();
+
+    await expect(levelButton).toHaveClass(/bg-accent/);
+    await expect(vocabButton).toHaveClass(/bg-vocabulary/);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {
+      // Some pages keep lightweight polling alive; proceed with assertions.
+    });
+
+    const params = new URL(page.url()).searchParams;
+    expect(params.get("levels"), "levels should stay pinned to L10").toBe("10");
+    expect(params.get("type"), "type should stay pinned to vocabulary").toBe("vocabulary");
+
+    await expect(levelButton).toHaveClass(/bg-accent/);
+    await expect(vocabButton).toHaveClass(/bg-vocabulary/);
+  });
+});
