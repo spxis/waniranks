@@ -6,6 +6,7 @@ import {
   type SubjectStatus,
   type SubjectType,
 } from "@/lib/domainConstants";
+import type { JlptMeta } from "@/lib/jlptTypes";
 
 export type StudyHistorySortBy = "submittedAt" | "result" | "subjectType" | "subject" | "user";
 export type StudyHistorySortDir = "asc" | "desc";
@@ -75,18 +76,7 @@ type SnapshotItem = {
   meaningExplanation?: string;
   readingExplanation?: string;
   jlptLevel?: number | null;
-  jlptMeta?: {
-    primaryMeaning: string | null;
-    meanings: string[];
-    onReadings: string[];
-    kunReadings: string[];
-    nanoriReadings: string[];
-    wordExamples: unknown;
-    strokeCount: number | null;
-    frequencyRank: number | null;
-    schoolGrade: number | null;
-    heisigKeyword: string | null;
-  } | null;
+  jlptMeta?: JlptMeta | null;
   startedAt?: string | null;
   passedAt?: string | null;
   availableAt?: string | null;

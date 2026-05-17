@@ -1,4 +1,5 @@
 import type { SubjectStatus, SubjectType } from "@/lib/domainConstants";
+import type { JlptKanjiRow, JlptMeta } from "@/lib/jlptTypes";
 
 export type RelatedReference = {
   subjectId: number;
@@ -23,18 +24,7 @@ export type LevelItem = {
   meaningExplanation?: string;
   readingExplanation?: string;
   jlptLevel?: number | null;
-  jlptMeta?: {
-    primaryMeaning: string | null;
-    meanings: string[];
-    onReadings: string[];
-    kunReadings: string[];
-    nanoriReadings: string[];
-    wordExamples: unknown;
-    strokeCount: number | null;
-    frequencyRank: number | null;
-    schoolGrade: number | null;
-    heisigKeyword: string | null;
-  } | null;
+  jlptMeta?: JlptMeta | null;
   srsStage: number;
   status: SubjectStatus;
   startedAt?: string | null;
@@ -53,23 +43,7 @@ export type Snapshot = {
   syncedAt?: string;
 };
 
-export type JlptItem = {
-  kanji: string;
-  nLevel: number;
-  strokeCount: number | null;
-  frequencyRank: number | null;
-  schoolGrade: number | null;
-  heisigKeyword: string | null;
-  unicodeHex: string | null;
-  sourceJlpt: number | null;
-  primaryMeaning: string | null;
-  meanings: string[];
-  onReadings: string[];
-  kunReadings: string[];
-  nanoriReadings: string[];
-  notes: string[];
-  wordExamples: unknown;
-};
+export type JlptItem = JlptKanjiRow;
 
 export type UserKanjiItem = {
   subjectId?: number;

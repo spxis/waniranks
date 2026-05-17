@@ -17,6 +17,7 @@ import {
 } from "./userReadConfig";
 import { canViewUserPage, resolveViewerMenuInfo } from "./userPageAuth";
 import type { ItemSpreadGroupDetails, LevelProgressSnapshot, SrsGroupKey, TypeProgress } from "./UserDashboardTabs.types";
+import type { JlptKanjiRow } from "@/lib/jlptTypes";
 
 type PageProps = {
   params: Promise<{ nickname: string }>;
@@ -37,24 +38,6 @@ type LevelKanjiItem = {
 type LevelSnapshotRow = {
   level: number;
   items: unknown;
-};
-
-type JlptKanjiRow = {
-  kanji: string;
-  nLevel: number;
-  strokeCount: number | null;
-  frequencyRank: number | null;
-  schoolGrade: number | null;
-  heisigKeyword: string | null;
-  unicodeHex: string | null;
-  sourceJlpt: number | null;
-  primaryMeaning: string | null;
-  meanings: string[];
-  onReadings: string[];
-  kunReadings: string[];
-  nanoriReadings: string[];
-  notes: string[];
-  wordExamples: unknown;
 };
 
 export default async function UserDetailPage({ params, searchParams }: PageProps) {
