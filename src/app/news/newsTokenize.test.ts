@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { tokenizeJapanese } from "./newsTokenize";
+import { NEWS_TEXT_SEGMENT_KINDS, tokenizeJapanese } from "./newsTokenize";
 
 const KANJI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 const MAX_PURE_KANJI_CLICKABLE_RUN = 4;
@@ -8,7 +8,7 @@ const MAX_PURE_KANJI_CLICKABLE_RUN = 4;
 describe("tokenizeJapanese", () => {
   it("keeps okurigana with kanji for inflectional forms", () => {
     const segments = tokenizeJapanese("高い山 食べたり飲んだり");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("高い");
     expect(kanjiRuns).toContain("食べたり");
@@ -17,7 +17,7 @@ describe("tokenizeJapanese", () => {
 
   it("does not swallow particles after a kanji word", () => {
     const segments = tokenizeJapanese("物語を元にした");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("物語");
     expect(kanjiRuns).not.toContain("物語を");
@@ -26,24 +26,24 @@ describe("tokenizeJapanese", () => {
 
   it("does not attach particle-led kana to the preceding kanji run", () => {
     const segments = tokenizeJapanese("基調にした");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toEqual(["基調"]);
-    expect(segments.some((segment) => segment.kind === "other" && segment.text.includes("にした"))).toBe(true);
+    expect(segments.some((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.other && segment.text.includes("にした"))).toBe(true);
   });
 
   it("keeps indefinite pronoun suffix before following particle", () => {
     const segments = tokenizeJapanese("誰かの声");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("誰か");
     expect(kanjiRuns).not.toContain("誰");
-    expect(segments.some((segment) => segment.kind === "other" && segment.text.includes("の"))).toBe(true);
+    expect(segments.some((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.other && segment.text.includes("の"))).toBe(true);
   });
 
   it("keeps 誰も and 何も as one lexical unit", () => {
     const segments = tokenizeJapanese("誰も知らない。何もない。");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("誰も");
     expect(kanjiRuns).toContain("何も");
@@ -54,14 +54,14 @@ describe("tokenizeJapanese", () => {
 
   it("does not merge generic particle か after normal nouns", () => {
     const segments = tokenizeJapanese("花か草か");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toEqual(["花", "草"]);
   });
 
   it("keeps verb intent forms without swallowing following object marker", () => {
     const segments = tokenizeJapanese("花を贈りたい人");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toEqual(["花", "贈りたい", "人"]);
     expect(kanjiRuns).not.toContain("花を");
@@ -69,7 +69,7 @@ describe("tokenizeJapanese", () => {
 
   it("keeps adjective and ichidan style okurigana runs", () => {
     const segments = tokenizeJapanese("高い音を届けたい");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("高い");
     expect(kanjiRuns).toContain("届けたい");
@@ -78,7 +78,7 @@ describe("tokenizeJapanese", () => {
 
   it("does not absorb katakana noun tails after okurigana", () => {
     const segments = tokenizeJapanese("深掘りコンテンツを読む");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("深掘り");
     expect(kanjiRuns).not.toContain("深掘りコンテンツ");
@@ -87,7 +87,7 @@ describe("tokenizeJapanese", () => {
 
   it("keeps full katakana suffix when run starts with katakana tail", () => {
     const segments = tokenizeJapanese("福祉サービス事業所が閉鎖");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("福祉サービス");
     expect(kanjiRuns).not.toContain("福祉サービ");
@@ -95,7 +95,7 @@ describe("tokenizeJapanese", () => {
 
   it("splits 4-kanji pure compounds into smaller runs", () => {
     const segments = tokenizeJapanese("日本時間の26日夜");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("日本");
     expect(kanjiRuns).toContain("時間");
@@ -104,7 +104,7 @@ describe("tokenizeJapanese", () => {
 
   it("does not keep long kanji chains merged when okurigana follows", () => {
     const segments = tokenizeJapanese("情勢悪化後初めて確認した");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).not.toContain("情勢悪化後初めて");
     expect(kanjiRuns).toContain("情勢");
@@ -113,7 +113,7 @@ describe("tokenizeJapanese", () => {
 
   it("splits honorific 氏 from following compound", () => {
     const segments = tokenizeJapanese("トランプ氏出席の会合");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("氏");
     expect(kanjiRuns).toContain("出席");
@@ -122,7 +122,7 @@ describe("tokenizeJapanese", () => {
 
   it("keeps suffix with post-氏 compound while splitting 氏", () => {
     const segments = tokenizeJapanese("トランプ氏出席した会合");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("氏");
     expect(kanjiRuns).toContain("出席した");
@@ -131,7 +131,7 @@ describe("tokenizeJapanese", () => {
 
   it("does not create giant merged clickable runs after numeric counters", () => {
     const segments = tokenizeJapanese("さん55歳地方公務員愛知県在住");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).not.toContain("歳地方公務員愛知県在住");
     expect(kanjiRuns).toContain("歳");
@@ -139,7 +139,7 @@ describe("tokenizeJapanese", () => {
 
   it("does not swallow nominalizer in 〜すること pattern", () => {
     const segments = tokenizeJapanese("応募すること");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns).toContain("応募する");
     expect(kanjiRuns).not.toContain("応募するこ");
@@ -147,7 +147,7 @@ describe("tokenizeJapanese", () => {
 
   it("caps overlong polite suffix attachment", () => {
     const segments = tokenizeJapanese("紹介させていただきます");
-    const kanjiRuns = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+    const kanjiRuns = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
 
     expect(kanjiRuns[0]?.startsWith("紹介")).toBe(true);
     expect(kanjiRuns).not.toContain("紹介させていただきます");
@@ -239,7 +239,7 @@ describe("tokenizeJapanese", () => {
       const segments = tokenizeJapanese(text);
       assertTokenizerInvariants(text, segments);
 
-      const runs = segments.filter((segment) => segment.kind === "kanji").map((segment) => segment.text);
+      const runs = segments.filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji).map((segment) => segment.text);
       for (const run of runs) {
         expect(/[A-Za-z0-9０-９]/.test(run)).toBe(false);
         if (isPureKanji(run)) {
@@ -252,20 +252,20 @@ describe("tokenizeJapanese", () => {
 
 function kanjiRuns(text: string): string[] {
   return tokenizeJapanese(text)
-    .filter((segment) => segment.kind === "kanji")
+    .filter((segment) => segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji)
     .map((segment) => segment.text);
 }
 
 function assertTokenizerInvariants(
   original: string,
-  segments: Array<{ kind: "kanji" | "other"; text: string }>,
+  segments: Array<{ kind: (typeof NEWS_TEXT_SEGMENT_KINDS)[keyof typeof NEWS_TEXT_SEGMENT_KINDS]; text: string }>,
 ): void {
   expect(segments.map((segment) => segment.text).join("")).toBe(original);
   for (let i = 0; i < segments.length; i += 1) {
     const segment = segments[i];
     expect(segment.text.length).toBeGreaterThan(0);
 
-    if (segment.kind === "kanji") {
+    if (segment.kind === NEWS_TEXT_SEGMENT_KINDS.kanji) {
       expect(KANJI_REGEX.test(segment.text)).toBe(true);
     } else {
       expect(KANJI_REGEX.test(segment.text)).toBe(false);
@@ -276,7 +276,7 @@ function assertTokenizerInvariants(
       if (prev?.kind === segment.kind) {
         // Adjacent kanji segments can happen by design after anti-overmerge splits.
         // Adjacent "other" segments indicate an actual segmentation bug.
-        expect(segment.kind).toBe("kanji");
+        expect(segment.kind).toBe(NEWS_TEXT_SEGMENT_KINDS.kanji);
       }
     }
   }

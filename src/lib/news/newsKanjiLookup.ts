@@ -1,8 +1,11 @@
 import { fetchAllCollectionPages } from "@/lib/wanikani/http";
+import { SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
+
+type NewsLookupSubjectType = Extract<SubjectType, "kanji" | "vocabulary">;
 
 export type LookupGlyphItem = {
   text: string;
-  subjectType: "kanji" | "vocabulary";
+  subjectType: NewsLookupSubjectType;
   subjectId: number | null;
   meanings: string[];
   readings: string[];
@@ -57,7 +60,7 @@ async function lookupVocabulary(run: string, token: string): Promise<LookupGlyph
   );
 
   for (const row of collection.data) {
-    if ((row.object ?? "") !== "vocabulary") {
+    if ((row.object ?? "") !== SUBJECT_TYPES.vocabulary) {
       continue;
     }
     const data = row.data as {
@@ -90,7 +93,7 @@ async function lookupVocabulary(run: string, token: string): Promise<LookupGlyph
 
     return {
       text,
-      subjectType: "vocabulary",
+      subjectType: SUBJECT_TYPES.vocabulary,
       subjectId: row.id,
       meanings,
       readings,
@@ -124,7 +127,7 @@ async function lookupKanjiByChars(
     );
 
     for (const row of collection.data) {
-      if ((row.object ?? "") !== "kanji") {
+      if ((row.object ?? "") !== SUBJECT_TYPES.kanji) {
         continue;
       }
 
@@ -158,7 +161,7 @@ async function lookupKanjiByChars(
 
       subjects.set(characters, {
         text: characters,
-        subjectType: "kanji",
+        subjectType: SUBJECT_TYPES.kanji,
         subjectId: row.id,
         meanings,
         readings,
@@ -174,7 +177,7 @@ async function lookupKanjiByChars(
     (char) =>
       subjects.get(char) ?? {
         text: char,
-        subjectType: "kanji",
+        subjectType: SUBJECT_TYPES.kanji,
         subjectId: null,
         meanings: [],
         readings: [],
