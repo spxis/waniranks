@@ -19,7 +19,7 @@ import {
   stageLabel,
 } from "./userDashboardSrsUi";
 import {
-  DASHBOARD_SRS_LINKS,
+  DASHBOARD_SRS_SHORT_LABEL_BY_GROUP,
   DASHBOARD_SUBJECT_TYPES,
 } from "./UserDashboard.constants";
 
@@ -105,8 +105,8 @@ export function MainTabPanel({
         </article>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-1.5 sm:mt-4 sm:gap-2 lg:grid-cols-8">
-        {DASHBOARD_SRS_LINKS.map(({ key, label, shortLabel }) => (
-          <SrsLink key={key} label={label} shortLabel={shortLabel} query={key} value={srsCountsByGroup[key]} />
+        {LEARNED_SRS_GROUP_LABELS.map(({ key, label }) => (
+          <SrsLink key={key} label={label} shortLabel={DASHBOARD_SRS_SHORT_LABEL_BY_GROUP[key]} query={key} value={srsCountsByGroup[key]} />
         ))}
         <div className="rounded-lg border border-radical/40 bg-radical/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-radical sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
           <span className="block"><span className="sm:hidden">Rad:</span><span className="hidden sm:inline">{subjectTypePluralLabel("radical")}:</span></span>

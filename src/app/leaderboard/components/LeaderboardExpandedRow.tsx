@@ -1,6 +1,7 @@
 import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
 import { LEARNED_SRS_GROUP_LABELS } from "@/lib/domainConstants";
 import {
+  LEADERBOARD_24H_FOCUS_LABEL_BY_TAB,
   LEADERBOARD_24H_OVERALL_LABELS,
   LEADERBOARD_JLPT_LABEL_ROWS,
 } from "./Leaderboard.constants";
@@ -68,6 +69,12 @@ export default function LeaderboardExpandedRow({
     if (label === "Vocab") return row.dailyDelta?.vocabularyCount;
     if (label === "Burned") return row.dailyDelta?.burnedCount;
     return row.dailyDelta?.levelKanjiLearned;
+  }
+
+  function focusDeltaForTab(tab: Exclude<LeaderboardTab, "overall">) {
+    if (tab === "radicals") return row.dailyDelta?.radicalCount;
+    if (tab === "kanji") return row.dailyDelta?.levelKanjiLearned;
+    return row.dailyDelta?.vocabularyCount;
   }
 
   return (
@@ -238,18 +245,7 @@ export default function LeaderboardExpandedRow({
               ? LEADERBOARD_24H_OVERALL_LABELS.map((label) => [label, deltaForOverallLabel(label)] as const)
               : ([
                   ["Level", row.dailyDelta?.wkLevel],
-                  [
-                    activeTab === "radicals"
-                      ? "Radicals"
-                      : activeTab === "kanji"
-                        ? "Learned Kanji"
-                        : "Vocab",
-                    activeTab === "radicals"
-                      ? row.dailyDelta?.radicalCount
-                      : activeTab === "kanji"
-                        ? row.dailyDelta?.levelKanjiLearned
-                        : row.dailyDelta?.vocabularyCount,
-                  ],
+                  [LEADERBOARD_24H_FOCUS_LABEL_BY_TAB[activeTab], focusDeltaForTab(activeTab)],
                   ["Burned", row.dailyDelta?.burnedCount],
                 ] as const)
           ).map(([label, delta]) => (

@@ -13,6 +13,11 @@ import {
 import SubjectTypeFilterGroup from "../../shared/SubjectTypeFilterGroup";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import LevelExplorerItemsGrid from "./LevelExplorerItemsGrid";
+import {
+  LEVEL_EXPLORER_JLPT_FILTER_LABELS,
+  LEVEL_EXPLORER_JLPT_MIX_LEVELS,
+  LEVEL_EXPLORER_REVIEW_TIMING_LABELS,
+} from "./LevelExplorer.constants";
 import type { LevelExplorerContentProps as Props } from "./LevelExplorerContent.types";
 
 export default function LevelExplorerContent({
@@ -339,18 +344,17 @@ export default function LevelExplorerContent({
       <div className="border-b border-line px-5 py-4">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">JLPT mix (kanji in selected levels)</p>
         <div className="mt-2 grid grid-cols-5 gap-2">
-          {([
-            ["N5", jlptCounts.n5],
-            ["N4", jlptCounts.n4],
-            ["N3", jlptCounts.n3],
-            ["N2", jlptCounts.n2],
-            ["N1", jlptCounts.n1],
-          ] as const).map(([label, count]) => (
-            <div key={label} className="rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-foreground/70">{label}</p>
-              <p className="text-2xl font-black text-foreground">{formatNumber(count)}</p>
-            </div>
-          ))}
+          {LEVEL_EXPLORER_JLPT_MIX_LEVELS.map((level) => {
+            const label = LEVEL_EXPLORER_JLPT_FILTER_LABELS[level];
+            const count = jlptCounts[level];
+
+            return (
+              <div key={level} className="rounded-xl border border-line bg-surface-muted p-2 text-center">
+                <p className="text-[10px] font-bold uppercase text-foreground/70">{label}</p>
+                <p className="text-2xl font-black text-foreground">{formatNumber(count)}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -389,25 +393,14 @@ export default function LevelExplorerContent({
                         disabled ? disabledBadgeClass() : isJlptLevel ? jlptStyle : badgeClass(active)
                       }`}
                     >
-                      {level === LEVEL_JLPT_FILTERS.all ? "JLPT All" : level === LEVEL_JLPT_FILTERS.none ? "No JLPT" : level.toUpperCase()} ({formatNumber(count)})
+                      {LEVEL_EXPLORER_JLPT_FILTER_LABELS[level]} ({formatNumber(count)})
                     </button>
                   );
                 })}
               </div>
               <div className="flex flex-wrap gap-2">
                 {REVIEW_TIMING_ALLOWED.map((timing) => {
-                  const label =
-                    timing === LEVEL_REVIEW_TIMING_FILTERS.all
-                      ? "Review All"
-                      : timing === LEVEL_REVIEW_TIMING_FILTERS.overdue
-                        ? "Overdue"
-                        : timing === LEVEL_REVIEW_TIMING_FILTERS.next1h
-                          ? "Starts <= 1h"
-                          : timing === LEVEL_REVIEW_TIMING_FILTERS.next8h
-                            ? "Starts <= 8h"
-                            : timing === LEVEL_REVIEW_TIMING_FILTERS.next24h
-                              ? "Starts <= 24h"
-                              : "Starts <= 72h";
+                  const label = LEVEL_EXPLORER_REVIEW_TIMING_LABELS[timing];
                   const count = timing === LEVEL_REVIEW_TIMING_FILTERS.all ? counts.all : reviewTimingCounts[timing];
                   const disabled = timing !== LEVEL_REVIEW_TIMING_FILTERS.all && count === 0;
 
