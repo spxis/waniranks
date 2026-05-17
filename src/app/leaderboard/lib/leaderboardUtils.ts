@@ -1,6 +1,6 @@
 import { isItemSpread } from "@/lib/itemSpread";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
-import { SUBJECT_TYPES } from "@/lib/domainConstants";
+import { SUBJECT_TYPES, type LearnedSrsGroup } from "@/lib/domainConstants";
 
 import type {
   ALL_SORT_KEYS,
@@ -155,7 +155,7 @@ export function parseGuruedItemSummary(input: unknown): GuruedItemSummary | null
 export function stageCountForSubject(
   row: LeaderboardRow,
   subjectType: SubjectType,
-  stage: "apprentice" | "guru" | "master" | "enlightened" | "burned",
+  stage: LearnedSrsGroup,
 ): number {
   if (!isItemSpread(row.itemSpread)) {
     return 0;
