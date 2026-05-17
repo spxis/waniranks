@@ -1,32 +1,58 @@
 import type { HistorySrsBucket } from "@/app/shared/studyHistoryTypes";
-import { WK_STATUSES } from "@/lib/domainConstants";
+import { SRS_BUCKETS } from "@/lib/domainConstants";
+
+type SrsBucketUiMeta = {
+  shortLabel: string;
+  titleLabel: string;
+  badgeClass: string;
+};
+
+const SRS_BUCKET_UI_META: Record<HistorySrsBucket, SrsBucketUiMeta> = {
+  [SRS_BUCKETS.apprentice]: {
+    shortLabel: "APPR",
+    titleLabel: "Apprentice",
+    badgeClass: "border-amber-300 text-amber-700 bg-amber-50",
+  },
+  [SRS_BUCKETS.guru]: {
+    shortLabel: "GURU",
+    titleLabel: "Guru",
+    badgeClass: "border-violet-300 text-violet-700 bg-violet-50",
+  },
+  [SRS_BUCKETS.master]: {
+    shortLabel: "MASTER",
+    titleLabel: "Master",
+    badgeClass: "border-sky-300 text-sky-700 bg-sky-50",
+  },
+  [SRS_BUCKETS.enlightened]: {
+    shortLabel: "ENL",
+    titleLabel: "Enlightened",
+    badgeClass: "border-emerald-300 text-emerald-700 bg-emerald-50",
+  },
+  [SRS_BUCKETS.burned]: {
+    shortLabel: "BURN",
+    titleLabel: "Burned",
+    badgeClass: "border-slate-300 text-slate-700 bg-slate-100",
+  },
+  [SRS_BUCKETS.locked]: {
+    shortLabel: "LOCK",
+    titleLabel: "Locked",
+    badgeClass: "border-gray-300 text-gray-600 bg-gray-100",
+  },
+  [SRS_BUCKETS.unknown]: {
+    shortLabel: "UNK",
+    titleLabel: "Unknown",
+    badgeClass: "border-gray-300 text-gray-500 bg-white",
+  },
+};
 
 export function srsBucketLabel(value: HistorySrsBucket): string {
-  if (value === WK_STATUSES.apprentice) return "APPR";
-  if (value === WK_STATUSES.guru) return "GURU";
-  if (value === WK_STATUSES.master) return "MASTER";
-  if (value === WK_STATUSES.enlightened) return "ENL";
-  if (value === WK_STATUSES.burned) return "BURN";
-  if (value === WK_STATUSES.locked) return "LOCK";
-  return "UNK";
+  return SRS_BUCKET_UI_META[value].shortLabel;
 }
 
 export function srsBucketBadgeClass(value: HistorySrsBucket): string {
-  if (value === WK_STATUSES.apprentice) return "border-amber-300 text-amber-700 bg-amber-50";
-  if (value === WK_STATUSES.guru) return "border-violet-300 text-violet-700 bg-violet-50";
-  if (value === WK_STATUSES.master) return "border-sky-300 text-sky-700 bg-sky-50";
-  if (value === WK_STATUSES.enlightened) return "border-emerald-300 text-emerald-700 bg-emerald-50";
-  if (value === WK_STATUSES.burned) return "border-slate-300 text-slate-700 bg-slate-100";
-  if (value === WK_STATUSES.locked) return "border-gray-300 text-gray-600 bg-gray-100";
-  return "border-gray-300 text-gray-500 bg-white";
+  return SRS_BUCKET_UI_META[value].badgeClass;
 }
 
 export function titleCaseSrsBucket(value: HistorySrsBucket): string {
-  if (value === WK_STATUSES.apprentice) return "Apprentice";
-  if (value === WK_STATUSES.guru) return "Guru";
-  if (value === WK_STATUSES.master) return "Master";
-  if (value === WK_STATUSES.enlightened) return "Enlightened";
-  if (value === WK_STATUSES.burned) return "Burned";
-  if (value === WK_STATUSES.locked) return "Locked";
-  return "Unknown";
+  return SRS_BUCKET_UI_META[value].titleLabel;
 }
