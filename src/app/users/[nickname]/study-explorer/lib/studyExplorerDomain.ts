@@ -6,11 +6,11 @@ import type {
   StudyTypeFilter,
   StudyViewerMode,
 } from "./studyExplorerTypes";
-import { WK_STATUSES, SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
+import { QUEUE_TYPES, WK_STATUSES, SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
 
 export const STUDY_QUEUE_TYPES = {
-  review: "review",
-  lesson: "lesson",
+  review: QUEUE_TYPES.review,
+  lesson: QUEUE_TYPES.lesson,
 } as const;
 
 export const STUDY_VIEWER_MODES = {

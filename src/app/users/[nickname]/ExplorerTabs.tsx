@@ -84,7 +84,7 @@ export default function ExplorerTabs({
     }
 
     if (typeof window === "undefined") {
-      return "review";
+      return QUEUE_TYPES.review;
     }
 
     const params = new URLSearchParams(window.location.search);
