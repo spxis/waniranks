@@ -1,4 +1,4 @@
-import type { SubjectStatus, SubjectType } from "@/lib/domainConstants";
+import type { WkStatus, SubjectType } from "@/lib/domainConstants";
 import type { JlptKanjiRow, JlptMeta } from "@/lib/jlptTypes";
 
 export type RelatedReference = {
@@ -26,7 +26,7 @@ export type LevelItem = {
   jlptLevel?: number | null;
   jlptMeta?: JlptMeta | null;
   srsStage: number;
-  status: SubjectStatus;
+  status: WkStatus;
   startedAt?: string | null;
   passedAt?: string | null;
   availableAt: string | null;
@@ -56,11 +56,11 @@ export type UserKanjiItem = {
   startedAt?: string | null;
   passedAt?: string | null;
   availableAt?: string | null;
-  status?: SubjectStatus;
+  status?: WkStatus;
   srsStage?: number;
   wkLevel?: number | null;
 };
 
 export type SrsFilter =
   | "all"
-  | SubjectStatus;
+  | WkStatus;

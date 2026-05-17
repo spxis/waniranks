@@ -14,7 +14,7 @@ import {
   isKanjiSubjectType,
   isLessonQueueItem,
   STUDY_QUEUE_TYPES,
-  STUDY_SUBJECT_STATUSES,
+  STUDY_WK_STATUSES,
   STUDY_SUBJECT_TYPES,
 } from "./studyExplorerDomain";
 import { filterStudyItems, isRecentStudyItem } from "./studyExplorerUtils";
@@ -117,7 +117,7 @@ export function useStudyExplorerDerivedData({
       if (!isAllStudyTypeFilter(typeFilter) && item.subjectType !== typeFilter) {
         continue;
       }
-      if (!effectiveShowLocked && item.status === STUDY_SUBJECT_STATUSES.locked) {
+      if (!effectiveShowLocked && item.status === STUDY_WK_STATUSES.locked) {
         continue;
       }
       if (typeof item.wkLevel !== "number") {
@@ -194,7 +194,7 @@ export function useStudyExplorerDerivedData({
       if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
       if (!isAllStudySrsFilter(effectiveSrsFilter) && item.status !== effectiveSrsFilter) continue;
       if (effectiveSrsStageFilter !== null && item.srsStage !== effectiveSrsStageFilter) continue;
-      if (!effectiveShowLocked && item.status === STUDY_SUBJECT_STATUSES.locked) continue;
+      if (!effectiveShowLocked && item.status === STUDY_WK_STATUSES.locked) continue;
 
       out.all += 1;
       if (item.subjectType === STUDY_SUBJECT_TYPES.radical) out.radical += 1;
@@ -247,15 +247,15 @@ export function useStudyExplorerDerivedData({
       if (item.queueType !== queueMode) continue;
       if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
       if (!isAllStudyTypeFilter(typeFilter) && item.subjectType !== typeFilter) continue;
-      if (!effectiveShowLocked && item.status === STUDY_SUBJECT_STATUSES.locked) continue;
+      if (!effectiveShowLocked && item.status === STUDY_WK_STATUSES.locked) continue;
 
       out.all += 1;
-      if (item.status === STUDY_SUBJECT_STATUSES.locked) out.locked += 1;
-      if (item.status === STUDY_SUBJECT_STATUSES.apprentice) out.apprentice += 1;
-      if (item.status === STUDY_SUBJECT_STATUSES.guru) out.guru += 1;
-      if (item.status === STUDY_SUBJECT_STATUSES.master) out.master += 1;
-      if (item.status === STUDY_SUBJECT_STATUSES.enlightened) out.enlightened += 1;
-      if (item.status === STUDY_SUBJECT_STATUSES.burned) out.burned += 1;
+      if (item.status === STUDY_WK_STATUSES.locked) out.locked += 1;
+      if (item.status === STUDY_WK_STATUSES.apprentice) out.apprentice += 1;
+      if (item.status === STUDY_WK_STATUSES.guru) out.guru += 1;
+      if (item.status === STUDY_WK_STATUSES.master) out.master += 1;
+      if (item.status === STUDY_WK_STATUSES.enlightened) out.enlightened += 1;
+      if (item.status === STUDY_WK_STATUSES.burned) out.burned += 1;
     }
     return out;
   }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, typeFilter, effectiveShowLocked]);
@@ -292,7 +292,7 @@ export function useStudyExplorerDerivedData({
       if (item.queueType !== queueMode) continue;
       if (viewedLevel !== null && item.wkLevel !== viewedLevel) continue;
       if (!isAllStudyTypeFilter(typeFilter) && item.subjectType !== typeFilter) continue;
-      if (!effectiveShowLocked && item.status === STUDY_SUBJECT_STATUSES.locked) continue;
+      if (!effectiveShowLocked && item.status === STUDY_WK_STATUSES.locked) continue;
 
       if (!Number.isInteger(item.srsStage) || item.srsStage <= 0) {
         continue;

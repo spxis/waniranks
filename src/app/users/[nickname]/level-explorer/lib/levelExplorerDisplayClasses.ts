@@ -7,31 +7,31 @@ import {
   isLockedStatus,
   isRadicalSubjectType,
   isVocabularySubjectType,
-  LEVEL_SUBJECT_STATUSES,
+  LEVEL_WK_STATUSES,
 } from "./levelExplorerDomain";
 
 export function statusClass(status: LevelItem["status"]): string {
   switch (status) {
-    case LEVEL_SUBJECT_STATUSES.locked:
+    case LEVEL_WK_STATUSES.locked:
       return "bg-surface-muted text-foreground/70";
-    case LEVEL_SUBJECT_STATUSES.apprentice:
+    case LEVEL_WK_STATUSES.apprentice:
       return "bg-pink-100 text-pink-700";
-    case LEVEL_SUBJECT_STATUSES.guru:
+    case LEVEL_WK_STATUSES.guru:
       return "bg-violet-100 text-violet-700";
-    case LEVEL_SUBJECT_STATUSES.master:
+    case LEVEL_WK_STATUSES.master:
       return "bg-sky-100 text-sky-700";
-    case LEVEL_SUBJECT_STATUSES.enlightened:
+    case LEVEL_WK_STATUSES.enlightened:
       return "bg-amber-100 text-amber-700";
-    case LEVEL_SUBJECT_STATUSES.burned:
+    case LEVEL_WK_STATUSES.burned:
       return "bg-surface-muted text-foreground/80";
   }
 }
 
 export function statusShortLabel(status: LevelItem["status"]): string {
   switch (status) {
-    case LEVEL_SUBJECT_STATUSES.apprentice:
+    case LEVEL_WK_STATUSES.apprentice:
       return "APPR";
-    case LEVEL_SUBJECT_STATUSES.enlightened:
+    case LEVEL_WK_STATUSES.enlightened:
       return "ENLIGHT";
     default:
       return status.toUpperCase();
@@ -52,9 +52,9 @@ export function srsFilterButtonLabel(
   switch (status) {
     case LEVEL_SRS_FILTERS.all:
       return "All";
-    case LEVEL_SUBJECT_STATUSES.apprentice:
+    case LEVEL_WK_STATUSES.apprentice:
       return "Appr";
-    case LEVEL_SUBJECT_STATUSES.enlightened:
+    case LEVEL_WK_STATUSES.enlightened:
       return "Enlight";
     default:
       return status;

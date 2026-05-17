@@ -6,7 +6,7 @@ import StudyReviewModal from "@/app/users/[nickname]/study-explorer/components/S
 import type { StudyQueueItem } from "@/app/users/[nickname]/study-explorer/lib/studyExplorerTypes";
 import {
   isSubjectType,
-  SUBJECT_STATUSES,
+  WK_STATUSES,
   SUBJECT_TYPES,
 } from "@/lib/domainConstants";
 
@@ -62,9 +62,9 @@ function toStudyQueueItem(attempt: StudyHistoryAttempt): StudyQueueItem {
     status:
       subject?.status ??
       (attempt.srsBucket === "unknown"
-        ? SUBJECT_STATUSES.apprentice
-        : attempt.srsBucket === SUBJECT_STATUSES.burned
-          ? SUBJECT_STATUSES.burned
+        ? WK_STATUSES.apprentice
+        : attempt.srsBucket === WK_STATUSES.burned
+          ? WK_STATUSES.burned
           : attempt.srsBucket),
     startedAt: subject?.startedAt ?? null,
     passedAt: subject?.passedAt ?? null,

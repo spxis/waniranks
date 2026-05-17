@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import {
-  isSubjectStatus,
+  isWkStatus,
   srsBucketFromStage,
   type SrsBucket,
-  type SubjectStatus,
+  type WkStatus,
   type SubjectType,
 } from "@/lib/domainConstants";
 import type { JlptMeta } from "@/lib/jlptTypes";
@@ -54,7 +54,7 @@ type QueryArgs = {
   result?: "correct" | "wrong" | "skipped";
   level?: number;
   srs?: number;
-  srsBucket?: SubjectStatus;
+  srsBucket?: WkStatus;
   page: number;
   pageSize: number;
   sortBy: StudyHistorySortBy;
@@ -64,7 +64,7 @@ type QueryArgs = {
 type SnapshotItem = {
   subjectId?: number;
   subjectType?: SubjectType;
-  status?: SubjectStatus;
+  status?: WkStatus;
   characters?: string;
   meanings?: string[];
   readings?: string[];
@@ -135,7 +135,7 @@ function normalizeResult(raw: string | null): QueryArgs["result"] {
 }
 
 function normalizeSrsBucket(raw: string | null): QueryArgs["srsBucket"] {
-  if (isSubjectStatus(raw)) {
+  if (isWkStatus(raw)) {
     return raw;
   }
 

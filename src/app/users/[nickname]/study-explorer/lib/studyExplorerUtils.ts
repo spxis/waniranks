@@ -16,7 +16,7 @@ import {
   isKanjiSubjectType,
   isRadicalSubjectType,
   STUDY_QUEUE_TYPES,
-  STUDY_SUBJECT_STATUSES,
+  STUDY_WK_STATUSES,
 } from "./studyExplorerDomain";
 
 export const STUDY_QUEUE_STORAGE_TTL_MS = 90_000;
@@ -226,7 +226,7 @@ export function filterStudyItems(
       return false;
     }
 
-    if (!showLocked && item.status === STUDY_SUBJECT_STATUSES.locked) {
+    if (!showLocked && item.status === STUDY_WK_STATUSES.locked) {
       return false;
     }
 

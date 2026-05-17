@@ -15,7 +15,7 @@ import {
 import { getLevelKanjiSnapshot } from "./levelSnapshot";
 import { loadSubjectSummaries, loadSubjectTypes } from "./subjects";
 import { computeJlptKanjiProgress } from "./leaderboardJlpt";
-import { SUBJECT_STATUSES } from "@/lib/domainConstants";
+import { WK_STATUSES } from "@/lib/domainConstants";
 import type {
   ExistingLeaderboardState,
   LeaderboardStats,
@@ -269,7 +269,7 @@ export async function getLeaderboardStats(
     }
 
     const status = srsLabel(assignment.srs_stage, false);
-    if (status !== SUBJECT_STATUSES.locked) {
+    if (status !== WK_STATUSES.locked) {
       itemSpread[status][type] += 1;
       itemSpread[status].total += 1;
       itemSpread.totals[type] += 1;

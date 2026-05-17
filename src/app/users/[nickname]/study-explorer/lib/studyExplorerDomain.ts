@@ -6,7 +6,7 @@ import type {
   StudyTypeFilter,
   StudyViewerMode,
 } from "./studyExplorerTypes";
-import { SUBJECT_STATUSES, SUBJECT_TYPES } from "@/lib/domainConstants";
+import { WK_STATUSES, SUBJECT_TYPES } from "@/lib/domainConstants";
 
 export const STUDY_QUEUE_TYPES = {
   review: "review",
@@ -31,23 +31,23 @@ export const STUDY_TYPE_FILTERS = {
   vocabulary: STUDY_SUBJECT_TYPES.vocabulary,
 } as const;
 
-export const STUDY_SUBJECT_STATUSES = {
-  locked: SUBJECT_STATUSES.locked,
-  apprentice: SUBJECT_STATUSES.apprentice,
-  guru: SUBJECT_STATUSES.guru,
-  master: SUBJECT_STATUSES.master,
-  enlightened: SUBJECT_STATUSES.enlightened,
-  burned: SUBJECT_STATUSES.burned,
+export const STUDY_WK_STATUSES = {
+  locked: WK_STATUSES.locked,
+  apprentice: WK_STATUSES.apprentice,
+  guru: WK_STATUSES.guru,
+  master: WK_STATUSES.master,
+  enlightened: WK_STATUSES.enlightened,
+  burned: WK_STATUSES.burned,
 } as const;
 
 export const STUDY_SRS_FILTERS = {
   all: "all",
-  locked: STUDY_SUBJECT_STATUSES.locked,
-  apprentice: STUDY_SUBJECT_STATUSES.apprentice,
-  guru: STUDY_SUBJECT_STATUSES.guru,
-  master: STUDY_SUBJECT_STATUSES.master,
-  enlightened: STUDY_SUBJECT_STATUSES.enlightened,
-  burned: STUDY_SUBJECT_STATUSES.burned,
+  locked: STUDY_WK_STATUSES.locked,
+  apprentice: STUDY_WK_STATUSES.apprentice,
+  guru: STUDY_WK_STATUSES.guru,
+  master: STUDY_WK_STATUSES.master,
+  enlightened: STUDY_WK_STATUSES.enlightened,
+  burned: STUDY_WK_STATUSES.burned,
 } as const;
 
 export const STUDY_REVIEW_OUTCOMES = {
@@ -86,7 +86,7 @@ export function isReviewQueueItem(item: Pick<StudyQueueItem, "queueType">): bool
 export function isLessonLockedQueueItem(
   item: Pick<StudyQueueItem, "queueType" | "status">,
 ): boolean {
-  return isLessonQueueItem(item) && item.status === STUDY_SUBJECT_STATUSES.locked;
+  return isLessonQueueItem(item) && item.status === STUDY_WK_STATUSES.locked;
 }
 
 export function isRadicalSubjectType(

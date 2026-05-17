@@ -1,5 +1,5 @@
 import type { SrsFilter } from "../../explorerTypes";
-import { SUBJECT_STATUSES, SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
+import { WK_STATUSES, SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
 
 export type TypeFilter = "all" | SubjectType;
 export type JlptFilter = "all" | "none" | "n1" | "n2" | "n3" | "n4" | "n5";
@@ -33,12 +33,12 @@ export const LEVEL_REVIEW_TIMING_FILTERS = {
 
 export const LEVEL_SRS_FILTERS = {
   all: "all",
-  apprentice: SUBJECT_STATUSES.apprentice,
-  guru: SUBJECT_STATUSES.guru,
-  master: SUBJECT_STATUSES.master,
-  enlightened: SUBJECT_STATUSES.enlightened,
-  burned: SUBJECT_STATUSES.burned,
-  locked: SUBJECT_STATUSES.locked,
+  apprentice: WK_STATUSES.apprentice,
+  guru: WK_STATUSES.guru,
+  master: WK_STATUSES.master,
+  enlightened: WK_STATUSES.enlightened,
+  burned: WK_STATUSES.burned,
+  locked: WK_STATUSES.locked,
 } as const;
 
 export type ExplorerUrlState = {

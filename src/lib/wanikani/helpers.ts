@@ -6,31 +6,31 @@ import type {
   WaniKaniCollectionResponse,
   WaniKaniResponseHeaders,
 } from "./types";
-import { SUBJECT_STATUSES, SUBJECT_TYPES, type SubjectStatus } from "@/lib/domainConstants";
+import { WK_STATUSES, SUBJECT_TYPES, type WkStatus } from "@/lib/domainConstants";
 
 export function srsLabel(stage: number, locked: boolean):
-  SubjectStatus {
+  WkStatus {
   if (locked) {
-    return SUBJECT_STATUSES.locked;
+    return WK_STATUSES.locked;
   }
 
   if (stage >= 9) {
-    return SUBJECT_STATUSES.burned;
+    return WK_STATUSES.burned;
   }
 
   if (stage >= 8) {
-    return SUBJECT_STATUSES.enlightened;
+    return WK_STATUSES.enlightened;
   }
 
   if (stage >= 7) {
-    return SUBJECT_STATUSES.master;
+    return WK_STATUSES.master;
   }
 
   if (stage >= 5) {
-    return SUBJECT_STATUSES.guru;
+    return WK_STATUSES.guru;
   }
 
-  return SUBJECT_STATUSES.apprentice;
+  return WK_STATUSES.apprentice;
 }
 
 export function toDate(value: unknown): Date | null {

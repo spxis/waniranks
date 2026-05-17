@@ -17,10 +17,6 @@ export const WK_STATUSES = {
 
 export type WkStatus = (typeof WK_STATUSES)[keyof typeof WK_STATUSES];
 
-// Back-compat alias while migrating existing imports to WK_STATUSES.
-export const SUBJECT_STATUSES = WK_STATUSES;
-export type SubjectStatus = WkStatus;
-
 export const SRS_BUCKETS = {
   unknown: "unknown",
   locked: WK_STATUSES.locked,
@@ -56,7 +52,7 @@ export const SUBJECT_TYPE_VALUES: SubjectType[] = [
   SUBJECT_TYPES.vocabulary,
 ];
 
-export const SUBJECT_STATUS_VALUES: SubjectStatus[] = [
+export const WK_STATUS_VALUES: WkStatus[] = [
   WK_STATUSES.locked,
   WK_STATUSES.apprentice,
   WK_STATUSES.guru,
@@ -69,7 +65,7 @@ export function isSubjectType(value: string | null | undefined): value is Subjec
   return value === SUBJECT_TYPES.radical || value === SUBJECT_TYPES.kanji || value === SUBJECT_TYPES.vocabulary;
 }
 
-export function isSubjectStatus(value: string | null | undefined): value is SubjectStatus {
+export function isWkStatus(value: string | null | undefined): value is WkStatus {
   return (
     value === WK_STATUSES.locked ||
     value === WK_STATUSES.apprentice ||

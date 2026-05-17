@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { SUBJECT_STATUSES } from "@/lib/domainConstants";
+import { WK_STATUSES } from "@/lib/domainConstants";
 
 import { fetchAllCollectionPages, fetchWaniKani } from "./http";
 import { normalizeAssignmentType, srsLabel, toDate } from "./helpers";
@@ -254,12 +254,12 @@ export async function getLevelKanjiSnapshot(
   const kanjiTotal = onlyKanji.length;
   const kanjiLearned = onlyKanji.filter((item) => item.srsStage >= 5).length;
   const kanjiGuruPlus = onlyKanji.filter((item) => item.srsStage >= 5).length;
-  const kanjiLocked = onlyKanji.filter((item) => item.status === SUBJECT_STATUSES.locked).length;
+  const kanjiLocked = onlyKanji.filter((item) => item.status === WK_STATUSES.locked).length;
 
   let estimatedHoursRemaining: number | null = null;
   const remainingGuru = Math.max(0, Math.ceil(kanjiTotal * 0.9) - kanjiGuruPlus);
   const nextTimes = onlyKanji
-    .filter((item) => item.status !== SUBJECT_STATUSES.locked && item.srsStage < 5)
+    .filter((item) => item.status !== WK_STATUSES.locked && item.srsStage < 5)
     .map((item) => toDate(item.availableAt))
     .filter((value): value is Date => value !== null)
     .sort((a, b) => a.getTime() - b.getTime());

@@ -1,4 +1,4 @@
-import { SUBJECT_STATUSES, type SubjectStatus } from "@/lib/domainConstants";
+import { WK_STATUSES, type WkStatus } from "@/lib/domainConstants";
 
 export type JlptWordExample = {
   written: string;
@@ -33,13 +33,13 @@ export function parseWordExamples(input: unknown): JlptWordExample[] {
 }
 
 export function jlptStatusClass(
-  status: SubjectStatus | undefined,
+  status: WkStatus | undefined,
 ): string {
-  if (status === SUBJECT_STATUSES.locked) return "bg-surface-muted text-foreground/70";
-  if (status === SUBJECT_STATUSES.apprentice) return "bg-pink-100 text-pink-700";
-  if (status === SUBJECT_STATUSES.guru) return "bg-violet-100 text-violet-700";
-  if (status === SUBJECT_STATUSES.master) return "bg-sky-100 text-sky-700";
-  if (status === SUBJECT_STATUSES.enlightened) return "bg-amber-100 text-amber-700";
-  if (status === SUBJECT_STATUSES.burned) return "bg-surface-muted text-foreground/80";
+  if (status === WK_STATUSES.locked) return "bg-surface-muted text-foreground/70";
+  if (status === WK_STATUSES.apprentice) return "bg-pink-100 text-pink-700";
+  if (status === WK_STATUSES.guru) return "bg-violet-100 text-violet-700";
+  if (status === WK_STATUSES.master) return "bg-sky-100 text-sky-700";
+  if (status === WK_STATUSES.enlightened) return "bg-amber-100 text-amber-700";
+  if (status === WK_STATUSES.burned) return "bg-surface-muted text-foreground/80";
   return "bg-surface-muted text-foreground/65";
 }

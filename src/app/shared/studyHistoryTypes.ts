@@ -1,4 +1,4 @@
-import type { SrsBucket, SubjectStatus, SubjectType } from "@/lib/domainConstants";
+import type { SrsBucket, WkStatus, SubjectType } from "@/lib/domainConstants";
 import type { JlptMeta } from "@/lib/jlptTypes";
 
 export type HistorySrsBucket = SrsBucket;
@@ -6,7 +6,7 @@ export type HistorySrsBucket = SrsBucket;
 export type HistorySubjectData = {
   subjectId?: number;
   subjectType?: SubjectType;
-  status?: SubjectStatus;
+  status?: WkStatus;
   characters?: string;
   meanings?: string[];
   readings?: string[];

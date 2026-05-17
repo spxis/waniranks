@@ -1,5 +1,5 @@
 import type { LevelItem } from "../../explorerTypes";
-import { SUBJECT_STATUSES, SUBJECT_TYPES } from "@/lib/domainConstants";
+import { WK_STATUSES, SUBJECT_TYPES } from "@/lib/domainConstants";
 
 export const LEVEL_SUBJECT_TYPES = {
   radical: SUBJECT_TYPES.radical,
@@ -7,13 +7,13 @@ export const LEVEL_SUBJECT_TYPES = {
   vocabulary: SUBJECT_TYPES.vocabulary,
 } as const;
 
-export const LEVEL_SUBJECT_STATUSES = {
-  locked: SUBJECT_STATUSES.locked,
-  apprentice: SUBJECT_STATUSES.apprentice,
-  guru: SUBJECT_STATUSES.guru,
-  master: SUBJECT_STATUSES.master,
-  enlightened: SUBJECT_STATUSES.enlightened,
-  burned: SUBJECT_STATUSES.burned,
+export const LEVEL_WK_STATUSES = {
+  locked: WK_STATUSES.locked,
+  apprentice: WK_STATUSES.apprentice,
+  guru: WK_STATUSES.guru,
+  master: WK_STATUSES.master,
+  enlightened: WK_STATUSES.enlightened,
+  burned: WK_STATUSES.burned,
 } as const;
 
 export function isRadicalSubjectType(
@@ -35,9 +35,9 @@ export function isVocabularySubjectType(
 }
 
 export function isLockedStatus(status: LevelItem["status"]): boolean {
-  return status === LEVEL_SUBJECT_STATUSES.locked;
+  return status === LEVEL_WK_STATUSES.locked;
 }
 
 export function isBurnedStatus(status: LevelItem["status"]): boolean {
-  return status === LEVEL_SUBJECT_STATUSES.burned;
+  return status === LEVEL_WK_STATUSES.burned;
 }

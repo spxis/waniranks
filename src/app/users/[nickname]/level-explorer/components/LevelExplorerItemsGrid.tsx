@@ -4,7 +4,7 @@ import type { LevelItem } from "../../explorerTypes";
 import ExplorerBulkSelectionPanel from "../../shared/ExplorerBulkSelectionPanel";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import { ReadingWithPronunciation, badgeClass, formatNextReviewBadge, formatNumber, glyphSubtitleForDisplay, glyphTextSizeClass, isNewGlyphWithinHours, jlptLevelPillClass, lockedCardStateClass, shortSubjectTypeLabel, statusClass, statusShortLabel, subjectTypePillClass, titleForDisplay, typeCardClass, typeGlyphBoxClass } from "../lib/levelExplorerDisplay";
-import { LEVEL_SUBJECT_STATUSES } from "../lib/levelExplorerDomain";
+import { LEVEL_WK_STATUSES } from "../lib/levelExplorerDomain";
 import LevelExplorerDetailSection from "./LevelExplorerDetailSection";
 
 type VocabularyKanjiLink = {
@@ -310,7 +310,7 @@ export default function LevelExplorerItemsGrid({
                   ) : null}
                 </>
               }
-              glyphClassName={`${typeGlyphBoxClass(item.subjectType)} ${item.status === LEVEL_SUBJECT_STATUSES.locked || item.srsStage <= 0 ? "opacity-60" : ""}`}
+              glyphClassName={`${typeGlyphBoxClass(item.subjectType)} ${item.status === LEVEL_WK_STATUSES.locked || item.srsStage <= 0 ? "opacity-60" : ""}`}
               glyphText={item.characters}
               glyphTextClassName={`${glyphTextSizeClass(item.characters)} whitespace-nowrap`}
               glyphSubtitle={
@@ -332,7 +332,7 @@ export default function LevelExplorerItemsGrid({
                 </span>
               }
               middleChip={
-                item.status !== LEVEL_SUBJECT_STATUSES.burned
+                item.status !== LEVEL_WK_STATUSES.burned
                   ? (() => {
                       const nextReviewBadge = formatNextReviewBadge(item.availableAt);
                       if (!nextReviewBadge) {

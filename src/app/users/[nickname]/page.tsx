@@ -10,9 +10,9 @@ import UserReadPanel from "./UserReadPanel";
 import UserDashboardTabs from "./UserDashboardTabs";
 import {
   LEARNED_SRS_GROUPS,
-  SUBJECT_STATUSES,
+  WK_STATUSES,
   isSubjectType,
-  type SubjectStatus,
+  type WkStatus,
   type SubjectType,
 } from "@/lib/domainConstants";
 import {
@@ -37,7 +37,7 @@ type LevelKanjiItem = {
   meanings: string[];
   wkLevel: number;
   srsStage: number;
-  status: SubjectStatus;
+  status: WkStatus;
   availableAt: string | null;
   subjectType?: SubjectType;
 };
@@ -253,22 +253,22 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   ) as Record<number, LevelProgressSnapshot>;
 
   const createEmptyItemSpreadDetails = (): ItemSpreadGroupDetails => ({
-    [SUBJECT_STATUSES.apprentice]: { levels: [], stages: [] },
-    [SUBJECT_STATUSES.guru]: { levels: [], stages: [] },
-    [SUBJECT_STATUSES.master]: { levels: [], stages: [] },
-    [SUBJECT_STATUSES.enlightened]: { levels: [], stages: [] },
-    [SUBJECT_STATUSES.burned]: { levels: [], stages: [] },
+    [WK_STATUSES.apprentice]: { levels: [], stages: [] },
+    [WK_STATUSES.guru]: { levels: [], stages: [] },
+    [WK_STATUSES.master]: { levels: [], stages: [] },
+    [WK_STATUSES.enlightened]: { levels: [], stages: [] },
+    [WK_STATUSES.burned]: { levels: [], stages: [] },
   });
 
   const itemSpreadDetails: ItemSpreadGroupDetails = createEmptyItemSpreadDetails();
 
   const groupByStage = (srsStage: number): { group: SrsGroupKey; label: string } | null => {
-    if (srsStage >= 1 && srsStage <= 4) return { group: SUBJECT_STATUSES.apprentice, label: `SRS ${srsStage}` };
-    if (srsStage === 5) return { group: SUBJECT_STATUSES.guru, label: "SRS 5" };
-    if (srsStage === 6) return { group: SUBJECT_STATUSES.guru, label: "SRS 6" };
-    if (srsStage === 7) return { group: SUBJECT_STATUSES.master, label: "SRS 7" };
-    if (srsStage === 8) return { group: SUBJECT_STATUSES.enlightened, label: "SRS 8" };
-    if (srsStage >= 9) return { group: SUBJECT_STATUSES.burned, label: "SRS 9+" };
+    if (srsStage >= 1 && srsStage <= 4) return { group: WK_STATUSES.apprentice, label: `SRS ${srsStage}` };
+    if (srsStage === 5) return { group: WK_STATUSES.guru, label: "SRS 5" };
+    if (srsStage === 6) return { group: WK_STATUSES.guru, label: "SRS 6" };
+    if (srsStage === 7) return { group: WK_STATUSES.master, label: "SRS 7" };
+    if (srsStage === 8) return { group: WK_STATUSES.enlightened, label: "SRS 8" };
+    if (srsStage >= 9) return { group: WK_STATUSES.burned, label: "SRS 9+" };
     return null;
   };
 

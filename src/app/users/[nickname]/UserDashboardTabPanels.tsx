@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   LEARNED_SRS_GROUPS,
-  SUBJECT_STATUSES,
+  WK_STATUSES,
   type SrsProgressStatus,
 } from "@/lib/domainConstants";
 import type { ItemSpread, ItemSpreadRow } from "@/lib/itemSpread";
@@ -90,11 +90,11 @@ export function MainTabPanel({
         </article>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-1.5 sm:mt-4 sm:gap-2 lg:grid-cols-8">
-        <SrsLink label="Apprentice" shortLabel="Appr" query={SUBJECT_STATUSES.apprentice} value={apprenticeCount} />
-        <SrsLink label="Guru" shortLabel="Guru" query={SUBJECT_STATUSES.guru} value={guruCount} />
-        <SrsLink label="Master" shortLabel="Mstr" query={SUBJECT_STATUSES.master} value={masterCount} />
-        <SrsLink label="Enlightened" shortLabel="Enl" query={SUBJECT_STATUSES.enlightened} value={enlightenedCount} />
-        <SrsLink label="Burned" shortLabel="Burn" query={SUBJECT_STATUSES.burned} value={burnedCount} />
+        <SrsLink label="Apprentice" shortLabel="Appr" query={WK_STATUSES.apprentice} value={apprenticeCount} />
+        <SrsLink label="Guru" shortLabel="Guru" query={WK_STATUSES.guru} value={guruCount} />
+        <SrsLink label="Master" shortLabel="Mstr" query={WK_STATUSES.master} value={masterCount} />
+        <SrsLink label="Enlightened" shortLabel="Enl" query={WK_STATUSES.enlightened} value={enlightenedCount} />
+        <SrsLink label="Burned" shortLabel="Burn" query={WK_STATUSES.burned} value={burnedCount} />
         <div className="rounded-lg border border-radical/40 bg-radical/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-radical sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
           <span className="block"><span className="sm:hidden">Rad:</span><span className="hidden sm:inline">{subjectTypePluralLabel("radical")}:</span></span>
           <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(radicalCount)}</span>
@@ -124,11 +124,11 @@ export function ItemSpreadTabPanel({ itemSpread, itemSpreadDetails }: ItemSpread
   );
 
   const groupedRows: Array<[SrsGroupKey, string, ItemSpreadRow]> = [
-    [SUBJECT_STATUSES.apprentice, "Apprentice", itemSpread.apprentice],
-    [SUBJECT_STATUSES.guru, "Guru", itemSpread.guru],
-    [SUBJECT_STATUSES.master, "Master", itemSpread.master],
-    [SUBJECT_STATUSES.enlightened, "Enlightened", itemSpread.enlightened],
-    [SUBJECT_STATUSES.burned, "Burned", itemSpread.burned],
+    [WK_STATUSES.apprentice, "Apprentice", itemSpread.apprentice],
+    [WK_STATUSES.guru, "Guru", itemSpread.guru],
+    [WK_STATUSES.master, "Master", itemSpread.master],
+    [WK_STATUSES.enlightened, "Enlightened", itemSpread.enlightened],
+    [WK_STATUSES.burned, "Burned", itemSpread.burned],
   ];
 
   const toggleExpanded = (group: SrsGroupKey) => {
@@ -329,12 +329,12 @@ export function LevelProgressTabPanel({
               [subjectTypePluralLabel("vocabulary"), "vocabulary", levelVocabularyProgress],
             ] as const).map(([label, type, progress]) => {
               const stageCounts: Array<[SrsProgressStatus, number]> = [
-                [SUBJECT_STATUSES.apprentice, progress.apprentice],
-                [SUBJECT_STATUSES.guru, progress.guru],
-                [SUBJECT_STATUSES.master, progress.master],
-                [SUBJECT_STATUSES.enlightened, progress.enlightened],
-                [SUBJECT_STATUSES.burned, progress.burned],
-                [SUBJECT_STATUSES.locked, progress.locked],
+                [WK_STATUSES.apprentice, progress.apprentice],
+                [WK_STATUSES.guru, progress.guru],
+                [WK_STATUSES.master, progress.master],
+                [WK_STATUSES.enlightened, progress.enlightened],
+                [WK_STATUSES.burned, progress.burned],
+                [WK_STATUSES.locked, progress.locked],
               ];
               const visibleStages = stageCounts.filter(([, count]) => count > 0);
               const remainingToGuru = Math.max(0, progress.total - progress.guruOrHigher);
