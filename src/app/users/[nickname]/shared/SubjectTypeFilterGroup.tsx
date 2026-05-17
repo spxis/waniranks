@@ -1,8 +1,7 @@
 import { badgeClass, disabledBadgeClass, formatNumber } from "../level-explorer/lib/levelExplorerDisplay";
+import { SUBJECT_TYPE_VALUES, type SubjectType } from "@/lib/domainConstants";
 
 import SubjectTypeFilterButton from "./SubjectTypeFilterButton";
-
-type SubjectType = "radical" | "kanji" | "vocabulary";
 
 type Props = {
   counts: {
@@ -47,7 +46,7 @@ export default function SubjectTypeFilterGroup({
       >
         {allLabel} ({formatCount(allCount ?? counts.all)})
       </button>
-      {(["radical", "kanji", "vocabulary"] as const).map((type) => (
+      {SUBJECT_TYPE_VALUES.map((type) => (
         <SubjectTypeFilterButton
           key={type}
           type={type}

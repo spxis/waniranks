@@ -1,7 +1,6 @@
 import { disabledBadgeClass, formatNumber, typeBadgeClass } from "../level-explorer/lib/levelExplorerDisplay";
 import { subjectTypeFilterLabel } from "./subjectTypeLabels";
-
-type SubjectType = "radical" | "kanji" | "vocabulary";
+import type { SubjectType } from "@/lib/domainConstants";
 
 type Props = {
   type: SubjectType;

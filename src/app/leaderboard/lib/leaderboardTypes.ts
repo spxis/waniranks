@@ -1,4 +1,4 @@
-export type SubjectType = "radical" | "kanji" | "vocabulary";
+export type { SubjectType } from "@/lib/domainConstants";
 
 export type GuruedItemSummary = {
   subjectId: number;

@@ -6,7 +6,7 @@ import type {
   WaniKaniCollectionResponse,
   WaniKaniResponseHeaders,
 } from "./types";
-import { WK_STATUSES, SUBJECT_TYPES, type WkStatus } from "@/lib/domainConstants";
+import { WK_STATUSES, SUBJECT_TYPES, type SubjectType, type WkStatus } from "@/lib/domainConstants";
 
 export function srsLabel(stage: number, locked: boolean):
   WkStatus {
@@ -42,7 +42,7 @@ export function toDate(value: unknown): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-export function normalizeAssignmentType(input: string): "radical" | "kanji" | "vocabulary" | null {
+export function normalizeAssignmentType(input: string): SubjectType | null {
   if (input === SUBJECT_TYPES.radical || input === SUBJECT_TYPES.kanji) {
     return input;
   }

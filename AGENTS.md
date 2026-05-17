@@ -36,7 +36,15 @@ This file is the single source of truth for agent behavior in this repo.
 
 - Do not compare domain values with inline string literals in feature code (for example `queueType`, `subjectType`, `status`, review outcomes).
 - Move domain literals and predicate helpers into a shared domain module under `lib/` (example: `studyExplorerDomain.ts`) and import those helpers/constants in both `lib/` and `components/`.
-- Keep string unions in type declarations where required, but runtime comparisons must use shared constants/predicates.
+- For canonical domain values, prefer shared exported type aliases over inline string unions in type declarations (for example use `SubjectType`, `WkStatus` from `src/lib/domainConstants.ts`).
+- Inline string unions are only allowed when adding non-domain values (example: `"all" | SubjectType`).
+- Normalizer/helpers that return canonical domain values must return shared domain aliases (for example `SubjectType | null`) instead of duplicating literal unions.
+
+### Proactive Sweep Rule
+
+- When asked to remove literals/magic strings/constants drift, do a repo-wide sweep before finishing, not just local edits.
+- Required sweep includes both runtime comparisons and duplicated inline type unions for the same domain values.
+- If hits are found in the same domain area, fix them in the same pass and re-run quality checks before commit.
 
 ## Stack
 

@@ -74,7 +74,13 @@ Always run `pnpm quality:check` after non-trivial edits in `src/`. If lint issue
 - **Domain literals**: avoid inline runtime string comparisons for domain values
   (for example queue type, subject type, status, review outcomes). Put domain
   constants + predicate helpers in `lib/` and consume them from components.
-  Keep inline string unions only for TypeScript type declarations.
+- **Domain type aliases**: for canonical domain values, use shared aliases
+  (for example `SubjectType`, `WkStatus`) instead of duplicating inline string
+  unions in type declarations. Inline unions are only for adding non-domain
+  values (example: `"all" | SubjectType`).
+- **Proactive sweep**: when fixing literals/constants drift, run a repo-wide
+  sweep for both runtime literals and duplicated inline unions in the same
+  domain and fix all hits in one pass before commit.
 
 ## Don't touch
 

@@ -18,6 +18,7 @@ import {
 import LevelExplorerReviewStatsCard from "../../level-explorer/components/LevelExplorerReviewStatsCard";
 import { parseWordExamples } from "../../jlpt-explorer/lib/jlptExplorerContentHelpers";
 import { openViewGlyphViewer } from "@/lib/viewGlyphViewer";
+import { SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
 import {
   formatTimestampWithRelative,
   metricCard,
@@ -103,7 +104,7 @@ export default function StudyReviewModalMetaPanels({
     label: string;
     reading?: string | null;
     meaning?: string | null;
-    subjectType?: "kanji" | "radical" | "vocabulary";
+    subjectType?: SubjectType;
   }) {
     openViewGlyphViewer({
       accountId,
@@ -112,7 +113,7 @@ export default function StudyReviewModalMetaPanels({
           assignmentId: -1,
           queueType: "review",
           subjectId: params.subjectId,
-          subjectType: params.subjectType ?? "kanji",
+          subjectType: params.subjectType ?? SUBJECT_TYPES.kanji,
           wkLevel: selectedItem.wkLevel,
           characters: params.label,
           meanings: [params.meaning ?? "-"],
@@ -165,7 +166,7 @@ export default function StudyReviewModalMetaPanels({
                     <div className="rounded-xl border border-line bg-surface px-3 py-2">
                       <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">{STUDY_REVIEW_META_TEXT.radicals}</p>
                       {relatedTilesClickable(selectedItem.radicals as RelatedReference[] | undefined, (entry) => {
-                        openSingleGlyph({ subjectId: entry.subjectId, label: entry.label, reading: entry.reading, subjectType: "radical" });
+                        openSingleGlyph({ subjectId: entry.subjectId, label: entry.label, reading: entry.reading, subjectType: SUBJECT_TYPES.radical });
                       })}
                     </div>
                   ) : null}
@@ -173,7 +174,7 @@ export default function StudyReviewModalMetaPanels({
                     <div className="rounded-xl border border-line bg-surface px-3 py-2">
                       <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">{STUDY_REVIEW_META_TEXT.visuallySimilar}</p>
                       {relatedTilesClickable(selectedItem.visuallySimilar as RelatedReference[] | undefined, (entry) => {
-                        openSingleGlyph({ subjectId: entry.subjectId, label: entry.label, reading: entry.reading, subjectType: "kanji" });
+                        openSingleGlyph({ subjectId: entry.subjectId, label: entry.label, reading: entry.reading, subjectType: SUBJECT_TYPES.kanji });
                       })}
                     </div>
                   ) : null}
@@ -205,7 +206,7 @@ export default function StudyReviewModalMetaPanels({
               <div className="rounded-xl border border-line bg-surface px-3 py-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/65">{STUDY_REVIEW_META_TEXT.componentKanji}</p>
                 {relatedTilesClickable(selectedItem.componentKanji as RelatedReference[] | undefined, (entry) => {
-                  openSingleGlyph({ subjectId: entry.subjectId, label: entry.label, reading: entry.reading, subjectType: "kanji" });
+                  openSingleGlyph({ subjectId: entry.subjectId, label: entry.label, reading: entry.reading, subjectType: SUBJECT_TYPES.kanji });
                 })}
               </div>
             </div>
@@ -240,7 +241,7 @@ export default function StudyReviewModalMetaPanels({
                                 label: item.label,
                                 reading: item.reading ?? null,
                                 meaning: item.meaning ?? null,
-                                subjectType: "kanji",
+                                subjectType: SUBJECT_TYPES.kanji,
                               });
                             }}
                             className={`cursor-pointer text-left font-black leading-none text-foreground hover:opacity-85 ${relatedTileLabelClass(item.label)}`}
@@ -294,7 +295,7 @@ export default function StudyReviewModalMetaPanels({
                               label: example.written || "-",
                               reading: example.pronounced || null,
                               meaning: example.gloss || null,
-                              subjectType: "vocabulary",
+                              subjectType: SUBJECT_TYPES.vocabulary,
                             });
                           }}
                           className={`cursor-pointer text-left font-black leading-none text-foreground hover:opacity-85 ${relatedTileLabelClass(example.written || "-")}`}
