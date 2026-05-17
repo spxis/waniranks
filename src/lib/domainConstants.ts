@@ -29,6 +29,16 @@ export const SRS_BUCKETS = {
 
 export type SrsBucket = (typeof SRS_BUCKETS)[keyof typeof SRS_BUCKETS];
 
+export const SRS_BUCKET_TITLE_LABELS: Record<SrsBucket, string> = {
+  [SRS_BUCKETS.apprentice]: "Apprentice",
+  [SRS_BUCKETS.guru]: "Guru",
+  [SRS_BUCKETS.master]: "Master",
+  [SRS_BUCKETS.enlightened]: "Enlightened",
+  [SRS_BUCKETS.burned]: "Burned",
+  [SRS_BUCKETS.locked]: "Locked",
+  [SRS_BUCKETS.unknown]: "Unknown",
+};
+
 export const LEARNED_SRS_GROUPS = [
   WK_STATUSES.apprentice,
   WK_STATUSES.guru,
@@ -40,11 +50,31 @@ export const LEARNED_SRS_GROUPS = [
 export type LearnedSrsGroup = (typeof LEARNED_SRS_GROUPS)[number];
 
 export const LEARNED_SRS_GROUP_LABELS = [
-  { key: WK_STATUSES.apprentice, label: "Apprentice", shortLabel: "Appr" },
-  { key: WK_STATUSES.guru, label: "Guru", shortLabel: "Guru" },
-  { key: WK_STATUSES.master, label: "Master", shortLabel: "Mstr" },
-  { key: WK_STATUSES.enlightened, label: "Enlightened", shortLabel: "Enl" },
-  { key: WK_STATUSES.burned, label: "Burned", shortLabel: "Burn" },
+  {
+    key: WK_STATUSES.apprentice,
+    label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.apprentice],
+    shortLabel: "Appr",
+  },
+  {
+    key: WK_STATUSES.guru,
+    label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.guru],
+    shortLabel: "Guru",
+  },
+  {
+    key: WK_STATUSES.master,
+    label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.master],
+    shortLabel: "Mstr",
+  },
+  {
+    key: WK_STATUSES.enlightened,
+    label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.enlightened],
+    shortLabel: "Enl",
+  },
+  {
+    key: WK_STATUSES.burned,
+    label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.burned],
+    shortLabel: "Burn",
+  },
 ] as const;
 
 export const SRS_PROGRESS_STATUSES = [
