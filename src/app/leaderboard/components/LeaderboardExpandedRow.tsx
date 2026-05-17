@@ -1,4 +1,9 @@
 import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
+import {
+  LEADERBOARD_24H_OVERALL_LABELS,
+  LEADERBOARD_JLPT_LABEL_ROWS,
+  LEADERBOARD_SRS_STAGE_LABELS,
+} from "./Leaderboard.constants";
 
 import type { LeaderboardRow, LeaderboardTab } from "../lib/leaderboardTypes";
 import {
@@ -39,6 +44,32 @@ export default function LeaderboardExpandedRow({
   const kanjiGoal = Math.ceil(row.levelKanjiTotal * 0.9);
   const remainingToLevelUp = Math.max(0, kanjiGoal - row.levelKanjiGuruPlus);
 
+  const stageCountByKey = {
+    apprentice: row.apprenticeCount,
+    guru: row.guruCount,
+    master: row.masterCount,
+    enlightened: row.enlightenedCount,
+    burned: row.burnedCount,
+  } as const;
+
+  function jlptCountForLabel(label: "N5" | "N4" | "N3" | "N2" | "N1") {
+    if (label === "N5") return jlpt.n5;
+    if (label === "N4") return jlpt.n4;
+    if (label === "N3") return jlpt.n3;
+    if (label === "N2") return jlpt.n2;
+    return jlpt.n1;
+  }
+
+  function deltaForOverallLabel(label: (typeof LEADERBOARD_24H_OVERALL_LABELS)[number]) {
+    if (label === "Score") return row.dailyDelta?.score;
+    if (label === "Reviews") return row.dailyDelta?.reviewCount;
+    if (label === "Level") return row.dailyDelta?.wkLevel;
+    if (label === "Radicals") return row.dailyDelta?.radicalCount;
+    if (label === "Vocab") return row.dailyDelta?.vocabularyCount;
+    if (label === "Burned") return row.dailyDelta?.burnedCount;
+    return row.dailyDelta?.levelKanjiLearned;
+  }
+
   return (
     <div className="space-y-3">
       <div className="grid gap-3 lg:grid-cols-[0.7fr_1.5fr_1.5fr_1fr]">
@@ -65,61 +96,35 @@ export default function LeaderboardExpandedRow({
         <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">SRS Stages</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-foreground/70">Apprentice</p>
-              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.apprenticeCount)}</p>
-            </div>
-            <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-foreground/70">Guru</p>
-              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.guruCount)}</p>
-            </div>
-            <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-foreground/70">Master</p>
-              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.masterCount)}</p>
-            </div>
-            <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-foreground/70">Enlightened</p>
-              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.enlightenedCount)}</p>
-            </div>
-            <div className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
-              <p className="text-[10px] font-bold uppercase text-foreground/70">Burned</p>
-              <p className="text-xl font-black leading-none text-foreground">{formatNumber(row.burnedCount)}</p>
-            </div>
+            {LEADERBOARD_SRS_STAGE_LABELS.map(({ key, label }) => (
+              <div key={label} className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
+                <p className="text-[10px] font-bold uppercase text-foreground/70">{label}</p>
+                <p className="text-xl font-black leading-none text-foreground">{formatNumber(stageCountByKey[key])}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">JLPT Levels</p>
           <div className="mt-3 space-y-2">
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                ["N5", jlpt.n5],
-                ["N4", jlpt.n4],
-                ["N3", jlpt.n3],
-              ] as const).map(([label, count]) => (
-                <div key={label} className={`rounded-xl border p-2 text-center ${jlptCompletionClass(count.percent)}`}>
-                  <p className="text-[10px] font-bold uppercase opacity-90">{label}</p>
-                  <p className="text-lg font-black leading-none">
-                    {formatNumber(count.learned)}/{formatNumber(count.total)}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold opacity-90">{count.percent}%</p>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                ["N2", jlpt.n2],
-                ["N1", jlpt.n1],
-              ] as const).map(([label, count]) => (
-                <div key={label} className={`rounded-xl border p-2 text-center ${jlptCompletionClass(count.percent)}`}>
-                  <p className="text-[10px] font-bold uppercase opacity-90">{label}</p>
-                  <p className="text-lg font-black leading-none">
-                    {formatNumber(count.learned)}/{formatNumber(count.total)}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold opacity-90">{count.percent}%</p>
-                </div>
-              ))}
-            </div>
+            {LEADERBOARD_JLPT_LABEL_ROWS.map((labels, rowIndex) => (
+              <div key={`jlpt-row-${rowIndex}`} className={`grid ${rowIndex === 0 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
+                {labels.map((label) => {
+                  const count = jlptCountForLabel(label);
+
+                  return (
+                    <div key={label} className={`rounded-xl border p-2 text-center ${jlptCompletionClass(count.percent)}`}>
+                      <p className="text-[10px] font-bold uppercase opacity-90">{label}</p>
+                      <p className="text-lg font-black leading-none">
+                        {formatNumber(count.learned)}/{formatNumber(count.total)}
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold opacity-90">{count.percent}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -159,13 +164,10 @@ export default function LeaderboardExpandedRow({
                 <span className="subject-pill subject-pill--vocabulary">Vocabulary</span>
               </div>
               <div className="mt-2 space-y-1">
-                {([
-                  ["Apprentice", spread.apprentice],
-                  ["Guru", spread.guru],
-                  ["Master", spread.master],
-                  ["Enlightened", spread.enlightened],
-                  ["Burned", spread.burned],
-                ] as const).map(([label, data]) => (
+                {LEADERBOARD_SRS_STAGE_LABELS.map(({ key, label }) => {
+                  const data = spread[key];
+
+                  return (
                   <div
                     key={label}
                     className="grid grid-cols-[1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] items-center gap-2 rounded-lg border border-line bg-surface-muted px-2 py-1 text-xs font-semibold text-foreground/80"
@@ -176,7 +178,8 @@ export default function LeaderboardExpandedRow({
                     <p className="text-vocabulary">{formatNumber(data.vocabulary)}</p>
                     <p className="text-right text-base font-black text-foreground">{formatNumber(data.total)}</p>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : null}
@@ -232,15 +235,7 @@ export default function LeaderboardExpandedRow({
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {(
             activeTab === "overall"
-              ? ([
-                  ["Score", row.dailyDelta?.score],
-                  ["Reviews", row.dailyDelta?.reviewCount],
-                  ["Level", row.dailyDelta?.wkLevel],
-                  ["Radicals", row.dailyDelta?.radicalCount],
-                  ["Vocab", row.dailyDelta?.vocabularyCount],
-                  ["Burned", row.dailyDelta?.burnedCount],
-                  ["Learned Kanji", row.dailyDelta?.levelKanjiLearned],
-                ] as const)
+              ? LEADERBOARD_24H_OVERALL_LABELS.map((label) => [label, deltaForOverallLabel(label)] as const)
               : ([
                   ["Level", row.dailyDelta?.wkLevel],
                   [
