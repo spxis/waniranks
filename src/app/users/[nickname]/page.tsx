@@ -11,6 +11,7 @@ import UserDashboardTabs from "./UserDashboardTabs";
 import {
   QUEUE_TYPES,
   LEARNED_SRS_GROUPS,
+  SUBJECT_TYPES,
   WK_STATUSES,
   isSubjectType,
   type WkStatus,
@@ -227,9 +228,9 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   function computeLevelSnapshot(level: number): LevelProgressSnapshot {
     const itemsForLevel = progressItemsByLevel.get(level) ?? [];
-    const radical = computeTypeProgress(itemsForLevel, "radical");
-    const kanji = computeTypeProgress(itemsForLevel, "kanji");
-    const vocabulary = computeTypeProgress(itemsForLevel, "vocabulary");
+    const radical = computeTypeProgress(itemsForLevel, SUBJECT_TYPES.radical);
+    const kanji = computeTypeProgress(itemsForLevel, SUBJECT_TYPES.kanji);
+    const vocabulary = computeTypeProgress(itemsForLevel, SUBJECT_TYPES.vocabulary);
     const remainingToLevelUp = Math.max(0, Math.ceil(kanji.total * 0.9) - kanji.guruOrHigher);
 
     return {

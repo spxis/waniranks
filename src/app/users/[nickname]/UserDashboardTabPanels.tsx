@@ -108,15 +108,15 @@ export function MainTabPanel({
           <SrsLink key={key} label={label} shortLabel={shortLabel} query={key} value={srsCountsByGroup[key]} />
         ))}
         <div className="rounded-lg border border-radical/40 bg-radical/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-radical sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
-          <span className="block"><span className="sm:hidden">Rad:</span><span className="hidden sm:inline">{subjectTypePluralLabel("radical")}:</span></span>
+          <span className="block"><span className="sm:hidden">Rad:</span><span className="hidden sm:inline">{subjectTypePluralLabel(SUBJECT_TYPES.radical)}:</span></span>
           <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(radicalCount)}</span>
         </div>
         <div className="rounded-lg border border-kanji/40 bg-kanji/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-kanji sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
-          <span className="block"><span className="sm:hidden">Kan:</span><span className="hidden sm:inline">{subjectTypePluralLabel("kanji")}:</span></span>
+          <span className="block"><span className="sm:hidden">Kan:</span><span className="hidden sm:inline">{subjectTypePluralLabel(SUBJECT_TYPES.kanji)}:</span></span>
           <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(totalKanjiCount)}</span>
         </div>
         <div className="rounded-lg border border-vocabulary/40 bg-vocabulary/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-vocabulary sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
-          <span className="block"><span className="sm:hidden">Voc:</span><span className="hidden sm:inline">{subjectTypePluralLabel("vocabulary")}:</span></span>
+          <span className="block"><span className="sm:hidden">Voc:</span><span className="hidden sm:inline">{subjectTypePluralLabel(SUBJECT_TYPES.vocabulary)}:</span></span>
           <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(vocabularyCount)}</span>
         </div>
       </div>
@@ -157,9 +157,9 @@ export function ItemSpreadTabPanel({ itemSpread, itemSpreadDetails }: ItemSpread
             {detailedView ? "Regular View" : "Detailed View"}
           </button>
           <div className="hidden flex-wrap items-center gap-2 text-sm font-semibold text-foreground/80 sm:flex">
-            <span className="subject-pill subject-pill--radical">{subjectTypePluralLabel("radical")}</span>
-            <span className="subject-pill subject-pill--kanji">{subjectTypePluralLabel("kanji")}</span>
-            <span className="subject-pill subject-pill--vocabulary">{subjectTypePluralLabel("vocabulary")}</span>
+            <span className="subject-pill subject-pill--radical">{subjectTypePluralLabel(SUBJECT_TYPES.radical)}</span>
+            <span className="subject-pill subject-pill--kanji">{subjectTypePluralLabel(SUBJECT_TYPES.kanji)}</span>
+            <span className="subject-pill subject-pill--vocabulary">{subjectTypePluralLabel(SUBJECT_TYPES.vocabulary)}</span>
           </div>
         </div>
       </div>
