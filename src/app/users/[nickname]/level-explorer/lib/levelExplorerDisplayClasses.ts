@@ -1,29 +1,37 @@
 import type { LevelItem } from "../../explorerTypes";
 import { subjectTypeShortLabel } from "../../shared/subjectTypeLabels";
 import type { TypeFilter } from "./levelExplorerState";
+import { LEVEL_SRS_FILTERS, LEVEL_TYPE_FILTERS } from "./levelExplorerState";
+import {
+  isKanjiSubjectType,
+  isLockedStatus,
+  isRadicalSubjectType,
+  isVocabularySubjectType,
+  LEVEL_SUBJECT_STATUSES,
+} from "./levelExplorerDomain";
 
 export function statusClass(status: LevelItem["status"]): string {
   switch (status) {
-    case "locked":
+    case LEVEL_SUBJECT_STATUSES.locked:
       return "bg-surface-muted text-foreground/70";
-    case "apprentice":
+    case LEVEL_SUBJECT_STATUSES.apprentice:
       return "bg-pink-100 text-pink-700";
-    case "guru":
+    case LEVEL_SUBJECT_STATUSES.guru:
       return "bg-violet-100 text-violet-700";
-    case "master":
+    case LEVEL_SUBJECT_STATUSES.master:
       return "bg-sky-100 text-sky-700";
-    case "enlightened":
+    case LEVEL_SUBJECT_STATUSES.enlightened:
       return "bg-amber-100 text-amber-700";
-    case "burned":
+    case LEVEL_SUBJECT_STATUSES.burned:
       return "bg-surface-muted text-foreground/80";
   }
 }
 
 export function statusShortLabel(status: LevelItem["status"]): string {
   switch (status) {
-    case "apprentice":
+    case LEVEL_SUBJECT_STATUSES.apprentice:
       return "APPR";
-    case "enlightened":
+    case LEVEL_SUBJECT_STATUSES.enlightened:
       return "ENLIGHT";
     default:
       return status.toUpperCase();
@@ -31,7 +39,7 @@ export function statusShortLabel(status: LevelItem["status"]): string {
 }
 
 export function shortSubjectTypeLabel(type: LevelItem["subjectType"]): string {
-  if (type === "radical" || type === "kanji" || type === "vocabulary") {
+  if (isRadicalSubjectType(type) || isKanjiSubjectType(type) || isVocabularySubjectType(type)) {
     return subjectTypeShortLabel(type);
   }
 
@@ -42,11 +50,11 @@ export function srsFilterButtonLabel(
   status: "all" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "locked",
 ): string {
   switch (status) {
-    case "all":
+    case LEVEL_SRS_FILTERS.all:
       return "All";
-    case "apprentice":
+    case LEVEL_SUBJECT_STATUSES.apprentice:
       return "Appr";
-    case "enlightened":
+    case LEVEL_SUBJECT_STATUSES.enlightened:
       return "Enlight";
     default:
       return status;
@@ -67,17 +75,17 @@ export function typeBadgeClass(type: TypeFilter, active: boolean, disabled: bool
   if (disabled) {
     return disabledBadgeClass();
   }
-  if (type === "radical") {
+  if (type === LEVEL_TYPE_FILTERS.radical) {
     return active
       ? "border-radical bg-radical text-white"
       : "border-radical/50 bg-radical/10 text-radical hover:bg-radical/20";
   }
-  if (type === "kanji") {
+  if (type === LEVEL_TYPE_FILTERS.kanji) {
     return active
       ? "border-kanji bg-kanji text-white"
       : "border-kanji/50 bg-kanji/10 text-kanji hover:bg-kanji/20";
   }
-  if (type === "vocabulary") {
+  if (type === LEVEL_TYPE_FILTERS.vocabulary) {
     return active
       ? "border-vocabulary bg-vocabulary text-white"
       : "border-vocabulary/50 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20";
@@ -86,13 +94,13 @@ export function typeBadgeClass(type: TypeFilter, active: boolean, disabled: bool
 }
 
 export function subjectTypePillClass(type: LevelItem["subjectType"]): string {
-  if (type === "radical") {
+  if (isRadicalSubjectType(type)) {
     return "subject-pill subject-pill--radical";
   }
-  if (type === "kanji") {
+  if (isKanjiSubjectType(type)) {
     return "subject-pill subject-pill--kanji";
   }
-  if (type === "vocabulary") {
+  if (isVocabularySubjectType(type)) {
     return "subject-pill subject-pill--vocabulary";
   }
   return "subject-pill";
@@ -104,33 +112,33 @@ export function jlptLevelPillClass(): string {
 
 export function typeCardClass(type: LevelItem["subjectType"], selected: boolean): string {
   const selectedRing = selected ? "ring-2 ring-accent" : "";
-  if (type === "radical") {
+  if (isRadicalSubjectType(type)) {
     return `border-radical/50 bg-surface text-foreground ${selectedRing}`;
   }
-  if (type === "kanji") {
+  if (isKanjiSubjectType(type)) {
     return `border-kanji/50 bg-surface text-foreground ${selectedRing}`;
   }
-  if (type === "vocabulary") {
+  if (isVocabularySubjectType(type)) {
     return `border-vocabulary/50 bg-surface text-foreground ${selectedRing}`;
   }
   return `border-line bg-surface text-foreground ${selectedRing}`;
 }
 
 export function lockedCardStateClass(item: LevelItem): string {
-  if (item.status !== "locked" && item.srsStage > 0) {
+  if (!isLockedStatus(item.status) && item.srsStage > 0) {
     return "";
   }
   return "bg-surface-muted/90 text-foreground/60";
 }
 
 export function typeGlyphBoxClass(type: LevelItem["subjectType"]): string {
-  if (type === "radical") {
+  if (isRadicalSubjectType(type)) {
     return "border-radical/50 bg-radical/15 text-radical";
   }
-  if (type === "kanji") {
+  if (isKanjiSubjectType(type)) {
     return "border-kanji/50 bg-kanji/15 text-kanji";
   }
-  if (type === "vocabulary") {
+  if (isVocabularySubjectType(type)) {
     return "border-vocabulary/50 bg-vocabulary/15 text-vocabulary";
   }
   return "border-line bg-surface text-foreground";
@@ -155,13 +163,13 @@ export function relatedReferenceCardClass(
   const base =
     "rounded-xl border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70";
   const sizeClass = size === "large" ? "px-4 py-3" : "px-3 py-2";
-  if (type === "radical") {
+  if (isRadicalSubjectType(type)) {
     return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-radical/50 bg-radical/10 text-radical hover:bg-radical/20" : "border-radical/30 bg-radical/5 text-radical/80"}`;
   }
-  if (type === "kanji") {
+  if (isKanjiSubjectType(type)) {
     return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-kanji/50 bg-kanji/10 text-kanji hover:bg-kanji/20" : "border-kanji/30 bg-kanji/5 text-kanji/80"}`;
   }
-  if (type === "vocabulary") {
+  if (isVocabularySubjectType(type)) {
     return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-vocabulary/50 bg-vocabulary/10 text-vocabulary hover:bg-vocabulary/20" : "border-vocabulary/30 bg-vocabulary/5 text-vocabulary/80"}`;
   }
   return `${base} ${sizeClass} ${isClickable ? "cursor-pointer border-line bg-surface text-foreground hover:bg-surface-muted" : "border-line bg-surface-muted text-foreground/60"}`;

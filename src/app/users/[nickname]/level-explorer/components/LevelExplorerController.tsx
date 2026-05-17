@@ -50,6 +50,7 @@ import {
   snapshotHasJlptMetaData,
   normalizeSnapshot,
 } from "../lib/levelExplorerSnapshotUtils";
+import { isVocabularySubjectType } from "../lib/levelExplorerDomain";
 
 type Props = {
   accountId: string;
@@ -286,7 +287,7 @@ export default function LevelExplorerController({
   );
 
   const hasPrimaryRelatedPanel = selectedItem
-    ? selectedItem.subjectType === "vocabulary"
+    ? isVocabularySubjectType(selectedItem.subjectType)
       ? vocabularyKanjiLinks.length > 0
       : (selectedItem.radicals?.length ?? 0) > 0
     : false;

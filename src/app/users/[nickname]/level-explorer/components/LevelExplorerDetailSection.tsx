@@ -28,6 +28,11 @@ import {
   VocabularyKanjiCards,
   type VocabularyKanjiLink,
 } from "./LevelExplorerReferenceCards";
+import {
+  isKanjiSubjectType,
+  isRadicalSubjectType,
+  isVocabularySubjectType,
+} from "../lib/levelExplorerDomain";
 
 type Props = {
   accountId: string;
@@ -84,7 +89,11 @@ export default function LevelExplorerDetailSection({
   const revealedStudyTitle =
     primaryMeaning ||
     titleForDisplay(selectedItem, true) ||
-    (selectedItem.subjectType === "kanji" ? "Kanji" : selectedItem.subjectType === "radical" ? "Radical" : "Vocabulary");
+    (isKanjiSubjectType(selectedItem.subjectType)
+      ? "Kanji"
+      : isRadicalSubjectType(selectedItem.subjectType)
+        ? "Radical"
+        : "Vocabulary");
   const headerTitle = studyMode
     ? revealStudyReading
       ? revealedStudyTitle
@@ -199,7 +208,7 @@ export default function LevelExplorerDetailSection({
           <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
             <p className="text-xs font-bold uppercase text-foreground/70">Primary reading</p>
             <p className="mt-1 text-lg font-semibold text-foreground/90 sm:text-xl">
-              {selectedItem.subjectType === "radical" ? (
+              {isRadicalSubjectType(selectedItem.subjectType) ? (
                 "Not applicable"
               ) : (
                 <ReadingListWithPronunciation readings={selectedItem.primaryReadings ?? []} mode={showEnglish ? "inline" : "plain"} />
@@ -209,7 +218,7 @@ export default function LevelExplorerDetailSection({
           <div className="rounded-xl border border-line bg-surface-muted p-3 text-sm">
             <p className="text-xs font-bold uppercase text-foreground/70">Secondary readings</p>
             <p className="mt-1 text-lg font-semibold text-foreground/90 sm:text-xl">
-              {selectedItem.subjectType === "radical" ? (
+              {isRadicalSubjectType(selectedItem.subjectType) ? (
                 "Not applicable"
               ) : (
                 <ReadingListWithPronunciation readings={secondaryReadingsForDisplay(selectedItem)} mode={showEnglish ? "inline" : "plain"} />
@@ -262,9 +271,9 @@ export default function LevelExplorerDetailSection({
           hasPrimary={hasPrimaryRelatedPanel}
           hasVisuallySimilar={hasVisuallySimilarPanel}
           hasUsedInVocabulary={hasUsedInVocabularyPanel}
-          primaryTitle={selectedItem.subjectType === "vocabulary" ? "Kanji" : "Radicals"}
+          primaryTitle={isVocabularySubjectType(selectedItem.subjectType) ? "Kanji" : "Radicals"}
           primaryContent={
-            selectedItem.subjectType === "vocabulary" ? (
+            isVocabularySubjectType(selectedItem.subjectType) ? (
               <VocabularyKanjiCards
                 links={vocabularyKanjiLinks}
                 showEnglish={showEnglish}
@@ -274,7 +283,7 @@ export default function LevelExplorerDetailSection({
             ) : (
               <RelatedReferenceCards
                 items={selectedItem.radicals ?? []}
-                large={selectedItem.subjectType === "kanji"}
+                large={isKanjiSubjectType(selectedItem.subjectType)}
                 showEnglish={showEnglish}
                 subjectById={subjectById}
                 onJumpToRelatedSubject={onJumpToRelatedSubject}
@@ -284,7 +293,7 @@ export default function LevelExplorerDetailSection({
           visuallySimilarContent={
             <RelatedReferenceCards
               items={selectedItem.visuallySimilar ?? []}
-              large={selectedItem.subjectType === "kanji"}
+              large={isKanjiSubjectType(selectedItem.subjectType)}
               showEnglish={showEnglish}
               subjectById={subjectById}
               onJumpToRelatedSubject={onJumpToRelatedSubject}
