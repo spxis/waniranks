@@ -1,8 +1,8 @@
 import { EMPTY_ITEM_SPREAD, isItemSpread } from "@/lib/itemSpread";
+import { LEARNED_SRS_GROUP_LABELS } from "@/lib/domainConstants";
 import {
   LEADERBOARD_24H_OVERALL_LABELS,
   LEADERBOARD_JLPT_LABEL_ROWS,
-  LEADERBOARD_SRS_STAGE_LABELS,
 } from "./Leaderboard.constants";
 
 import type { LeaderboardRow, LeaderboardTab } from "../lib/leaderboardTypes";
@@ -96,7 +96,7 @@ export default function LeaderboardExpandedRow({
         <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/70">SRS Stages</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {LEADERBOARD_SRS_STAGE_LABELS.map(({ key, label }) => (
+            {LEARNED_SRS_GROUP_LABELS.map(({ key, label }) => (
               <div key={label} className="min-w-[84px] flex-1 rounded-xl border border-line bg-surface-muted p-2 text-center">
                 <p className="text-[10px] font-bold uppercase text-foreground/70">{label}</p>
                 <p className="text-xl font-black leading-none text-foreground">{formatNumber(stageCountByKey[key])}</p>
@@ -164,7 +164,7 @@ export default function LeaderboardExpandedRow({
                 <span className="subject-pill subject-pill--vocabulary">Vocabulary</span>
               </div>
               <div className="mt-2 space-y-1">
-                {LEADERBOARD_SRS_STAGE_LABELS.map(({ key, label }) => {
+                {LEARNED_SRS_GROUP_LABELS.map(({ key, label }) => {
                   const data = spread[key];
 
                   return (

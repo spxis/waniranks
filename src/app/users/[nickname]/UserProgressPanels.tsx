@@ -1,6 +1,7 @@
 "use client";
 
-import { ITEM_SPREAD_STAGE_LABELS, LEVEL_PROGRESS_CARDS } from "@/app/users/[nickname]/UserDashboard.constants";
+import { LEVEL_PROGRESS_CARDS } from "@/app/users/[nickname]/UserDashboard.constants";
+import { LEARNED_SRS_GROUP_LABELS } from "@/lib/domainConstants";
 import { usePersistedBoolean } from "@/lib/usePersistedBoolean";
 
 type ItemSpreadRow = {
@@ -93,7 +94,7 @@ export default function UserProgressPanels({
 
         {showItemSpread ? (
           <div className="mt-4 space-y-2">
-            {ITEM_SPREAD_STAGE_LABELS.map(({ key, label }) => {
+            {LEARNED_SRS_GROUP_LABELS.map(({ key, label }) => {
               const row = itemSpread[key];
 
               return (

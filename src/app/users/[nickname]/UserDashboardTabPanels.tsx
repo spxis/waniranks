@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  LEARNED_SRS_GROUP_LABELS,
   LEARNED_SRS_GROUPS,
+  SUBJECT_TYPES,
   WK_STATUSES,
   type SrsProgressStatus,
+  type SubjectType,
 } from "@/lib/domainConstants";
 import type { ItemSpread, ItemSpreadRow } from "@/lib/itemSpread";
 import {
@@ -18,7 +21,6 @@ import {
 import {
   DASHBOARD_SRS_LINKS,
   DASHBOARD_SUBJECT_TYPES,
-  ITEM_SPREAD_STAGE_LABELS,
 } from "./UserDashboard.constants";
 
 import { subjectTypePluralLabel } from "./shared/subjectTypeLabels";
@@ -134,7 +136,7 @@ export function ItemSpreadTabPanel({ itemSpread, itemSpreadDetails }: ItemSpread
     Object.fromEntries(LEARNED_SRS_GROUPS.map((group) => [group, false])) as Record<SrsGroupKey, boolean>,
   );
 
-  const groupedRows: Array<[SrsGroupKey, string, ItemSpreadRow]> = ITEM_SPREAD_STAGE_LABELS.map(({ key, label }) => [
+  const groupedRows: Array<[SrsGroupKey, string, ItemSpreadRow]> = LEARNED_SRS_GROUP_LABELS.map(({ key, label }) => [
     key,
     label,
     itemSpread[key],
@@ -266,6 +268,12 @@ export function LevelProgressTabPanel({
   remainingToLevelUp,
   passedLevelUpGate,
 }: LevelProgressTabPanelProps) {
+  const levelProgressByType: Record<SubjectType, TypeProgress> = {
+    [SUBJECT_TYPES.radical]: levelRadicalProgress,
+    [SUBJECT_TYPES.kanji]: levelKanjiProgress,
+    [SUBJECT_TYPES.vocabulary]: levelVocabularyProgress,
+  };
+
   const storageKey = `wr:user:${accountId}:level-progress-view`;
   const [viewMode, setViewMode] = useState<"browser" | "last5">(() => {
     if (typeof window === "undefined") {
@@ -334,8 +342,7 @@ export function LevelProgressTabPanel({
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {DASHBOARD_SUBJECT_TYPES.map((type) => {
               const label = subjectTypePluralLabel(type);
-              const progress =
-                type === "radical" ? levelRadicalProgress : type === "kanji" ? levelKanjiProgress : levelVocabularyProgress;
+              const progress = levelProgressByType[type];
               const stageCounts: Array<[SrsProgressStatus, number]> = [
                 [WK_STATUSES.apprentice, progress.apprentice],
                 [WK_STATUSES.guru, progress.guru],
@@ -419,6 +426,12 @@ export function LevelProgressTabPanel({
               return null;
             }
 
+            const snapshotProgressByType: Record<SubjectType, TypeProgress> = {
+              [SUBJECT_TYPES.radical]: snapshot.radical,
+              [SUBJECT_TYPES.kanji]: snapshot.kanji,
+              [SUBJECT_TYPES.vocabulary]: snapshot.vocabulary,
+            };
+
             return (
               <article key={`last5-${level}`} className="rounded-2xl border border-line bg-surface p-3">
                 <div className="flex items-center justify-between">
@@ -430,8 +443,7 @@ export function LevelProgressTabPanel({
                 <div className="mt-2 grid gap-2 sm:grid-cols-3">
                   {DASHBOARD_SUBJECT_TYPES.map((type) => {
                     const label = subjectTypePluralLabel(type);
-                    const progress =
-                      type === "radical" ? snapshot.radical : type === "kanji" ? snapshot.kanji : snapshot.vocabulary;
+                    const progress = snapshotProgressByType[type];
 
                     return (
                     <div key={`${level}-${label}`} className="rounded-xl border border-line bg-surface-muted px-3 py-2">
