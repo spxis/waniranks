@@ -1,4 +1,4 @@
-import type { LevelItem } from "../../explorerTypes";
+import type { LevelItem, SrsFilter } from "../../explorerTypes";
 import { subjectTypeShortLabel } from "../../shared/subjectTypeLabels";
 import type { TypeFilter } from "./levelExplorerState";
 import { LEVEL_SRS_FILTERS, LEVEL_TYPE_FILTERS } from "./levelExplorerState";
@@ -47,7 +47,7 @@ export function shortSubjectTypeLabel(type: LevelItem["subjectType"]): string {
 }
 
 export function srsFilterButtonLabel(
-  status: "all" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "locked",
+  status: SrsFilter,
 ): string {
   switch (status) {
     case LEVEL_SRS_FILTERS.all:

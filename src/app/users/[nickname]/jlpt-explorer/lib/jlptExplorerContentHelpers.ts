@@ -1,3 +1,5 @@
+import { SUBJECT_STATUSES, type SubjectStatus } from "@/lib/domainConstants";
+
 export type JlptWordExample = {
   written: string;
   pronounced: string;
@@ -31,13 +33,13 @@ export function parseWordExamples(input: unknown): JlptWordExample[] {
 }
 
 export function jlptStatusClass(
-  status: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | undefined,
+  status: SubjectStatus | undefined,
 ): string {
-  if (status === "locked") return "bg-surface-muted text-foreground/70";
-  if (status === "apprentice") return "bg-pink-100 text-pink-700";
-  if (status === "guru") return "bg-violet-100 text-violet-700";
-  if (status === "master") return "bg-sky-100 text-sky-700";
-  if (status === "enlightened") return "bg-amber-100 text-amber-700";
-  if (status === "burned") return "bg-surface-muted text-foreground/80";
+  if (status === SUBJECT_STATUSES.locked) return "bg-surface-muted text-foreground/70";
+  if (status === SUBJECT_STATUSES.apprentice) return "bg-pink-100 text-pink-700";
+  if (status === SUBJECT_STATUSES.guru) return "bg-violet-100 text-violet-700";
+  if (status === SUBJECT_STATUSES.master) return "bg-sky-100 text-sky-700";
+  if (status === SUBJECT_STATUSES.enlightened) return "bg-amber-100 text-amber-700";
+  if (status === SUBJECT_STATUSES.burned) return "bg-surface-muted text-foreground/80";
   return "bg-surface-muted text-foreground/65";
 }

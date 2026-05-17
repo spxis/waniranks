@@ -1,5 +1,11 @@
 import type { TabId } from "./UserDashboardTabs.types";
 import type { StudySrsFilter, StudySrsStageFilter, StudyTypeFilter } from "./study-explorer/lib/studyExplorerTypes";
+import {
+  isStudySrsFilterValue,
+  isStudyTypeFilterValue,
+  STUDY_SRS_FILTERS,
+  STUDY_TYPE_FILTERS,
+} from "./study-explorer/lib/studyExplorerDomain";
 
 type QueryShape = {
   dashboard?: string;
@@ -16,18 +22,12 @@ type QueryShape = {
 type ReadTab = "news" | "history" | "stats";
 
 export function resolveInitialSrsFilter(query: QueryShape): StudySrsFilter {
-  if (
-    query.srs === "locked"
-    || query.srs === "apprentice"
-    || query.srs === "guru"
-    || query.srs === "master"
-    || query.srs === "enlightened"
-    || query.srs === "burned"
-  ) {
-    return query.srs;
+  const srs = query.srs ?? null;
+  if (isStudySrsFilterValue(srs)) {
+    return srs;
   }
 
-  return "all";
+  return STUDY_SRS_FILTERS.all;
 }
 
 export function resolveInitialStudyFilters(query: QueryShape): {
@@ -38,10 +38,11 @@ export function resolveInitialStudyFilters(query: QueryShape): {
   recentOnly: boolean;
   showLocked: boolean;
 } {
+  const initialType = query.type ?? null;
   const typeFilter: StudyTypeFilter =
-    query.type === "radical" || query.type === "kanji" || query.type === "vocabulary"
-      ? query.type
-      : "all";
+    isStudyTypeFilterValue(initialType)
+      ? initialType
+      : STUDY_TYPE_FILTERS.all;
 
   const parsedStudyLevel = Number(query.level ?? "");
   const viewedLevel = Number.isInteger(parsedStudyLevel) && parsedStudyLevel > 0

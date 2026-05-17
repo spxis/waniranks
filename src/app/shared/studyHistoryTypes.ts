@@ -1,16 +1,11 @@
-export type HistorySrsBucket =
-  | "locked"
-  | "apprentice"
-  | "guru"
-  | "master"
-  | "enlightened"
-  | "burned"
-  | "unknown";
+import type { SrsBucket, SubjectStatus, SubjectType } from "@/lib/domainConstants";
+
+export type HistorySrsBucket = SrsBucket;
 
 export type HistorySubjectData = {
   subjectId?: number;
-  subjectType?: "kanji" | "radical" | "vocabulary";
-  status?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+  subjectType?: SubjectType;
+  status?: SubjectStatus;
   characters?: string;
   meanings?: string[];
   readings?: string[];

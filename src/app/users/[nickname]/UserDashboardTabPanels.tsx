@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { subjectTypePluralLabel } from "./shared/subjectTypeLabels";
+import { SUBJECT_STATUSES, type SubjectStatus } from "@/lib/domainConstants";
 import type {
   ItemSpread,
   ItemSpreadGroupDetails,
@@ -78,11 +79,11 @@ export function MainTabPanel({
         </article>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-1.5 sm:mt-4 sm:gap-2 lg:grid-cols-8">
-        <SrsLink label="Apprentice" shortLabel="Appr" query="apprentice" value={apprenticeCount} />
-        <SrsLink label="Guru" shortLabel="Guru" query="guru" value={guruCount} />
-        <SrsLink label="Master" shortLabel="Mstr" query="master" value={masterCount} />
-        <SrsLink label="Enlightened" shortLabel="Enl" query="enlightened" value={enlightenedCount} />
-        <SrsLink label="Burned" shortLabel="Burn" query="burned" value={burnedCount} />
+        <SrsLink label="Apprentice" shortLabel="Appr" query={SUBJECT_STATUSES.apprentice} value={apprenticeCount} />
+        <SrsLink label="Guru" shortLabel="Guru" query={SUBJECT_STATUSES.guru} value={guruCount} />
+        <SrsLink label="Master" shortLabel="Mstr" query={SUBJECT_STATUSES.master} value={masterCount} />
+        <SrsLink label="Enlightened" shortLabel="Enl" query={SUBJECT_STATUSES.enlightened} value={enlightenedCount} />
+        <SrsLink label="Burned" shortLabel="Burn" query={SUBJECT_STATUSES.burned} value={burnedCount} />
         <div className="rounded-lg border border-radical/40 bg-radical/10 px-1.5 py-1.5 text-center text-[10px] font-semibold text-radical sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm">
           <span className="block"><span className="sm:hidden">Rad:</span><span className="hidden sm:inline">{subjectTypePluralLabel("radical")}:</span></span>
           <span className="mt-0.5 block text-xl font-black leading-none sm:text-4xl">{formatNumber(radicalCount)}</span>
@@ -444,37 +445,37 @@ export function LevelProgressTabPanel({
   );
 }
 
-function srsSegmentClass(stage: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned"): string {
-  if (stage === "locked") return "bg-foreground/15";
-  if (stage === "apprentice") return "bg-hot";
-  if (stage === "guru") return "bg-accent";
-  if (stage === "master") return "bg-sky-500";
-  if (stage === "enlightened") return "bg-amber-500";
+function srsSegmentClass(stage: SubjectStatus): string {
+  if (stage === SUBJECT_STATUSES.locked) return "bg-foreground/15";
+  if (stage === SUBJECT_STATUSES.apprentice) return "bg-hot";
+  if (stage === SUBJECT_STATUSES.guru) return "bg-accent";
+  if (stage === SUBJECT_STATUSES.master) return "bg-sky-500";
+  if (stage === SUBJECT_STATUSES.enlightened) return "bg-amber-500";
   return "bg-emerald-500";
 }
 
-function srsSegmentTextClass(stage: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned"): string {
-  if (stage === "enlightened") return "text-slate-900";
-  if (stage === "locked") return "text-slate-900";
+function srsSegmentTextClass(stage: SubjectStatus): string {
+  if (stage === SUBJECT_STATUSES.enlightened) return "text-slate-900";
+  if (stage === SUBJECT_STATUSES.locked) return "text-slate-900";
   return "text-white";
 }
 
-function srsBadgeClass(stage: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned"): string {
-  if (stage === "apprentice") return "border-hot/40 bg-hot/10 text-hot";
-  if (stage === "guru") return "border-accent/40 bg-accent/10 text-accent";
-  if (stage === "master") return "border-sky-500/40 bg-sky-500/10 text-sky-700";
-  if (stage === "enlightened") return "border-amber-500/40 bg-amber-500/10 text-amber-800";
-  if (stage === "burned") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-800";
+function srsBadgeClass(stage: SubjectStatus): string {
+  if (stage === SUBJECT_STATUSES.apprentice) return "border-hot/40 bg-hot/10 text-hot";
+  if (stage === SUBJECT_STATUSES.guru) return "border-accent/40 bg-accent/10 text-accent";
+  if (stage === SUBJECT_STATUSES.master) return "border-sky-500/40 bg-sky-500/10 text-sky-700";
+  if (stage === SUBJECT_STATUSES.enlightened) return "border-amber-500/40 bg-amber-500/10 text-amber-800";
+  if (stage === SUBJECT_STATUSES.burned) return "border-emerald-500/40 bg-emerald-500/10 text-emerald-800";
   return "border-foreground/30 bg-foreground/10 text-foreground";
 }
 
-function stageLabel(stage: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned"): string {
-  if (stage === "locked") return "Lock";
-  if (stage === "apprentice") return "Appr";
-  if (stage === "guru") return "Guru";
-  if (stage === "master") return "Mast";
-  if (stage === "enlightened") return "Enli";
-  if (stage === "burned") return "Burn";
+function stageLabel(stage: SubjectStatus): string {
+  if (stage === SUBJECT_STATUSES.locked) return "Lock";
+  if (stage === SUBJECT_STATUSES.apprentice) return "Appr";
+  if (stage === SUBJECT_STATUSES.guru) return "Guru";
+  if (stage === SUBJECT_STATUSES.master) return "Mast";
+  if (stage === SUBJECT_STATUSES.enlightened) return "Enli";
+  if (stage === SUBJECT_STATUSES.burned) return "Burn";
   return "Lock";
 }
 

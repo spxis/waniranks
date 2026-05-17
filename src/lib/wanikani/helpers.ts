@@ -6,35 +6,31 @@ import type {
   WaniKaniCollectionResponse,
   WaniKaniResponseHeaders,
 } from "./types";
+import { SUBJECT_STATUSES, SUBJECT_TYPES, type SubjectStatus } from "@/lib/domainConstants";
 
 export function srsLabel(stage: number, locked: boolean):
-  | "locked"
-  | "apprentice"
-  | "guru"
-  | "master"
-  | "enlightened"
-  | "burned" {
+  SubjectStatus {
   if (locked) {
-    return "locked";
+    return SUBJECT_STATUSES.locked;
   }
 
   if (stage >= 9) {
-    return "burned";
+    return SUBJECT_STATUSES.burned;
   }
 
   if (stage >= 8) {
-    return "enlightened";
+    return SUBJECT_STATUSES.enlightened;
   }
 
   if (stage >= 7) {
-    return "master";
+    return SUBJECT_STATUSES.master;
   }
 
   if (stage >= 5) {
-    return "guru";
+    return SUBJECT_STATUSES.guru;
   }
 
-  return "apprentice";
+  return SUBJECT_STATUSES.apprentice;
 }
 
 export function toDate(value: unknown): Date | null {
@@ -47,12 +43,12 @@ export function toDate(value: unknown): Date | null {
 }
 
 export function normalizeAssignmentType(input: string): "radical" | "kanji" | "vocabulary" | null {
-  if (input === "radical" || input === "kanji") {
+  if (input === SUBJECT_TYPES.radical || input === SUBJECT_TYPES.kanji) {
     return input;
   }
 
-  if (input === "vocabulary" || input === "kana_vocabulary") {
-    return "vocabulary";
+  if (input === SUBJECT_TYPES.vocabulary || input === "kana_vocabulary") {
+    return SUBJECT_TYPES.vocabulary;
   }
 
   return null;

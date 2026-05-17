@@ -6,6 +6,7 @@ import type {
   StudyTypeFilter,
   StudyViewerMode,
 } from "./studyExplorerTypes";
+import { SUBJECT_STATUSES, SUBJECT_TYPES } from "@/lib/domainConstants";
 
 export const STUDY_QUEUE_TYPES = {
   review: "review",
@@ -18,9 +19,9 @@ export const STUDY_VIEWER_MODES = {
 } as const;
 
 export const STUDY_SUBJECT_TYPES = {
-  radical: "radical",
-  kanji: "kanji",
-  vocabulary: "vocabulary",
+  radical: SUBJECT_TYPES.radical,
+  kanji: SUBJECT_TYPES.kanji,
+  vocabulary: SUBJECT_TYPES.vocabulary,
 } as const;
 
 export const STUDY_TYPE_FILTERS = {
@@ -31,12 +32,12 @@ export const STUDY_TYPE_FILTERS = {
 } as const;
 
 export const STUDY_SUBJECT_STATUSES = {
-  locked: "locked",
-  apprentice: "apprentice",
-  guru: "guru",
-  master: "master",
-  enlightened: "enlightened",
-  burned: "burned",
+  locked: SUBJECT_STATUSES.locked,
+  apprentice: SUBJECT_STATUSES.apprentice,
+  guru: SUBJECT_STATUSES.guru,
+  master: SUBJECT_STATUSES.master,
+  enlightened: SUBJECT_STATUSES.enlightened,
+  burned: SUBJECT_STATUSES.burned,
 } as const;
 
 export const STUDY_SRS_FILTERS = {

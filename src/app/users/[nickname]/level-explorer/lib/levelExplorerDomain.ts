@@ -1,18 +1,19 @@
 import type { LevelItem } from "../../explorerTypes";
+import { SUBJECT_STATUSES, SUBJECT_TYPES } from "@/lib/domainConstants";
 
 export const LEVEL_SUBJECT_TYPES = {
-  radical: "radical",
-  kanji: "kanji",
-  vocabulary: "vocabulary",
+  radical: SUBJECT_TYPES.radical,
+  kanji: SUBJECT_TYPES.kanji,
+  vocabulary: SUBJECT_TYPES.vocabulary,
 } as const;
 
 export const LEVEL_SUBJECT_STATUSES = {
-  locked: "locked",
-  apprentice: "apprentice",
-  guru: "guru",
-  master: "master",
-  enlightened: "enlightened",
-  burned: "burned",
+  locked: SUBJECT_STATUSES.locked,
+  apprentice: SUBJECT_STATUSES.apprentice,
+  guru: SUBJECT_STATUSES.guru,
+  master: SUBJECT_STATUSES.master,
+  enlightened: SUBJECT_STATUSES.enlightened,
+  burned: SUBJECT_STATUSES.burned,
 } as const;
 
 export function isRadicalSubjectType(type: LevelItem["subjectType"]): boolean {

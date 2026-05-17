@@ -1,10 +1,4 @@
-export type SubjectStatus =
-  | "locked"
-  | "apprentice"
-  | "guru"
-  | "master"
-  | "enlightened"
-  | "burned";
+import type { SubjectStatus, SubjectType } from "@/lib/domainConstants";
 
 export type RelatedReference = {
   subjectId: number;
@@ -16,7 +10,7 @@ export type RelatedReference = {
 
 export type LevelItem = {
   subjectId: number;
-  subjectType?: "kanji" | "radical" | "vocabulary";
+  subjectType?: SubjectType;
   wkLevel?: number;
   characters: string;
   meanings: string[];
@@ -95,9 +89,4 @@ export type UserKanjiItem = {
 
 export type SrsFilter =
   | "all"
-  | "apprentice"
-  | "guru"
-  | "master"
-  | "enlightened"
-  | "burned"
-  | "locked";
+  | SubjectStatus;

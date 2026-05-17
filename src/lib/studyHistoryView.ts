@@ -1,4 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import {
+  isSubjectStatus,
+  srsBucketFromStage,
+  type SrsBucket,
+  type SubjectStatus,
+  type SubjectType,
+} from "@/lib/domainConstants";
 
 export type StudyHistorySortBy = "submittedAt" | "result" | "subjectType" | "subject" | "user";
 export type StudyHistorySortDir = "asc" | "desc";
@@ -18,7 +25,7 @@ export type StudyHistoryRow = {
   subjectMeaning: string | null;
   wkLevel: number | null;
   srsStage: number | null;
-  srsBucket: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "unknown";
+  srsBucket: SrsBucket;
   subjectData: SnapshotItem | null;
 };
 
@@ -29,7 +36,7 @@ export type StudyHistoryPage = {
   availableLevels: number[];
   availableSrs: number[];
   availableSrsBuckets: Array<
-    "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "unknown"
+    SrsBucket
   >;
   pagination: {
     page: number;
@@ -46,7 +53,7 @@ type QueryArgs = {
   result?: "correct" | "wrong" | "skipped";
   level?: number;
   srs?: number;
-  srsBucket?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+  srsBucket?: SubjectStatus;
   page: number;
   pageSize: number;
   sortBy: StudyHistorySortBy;
@@ -55,8 +62,8 @@ type QueryArgs = {
 
 type SnapshotItem = {
   subjectId?: number;
-  subjectType?: "kanji" | "radical" | "vocabulary";
-  status?: "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned";
+  subjectType?: SubjectType;
+  status?: SubjectStatus;
   characters?: string;
   meanings?: string[];
   readings?: string[];
@@ -86,8 +93,6 @@ type SnapshotItem = {
   wkLevel?: number;
   srsStage?: number;
 };
-
-type SrsBucket = "locked" | "apprentice" | "guru" | "master" | "enlightened" | "burned" | "unknown";
 
 function parseSnapshotItems(raw: unknown): SnapshotItem[] {
   if (!Array.isArray(raw)) {
@@ -140,14 +145,7 @@ function normalizeResult(raw: string | null): QueryArgs["result"] {
 }
 
 function normalizeSrsBucket(raw: string | null): QueryArgs["srsBucket"] {
-  if (
-    raw === "locked" ||
-    raw === "apprentice" ||
-    raw === "guru" ||
-    raw === "master" ||
-    raw === "enlightened" ||
-    raw === "burned"
-  ) {
+  if (isSubjectStatus(raw)) {
     return raw;
   }
 
@@ -155,30 +153,7 @@ function normalizeSrsBucket(raw: string | null): QueryArgs["srsBucket"] {
 }
 
 function getSrsBucketFromStage(stage: number | null): SrsBucket {
-  if (!Number.isInteger(stage) || stage === null) {
-    return "unknown";
-  }
-
-  if (stage <= 0) {
-    return "locked";
-  }
-  if (stage <= 4) {
-    return "apprentice";
-  }
-  if (stage <= 6) {
-    return "guru";
-  }
-  if (stage === 7) {
-    return "master";
-  }
-  if (stage === 8) {
-    return "enlightened";
-  }
-  if (stage >= 9) {
-    return "burned";
-  }
-
-  return "unknown";
+  return srsBucketFromStage(stage);
 }
 
 function normalizeOptionalPositiveInt(raw: string | null): number | undefined {

@@ -54,22 +54,22 @@ export const STUDY_PANEL_TEXT = {
 } as const;
 
 export const STUDY_PANEL_SRS_STATUSES = [
-  "all",
-  "apprentice",
-  "guru",
-  "master",
-  "enlightened",
-  "burned",
-  "locked",
+  STUDY_SRS_FILTERS.all,
+  STUDY_SRS_FILTERS.apprentice,
+  STUDY_SRS_FILTERS.guru,
+  STUDY_SRS_FILTERS.master,
+  STUDY_SRS_FILTERS.enlightened,
+  STUDY_SRS_FILTERS.burned,
+  STUDY_SRS_FILTERS.locked,
 ] as const;
 
 export function getSrsStageOptions(filter: StudySrsFilter): ReadonlyArray<StudySrsStageFilter> {
-  if (filter === "apprentice") return [1, 2, 3, 4] as const;
-  if (filter === "guru") return [5, 6] as const;
-  if (filter === "master") return [7] as const;
-  if (filter === "enlightened") return [8] as const;
-  if (filter === "burned") return [9] as const;
-  if (filter === "locked") return [] as const;
+  if (filter === STUDY_SRS_FILTERS.apprentice) return [1, 2, 3, 4] as const;
+  if (filter === STUDY_SRS_FILTERS.guru) return [5, 6] as const;
+  if (filter === STUDY_SRS_FILTERS.master) return [7] as const;
+  if (filter === STUDY_SRS_FILTERS.enlightened) return [8] as const;
+  if (filter === STUDY_SRS_FILTERS.burned) return [9] as const;
+  if (filter === STUDY_SRS_FILTERS.locked) return [] as const;
   return [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 }
 

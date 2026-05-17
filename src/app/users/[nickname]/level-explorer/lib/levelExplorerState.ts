@@ -1,14 +1,15 @@
 import type { SrsFilter } from "../../explorerTypes";
+import { SUBJECT_STATUSES, SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
 
-export type TypeFilter = "all" | "kanji" | "radical" | "vocabulary";
+export type TypeFilter = "all" | SubjectType;
 export type JlptFilter = "all" | "none" | "n1" | "n2" | "n3" | "n4" | "n5";
 export type ReviewTimingFilter = "all" | "overdue" | "next1h" | "next8h" | "next24h" | "next72h";
 
 export const LEVEL_TYPE_FILTERS = {
   all: "all",
-  radical: "radical",
-  kanji: "kanji",
-  vocabulary: "vocabulary",
+  radical: SUBJECT_TYPES.radical,
+  kanji: SUBJECT_TYPES.kanji,
+  vocabulary: SUBJECT_TYPES.vocabulary,
 } as const;
 
 export const LEVEL_JLPT_FILTERS = {
@@ -32,12 +33,12 @@ export const LEVEL_REVIEW_TIMING_FILTERS = {
 
 export const LEVEL_SRS_FILTERS = {
   all: "all",
-  apprentice: "apprentice",
-  guru: "guru",
-  master: "master",
-  enlightened: "enlightened",
-  burned: "burned",
-  locked: "locked",
+  apprentice: SUBJECT_STATUSES.apprentice,
+  guru: SUBJECT_STATUSES.guru,
+  master: SUBJECT_STATUSES.master,
+  enlightened: SUBJECT_STATUSES.enlightened,
+  burned: SUBJECT_STATUSES.burned,
+  locked: SUBJECT_STATUSES.locked,
 } as const;
 
 export type ExplorerUrlState = {
