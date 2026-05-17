@@ -1,6 +1,6 @@
 import { fetchAllCollectionPages, fetchWaniKani } from "@/lib/wanikani/http";
 import type { WaniKaniCollectionResponse } from "@/lib/wanikani/types";
-import { SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
+import { QUEUE_TYPES, SUBJECT_TYPES, type QueueType, type SubjectType } from "@/lib/domainConstants";
 
 export type AssignmentData = {
   subject_id: number;
@@ -26,7 +26,7 @@ export type SubjectData = {
   reading_mnemonic?: string;
 };
 
-export type QueueMode = "review" | "lesson";
+export type QueueMode = QueueType;
 
 export type AssignmentRow = {
   id: number;
@@ -58,7 +58,7 @@ export function normalizeSubjectType(input: string): SubjectType {
 }
 
 export function modePathParam(mode: QueueMode): string {
-  return mode === "review"
+  return mode === QUEUE_TYPES.review
     ? "immediately_available_for_review=true"
     : "srs_stages=0";
 }
@@ -117,14 +117,14 @@ export function trimSubjectCache(input: Map<number, CachedSubjectRow>, activeSub
 
 export function queueRowsFromState(
   state: QueueSyncState,
-  queueType: "review" | "lesson",
-): Array<{ assignmentId: number; data: AssignmentData; queueType: "review" | "lesson" }> {
-  const rows: Array<{ assignmentId: number; data: AssignmentData; queueType: "review" | "lesson" }> = [];
+  queueType: QueueType,
+): Array<{ assignmentId: number; data: AssignmentData; queueType: QueueType }> {
+  const rows: Array<{ assignmentId: number; data: AssignmentData; queueType: QueueType }> = [];
 
   for (const assignment of state.assignmentById.values()) {
     // "Lessons" in this UI means unstarted lessons. Once started, they should
     // move out of the lesson queue (even if WK still reports srs_stage=0).
-    if (queueType === "lesson" && assignment.data.started_at) {
+    if (queueType === QUEUE_TYPES.lesson && assignment.data.started_at) {
       continue;
     }
 

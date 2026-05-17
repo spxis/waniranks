@@ -4,6 +4,13 @@ export const SUBJECT_TYPES = {
   vocabulary: "vocabulary",
 } as const;
 
+export const QUEUE_TYPES = {
+  review: "review",
+  lesson: "lesson",
+} as const;
+
+export type QueueType = (typeof QUEUE_TYPES)[keyof typeof QUEUE_TYPES];
+
 export type SubjectType = (typeof SUBJECT_TYPES)[keyof typeof SUBJECT_TYPES];
 
 export const SUBJECT_TYPE_DISPLAY: Record<

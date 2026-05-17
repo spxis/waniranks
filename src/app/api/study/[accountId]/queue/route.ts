@@ -5,7 +5,7 @@ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { getCachedStudyQueue, setCachedStudyQueue } from "@/lib/studyQueueCache";
-import { SUBJECT_TYPES } from "@/lib/domainConstants";
+import { QUEUE_TYPES, SUBJECT_TYPES } from "@/lib/domainConstants";
 import { srsLabel } from "@/lib/wanikani/helpers";
 import {
   fetchAssignmentCount,
@@ -29,7 +29,12 @@ export async function GET(request: Request, context: RouteContext) {
       try {
         const url = new URL(request.url);
         const modeParam = url.searchParams.get("mode");
-        const mode = modeParam === "lesson" ? "lesson" : modeParam === "all" ? "all" : "review";
+        const mode =
+          modeParam === QUEUE_TYPES.lesson
+            ? QUEUE_TYPES.lesson
+            : modeParam === "all"
+              ? "all"
+              : QUEUE_TYPES.review;
         const limitParam = Number(url.searchParams.get("limit") ?? "");
         const offsetParam = Number(url.searchParams.get("offset") ?? "");
         const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null;
@@ -62,7 +67,7 @@ export async function GET(request: Request, context: RouteContext) {
     const cached = getCachedStudyQueue(accountId, mode);
     if (cached) {
       const cachedItems = cached.items as Array<{
-        queueType: "review" | "lesson";
+        queueType: typeof QUEUE_TYPES.review | typeof QUEUE_TYPES.lesson;
       }>;
       const pagedItems = limit === null ? cachedItems : cachedItems.slice(offset, offset + limit);
 
@@ -100,16 +105,16 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     const reviewState =
-      mode === "lesson" ? null : await hydrateQueueSyncState(accountId, "review", token);
+      mode === QUEUE_TYPES.lesson ? null : await hydrateQueueSyncState(accountId, QUEUE_TYPES.review, token);
     const lessonState =
-      mode === "review" ? null : await hydrateQueueSyncState(accountId, "lesson", token);
+      mode === QUEUE_TYPES.review ? null : await hydrateQueueSyncState(accountId, QUEUE_TYPES.lesson, token);
 
-    const reviewAssignments = reviewState ? queueRowsFromState(reviewState, "review") : [];
-    const lessonAssignments = lessonState ? queueRowsFromState(lessonState, "lesson") : [];
+    const reviewAssignments = reviewState ? queueRowsFromState(reviewState, QUEUE_TYPES.review) : [];
+    const lessonAssignments = lessonState ? queueRowsFromState(lessonState, QUEUE_TYPES.lesson) : [];
     const queued =
       mode === "all"
         ? [...reviewAssignments, ...lessonAssignments]
-        : mode === "lesson"
+        : mode === QUEUE_TYPES.lesson
           ? lessonAssignments
           : reviewAssignments;
 
@@ -300,8 +305,8 @@ export async function GET(request: Request, context: RouteContext) {
         };
       })
       .sort((a, b) => {
-        const aReview = a.queueType === "review" ? 0 : 1;
-        const bReview = b.queueType === "review" ? 0 : 1;
+        const aReview = a.queueType === QUEUE_TYPES.review ? 0 : 1;
+        const bReview = b.queueType === QUEUE_TYPES.review ? 0 : 1;
         if (aReview !== bReview) {
           return aReview - bReview;
         }
@@ -322,7 +327,7 @@ export async function GET(request: Request, context: RouteContext) {
           reviews: reviewAssignments.length,
           lessons: lessonAssignments.length,
           }
-        : mode === "lesson"
+        : mode === QUEUE_TYPES.lesson
           ? {
               lessons: items.length,
               reviews: await fetchAssignmentCount("/assignments?immediately_available_for_review=true", token),

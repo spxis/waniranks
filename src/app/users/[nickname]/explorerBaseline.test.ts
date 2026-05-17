@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SUBJECT_TYPES } from "@/lib/domainConstants";
+import { SUBJECT_TYPES, WK_STATUSES } from "@/lib/domainConstants";
 
 import type { LevelItem, Snapshot } from "./explorerTypes";
 import { matchesJlptSearch, normalizeReadingForSearch, readingLabel } from "./jlpt-explorer/lib/jlptDisplay";
@@ -33,7 +33,7 @@ function makeSnapshot(level: number, items: LevelItem[]): Snapshot {
     kanjiTotal: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji).length,
     kanjiLearned: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.srsStage > 0).length,
     kanjiGuruPlus: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.srsStage >= 5).length,
-    kanjiLocked: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.status === "locked").length,
+    kanjiLocked: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.status === WK_STATUSES.locked).length,
     estimatedHoursRemaining: null,
     items,
     syncedAt: `2026-01-${String(level).padStart(2, "0")}T00:00:00.000Z`,

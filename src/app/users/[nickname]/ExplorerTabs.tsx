@@ -8,12 +8,13 @@ import LevelExplorer from "./level-explorer/components/LevelExplorer";
 import StudyExplorer from "./study-explorer/components/StudyExplorer";
 import type { JlptItem, Snapshot, SrsFilter, UserKanjiItem } from "./explorerTypes";
 import type { StudySrsFilter, StudySrsStageFilter, StudyTypeFilter } from "./study-explorer/lib/studyExplorerTypes";
+import { QUEUE_TYPES, type QueueType } from "@/lib/domainConstants";
 
 type Props = {
   accountId: string;
   maxLevel: number;
   accountPendingReviews: number;
-  initialQueueMode?: "review" | "lesson" | null;
+  initialQueueMode?: QueueType | null;
   initialStudyMode?: boolean | null;
   initialSnapshot: Snapshot;
   initialSrsFilter: SrsFilter;
@@ -77,8 +78,8 @@ export default function ExplorerTabs({
     return window.localStorage.getItem(showEnglishStorageKey) === "1";
   });
   const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
-  const [queueMode, setQueueMode] = useState<"review" | "lesson">(() => {
-    if (initialQueueMode === "review" || initialQueueMode === "lesson") {
+  const [queueMode, setQueueMode] = useState<QueueType>(() => {
+    if (initialQueueMode === QUEUE_TYPES.review || initialQueueMode === QUEUE_TYPES.lesson) {
       return initialQueueMode;
     }
 
@@ -88,13 +89,13 @@ export default function ExplorerTabs({
 
     const params = new URLSearchParams(window.location.search);
     const urlMode = params.get("mode");
-    if (urlMode === "review" || urlMode === "lesson") {
+    if (urlMode === QUEUE_TYPES.review || urlMode === QUEUE_TYPES.lesson) {
       return urlMode;
     }
 
-    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === "lesson"
-      ? "lesson"
-      : "review";
+    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === QUEUE_TYPES.lesson
+      ? QUEUE_TYPES.lesson
+      : QUEUE_TYPES.review;
   });
   const [initialViewerMode] = useState<"detail" | "flash" | null>(() => {
     if (typeof window === "undefined") {
@@ -278,7 +279,7 @@ export default function ExplorerTabs({
       const params = new URLSearchParams(window.location.search);
       setActiveTab(params.get("tab") === "jlpt" ? "jlpt" : params.get("tab") === "level" ? "level" : "study");
       const urlMode = params.get("mode");
-      if (urlMode === "review" || urlMode === "lesson") setQueueMode(urlMode);
+      if (urlMode === QUEUE_TYPES.review || urlMode === QUEUE_TYPES.lesson) setQueueMode(urlMode);
       const urlStudyMode = params.get("studyMode");
       if (urlStudyMode === "on" || urlStudyMode === "1") {
         setStudyMode(true);
@@ -332,13 +333,13 @@ export default function ExplorerTabs({
       : "inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted";
   }
 
-  function queueModeSegmentClass(mode: "review" | "lesson", activeMode: "review" | "lesson"): string {
+  function queueModeSegmentClass(mode: QueueType, activeMode: QueueType): string {
     const active = mode === activeMode;
     if (!active) {
       return "inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted";
     }
 
-    return mode === "review"
+    return mode === QUEUE_TYPES.review
       ? "inline-flex h-8 items-center justify-center rounded-full border border-amber-500 bg-amber-500 px-4 text-xs font-bold uppercase tracking-[0.1em] text-white"
       : "inline-flex h-8 items-center justify-center rounded-full border border-sky-500 bg-sky-500 px-4 text-xs font-bold uppercase tracking-[0.1em] text-white";
   }
@@ -389,18 +390,18 @@ export default function ExplorerTabs({
               <button
                 type="button"
                 role="tab"
-                aria-selected={queueMode === "review"}
-                onClick={() => setQueueMode("review")}
-                className={queueModeSegmentClass("review", queueMode)}
+                aria-selected={queueMode === QUEUE_TYPES.review}
+                onClick={() => setQueueMode(QUEUE_TYPES.review)}
+                className={queueModeSegmentClass(QUEUE_TYPES.review, queueMode)}
               >
                 Reviews ({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})
               </button>
               <button
                 type="button"
                 role="tab"
-                aria-selected={queueMode === "lesson"}
-                onClick={() => setQueueMode("lesson")}
-                className={queueModeSegmentClass("lesson", queueMode)}
+                aria-selected={queueMode === QUEUE_TYPES.lesson}
+                onClick={() => setQueueMode(QUEUE_TYPES.lesson)}
+                className={queueModeSegmentClass(QUEUE_TYPES.lesson, queueMode)}
               >
                 Lessons ({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})
               </button>

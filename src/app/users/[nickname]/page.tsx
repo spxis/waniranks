@@ -9,6 +9,7 @@ import ExplorerTabs from "./ExplorerTabs";
 import UserReadPanel from "./UserReadPanel";
 import UserDashboardTabs from "./UserDashboardTabs";
 import {
+  QUEUE_TYPES,
   LEARNED_SRS_GROUPS,
   WK_STATUSES,
   isSubjectType,
@@ -62,7 +63,12 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const initialSrsFilter = resolveInitialSrsFilter(query);
   const initialDashboardTab = resolveInitialDashboardTab(query);
   const initialReadTab = resolveInitialReadTab(query);
-  const initialQueueMode = query.mode === "lesson" ? "lesson" : query.mode === "review" ? "review" : null;
+  const initialQueueMode =
+    query.mode === QUEUE_TYPES.lesson
+      ? QUEUE_TYPES.lesson
+      : query.mode === QUEUE_TYPES.review
+        ? QUEUE_TYPES.review
+        : null;
   const initialStudyMode = query.studyMode === "on" || query.studyMode === "1" ? true : query.studyMode === "off" || query.studyMode === "0" ? false : null;
   const initialStudyFilters = resolveInitialStudyFilters(query);
 

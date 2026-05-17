@@ -18,9 +18,10 @@ import {
   type QueueSyncState,
   type SubjectData,
 } from "./queueRouteUtils";
+import { QUEUE_TYPES } from "@/lib/domainConstants";
 
 function queueModeSignature(mode: QueueMode): string {
-  return mode === "lesson" ? "lesson-srs0-v2" : "review-immediate-v1";
+  return mode === QUEUE_TYPES.lesson ? "lesson-srs0-v2" : "review-immediate-v1";
 }
 
 async function fetchEligibleAssignmentIds(
