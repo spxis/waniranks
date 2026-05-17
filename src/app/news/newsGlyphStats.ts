@@ -1,6 +1,7 @@
 "use client";
 
 import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
+import { SUBJECT_TYPES } from "@/lib/domainConstants";
 
 export const NEWS_GLYPH_STATS_EVENT = "uk:news-glyph-stats-changed";
 
@@ -9,6 +10,7 @@ const GLYPH_EVENTS_KEY = "uk:news-glyph-events";
 const MAX_EVENTS = 2000;
 
 export type NewsGlyphType = "kanji" | "vocabulary";
+const NEWS_GLYPH_TYPES = [SUBJECT_TYPES.kanji, SUBJECT_TYPES.vocabulary] as const;
 
 export type NewsGlyphStatEntry = {
   key: string;
@@ -30,6 +32,10 @@ export type NewsGlyphViewEvent = {
 };
 
 type StatsStore = Record<string, NewsGlyphStatEntry>;
+
+function isNewsGlyphType(value: unknown): value is NewsGlyphType {
+  return typeof value === "string" && (NEWS_GLYPH_TYPES as readonly string[]).includes(value);
+}
 
 export function readNewsGlyphStats(): NewsGlyphStatEntry[] {
   const store = getStoredJson<StatsStore>(GLYPH_STATS_KEY, {});
@@ -55,7 +61,7 @@ export function readNewsGlyphEvents(): NewsGlyphViewEvent[] {
     const glyphs = candidate.glyphs
       .filter((glyph) => glyph && typeof glyph === "object")
       .map((glyph) => glyph as { key?: string; label?: string; type?: NewsGlyphType })
-      .filter((glyph) => typeof glyph.key === "string" && typeof glyph.label === "string" && (glyph.type === "kanji" || glyph.type === "vocabulary"))
+      .filter((glyph) => typeof glyph.key === "string" && typeof glyph.label === "string" && isNewsGlyphType(glyph.type))
       .map((glyph) => ({
         key: glyph.key as string,
         label: glyph.label as string,

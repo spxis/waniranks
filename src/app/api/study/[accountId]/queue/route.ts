@@ -5,6 +5,7 @@ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { getCachedStudyQueue, setCachedStudyQueue } from "@/lib/studyQueueCache";
+import { SUBJECT_TYPES } from "@/lib/domainConstants";
 import { srsLabel } from "@/lib/wanikani/helpers";
 import {
   fetchAssignmentCount,
@@ -152,7 +153,7 @@ export async function GET(request: Request, context: RouteContext) {
     const kanjiChars = Array.from(
       new Set(
         queued
-          .filter((row) => normalizeSubjectType(row.data.subject_type) === "kanji")
+          .filter((row) => normalizeSubjectType(row.data.subject_type) === SUBJECT_TYPES.kanji)
           .map((row) => subjectById.get(row.data.subject_id)?.data.characters)
           .filter((value): value is string => Boolean(value)),
       ),
@@ -225,38 +226,39 @@ export async function GET(request: Request, context: RouteContext) {
         const componentSubjectIds = subjectData?.component_subject_ids ?? [];
         const amalgamationSubjectIds = subjectData?.amalgamation_subject_ids ?? [];
         const visuallySimilarSubjectIds = subjectData?.visually_similar_subject_ids ?? [];
+        const relatedSubjectType = (subjectId: number) => normalizeSubjectType(subjectById.get(subjectId)?.object ?? "");
 
         const radicals =
-          subjectType === "kanji"
+          subjectType === SUBJECT_TYPES.kanji
             ? componentSubjectIds
-                .filter((subjectId) => subjectById.get(subjectId)?.object === "radical")
+                .filter((subjectId) => relatedSubjectType(subjectId) === SUBJECT_TYPES.radical)
                 .map(relatedReferenceFromId)
             : [];
 
         const usedInVocabulary =
-          subjectType === "kanji"
+          subjectType === SUBJECT_TYPES.kanji
             ? amalgamationSubjectIds
-                .filter((subjectId) => subjectById.get(subjectId)?.object === "vocabulary")
+                .filter((subjectId) => relatedSubjectType(subjectId) === SUBJECT_TYPES.vocabulary)
                 .map(relatedReferenceFromId)
-            : subjectType === "radical"
+            : subjectType === SUBJECT_TYPES.radical
               ? amalgamationSubjectIds
-                  .filter((subjectId) => subjectById.get(subjectId)?.object === "kanji")
+                  .filter((subjectId) => relatedSubjectType(subjectId) === SUBJECT_TYPES.kanji)
                   .map(relatedReferenceFromId)
               : [];
 
         const visuallySimilar =
-          subjectType === "kanji"
+          subjectType === SUBJECT_TYPES.kanji
             ? visuallySimilarSubjectIds.map(relatedReferenceFromId)
             : [];
 
         const componentKanji =
-          subjectType === "vocabulary"
+          subjectType === SUBJECT_TYPES.vocabulary
             ? componentSubjectIds
-                .filter((subjectId) => subjectById.get(subjectId)?.object === "kanji")
+                .filter((subjectId) => relatedSubjectType(subjectId) === SUBJECT_TYPES.kanji)
                 .map(relatedReferenceFromId)
             : [];
 
-        const jlpt = subjectType === "kanji" ? jlptByKanji.get(subjectData?.characters ?? "") : null;
+        const jlpt = subjectType === SUBJECT_TYPES.kanji ? jlptByKanji.get(subjectData?.characters ?? "") : null;
         const jlptMeta = jlpt
           ? {
               primaryMeaning: jlpt.primaryMeaning,
@@ -343,15 +345,20 @@ export async function GET(request: Request, context: RouteContext) {
       return acc;
     }, {});
 
-    const emptyTypeCounts = { all: 0, radical: 0, kanji: 0, vocabulary: 0 };
+    const emptyTypeCounts = {
+      all: 0,
+      [SUBJECT_TYPES.radical]: 0,
+      [SUBJECT_TYPES.kanji]: 0,
+      [SUBJECT_TYPES.vocabulary]: 0,
+    };
     const typeCounts = items.reduce<typeof emptyTypeCounts>((acc, item) => {
       acc.all += 1;
-      if (item.subjectType === "radical") {
-        acc.radical += 1;
-      } else if (item.subjectType === "kanji") {
-        acc.kanji += 1;
+      if (item.subjectType === SUBJECT_TYPES.radical) {
+        acc[SUBJECT_TYPES.radical] += 1;
+      } else if (item.subjectType === SUBJECT_TYPES.kanji) {
+        acc[SUBJECT_TYPES.kanji] += 1;
       } else {
-        acc.vocabulary += 1;
+        acc[SUBJECT_TYPES.vocabulary] += 1;
       }
 
       return acc;
@@ -364,12 +371,12 @@ export async function GET(request: Request, context: RouteContext) {
 
       const bucket = acc[item.wkLevel] ?? { ...emptyTypeCounts };
       bucket.all += 1;
-      if (item.subjectType === "radical") {
-        bucket.radical += 1;
-      } else if (item.subjectType === "kanji") {
-        bucket.kanji += 1;
+      if (item.subjectType === SUBJECT_TYPES.radical) {
+        bucket[SUBJECT_TYPES.radical] += 1;
+      } else if (item.subjectType === SUBJECT_TYPES.kanji) {
+        bucket[SUBJECT_TYPES.kanji] += 1;
       } else {
-        bucket.vocabulary += 1;
+        bucket[SUBJECT_TYPES.vocabulary] += 1;
       }
 
       acc[item.wkLevel] = bucket;

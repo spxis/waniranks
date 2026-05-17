@@ -4,6 +4,7 @@ import { decryptToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { getLevelKanjiSnapshot } from "@/lib/wanikani";
 import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
+import { SUBJECT_TYPES } from "@/lib/domainConstants";
 
 type RouteContext = {
   params: Promise<{ id: string; level: string }>;
@@ -141,23 +142,23 @@ function snapshotHasDrilldownFields(items: unknown): boolean {
       return false;
     }
 
-    if (row.subjectType === "kanji" && !hasReadingMetadataRows(row.usedInVocabulary)) {
+    if (row.subjectType === SUBJECT_TYPES.kanji && !hasReadingMetadataRows(row.usedInVocabulary)) {
       return false;
     }
 
-    if (row.subjectType === "kanji" && !hasWkLevelMetadataRows(row.usedInVocabulary)) {
+    if (row.subjectType === SUBJECT_TYPES.kanji && !hasWkLevelMetadataRows(row.usedInVocabulary)) {
       return false;
     }
 
-    if (row.subjectType === "kanji" && !hasResolvedRelationLabels(row.usedInVocabulary)) {
+    if (row.subjectType === SUBJECT_TYPES.kanji && !hasResolvedRelationLabels(row.usedInVocabulary)) {
       return false;
     }
 
-    if (row.subjectType === "vocabulary" && !hasReadingMetadataRows(row.componentKanji)) {
+    if (row.subjectType === SUBJECT_TYPES.vocabulary && !hasReadingMetadataRows(row.componentKanji)) {
       return false;
     }
 
-    if (row.subjectType === "vocabulary" && !hasResolvedRelationLabels(row.componentKanji)) {
+    if (row.subjectType === SUBJECT_TYPES.vocabulary && !hasResolvedRelationLabels(row.componentKanji)) {
       return false;
     }
   }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SUBJECT_TYPES } from "@/lib/domainConstants";
 
 import type { LevelItem, Snapshot } from "./explorerTypes";
 import { matchesJlptSearch, normalizeReadingForSearch, readingLabel } from "./jlpt-explorer/lib/jlptDisplay";
@@ -13,7 +14,7 @@ import { resolveInitialReadTab, resolveInitialStudyFilters } from "./userReadCon
 function makeLevelItem(overrides: Partial<LevelItem> = {}): LevelItem {
   return {
     subjectId: 1,
-    subjectType: "kanji",
+    subjectType: SUBJECT_TYPES.kanji,
     wkLevel: 10,
     characters: "A",
     meanings: ["alpha"],
@@ -29,10 +30,10 @@ function makeLevelItem(overrides: Partial<LevelItem> = {}): LevelItem {
 function makeSnapshot(level: number, items: LevelItem[]): Snapshot {
   return {
     level,
-    kanjiTotal: items.filter((item) => item.subjectType === "kanji").length,
-    kanjiLearned: items.filter((item) => item.subjectType === "kanji" && item.srsStage > 0).length,
-    kanjiGuruPlus: items.filter((item) => item.subjectType === "kanji" && item.srsStage >= 5).length,
-    kanjiLocked: items.filter((item) => item.subjectType === "kanji" && item.status === "locked").length,
+    kanjiTotal: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji).length,
+    kanjiLearned: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.srsStage > 0).length,
+    kanjiGuruPlus: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.srsStage >= 5).length,
+    kanjiLocked: items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji && item.status === "locked").length,
     estimatedHoursRemaining: null,
     items,
     syncedAt: `2026-01-${String(level).padStart(2, "0")}T00:00:00.000Z`,
@@ -53,9 +54,9 @@ describe("level explorer selectors", () => {
   it("computeReviewTimingCounts and computeLevelItemCounts aggregate correctly", () => {
     const now = Date.UTC(2026, 0, 10, 12, 0, 0);
     const items = [
-      makeLevelItem({ subjectId: 1, status: "apprentice", subjectType: "radical", availableAt: new Date(now - 1_000).toISOString() }),
-      makeLevelItem({ subjectId: 2, status: "guru", subjectType: "kanji", availableAt: new Date(now + 30 * 60_000).toISOString() }),
-      makeLevelItem({ subjectId: 3, status: "burned", subjectType: "vocabulary", availableAt: new Date(now + 30 * 60_000).toISOString() }),
+      makeLevelItem({ subjectId: 1, status: "apprentice", subjectType: SUBJECT_TYPES.radical, availableAt: new Date(now - 1_000).toISOString() }),
+      makeLevelItem({ subjectId: 2, status: "guru", subjectType: SUBJECT_TYPES.kanji, availableAt: new Date(now + 30 * 60_000).toISOString() }),
+      makeLevelItem({ subjectId: 3, status: "burned", subjectType: SUBJECT_TYPES.vocabulary, availableAt: new Date(now + 30 * 60_000).toISOString() }),
     ];
 
     expect(computeLevelItemCounts(items)).toMatchObject({

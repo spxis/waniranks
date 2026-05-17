@@ -1,5 +1,6 @@
 import { isItemSpread } from "@/lib/itemSpread";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
+import { SUBJECT_TYPES } from "@/lib/domainConstants";
 
 import type {
   ALL_SORT_KEYS,
@@ -11,9 +12,10 @@ import type {
   SortState,
   SubjectType,
 } from "./leaderboardTypes";
+import { LEADERBOARD_TABS as TABS, ALL_TABS as TAB_VALUES } from "./leaderboardTypes";
 
 export function isLeaderboardTab(value: string | null): value is LeaderboardTab {
-  return value !== null && (["overall", "radicals", "kanji", "vocabulary"] as string[]).includes(value);
+  return value !== null && (TAB_VALUES as string[]).includes(value);
 }
 
 export function isSortKey(value: string | null): value is SortKey {
@@ -126,9 +128,9 @@ export function learnedPercent(learned: number, total: number): number {
 }
 
 export function subjectTypeForTab(tab: LeaderboardTab): SubjectType | null {
-  if (tab === "radicals") return "radical";
-  if (tab === "kanji") return "kanji";
-  if (tab === "vocabulary") return "vocabulary";
+  if (tab === TABS.radicals) return SUBJECT_TYPES.radical;
+  if (tab === TABS.kanji) return SUBJECT_TYPES.kanji;
+  if (tab === TABS.vocabulary) return SUBJECT_TYPES.vocabulary;
   return null;
 }
 
@@ -165,12 +167,12 @@ export function subjectTotalsForRow(
   row: LeaderboardRow,
   subjectType: SubjectType,
 ): { learned: number; total: number; percent: number } {
-  if (subjectType === "radical") {
+  if (subjectType === SUBJECT_TYPES.radical) {
     const learned = learnedRadicalsFromRow(row);
     const total = row.radicalCount;
     return { learned, total, percent: learnedPercent(learned, total) };
   }
-  if (subjectType === "kanji") {
+  if (subjectType === SUBJECT_TYPES.kanji) {
     const learned = learnedKanjiFromRow(row);
     const total = kanjiCountFromRow(row);
     return { learned, total, percent: learnedPercent(learned, total) };
@@ -181,8 +183,8 @@ export function subjectTotalsForRow(
 }
 
 export function subjectLastGuruedAtFromRow(row: LeaderboardRow, subjectType: SubjectType): string | null {
-  if (subjectType === "radical") return row.lastRadicalGuruedAt;
-  if (subjectType === "kanji") return row.lastKanjiGuruedAt;
+  if (subjectType === SUBJECT_TYPES.radical) return row.lastRadicalGuruedAt;
+  if (subjectType === SUBJECT_TYPES.kanji) return row.lastKanjiGuruedAt;
   return row.lastVocabularyGuruedAt;
 }
 
@@ -190,8 +192,8 @@ export function subjectLastGuruedItemFromRow(
   row: LeaderboardRow,
   subjectType: SubjectType,
 ): GuruedItemSummary | null {
-  if (subjectType === "radical") return parseGuruedItemSummary(row.lastRadicalGuruedItem);
-  if (subjectType === "kanji") return parseGuruedItemSummary(row.lastKanjiGuruedItem);
+  if (subjectType === SUBJECT_TYPES.radical) return parseGuruedItemSummary(row.lastRadicalGuruedItem);
+  if (subjectType === SUBJECT_TYPES.kanji) return parseGuruedItemSummary(row.lastKanjiGuruedItem);
   return parseGuruedItemSummary(row.lastVocabularyGuruedItem);
 }
 
@@ -268,19 +270,19 @@ export function jlptCompletionClass(percent: number): string {
 }
 
 export function tabClass(activeTab: LeaderboardTab, tab: LeaderboardTab): string {
-  if (tab === "overall") {
+  if (tab === TABS.overall) {
     return activeTab === tab
       ? "border-accent bg-accent text-white"
       : "border-line bg-surface text-foreground";
   }
 
-  if (tab === "radicals") {
+  if (tab === TABS.radicals) {
     return activeTab === tab
       ? "border-radical bg-radical text-white"
       : "border-radical/40 bg-radical/10 text-radical";
   }
 
-  if (tab === "kanji") {
+  if (tab === TABS.kanji) {
     return activeTab === tab
       ? "border-kanji bg-kanji text-white"
       : "border-kanji/40 bg-kanji/10 text-kanji";

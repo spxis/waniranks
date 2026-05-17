@@ -1,5 +1,6 @@
 import { fetchAllCollectionPages, fetchWaniKani } from "@/lib/wanikani/http";
 import type { WaniKaniCollectionResponse } from "@/lib/wanikani/types";
+import { SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
 
 export type AssignmentData = {
   subject_id: number;
@@ -48,12 +49,12 @@ export const SUBJECT_CACHE_TTL_MS = 24 * 60 * 60_000;
 export const ASSIGNMENT_CHUNK_SIZE = 200;
 export const SUBJECT_CACHE_MAX_ENTRIES = 2_500;
 
-export function normalizeSubjectType(input: string): "radical" | "kanji" | "vocabulary" {
-  if (input === "radical" || input === "kanji") {
+export function normalizeSubjectType(input: string): SubjectType {
+  if (input === SUBJECT_TYPES.radical || input === SUBJECT_TYPES.kanji) {
     return input;
   }
 
-  return "vocabulary";
+  return SUBJECT_TYPES.vocabulary;
 }
 
 export function modePathParam(mode: QueueMode): string {

@@ -15,7 +15,7 @@ import {
 import { getLevelKanjiSnapshot } from "./levelSnapshot";
 import { loadSubjectSummaries, loadSubjectTypes } from "./subjects";
 import { computeJlptKanjiProgress } from "./leaderboardJlpt";
-import { WK_STATUSES } from "@/lib/domainConstants";
+import { SUBJECT_TYPE_VALUES, WK_STATUSES, type SubjectType } from "@/lib/domainConstants";
 import type {
   ExistingLeaderboardState,
   LeaderboardStats,
@@ -122,7 +122,7 @@ export async function getLeaderboardStats(
     (row) => row.data as WaniKaniAssignmentData,
   );
 
-  const assignmentTypeBySubjectId = new Map<number, "radical" | "kanji" | "vocabulary">();
+  const assignmentTypeBySubjectId = new Map<number, SubjectType>();
   for (const assignment of allAssignmentData) {
     const normalized = normalizeAssignmentType(assignment.subject_type);
     if (!normalized) {
@@ -148,7 +148,7 @@ export async function getLeaderboardStats(
   const fallbackTypeBySubjectId =
     missingSubjectIds.length > 0
       ? await loadSubjectTypes(token, missingSubjectIds)
-      : new Map<number, "radical" | "kanji" | "vocabulary">();
+      : new Map<number, SubjectType>();
 
   const lastGuruedAt = {
     radical: existing.lastRadicalGuruedAt,
@@ -204,7 +204,7 @@ export async function getLeaderboardStats(
   const latestSubjectSummaryById =
     latestSubjectIds.length > 0 ? await loadSubjectSummaries(token, latestSubjectIds) : new Map();
 
-  for (const type of ["radical", "kanji", "vocabulary"] as const) {
+  for (const type of SUBJECT_TYPE_VALUES) {
     const subjectId = latestSubjectIdByType[type];
     if (!subjectId) {
       continue;

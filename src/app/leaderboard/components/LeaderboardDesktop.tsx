@@ -182,14 +182,14 @@ export default function LeaderboardDesktop({
                   </>
                 ) : (
                   (() => {
-                    const subjectType = subjectTypeForTab(activeTab) ?? "radical";
+                    const subjectType = subjectTypeForTab(activeTab) ?? SUBJECT_TYPES.radical;
                     const totals = subjectTotalsForRow(row, subjectType);
                     const lastItem = subjectLastGuruedItemFromRow(row, subjectType);
                     const lastAt = subjectLastGuruedAtFromRow(row, subjectType);
 
                     return (
                       <>
-                        <td className="px-4 py-3"><span className={`subject-pill ${subjectType === "radical" ? "subject-pill--radical" : subjectType === "kanji" ? "subject-pill--kanji" : "subject-pill--vocabulary"}`}>{formatNumber(totals.learned)}</span><p className="mt-1 text-[10px] font-semibold text-foreground/60">/ {formatNumber(totals.total)} ({totals.percent}%)</p></td>
+                        <td className="px-4 py-3"><span className={`subject-pill ${subjectType === SUBJECT_TYPES.radical ? "subject-pill--radical" : subjectType === SUBJECT_TYPES.kanji ? "subject-pill--kanji" : "subject-pill--vocabulary"}`}>{formatNumber(totals.learned)}</span><p className="mt-1 text-[10px] font-semibold text-foreground/60">/ {formatNumber(totals.total)} ({totals.percent}%)</p></td>
                         <td className="px-4 py-3 text-sm font-semibold text-foreground/80">{formatNumber(stageCountForSubject(row, subjectType, "apprentice"))}</td>
                         <td className="px-4 py-3 text-sm font-semibold text-foreground/80">{formatNumber(stageCountForSubject(row, subjectType, "guru"))}</td>
                         <td className="px-4 py-3 text-sm font-semibold text-foreground/80">{formatNumber(stageCountForSubject(row, subjectType, "master"))}</td>

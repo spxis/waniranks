@@ -1,11 +1,12 @@
 import { fetchAllCollectionPages } from "./http";
 import { normalizeAssignmentType } from "./helpers";
+import { SUBJECT_TYPES, type SubjectType } from "@/lib/domainConstants";
 
 export async function loadSubjectTypes(
   token: string,
   subjectIds: number[],
-): Promise<Map<number, "radical" | "kanji" | "vocabulary">> {
-  const output = new Map<number, "radical" | "kanji" | "vocabulary">();
+): Promise<Map<number, SubjectType>> {
+  const output = new Map<number, SubjectType>();
   const chunkSize = 200;
 
   for (let i = 0; i < subjectIds.length; i += chunkSize) {
@@ -68,7 +69,7 @@ export async function loadSubjectSummaries(
 
       output.set(row.id, {
         label,
-        reading: normalizedType === "radical" ? primaryMeaning : primaryReading,
+        reading: normalizedType === SUBJECT_TYPES.radical ? primaryMeaning : primaryReading,
       });
     }
   }

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { WK_STATUSES } from "@/lib/domainConstants";
+import { SUBJECT_TYPES, WK_STATUSES } from "@/lib/domainConstants";
 
 import { fetchAllCollectionPages, fetchWaniKani } from "./http";
 import { normalizeAssignmentType, srsLabel, toDate } from "./helpers";
@@ -188,7 +188,7 @@ export async function getLevelKanjiSnapshot(
         radicals: (subject?.component_subject_ids ?? [])
           .filter((id) => {
             const related = relatedSubjects.get(id);
-            return related?.object === "radical";
+            return related?.object === SUBJECT_TYPES.radical;
           })
           .map((id) => ({
             subjectId: id,
@@ -201,7 +201,7 @@ export async function getLevelKanjiSnapshot(
           label: subjectLabel(id),
           wkLevel: relatedSubjects.get(id)?.level ?? null,
           reading:
-            relatedSubjects.get(id)?.object === "radical"
+            relatedSubjects.get(id)?.object === SUBJECT_TYPES.radical
               ? relatedSubjects.get(id)?.primaryMeaning ?? null
               : relatedSubjects.get(id)?.primaryReading ?? null,
         })),
@@ -214,7 +214,7 @@ export async function getLevelKanjiSnapshot(
         componentKanji: (subject?.component_subject_ids ?? [])
           .filter((id) => {
             const related = relatedSubjects.get(id);
-            return related?.object === "kanji";
+            return related?.object === SUBJECT_TYPES.kanji;
           })
           .map((id) => ({
             subjectId: id,
@@ -225,9 +225,9 @@ export async function getLevelKanjiSnapshot(
         meaningExplanation: subject?.meaning_mnemonic ?? "",
         readingExplanation: subject?.reading_mnemonic ?? "",
         jlptLevel:
-          object === "kanji" ? jlptByKanji.get(subject?.characters ?? "")?.nLevel ?? null : null,
+          object === SUBJECT_TYPES.kanji ? jlptByKanji.get(subject?.characters ?? "")?.nLevel ?? null : null,
         jlptMeta:
-          object === "kanji" && jlptByKanji.has(subject?.characters ?? "")
+          object === SUBJECT_TYPES.kanji && jlptByKanji.has(subject?.characters ?? "")
             ? {
                 primaryMeaning: jlptByKanji.get(subject?.characters ?? "")?.primaryMeaning ?? null,
                 meanings: jlptByKanji.get(subject?.characters ?? "")?.meanings ?? [],
@@ -250,7 +250,7 @@ export async function getLevelKanjiSnapshot(
     })
     .sort((a, b) => a.subjectId - b.subjectId);
 
-  const onlyKanji = items.filter((item) => item.subjectType === "kanji");
+  const onlyKanji = items.filter((item) => item.subjectType === SUBJECT_TYPES.kanji);
   const kanjiTotal = onlyKanji.length;
   const kanjiLearned = onlyKanji.filter((item) => item.srsStage >= 5).length;
   const kanjiGuruPlus = onlyKanji.filter((item) => item.srsStage >= 5).length;
