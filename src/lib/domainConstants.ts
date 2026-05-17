@@ -39,6 +39,16 @@ export const SRS_BUCKET_TITLE_LABELS: Record<SrsBucket, string> = {
   [SRS_BUCKETS.unknown]: "Unknown",
 };
 
+export const SRS_BUCKET_SHORT_LABELS: Record<SrsBucket, string> = {
+  [SRS_BUCKETS.apprentice]: "APPR",
+  [SRS_BUCKETS.guru]: "GURU",
+  [SRS_BUCKETS.master]: "MASTER",
+  [SRS_BUCKETS.enlightened]: "ENL",
+  [SRS_BUCKETS.burned]: "BURN",
+  [SRS_BUCKETS.locked]: "LOCK",
+  [SRS_BUCKETS.unknown]: "UNK",
+};
+
 export const LEARNED_SRS_GROUPS = [
   WK_STATUSES.apprentice,
   WK_STATUSES.guru,
@@ -53,27 +63,27 @@ export const LEARNED_SRS_GROUP_LABELS = [
   {
     key: WK_STATUSES.apprentice,
     label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.apprentice],
-    shortLabel: "Appr",
+    shortLabel: SRS_BUCKET_SHORT_LABELS[WK_STATUSES.apprentice],
   },
   {
     key: WK_STATUSES.guru,
     label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.guru],
-    shortLabel: "Guru",
+    shortLabel: SRS_BUCKET_SHORT_LABELS[WK_STATUSES.guru],
   },
   {
     key: WK_STATUSES.master,
     label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.master],
-    shortLabel: "Mstr",
+    shortLabel: SRS_BUCKET_SHORT_LABELS[WK_STATUSES.master],
   },
   {
     key: WK_STATUSES.enlightened,
     label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.enlightened],
-    shortLabel: "Enl",
+    shortLabel: SRS_BUCKET_SHORT_LABELS[WK_STATUSES.enlightened],
   },
   {
     key: WK_STATUSES.burned,
     label: SRS_BUCKET_TITLE_LABELS[WK_STATUSES.burned],
-    shortLabel: "Burn",
+    shortLabel: SRS_BUCKET_SHORT_LABELS[WK_STATUSES.burned],
   },
 ] as const;
 
