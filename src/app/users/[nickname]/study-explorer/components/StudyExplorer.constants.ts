@@ -2,6 +2,7 @@ import type {
   StudySrsFilter,
   StudySrsStageFilter,
 } from "../lib/studyExplorerTypes";
+import { SUBJECT_TYPE_DISPLAY, SUBJECT_TYPES } from "@/lib/domainConstants";
 import { STUDY_SRS_FILTERS } from "../lib/studyExplorerDomain";
 export {
   isAllStudySrsFilter,
@@ -110,7 +111,7 @@ export const STUDY_REVIEW_META_TEXT = {
   started: "Started",
   nextReview: "Next review",
   passed: "Passed",
-  radicals: "Radicals",
+  radicals: SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].plural,
   visuallySimilar: "Visually similar",
   usedInKanji: "Used in kanji",
   usedInVocabulary: "Used in vocabulary",
