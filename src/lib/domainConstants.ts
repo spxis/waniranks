@@ -40,11 +40,11 @@ export const LEARNED_SRS_GROUPS = [
 export type LearnedSrsGroup = (typeof LEARNED_SRS_GROUPS)[number];
 
 export const LEARNED_SRS_GROUP_LABELS = [
-  { key: WK_STATUSES.apprentice, label: "Apprentice" },
-  { key: WK_STATUSES.guru, label: "Guru" },
-  { key: WK_STATUSES.master, label: "Master" },
-  { key: WK_STATUSES.enlightened, label: "Enlightened" },
-  { key: WK_STATUSES.burned, label: "Burned" },
+  { key: WK_STATUSES.apprentice, label: "Apprentice", shortLabel: "Appr" },
+  { key: WK_STATUSES.guru, label: "Guru", shortLabel: "Guru" },
+  { key: WK_STATUSES.master, label: "Master", shortLabel: "Mstr" },
+  { key: WK_STATUSES.enlightened, label: "Enlightened", shortLabel: "Enl" },
+  { key: WK_STATUSES.burned, label: "Burned", shortLabel: "Burn" },
 ] as const;
 
 export const SRS_PROGRESS_STATUSES = [
