@@ -32,7 +32,7 @@ import type {
 import { fetchStudyQueue, readStoredQueue } from "../lib/studyExplorerUtils";
 import { normalizeSrsStageFilter } from "../lib/studyExplorerSrs";
 import { resolveEffectiveViewedLevel } from "../lib/studyExplorerLevelBounds";
-import { buildStudyExplorerStorageKeys, deriveInitialQueueState } from "../lib/studyExplorerState";
+import { buildStudyExplorerStorageKeys, deriveInitialQueueState, readStoredStudyCounts } from "../lib/studyExplorerState";
 import { useStudyReviewSubmission } from "../lib/useStudyReviewSubmission";
 import { useStudyExplorerEffects } from "../lib/useStudyExplorerEffects";
 import { useStudyExplorerDerivedData } from "../lib/useStudyExplorerDerivedData";
@@ -63,7 +63,9 @@ export default function StudyExplorer({
   const [cachedQueueData, setCachedQueueData] = useState<QueueResponse | undefined>(() =>
     readStoredQueue(accountId, queueMode),
   );
-  const [persistedCounts, setPersistedCounts] = useState<StudyCounts | null>(() => deriveInitialQueueState(cachedQueueData).persistedCounts);
+  const [persistedCounts, setPersistedCounts] = useState<StudyCounts | null>(() =>
+    readStoredStudyCounts(storageKeys.counts),
+  );
   const [loadedItems, setLoadedItems] = useState<StudyQueueItem[]>(() => deriveInitialQueueState(cachedQueueData).loadedItems);
   const [totalItems, setTotalItems] = useState<number>(() => deriveInitialQueueState(cachedQueueData).totalItems);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -113,10 +115,10 @@ export default function StudyExplorer({
       setCachedQueueData(cached);
       setLoadedItems(initialQueueState.loadedItems);
       setTotalItems(initialQueueState.totalItems);
-      setPersistedCounts(initialQueueState.persistedCounts);
+      setPersistedCounts(readStoredStudyCounts(storageKeys.counts));
       setLoadMoreError(null);
     });
-  }, [accountId, queueMode]);
+  }, [accountId, queueMode, storageKeys.counts]);
 
   const { data, error, isLoading, isValidating, mutate: mutateQueue } = useSWR(
     `/api/study/${accountId}/queue?mode=${queueMode}&limit=${initialPageSize}&offset=0`,

@@ -38,6 +38,28 @@ export function deriveInitialQueueState(cachedQueueData: QueueResponse | undefin
   };
 }
 
+export function readStoredStudyCounts(countsStorageKey: string): StudyCounts | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(countsStorageKey);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<StudyCounts>;
+    if (typeof parsed.all !== "number" || typeof parsed.reviews !== "number" || typeof parsed.lessons !== "number") {
+      return null;
+    }
+
+    return { all: parsed.all, reviews: parsed.reviews, lessons: parsed.lessons };
+  } catch {
+    return null;
+  }
+}
+
 export function resolveEffectiveTypeFilter(
   typeFilter: StudyTypeFilter,
   typeCounts: { all: number; radical: number; kanji: number; vocabulary: number },

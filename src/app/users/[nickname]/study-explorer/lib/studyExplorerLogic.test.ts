@@ -5,6 +5,7 @@ import { normalizeSrsStageFilter } from "./studyExplorerSrs";
 import {
   buildStudyExplorerStorageKeys,
   deriveInitialQueueState,
+  readStoredStudyCounts,
   resolveEffectiveSrsStageFilter,
   resolveEffectiveTypeFilter,
   resolveEffectiveViewedLevelFilter,
@@ -235,5 +236,27 @@ describe("study explorer state helpers", () => {
   it("keeps effective viewed level when selected level still has items", () => {
     expect(resolveEffectiveViewedLevelFilter(5, 5, 1)).toBe(5);
     expect(resolveEffectiveViewedLevelFilter(null, null, 0)).toBeNull();
+  });
+
+  it("reads valid persisted study counts from localStorage", () => {
+    const localStorageGetItem = vi.fn().mockReturnValue('{"all":541,"reviews":360,"lessons":181}');
+    vi.stubGlobal("window", {
+      localStorage: { getItem: localStorageGetItem },
+    });
+
+    expect(readStoredStudyCounts("wr:study-queue-counts:acct-1")).toEqual({
+      all: 541,
+      reviews: 360,
+      lessons: 181,
+    });
+    expect(localStorageGetItem).toHaveBeenCalledWith("wr:study-queue-counts:acct-1");
+  });
+
+  it("returns null for missing or malformed persisted study counts", () => {
+    vi.stubGlobal("window", {
+      localStorage: { getItem: vi.fn().mockReturnValue("{\"reviews\":360}") },
+    });
+
+    expect(readStoredStudyCounts("wr:study-queue-counts:acct-1")).toBeNull();
   });
 });
