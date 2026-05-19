@@ -169,6 +169,51 @@ export function disabledBadgeClass(): string {
   return "cursor-not-allowed border-line bg-surface-muted text-foreground/45";
 }
 
+export type StudyReviewLevelChip =
+  | { kind: "single"; level: number }
+  | { kind: "range"; startLevel: number; endLevel: number };
+
+export function groupStudyReviewLevelChips(
+  levelOptions: number[],
+  availableLevels: Set<number>,
+  viewedLevel: number | null,
+  hasData: boolean,
+): StudyReviewLevelChip[] {
+  const grouped: StudyReviewLevelChip[] = [];
+  let rangeStart: number | null = null;
+  let rangeEnd: number | null = null;
+
+  const flushRange = () => {
+    if (rangeStart === null || rangeEnd === null) {
+      return;
+    }
+
+    grouped.push({ kind: "range", startLevel: rangeStart, endLevel: rangeEnd });
+
+    rangeStart = null;
+    rangeEnd = null;
+  };
+
+  for (const level of levelOptions) {
+    const isSelected = viewedLevel === level;
+    const unavailable = hasData && !isSelected && !availableLevels.has(level);
+
+    if (unavailable) {
+      if (rangeStart === null) {
+        rangeStart = level;
+      }
+      rangeEnd = level;
+      continue;
+    }
+
+    flushRange();
+    grouped.push({ kind: "single", level });
+  }
+
+  flushRange();
+  return grouped;
+}
+
 export function studyItemEnglishTitle(item: StudyQueueItem): string {
   const meaning = item.meanings.find((entry) => entry.trim().length > 0) ?? "";
   if (meaning) {

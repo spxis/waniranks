@@ -17,6 +17,7 @@ type Args = {
   recentOnlyStorageKey: string;
   showLockedStorageKey: string;
   viewedLevel: number | null;
+  effectiveViewedLevel: number | null;
   typeFilter: StudyTypeFilter;
   srsFilter: StudySrsFilter;
   srsStageFilter: StudySrsStageFilter | null;
@@ -32,22 +33,9 @@ type Args = {
   totalItems: number;
   counts: StudyCounts | null;
   levelCounts: Record<number, number>;
-  typeCounts: { all: number; radical: number; kanji: number; vocabulary: number };
-  typeCountsByLevel: Record<
-    number,
-    { all: number; radical: number; kanji: number; vocabulary: number }
-  >;
-  srsCounts:
-    | {
-        all: number;
-        locked: number;
-        apprentice: number;
-        guru: number;
-        master: number;
-        enlightened: number;
-        burned: number;
-      }
-    | undefined;
+  typeCounts: NonNullable<QueueResponse["typeCounts"]>;
+  typeCountsByLevel: NonNullable<QueueResponse["typeCountsByLevel"]>;
+  srsCounts: QueueResponse["srsCounts"];
   srsStageCounts: Record<number, number> | undefined;
   dataItems: StudyQueueItem[] | undefined;
   dataPaginationTotal: number | undefined;
@@ -79,6 +67,7 @@ export function useStudyExplorerEffects({
   recentOnlyStorageKey,
   showLockedStorageKey,
   viewedLevel,
+  effectiveViewedLevel,
   typeFilter,
   srsFilter,
   srsStageFilter,
@@ -260,12 +249,14 @@ export function useStudyExplorerEffects({
   useEffect(() => {
     if (!hasData) return;
 
+    if (viewedLevel !== effectiveViewedLevel) setViewedLevel(effectiveViewedLevel);
+
     const nextTypeFilter = resolveEffectiveTypeFilter(typeFilter, typeCounts);
     if (nextTypeFilter !== typeFilter) setTypeFilter(nextTypeFilter);
 
     const nextSrsStageFilter = resolveEffectiveSrsStageFilter(srsStageFilter, srsStageCounts);
     if (nextSrsStageFilter !== srsStageFilter) setSrsStageFilter(nextSrsStageFilter);
-  }, [hasData, srsStageCounts, srsStageFilter, setSrsStageFilter, setTypeFilter, typeCounts, typeFilter]);
+  }, [effectiveViewedLevel, hasData, srsStageCounts, srsStageFilter, setSrsStageFilter, setTypeFilter, setViewedLevel, typeCounts, typeFilter, viewedLevel]);
 
   useEffect(() => {
     if (!hasHydratedViewedLevel) return;

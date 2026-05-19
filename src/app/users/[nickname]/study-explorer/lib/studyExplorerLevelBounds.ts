@@ -1,5 +1,5 @@
 import type { StudyQueueItem, StudyQueueMode } from "./studyExplorerTypes";
-import { isLessonQueueItem, STUDY_QUEUE_TYPES } from "./studyExplorerDomain";
+import { isLessonQueueItem, isReviewQueueItem, STUDY_QUEUE_TYPES } from "./studyExplorerDomain";
 
 type Params = {
   queueMode: StudyQueueMode;
@@ -35,7 +35,18 @@ export function resolveEffectiveViewedLevel({
   rawLevelCounts,
 }: Params): number | null {
   if (queueMode === STUDY_QUEUE_TYPES.review) {
-    if (viewedLevel !== null && (viewedLevel < 1 || viewedLevel > maxLevel)) {
+    if (viewedLevel === null) {
+      return null;
+    }
+
+    if (viewedLevel < 1 || viewedLevel > maxLevel) {
+      return null;
+    }
+
+    const reviewLevelFromLoaded = loadedItems.some(
+      (item) => isReviewQueueItem(item) && item.wkLevel === viewedLevel,
+    );
+    if (!reviewLevelFromLoaded) {
       return null;
     }
 

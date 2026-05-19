@@ -230,6 +230,7 @@ export default function StudyExplorer({
     recentOnlyStorageKey: storageKeys.recentOnly,
     showLockedStorageKey: storageKeys.showLocked,
     viewedLevel,
+    effectiveViewedLevel,
     typeFilter,
     srsFilter,
     srsStageFilter: effectiveSrsStageFilter,

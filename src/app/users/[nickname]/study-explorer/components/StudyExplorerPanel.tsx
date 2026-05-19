@@ -33,7 +33,7 @@ import {
 } from "../../level-explorer/lib/levelExplorerDisplay";
 import type { StudyQueueItem, StudyQueueMode, StudySrsFilter, StudySrsStageFilter, StudyTypeFilter } from "../lib/studyExplorerTypes";
 import { useStudyBulkReset } from "../lib/useStudyBulkReset";
-import { badgeClass, disabledBadgeClass } from "../lib/studyExplorerUtils";
+import { badgeClass, disabledBadgeClass, groupStudyReviewLevelChips } from "../lib/studyExplorerUtils";
 
 type Props = {
   canToggleEnglish: boolean;
@@ -134,13 +134,9 @@ export default function StudyExplorerPanel({
 
   const showLoadingIndicator = (isLoading || isValidating || !hasData) && filteredItems.length === 0 && !errorMessage;
   const showTypeCountPlaceholders = !hasData && typeCounts.all === 0 && filteredItems.length === 0 && !errorMessage;
-  const showFilterPagingState =
-    queueMode === STUDY_QUEUE_TYPES.lesson && viewedLevel !== null && hasMorePages && filteredItems.length === 0;
+  const showFilterPagingState = queueMode === STUDY_QUEUE_TYPES.lesson && viewedLevel !== null && hasMorePages && filteredItems.length === 0;
   const showLoadingOverlay = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
-  const displayErrorMessage =
-    errorMessage === "Failed to fetch"
-      ? STUDY_PANEL_TEXT.queueRefreshError
-      : errorMessage;
+  const displayErrorMessage = errorMessage === "Failed to fetch" ? STUDY_PANEL_TEXT.queueRefreshError : errorMessage;
   const srsStageOptions = getSrsStageOptions(srsFilter);
   const hasSrsStageOptions = srsStageOptions.length > 0;
   const allSrsStagesSelected = srsStageFilter === null || !hasSrsStageOptions;
@@ -149,12 +145,8 @@ export default function StudyExplorerPanel({
     .filter(([, count]) => count > 0)
     .sort((a, b) => a[0] - b[0]);
   const totalLessonsInVisibleLevels = lessonLevelOptions.reduce((sum, [, count]) => sum + count, 0);
-  const allTypeCount =
-    queueMode === STUDY_QUEUE_TYPES.lesson
-      ? viewedLevel === null
-        ? totalItems
-        : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)
-      : typeCounts.all;
+  const allTypeCount = queueMode === STUDY_QUEUE_TYPES.lesson ? (viewedLevel === null ? totalItems : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)) : typeCounts.all;
+  const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData);
 
   return (
     <>
@@ -200,25 +192,33 @@ export default function StudyExplorerPanel({
               >
                 {STUDY_PANEL_TEXT.allLevelsLabel}
               </button>
-              {levelOptions.map((level) => (
-                (() => {
-                  const isSelected = viewedLevel === level;
-                  const unavailable = hasData && !isSelected && !availableLevels.has(level);
-                  const disabled = (filtersLoading && !isSelected) || unavailable;
-
+              {reviewLevelChips.map((chip) => {
+                if (chip.kind === "range") {
                   return (
                     <button
-                      key={level}
+                      key={`range-${chip.startLevel}-${chip.endLevel}`}
                       type="button"
-                      onClick={() => onSetViewedLevel(level)}
-                      disabled={disabled}
-                      className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
+                      disabled
+                      className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabledBadgeClass()}`}
                     >
-                      L{level}
+                      {chip.startLevel === chip.endLevel ? `L${chip.startLevel}` : `L${chip.startLevel}-L${chip.endLevel}`}
                     </button>
                   );
-                })()
-              ))}
+                }
+                const isSelected = viewedLevel === chip.level;
+                const disabled = filtersLoading && !isSelected;
+                return (
+                  <button
+                    key={chip.level}
+                    type="button"
+                    onClick={() => onSetViewedLevel(chip.level)}
+                    disabled={disabled}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
+                  >
+                    L{chip.level}
+                  </button>
+                );
+              })}
             </>
           )}
         </div>

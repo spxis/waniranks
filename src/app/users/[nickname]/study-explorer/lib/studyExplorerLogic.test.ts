@@ -8,7 +8,12 @@ import {
   resolveEffectiveSrsStageFilter,
   resolveEffectiveTypeFilter,
 } from "./studyExplorerState";
-import { filterStudyItems, isRecentStudyItem, STUDY_RECENT_WINDOW_MS } from "./studyExplorerUtils";
+import {
+  filterStudyItems,
+  groupStudyReviewLevelChips,
+  isRecentStudyItem,
+  STUDY_RECENT_WINDOW_MS,
+} from "./studyExplorerUtils";
 import type { StudyQueueItem } from "./studyExplorerTypes";
 
 function makeItem(overrides: Partial<StudyQueueItem> = {}): StudyQueueItem {
@@ -55,6 +60,17 @@ describe("resolveEffectiveViewedLevel", () => {
         viewedLevel: 50,
         maxLevel: 10,
         loadedItems: [],
+      }),
+    ).toBeNull();
+  });
+
+  it("resets review level when it has no loaded review items", () => {
+    expect(
+      resolveEffectiveViewedLevel({
+        queueMode: "review",
+        viewedLevel: 10,
+        maxLevel: 60,
+        loadedItems: [makeItem({ queueType: "review", wkLevel: 9 })],
       }),
     ).toBeNull();
   });
@@ -141,6 +157,28 @@ describe("study filter utils", () => {
 
     expect(filtered.map((item) => item.assignmentId)).toEqual([1]);
     dateNowSpy.mockRestore();
+  });
+
+  it("groups consecutive disabled review levels into range chips", () => {
+    expect(
+      groupStudyReviewLevelChips([1, 2, 3, 4, 5, 6, 7], new Set([5, 6]), null, true),
+    ).toEqual([
+      { kind: "range", startLevel: 1, endLevel: 4 },
+      { kind: "single", level: 5 },
+      { kind: "single", level: 6 },
+      { kind: "range", startLevel: 7, endLevel: 7 },
+    ]);
+  });
+
+  it("keeps selected review level as a selectable single chip", () => {
+    expect(
+      groupStudyReviewLevelChips([1, 2, 3, 4], new Set([4]), 2, true),
+    ).toEqual([
+      { kind: "range", startLevel: 1, endLevel: 1 },
+      { kind: "single", level: 2 },
+      { kind: "range", startLevel: 3, endLevel: 3 },
+      { kind: "single", level: 4 },
+    ]);
   });
 });
 
