@@ -4,7 +4,7 @@ import type { QueueResponse, StudyCounts, StudyQueueMode, StudyQueueItem, StudyS
 import { isAllStudySrsFilter, isAllStudyTypeFilter, isStudySrsFilterValue, isStudyTypeFilterValue, STUDY_SRS_FILTERS, STUDY_TYPE_FILTERS } from "./studyExplorerDomain";
 import { sameAssignmentList, sameCounts, sameLevelCounts, sameTypeCounts, sameTypeCountsByLevel } from "./studyExplorerEffectsComparators";
 import { persistQueue, readStoredQueue } from "./studyExplorerUtils";
-import { resolveEffectiveSrsStageFilter, resolveEffectiveTypeFilter } from "./studyExplorerState";
+import { resolveEffectiveSrsStageFilter, resolveEffectiveTypeFilter, resolveEffectiveViewedLevelFilter } from "./studyExplorerState";
 
 type Args = {
   accountId: string;
@@ -249,7 +249,8 @@ export function useStudyExplorerEffects({
   useEffect(() => {
     if (!hasData) return;
 
-    if (viewedLevel !== effectiveViewedLevel) setViewedLevel(effectiveViewedLevel);
+    const nextViewedLevel = resolveEffectiveViewedLevelFilter(viewedLevel, effectiveViewedLevel, typeCounts.all);
+    if (nextViewedLevel !== viewedLevel) setViewedLevel(nextViewedLevel);
 
     const nextTypeFilter = resolveEffectiveTypeFilter(typeFilter, typeCounts);
     if (nextTypeFilter !== typeFilter) setTypeFilter(nextTypeFilter);

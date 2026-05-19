@@ -59,3 +59,15 @@ export function resolveEffectiveSrsStageFilter(
 
   return (srsStageCounts?.[srsStageFilter] ?? 0) > 0 ? srsStageFilter : null;
 }
+
+export function resolveEffectiveViewedLevelFilter(
+  viewedLevel: number | null,
+  effectiveViewedLevel: number | null,
+  levelAllCount: number,
+): number | null {
+  if (viewedLevel !== null && levelAllCount <= 0) {
+    return null;
+  }
+
+  return effectiveViewedLevel;
+}

@@ -7,6 +7,7 @@ import {
   deriveInitialQueueState,
   resolveEffectiveSrsStageFilter,
   resolveEffectiveTypeFilter,
+  resolveEffectiveViewedLevelFilter,
 } from "./studyExplorerState";
 import {
   filterStudyItems,
@@ -224,5 +225,15 @@ describe("study explorer state helpers", () => {
     expect(resolveEffectiveSrsStageFilter(4, { 4: 3, 5: 2 })).toBe(4);
     expect(resolveEffectiveSrsStageFilter(4, { 4: 0, 5: 2 })).toBeNull();
     expect(resolveEffectiveSrsStageFilter(4, undefined)).toBeNull();
+  });
+
+  it("falls back selected viewed level to all when selected level count is zero", () => {
+    expect(resolveEffectiveViewedLevelFilter(5, 5, 0)).toBeNull();
+    expect(resolveEffectiveViewedLevelFilter(5, 5, -1)).toBeNull();
+  });
+
+  it("keeps effective viewed level when selected level still has items", () => {
+    expect(resolveEffectiveViewedLevelFilter(5, 5, 1)).toBe(5);
+    expect(resolveEffectiveViewedLevelFilter(null, null, 0)).toBeNull();
   });
 });
