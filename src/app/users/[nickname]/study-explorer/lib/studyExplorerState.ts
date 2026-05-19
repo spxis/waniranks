@@ -1,4 +1,5 @@
-import type { QueueResponse, StudyCounts, StudyQueueMode } from "./studyExplorerTypes";
+import type { QueueResponse, StudyCounts, StudyQueueMode, StudySrsStageFilter, StudyTypeFilter } from "./studyExplorerTypes";
+import { STUDY_TYPE_FILTERS } from "./studyExplorerDomain";
 
 export type StudyExplorerStorageKeys = {
   counts: string;
@@ -35,4 +36,26 @@ export function deriveInitialQueueState(cachedQueueData: QueueResponse | undefin
     totalItems: cachedQueueData?.pagination?.total ?? cachedQueueData?.items.length ?? 0,
     persistedCounts: cachedQueueData?.counts ?? null,
   };
+}
+
+export function resolveEffectiveTypeFilter(
+  typeFilter: StudyTypeFilter,
+  typeCounts: { all: number; radical: number; kanji: number; vocabulary: number },
+): StudyTypeFilter {
+  if (typeFilter === STUDY_TYPE_FILTERS.all) {
+    return typeFilter;
+  }
+
+  return typeCounts[typeFilter] > 0 ? typeFilter : STUDY_TYPE_FILTERS.all;
+}
+
+export function resolveEffectiveSrsStageFilter(
+  srsStageFilter: StudySrsStageFilter | null,
+  srsStageCounts: Record<number, number> | undefined,
+): StudySrsStageFilter | null {
+  if (srsStageFilter === null) {
+    return null;
+  }
+
+  return (srsStageCounts?.[srsStageFilter] ?? 0) > 0 ? srsStageFilter : null;
 }

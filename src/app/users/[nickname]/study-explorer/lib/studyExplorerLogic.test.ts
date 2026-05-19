@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import { resolveEffectiveViewedLevel } from "./studyExplorerLevelBounds";
 import { normalizeSrsStageFilter } from "./studyExplorerSrs";
-import { buildStudyExplorerStorageKeys, deriveInitialQueueState } from "./studyExplorerState";
+import {
+  buildStudyExplorerStorageKeys,
+  deriveInitialQueueState,
+  resolveEffectiveSrsStageFilter,
+  resolveEffectiveTypeFilter,
+} from "./studyExplorerState";
 import { filterStudyItems, isRecentStudyItem, STUDY_RECENT_WINDOW_MS } from "./studyExplorerUtils";
 import type { StudyQueueItem } from "./studyExplorerTypes";
 
@@ -166,5 +171,20 @@ describe("study explorer state helpers", () => {
       totalItems: 0,
       persistedCounts: null,
     });
+  });
+
+  it("keeps non-empty type filter and resets empty type filter to all", () => {
+    expect(resolveEffectiveTypeFilter("radical", { all: 90, radical: 10, kanji: 30, vocabulary: 50 })).toBe(
+      "radical",
+    );
+    expect(resolveEffectiveTypeFilter("radical", { all: 90, radical: 0, kanji: 30, vocabulary: 60 })).toBe(
+      "all",
+    );
+  });
+
+  it("keeps non-empty srs stage filter and clears empty stage filter", () => {
+    expect(resolveEffectiveSrsStageFilter(4, { 4: 3, 5: 2 })).toBe(4);
+    expect(resolveEffectiveSrsStageFilter(4, { 4: 0, 5: 2 })).toBeNull();
+    expect(resolveEffectiveSrsStageFilter(4, undefined)).toBeNull();
   });
 });

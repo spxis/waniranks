@@ -235,6 +235,7 @@ export default function StudyExplorer({
     srsStageFilter: effectiveSrsStageFilter,
     recentOnly,
     showLocked,
+    hasData: Boolean(data),
     hasHydratedTypeFilter,
     setHasHydratedTypeFilter,
     hasHydratedViewedLevel,

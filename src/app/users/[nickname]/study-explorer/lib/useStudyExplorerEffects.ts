@@ -4,6 +4,7 @@ import type { QueueResponse, StudyCounts, StudyQueueMode, StudyQueueItem, StudyS
 import { isAllStudySrsFilter, isAllStudyTypeFilter, isStudySrsFilterValue, isStudyTypeFilterValue, STUDY_SRS_FILTERS, STUDY_TYPE_FILTERS } from "./studyExplorerDomain";
 import { sameAssignmentList, sameCounts, sameLevelCounts, sameTypeCounts, sameTypeCountsByLevel } from "./studyExplorerEffectsComparators";
 import { persistQueue, readStoredQueue } from "./studyExplorerUtils";
+import { resolveEffectiveSrsStageFilter, resolveEffectiveTypeFilter } from "./studyExplorerState";
 
 type Args = {
   accountId: string;
@@ -21,6 +22,7 @@ type Args = {
   srsStageFilter: StudySrsStageFilter | null;
   recentOnly: boolean;
   showLocked: boolean;
+  hasData: boolean;
   hasHydratedTypeFilter: boolean;
   setHasHydratedTypeFilter: React.Dispatch<React.SetStateAction<boolean>>;
   hasHydratedViewedLevel: boolean;
@@ -82,6 +84,7 @@ export function useStudyExplorerEffects({
   srsStageFilter,
   recentOnly,
   showLocked,
+  hasData,
   hasHydratedTypeFilter,
   setHasHydratedTypeFilter,
   hasHydratedViewedLevel,
@@ -253,6 +256,16 @@ export function useStudyExplorerEffects({
     if (!hasHydratedTypeFilter) return;
     window.localStorage.setItem(typeFilterStorageKey, typeFilter);
   }, [hasHydratedTypeFilter, typeFilter, typeFilterStorageKey]);
+
+  useEffect(() => {
+    if (!hasData) return;
+
+    const nextTypeFilter = resolveEffectiveTypeFilter(typeFilter, typeCounts);
+    if (nextTypeFilter !== typeFilter) setTypeFilter(nextTypeFilter);
+
+    const nextSrsStageFilter = resolveEffectiveSrsStageFilter(srsStageFilter, srsStageCounts);
+    if (nextSrsStageFilter !== srsStageFilter) setSrsStageFilter(nextSrsStageFilter);
+  }, [hasData, srsStageCounts, srsStageFilter, setSrsStageFilter, setTypeFilter, typeCounts, typeFilter]);
 
   useEffect(() => {
     if (!hasHydratedViewedLevel) return;
