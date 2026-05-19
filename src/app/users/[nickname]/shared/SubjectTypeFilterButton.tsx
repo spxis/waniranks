@@ -31,7 +31,7 @@ export default function SubjectTypeFilterButton({
         showDisabledStyle ? disabledBadgeClass() : `${typeBadgeClass(type, active, false)}${disabled ? " cursor-not-allowed opacity-70" : ""}`
       }`}
     >
-      {subjectTypeFilterLabel(type)} ({resolvedCountLabel})
+      {subjectTypeFilterLabel(type)} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({resolvedCountLabel})</span>
     </button>
   );
 }

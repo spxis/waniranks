@@ -168,7 +168,7 @@ export default function StudyExplorerPanel({
                 disabled={filtersLoading}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : badgeClass(viewedLevel === null)}`}
               >
-                {STUDY_PANEL_TEXT.allLevelsLabel} ({formatNumber(totalLessonsInVisibleLevels)})
+                {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(totalLessonsInVisibleLevels)})</span>
               </button>
               {lessonLevelOptions.map(([level, count]) => (
                 <button
@@ -178,7 +178,7 @@ export default function StudyExplorerPanel({
                   disabled={filtersLoading}
                   className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== level ? disabledBadgeClass() : badgeClass(viewedLevel === level)}`}
                 >
-                  L{level} ({formatNumber(count)})
+                  L{level} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
                 </button>
               ))}
             </>
@@ -257,7 +257,7 @@ export default function StudyExplorerPanel({
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
-                    {srsFilterButtonLabel(status)} ({formatNumber(count)})
+                    {srsFilterButtonLabel(status)} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
                   </button>
                   );
                 })}
@@ -286,7 +286,7 @@ export default function StudyExplorerPanel({
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
-                    SRS {stage} ({formatNumber(count)})
+                    SRS {stage} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
                   </button>
                   );
                 })}

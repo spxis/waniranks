@@ -394,7 +394,7 @@ export default function ExplorerTabs({
                 onClick={() => setQueueMode(QUEUE_TYPES.review)}
                 className={queueModeSegmentClass(QUEUE_TYPES.review, queueMode)}
               >
-                Reviews ({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})
+                Reviews <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})</span>
               </button>
               <button
                 type="button"
@@ -403,7 +403,7 @@ export default function ExplorerTabs({
                 onClick={() => setQueueMode(QUEUE_TYPES.lesson)}
                 className={queueModeSegmentClass(QUEUE_TYPES.lesson, queueMode)}
               >
-                Lessons ({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})
+                Lessons <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})</span>
               </button>
             </div>
           ) : null}
