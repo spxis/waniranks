@@ -333,7 +333,7 @@ export default function LevelExplorerContent({
                     disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)
                   }`}
                 >
-                  {srsFilterButtonLabel(status)} ({formatNumber(count)})
+                  {srsFilterButtonLabel(status)} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
                 </button>
               );
             })}
@@ -393,7 +393,7 @@ export default function LevelExplorerContent({
                         disabled ? disabledBadgeClass() : isJlptLevel ? jlptStyle : badgeClass(active)
                       }`}
                     >
-                      {LEVEL_EXPLORER_JLPT_FILTER_LABELS[level]} ({formatNumber(count)})
+                      {LEVEL_EXPLORER_JLPT_FILTER_LABELS[level]} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
                     </button>
                   );
                 })}
@@ -414,7 +414,7 @@ export default function LevelExplorerContent({
                         disabled ? disabledBadgeClass() : badgeClass(reviewTimingFilter === timing)
                       }`}
                     >
-                      {label} ({formatNumber(count)})
+                      {label} <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
                     </button>
                   );
                 })}
@@ -422,7 +422,7 @@ export default function LevelExplorerContent({
               {reviewTimingFilter === LEVEL_REVIEW_TIMING_FILTERS.overdue && overdueOutsideSelectedLevels > 0 ? (
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/55">
                   Showing {formatNumber(reviewTimingCounts.overdue)} overdue in selected levels, with {formatNumber(overdueOutsideSelectedLevels)} more overdue in other levels
-                  ({formatNumber(accountPendingReviews)} total pending reviews).
+                  <span className="ml-0.5 align-super text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(accountPendingReviews)} total pending reviews)</span>.
                 </p>
               ) : null}
             </div>
