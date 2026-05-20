@@ -134,10 +134,7 @@ export default function StudyExplorerPanel({
   const filtersLoading = !hasData;
   const showLoadingIndicator = (isLoading || isValidating || !hasData) && filteredItems.length === 0 && !errorMessage;
   const showTypeCountPlaceholders = !hasData && typeCounts.all === 0 && filteredItems.length === 0 && !errorMessage;
-  const showFilterPagingState = queueMode === STUDY_QUEUE_TYPES.lesson && viewedLevel !== null && hasMorePages && filteredItems.length === 0;
-  const showLoadingOverlay = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
   const displayErrorMessage = errorMessage === "Failed to fetch" ? STUDY_PANEL_TEXT.queueRefreshError : errorMessage;
-  const hideControlsDuringInitialLoad = showLoadingOverlay;
   const srsStageOptions = getSrsStageOptions(srsFilter);
   const hasSrsStageOptions = srsStageOptions.length > 0;
   const allSrsStagesSelected = srsStageFilter === null || !hasSrsStageOptions;
@@ -148,11 +145,15 @@ export default function StudyExplorerPanel({
   const totalReviewsInVisibleLevels = Object.values(reviewLevelCounts).reduce((sum, count) => sum + count, 0);
   const totalLessonsInVisibleLevels = lessonLevelOptions.reduce((sum, [, count]) => sum + count, 0);
   const allTypeCount = queueMode === STUDY_QUEUE_TYPES.lesson ? (viewedLevel === null ? totalItems : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)) : typeCounts.all;
+  const hasMoreMatchingItems = hasMorePages && filteredItems.length < allTypeCount;
+  const showFilterPagingState = queueMode === STUDY_QUEUE_TYPES.lesson && viewedLevel !== null && hasMoreMatchingItems && filteredItems.length === 0;
+  const showLoadingOverlay = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
+  const hideControlsDuringInitialLoad = showLoadingOverlay;
   const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData);
   const levelTypeLabel = typeFilter === STUDY_SUBJECT_TYPES.radical ? "Radical" : typeFilter === STUDY_SUBJECT_TYPES.kanji ? "Kanji" : "Vocab";
   const levelRowAllLabel = queueMode === STUDY_QUEUE_TYPES.lesson ? STUDY_PANEL_TEXT.allLevelsLabel : isAllStudyTypeFilter(typeFilter) ? "All Levels" : `All ${levelTypeLabel} Levels`;
   const typeRowAllLabel = studyPanelAllGroupsLabel(viewedLevel);
-  const loadingFillCount = hasMorePages && isLoadingMore && gridColumns > 1
+  const loadingFillCount = hasMoreMatchingItems && isLoadingMore && gridColumns > 1
     ? (gridColumns - (filteredItems.length % gridColumns)) % gridColumns
     : 0;
   return (
@@ -452,7 +453,7 @@ export default function StudyExplorerPanel({
                 : null}
             </div>
 
-            {hasMorePages ? (
+            {hasMoreMatchingItems ? (
               <div ref={sentinelRef} className="mt-3 rounded-xl border border-line bg-surface-muted px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">
                 {isLoadingMore
                   ? STUDY_PANEL_TEXT.loadingMore
