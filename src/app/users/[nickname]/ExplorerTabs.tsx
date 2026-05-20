@@ -350,7 +350,7 @@ export default function ExplorerTabs({
     <section className="space-y-3 rounded-2xl border border-line bg-surface-muted p-3 sm:p-4">
       <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
         <div
-          className="inline-flex w-full flex-nowrap items-center gap-0 overflow-x-auto rounded-full border border-line bg-surface p-1"
+          className="inline-flex w-full flex-nowrap items-center gap-0 overflow-x-auto rounded-full border border-line bg-surface p-1 pr-2"
           role="tablist"
           aria-label="Explorer tabs"
         >
@@ -383,44 +383,46 @@ export default function ExplorerTabs({
             JLPT Explorer
           </button>
         </div>
-        <div className="flex w-full flex-nowrap items-center justify-start gap-2 overflow-x-auto md:justify-end">
-          {activeTab === "study" ? (
-            <div
-              className="inline-flex shrink-0 items-center rounded-full border border-line bg-surface p-1"
-              role="tablist"
-              aria-label="Study queue mode"
+        <div className="w-full overflow-x-auto md:overflow-visible">
+          <div className="flex min-w-max items-center gap-2 pr-1 md:ml-auto md:min-w-0 md:justify-end">
+            {activeTab === "study" ? (
+              <div
+                className="inline-flex shrink-0 items-center rounded-full border border-line bg-surface p-1"
+                role="tablist"
+                aria-label="Study queue mode"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={queueMode === QUEUE_TYPES.review}
+                  onClick={() => setQueueMode(QUEUE_TYPES.review)}
+                  className={queueModeSegmentClass(QUEUE_TYPES.review, queueMode)}
+                >
+                  Reviews <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={queueMode === QUEUE_TYPES.lesson}
+                  onClick={() => setQueueMode(QUEUE_TYPES.lesson)}
+                  className={queueModeSegmentClass(QUEUE_TYPES.lesson, queueMode)}
+                >
+                  Lessons <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})</span>
+                </button>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setStudyMode((prev) => !prev)}
+              className={`inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition ${
+                studyMode
+                  ? "border-hot bg-hot text-white"
+                  : "border-line bg-surface text-foreground hover:bg-surface-muted"
+              }`}
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={queueMode === QUEUE_TYPES.review}
-                onClick={() => setQueueMode(QUEUE_TYPES.review)}
-                className={queueModeSegmentClass(QUEUE_TYPES.review, queueMode)}
-              >
-                Reviews <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={queueMode === QUEUE_TYPES.lesson}
-                onClick={() => setQueueMode(QUEUE_TYPES.lesson)}
-                className={queueModeSegmentClass(QUEUE_TYPES.lesson, queueMode)}
-              >
-                Lessons <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})</span>
-              </button>
-            </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setStudyMode((prev) => !prev)}
-            className={`inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition ${
-              studyMode
-                ? "border-hot bg-hot text-white"
-                : "border-line bg-surface text-foreground hover:bg-surface-muted"
-            }`}
-          >
-            {`Study Mode ${studyMode ? "On" : "Off"}`}
-          </button>
+              {`Study Mode ${studyMode ? "On" : "Off"}`}
+            </button>
+          </div>
         </div>
       </div>
 

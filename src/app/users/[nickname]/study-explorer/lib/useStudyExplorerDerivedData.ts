@@ -421,6 +421,7 @@ export function useStudyExplorerDerivedData({
   return {
     levelOptions,
     availableLevels,
+    hasReliableReviewLevelAvailability: canUseServerReviewLevelCounts,
     reviewLevelCounts: effectiveReviewLevelCounts,
     filteredItems,
     lessonLevelCountsFromServer,

@@ -41,6 +41,7 @@ type Props = {
   studyMode: boolean;
   levelOptions: number[];
   availableLevels: Set<number>;
+  hasReliableReviewLevelAvailability: boolean;
   reviewLevelCounts: Record<number, number>;
   viewedLevel: number | null;
   typeFilter: StudyTypeFilter;
@@ -83,6 +84,7 @@ export default function StudyExplorerPanel({
   studyMode,
   levelOptions,
   availableLevels,
+  hasReliableReviewLevelAvailability,
   reviewLevelCounts,
   viewedLevel,
   typeFilter,
@@ -144,7 +146,7 @@ export default function StudyExplorerPanel({
   const totalReviewsInVisibleLevels = Object.values(reviewLevelCounts).reduce((sum, count) => sum + count, 0);
   const totalLessonsInVisibleLevels = lessonLevelOptions.reduce((sum, [, count]) => sum + count, 0);
   const allTypeCount = queueMode === STUDY_QUEUE_TYPES.lesson ? (viewedLevel === null ? totalItems : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)) : typeCounts.all;
-  const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData && !hasMorePages);
+  const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData && (hasReliableReviewLevelAvailability || !hasMorePages));
 
   return (
     <>
@@ -300,7 +302,7 @@ export default function StudyExplorerPanel({
       ) : null}
 
       <div className="p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {showLoadingOverlay ? (
             <p aria-hidden="true" className="text-xs font-semibold uppercase tracking-[0.08em] opacity-0 select-none">
               Loading
@@ -310,42 +312,44 @@ export default function StudyExplorerPanel({
               Showing {formatNumber(filteredItems.length)} matching items · {formatNumber(totalItems)} total in queue
             </p>
           )}
-          <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={() => onSetWaitSortOrder("oldest_wait")} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(waitSortOrder === "oldest_wait")}`}>Oldest Wait</button>
-            <button type="button" onClick={() => onSetWaitSortOrder("newest_wait")} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(waitSortOrder === "newest_wait")}`}>Newest Wait</button>
-            <button
-              type="button"
-              onClick={onToggleShowEnglish}
-              disabled={!canToggleEnglish}
-              className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
-            </button>
-            {queueMode !== STUDY_QUEUE_TYPES.lesson ? (
-              <>
-                <button
-                  type="button"
-                  onClick={onToggleShowLocked}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
-                >
-                  {showLocked ? "Hide Locked" : "Show Locked"}
-                </button>
-                <button
-                  type="button"
-                  onClick={onToggleRecentOnly}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(recentOnly)}`}
-                >
-                  Recent Only
-                </button>
-              </>
-            ) : null}
-            <button
-              type="button"
-              onClick={toggleBulkMode}
-              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(bulkModeEnabled)}`}
-            >
-              {bulkModeEnabled ? "Bulk Ops Active" : "Bulk Operations"}
-            </button>
+          <div className="w-full overflow-x-auto sm:ml-auto sm:w-auto">
+            <div className="flex min-w-max items-center gap-2">
+              <button type="button" onClick={() => onSetWaitSortOrder("oldest_wait")} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(waitSortOrder === "oldest_wait")}`}>Oldest Wait</button>
+              <button type="button" onClick={() => onSetWaitSortOrder("newest_wait")} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(waitSortOrder === "newest_wait")}`}>Newest Wait</button>
+              <button
+                type="button"
+                onClick={onToggleShowEnglish}
+                disabled={!canToggleEnglish}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+              </button>
+              {queueMode !== STUDY_QUEUE_TYPES.lesson ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={onToggleShowLocked}
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
+                  >
+                    {showLocked ? "Hide Locked" : "Show Locked"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onToggleRecentOnly}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(recentOnly)}`}
+                  >
+                    Recent Only
+                  </button>
+                </>
+              ) : null}
+              <button
+                type="button"
+                onClick={toggleBulkMode}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(bulkModeEnabled)}`}
+              >
+                {bulkModeEnabled ? "Bulk Ops Active" : "Bulk Operations"}
+              </button>
+            </div>
           </div>
         </div>
 
