@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import SubjectTypeFilterGroup from "../../shared/SubjectTypeFilterGroup";
 import ExplorerBulkSelectionPanel from "../../shared/ExplorerBulkSelectionPanel";
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
@@ -15,6 +14,9 @@ import {
   STUDY_SRS_FILTERS,
   STUDY_SUBJECT_TYPES,
   STUDY_TYPE_FILTERS,
+  studyPanelAllGroupsLabel,
+  studyPanelAllSrsPluralLabel,
+  studyPanelAllStatusesLabel,
 } from "./StudyExplorer.constants";
 import {
   formatNextReviewBadge,
@@ -34,7 +36,6 @@ import {
 import type { StudyQueueItem, StudyQueueMode, StudySrsFilter, StudySrsStageFilter, StudyTypeFilter, StudyWaitSortOrder } from "../lib/studyExplorerTypes";
 import { useStudyBulkReset } from "../lib/useStudyBulkReset";
 import { badgeClass, disabledBadgeClass, groupStudyReviewLevelChips } from "../lib/studyExplorerUtils";
-
 type Props = {
   canToggleEnglish: boolean;
   showEnglish: boolean;
@@ -150,8 +151,7 @@ export default function StudyExplorerPanel({
   const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData && (hasReliableReviewLevelAvailability || !hasMorePages));
   const levelTypeLabel = typeFilter === STUDY_SUBJECT_TYPES.radical ? "Radical" : typeFilter === STUDY_SUBJECT_TYPES.kanji ? "Kanji" : "Vocab";
   const levelRowAllLabel = queueMode === STUDY_QUEUE_TYPES.lesson ? STUDY_PANEL_TEXT.allLevelsLabel : isAllStudyTypeFilter(typeFilter) ? "All Levels" : `All ${levelTypeLabel} Levels`;
-  const typeRowAllLabel = viewedLevel === null ? "All Groups" : `All L${viewedLevel} Groups`;
-
+  const typeRowAllLabel = studyPanelAllGroupsLabel(viewedLevel);
   return (
     <>
       <header className="border-b border-line bg-surface-muted px-5 py-4">
@@ -252,7 +252,7 @@ export default function StudyExplorerPanel({
                   const isSelected = srsFilter === status;
                   const unavailable = hasData && !isSelected && status !== STUDY_SRS_FILTERS.all && count === 0;
                   const disabled = (filtersLoading && !isSelected) || unavailable;
-                  const statusLabel = status === STUDY_SRS_FILTERS.all ? (viewedLevel === null ? "All Statuses" : `All L${viewedLevel} Statuses`) : srsFilterButtonLabel(status);
+                  const statusLabel = status === STUDY_SRS_FILTERS.all ? studyPanelAllStatusesLabel(viewedLevel) : srsFilterButtonLabel(status);
 
                   if (unavailable) {
                     return null;
@@ -273,7 +273,7 @@ export default function StudyExplorerPanel({
                   disabled={filtersLoading}
                   className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && !allSrsStagesSelected ? disabledBadgeClass() : badgeClass(allSrsStagesSelected)}`}
                 >
-                  {viewedLevel === null ? "All SRSs" : `All L${viewedLevel} SRSs`} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(srsCounts.all)})</span>
+                  {studyPanelAllSrsPluralLabel(viewedLevel)} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(srsCounts.all)})</span>
                 </button>
                 {srsStageOptions.map((stage) => {
                   const count = srsStageCounts[stage] ?? 0;
@@ -326,7 +326,7 @@ export default function StudyExplorerPanel({
                 disabled={!canToggleEnglish}
                 className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+                {canToggleEnglish ? (showEnglish ? STUDY_PANEL_TEXT.hideEnglish : STUDY_PANEL_TEXT.showEnglish) : STUDY_PANEL_TEXT.hintsHidden}
               </button>
               {queueMode !== STUDY_QUEUE_TYPES.lesson ? (
                 <>
@@ -335,14 +335,14 @@ export default function StudyExplorerPanel({
                     onClick={onToggleShowLocked}
                     className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-foreground hover:bg-surface-muted"
                   >
-                    {showLocked ? "Hide Locked" : "Show Locked"}
+                    {showLocked ? STUDY_PANEL_TEXT.hideLocked : STUDY_PANEL_TEXT.showLocked}
                   </button>
                   <button
                     type="button"
                     onClick={onToggleRecentOnly}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(recentOnly)}`}
                   >
-                    Recent Only
+                    {STUDY_PANEL_TEXT.recentOnly}
                   </button>
                 </>
               ) : null}
@@ -351,7 +351,7 @@ export default function StudyExplorerPanel({
                 onClick={toggleBulkMode}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${badgeClass(bulkModeEnabled)}`}
               >
-                {bulkModeEnabled ? "Bulk Ops Active" : "Bulk Operations"}
+                {bulkModeEnabled ? STUDY_PANEL_TEXT.bulkOpsActive : STUDY_PANEL_TEXT.bulkOperations}
               </button>
             </div>
           </div>

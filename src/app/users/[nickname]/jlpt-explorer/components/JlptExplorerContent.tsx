@@ -8,6 +8,7 @@ import {
   readingLabel,
   readingLabelFromList,
 } from "../lib/jlptDisplay";
+import { JLPT_EXPLORER_TEXT } from "./JlptExplorer.constants";
 import { jlptStatusClass } from "../lib/jlptExplorerContentHelpers";
 import ExplorerSearchBar from "../../ExplorerSearchBar";
 import JlptExplorerDetailSection from "./JlptExplorerDetailSection";
@@ -156,7 +157,7 @@ export default function JlptExplorerContent({
                 wkLevelFilter === null,
               )}`}
             >
-              All Levels <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(items.length)})</span>
+              {JLPT_EXPLORER_TEXT.allLevels} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(items.length)})</span>
             </button>
             <button
               type="button"
@@ -165,7 +166,7 @@ export default function JlptExplorerContent({
                 wkLevelFilter === "none",
               )}`}
             >
-              None <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(wkLevelCounts.get("none") ?? 0)})</span>
+              {JLPT_EXPLORER_TEXT.none} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(wkLevelCounts.get("none") ?? 0)})</span>
             </button>
             {availableWkLevels.map((level) => (
               <button
@@ -190,7 +191,7 @@ export default function JlptExplorerContent({
                 gradeFilter === null,
               )}`}
             >
-              All Grades
+              {JLPT_EXPLORER_TEXT.allGrades}
             </button>
             {gradeCounts.has("none") ? (
               <button
@@ -226,7 +227,7 @@ export default function JlptExplorerContent({
                 selectedLevels.size === 5,
               )}`}
             >
-              JLPT All <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(counts.all)})</span>
+              {JLPT_EXPLORER_TEXT.jlptAll} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(counts.all)})</span>
             </button>
             {([
               [5, counts.n5],
@@ -257,7 +258,7 @@ export default function JlptExplorerContent({
                 disabled={!canToggleEnglish}
                 className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+                {canToggleEnglish ? (showEnglish ? JLPT_EXPLORER_TEXT.hideEnglish : JLPT_EXPLORER_TEXT.showEnglish) : JLPT_EXPLORER_TEXT.hintsHidden}
               </button>
             ) : null}
             <button
@@ -267,7 +268,7 @@ export default function JlptExplorerContent({
                 stickyLevels ? "border-accent bg-accent text-white" : "border-line bg-surface text-foreground"
               }`}
             >
-              Sticky {stickyLevels ? "On" : "Off"}
+              {stickyLevels ? JLPT_EXPLORER_TEXT.stickyOn : JLPT_EXPLORER_TEXT.stickyOff}
             </button>
           </div>
         </div>

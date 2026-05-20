@@ -14,6 +14,7 @@ import {
   STUDY_REVIEW_MODAL_TOUCH,
   STUDY_REVIEW_MODAL_TRANSITION_CUE_DURATION_MS,
   STUDY_REVIEW_MODAL_VIEWER_MODES,
+  STUDY_PANEL_TEXT,
   STUDY_VIEWER_MODES,
 } from "./StudyExplorer.constants";
 import StudyReviewModalSection from "./StudyReviewModalSection";
@@ -363,7 +364,7 @@ export default function StudyReviewModal({
                 disabled={!canToggleEnglish}
                 className="whitespace-nowrap rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
               >
-                {showEnglish ? "Hide English" : "Show English"}
+                {showEnglish ? STUDY_PANEL_TEXT.hideEnglish : STUDY_PANEL_TEXT.showEnglish}
               </button>
             ) : null}
           </div>

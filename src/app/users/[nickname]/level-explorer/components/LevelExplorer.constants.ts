@@ -31,3 +31,16 @@ export const LEVEL_EXPLORER_REVIEW_TIMING_LABELS: Record<ReviewTimingFilter, str
   [LEVEL_REVIEW_TIMING_FILTERS.next24h]: "Starts <= 24h",
   [LEVEL_REVIEW_TIMING_FILTERS.next72h]: "Starts <= 72h",
 };
+
+export const LEVEL_EXPLORER_TEXT = {
+  showEnglish: "Show English",
+  hideEnglish: "Hide English",
+  hintsHidden: "Hints Hidden",
+  recentOnly: "Recent Only",
+  showLocked: "Show Locked",
+  hideLocked: "Hide Locked",
+  bulkOperations: "Bulk Operations",
+  bulkOpsActive: "Bulk Ops Active",
+  peek: "Peek",
+  hidePeek: "Hide Peek",
+} as const;

@@ -44,6 +44,17 @@ export const STUDY_PANEL_TEXT = {
   subtitle: "Reviews due now and pending lessons across all levels",
   searchScope: "study",
   allLevelsLabel: "All Levels",
+  allGroupsLabel: "All Groups",
+  allStatusesLabel: "All Statuses",
+  allSrsPluralLabel: "All SRSs",
+  hintsHidden: "Hints Hidden",
+  showEnglish: "Show English",
+  hideEnglish: "Hide English",
+  showLocked: "Show Locked",
+  hideLocked: "Hide Locked",
+  recentOnly: "Recent Only",
+  bulkOperations: "Bulk Operations",
+  bulkOpsActive: "Bulk Ops Active",
   loadingMore: "Loading more...",
   loadingRemainingLessons: "Loading remaining lessons...",
   scrollToLoadMore: "Scroll to load more...",
@@ -54,6 +65,18 @@ export const STUDY_PANEL_TEXT = {
   noMatches: "No study items match the current filters.",
   queueRefreshError: "Couldn't refresh your study queue. Check your connection and try again.",
 } as const;
+
+export function studyPanelAllGroupsLabel(viewedLevel: number | null): string {
+  return viewedLevel === null ? STUDY_PANEL_TEXT.allGroupsLabel : `All L${viewedLevel} Groups`;
+}
+
+export function studyPanelAllStatusesLabel(viewedLevel: number | null): string {
+  return viewedLevel === null ? STUDY_PANEL_TEXT.allStatusesLabel : `All L${viewedLevel} Statuses`;
+}
+
+export function studyPanelAllSrsPluralLabel(viewedLevel: number | null): string {
+  return viewedLevel === null ? STUDY_PANEL_TEXT.allSrsPluralLabel : `All L${viewedLevel} SRSs`;
+}
 
 export const STUDY_PANEL_SRS_STATUSES = [
   STUDY_SRS_FILTERS.all,

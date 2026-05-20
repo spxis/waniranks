@@ -5,6 +5,7 @@ import ExplorerBulkSelectionPanel from "../../shared/ExplorerBulkSelectionPanel"
 import UnifiedExplorerCard from "../../shared/UnifiedExplorerCard";
 import { ReadingWithPronunciation, badgeClass, formatNextReviewBadge, formatNumber, glyphSubtitleForDisplay, glyphTextSizeClass, isNewGlyphWithinHours, jlptLevelPillClass, lockedCardStateClass, shortSubjectTypeLabel, statusClass, statusShortLabel, subjectTypePillClass, titleForDisplay, typeCardClass, typeGlyphBoxClass } from "../lib/levelExplorerDisplay";
 import { LEVEL_WK_STATUSES } from "../lib/levelExplorerDomain";
+import { LEVEL_EXPLORER_TEXT } from "./LevelExplorer.constants";
 import LevelExplorerDetailSection from "./LevelExplorerDetailSection";
 
 type VocabularyKanjiLink = {
@@ -152,21 +153,21 @@ export default function LevelExplorerItemsGrid({
             disabled={!canToggleEnglish}
             className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+            {canToggleEnglish ? (showEnglish ? LEVEL_EXPLORER_TEXT.hideEnglish : LEVEL_EXPLORER_TEXT.showEnglish) : LEVEL_EXPLORER_TEXT.hintsHidden}
           </button>
           <button
             type="button"
             onClick={() => onSetRecentOnly(!recentOnly)}
             className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(recentOnly)}`}
           >
-            Recent Only
+            {LEVEL_EXPLORER_TEXT.recentOnly}
           </button>
           <button
             type="button"
             onClick={() => onSetShowLocked(!showLocked)}
             className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted"
           >
-            {showLocked ? "Hide Locked" : "Show Locked"}
+            {showLocked ? LEVEL_EXPLORER_TEXT.hideLocked : LEVEL_EXPLORER_TEXT.showLocked}
           </button>
           <button
             type="button"
@@ -186,7 +187,7 @@ export default function LevelExplorerItemsGrid({
               bulkModeEnabled,
             )}`}
           >
-            {bulkModeEnabled ? "Bulk Ops Active" : "Bulk Operations"}
+            {bulkModeEnabled ? LEVEL_EXPLORER_TEXT.bulkOpsActive : LEVEL_EXPLORER_TEXT.bulkOperations}
           </button>
         </div>
       </div>

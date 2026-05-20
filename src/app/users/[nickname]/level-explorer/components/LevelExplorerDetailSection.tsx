@@ -34,6 +34,7 @@ import {
   isRadicalSubjectType,
   isVocabularySubjectType,
 } from "../lib/levelExplorerDomain";
+import { LEVEL_EXPLORER_TEXT } from "./LevelExplorer.constants";
 
 type Props = {
   accountId: string;
@@ -172,7 +173,7 @@ export default function LevelExplorerDetailSection({
                 onClick={onTogglePeek}
                 className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground"
               >
-                {isStudyHidden ? "Peek" : "Hide Peek"}
+                {isStudyHidden ? LEVEL_EXPLORER_TEXT.peek : LEVEL_EXPLORER_TEXT.hidePeek}
               </button>
             </div>
           ) : null}
@@ -184,7 +185,7 @@ export default function LevelExplorerDetailSection({
                 disabled={!canToggleEnglish}
                 className="rounded-full border border-line bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+                {canToggleEnglish ? (showEnglish ? LEVEL_EXPLORER_TEXT.hideEnglish : LEVEL_EXPLORER_TEXT.showEnglish) : LEVEL_EXPLORER_TEXT.hintsHidden}
               </button>
             </div>
           ) : null}

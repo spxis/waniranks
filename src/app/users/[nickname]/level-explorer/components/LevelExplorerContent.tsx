@@ -17,6 +17,7 @@ import {
   LEVEL_EXPLORER_JLPT_FILTER_LABELS,
   LEVEL_EXPLORER_JLPT_MIX_LEVELS,
   LEVEL_EXPLORER_REVIEW_TIMING_LABELS,
+  LEVEL_EXPLORER_TEXT,
 } from "./LevelExplorer.constants";
 import type { LevelExplorerContentProps as Props } from "./LevelExplorerContent.types";
 
@@ -301,7 +302,7 @@ export default function LevelExplorerContent({
               disabled={!canToggleEnglish}
               className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {canToggleEnglish ? (showEnglish ? "Hide English" : "Show English") : "Hints Hidden"}
+              {canToggleEnglish ? (showEnglish ? LEVEL_EXPLORER_TEXT.hideEnglish : LEVEL_EXPLORER_TEXT.showEnglish) : LEVEL_EXPLORER_TEXT.hintsHidden}
             </button>
           </div>
         </div>
