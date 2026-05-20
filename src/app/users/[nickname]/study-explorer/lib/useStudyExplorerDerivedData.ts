@@ -136,6 +136,16 @@ export function useStudyExplorerDerivedData({
     hiddenSubmittedAssignmentIds.size === 0 &&
     submittingByAssignmentId.size === 0;
 
+  const hasReliableReviewLevelAvailability =
+    queueMode === STUDY_QUEUE_TYPES.review &&
+    viewedLevel === null &&
+    isAllStudyTypeFilter(typeFilter) &&
+    isAllStudySrsFilter(effectiveSrsFilter) &&
+    effectiveSrsStageFilter === null &&
+    !effectiveRecentOnly &&
+    effectiveShowLocked &&
+    Object.keys(reviewLevelCountsFromServer).length > 0;
+
   const effectiveReviewLevelCounts =
     canUseServerReviewLevelCounts && Object.keys(reviewLevelCountsFromServer).length > 0
       ? reviewLevelCountsFromServer
@@ -421,7 +431,7 @@ export function useStudyExplorerDerivedData({
   return {
     levelOptions,
     availableLevels,
-    hasReliableReviewLevelAvailability: canUseServerReviewLevelCounts,
+    hasReliableReviewLevelAvailability,
     reviewLevelCounts: effectiveReviewLevelCounts,
     filteredItems,
     lessonLevelCountsFromServer,
