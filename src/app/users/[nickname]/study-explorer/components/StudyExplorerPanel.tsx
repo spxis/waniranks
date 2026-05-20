@@ -139,7 +139,7 @@ export default function StudyExplorerPanel({
   const showFilterPagingState = queueMode === STUDY_QUEUE_TYPES.lesson && viewedLevel !== null && hasMorePages && filteredItems.length === 0;
   const showLoadingOverlay = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
   const displayErrorMessage = errorMessage === "Failed to fetch" ? STUDY_PANEL_TEXT.queueRefreshError : errorMessage;
-  const hideControlsDuringInitialLoad = showLoadingOverlay && !hasData;
+  const hideControlsDuringInitialLoad = showLoadingIndicator;
   const srsStageOptions = getSrsStageOptions(srsFilter);
   const hasSrsStageOptions = srsStageOptions.length > 0;
   const allSrsStagesSelected = srsStageFilter === null || !hasSrsStageOptions;
