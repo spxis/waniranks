@@ -49,15 +49,7 @@ type Props = {
   queueMode: StudyQueueMode;
   lessonLevelCounts: Record<number, number>;
   typeCounts: { all: number; radical: number; kanji: number; vocabulary: number };
-  srsCounts: {
-    all: number;
-    locked: number;
-    apprentice: number;
-    guru: number;
-    master: number;
-    enlightened: number;
-    burned: number;
-  };
+  srsCounts: { all: number; locked: number; apprentice: number; guru: number; master: number; enlightened: number; burned: number };
   srsStageCounts: Record<number, number>;
   filteredItems: StudyQueueItem[];
   totalItems: number;
