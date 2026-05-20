@@ -524,3 +524,24 @@ test("study does not keep zero-count status selected", async ({ browser, baseURL
     await expect(selectedZeroStatus).toHaveCount(0);
   });
 });
+
+test("study does not keep zero-count level selected for active type", async ({ browser, baseURL }) => {
+  test.skip(!accessibleStudyUser, "No accessible user page for study zero-level checks in this environment.");
+  const user = accessibleStudyUser ?? smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=study&mode=review&level=9&type=kanji&srs=all#explorer`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    const accessGate = page.getByText(USER_ACCESS_GATE_TEXT);
+    if ((await accessGate.count()) > 0) {
+      await expect(accessGate).toBeVisible();
+      return;
+    }
+
+    await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {
+      // Some pages keep lightweight polling alive; proceed with assertions.
+    });
+
+    const selectedZeroLevel = page.locator("button.bg-accent").filter({ hasText: /^L\d+\s*\(0\)$/i });
+    await expect(selectedZeroLevel).toHaveCount(0);
+  });
+});

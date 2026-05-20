@@ -249,7 +249,15 @@ export function useStudyExplorerEffects({
   useEffect(() => {
     if (!hasData) return;
 
-    const nextViewedLevel = resolveEffectiveViewedLevelFilter(viewedLevel, effectiveViewedLevel, typeCounts.all);
+    const selectedTypeCountAtViewedLevel = viewedLevel !== null
+      ? (typeCountsByLevel[viewedLevel]?.[typeFilter] ?? 0)
+      : typeCounts.all;
+
+    const nextViewedLevel = resolveEffectiveViewedLevelFilter(
+      viewedLevel,
+      effectiveViewedLevel,
+      selectedTypeCountAtViewedLevel,
+    );
     if (nextViewedLevel !== viewedLevel) setViewedLevel(nextViewedLevel);
 
     const nextTypeFilter = resolveEffectiveTypeFilter(typeFilter, typeCounts);
@@ -260,7 +268,7 @@ export function useStudyExplorerEffects({
 
     const nextSrsStageFilter = resolveEffectiveSrsStageFilter(srsStageFilter, srsStageCounts);
     if (nextSrsStageFilter !== srsStageFilter) setSrsStageFilter(nextSrsStageFilter);
-  }, [effectiveViewedLevel, hasData, srsCounts, srsFilter, srsStageCounts, srsStageFilter, setSrsFilter, setSrsStageFilter, setTypeFilter, setViewedLevel, typeCounts, typeFilter, viewedLevel]);
+  }, [effectiveViewedLevel, hasData, srsCounts, srsFilter, srsStageCounts, srsStageFilter, setSrsFilter, setSrsStageFilter, setTypeFilter, setViewedLevel, typeCounts, typeCountsByLevel, typeFilter, viewedLevel]);
 
   useEffect(() => {
     if (!hasHydratedViewedLevel) return;

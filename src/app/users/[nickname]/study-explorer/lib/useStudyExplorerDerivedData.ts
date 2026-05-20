@@ -156,9 +156,7 @@ export function useStudyExplorerDerivedData({
     isAllStudySrsFilter(effectiveSrsFilter) &&
     effectiveSrsStageFilter === null &&
     !effectiveRecentOnly &&
-    effectiveShowLocked &&
-    hiddenSubmittedAssignmentIds.size === 0 &&
-    submittingByAssignmentId.size === 0;
+    effectiveShowLocked;
 
   const hasReliableReviewLevelAvailability =
     queueMode === STUDY_QUEUE_TYPES.review &&
@@ -319,9 +317,7 @@ export function useStudyExplorerDerivedData({
     isAllStudySrsFilter(effectiveSrsFilter) &&
     effectiveSrsStageFilter === null &&
     !effectiveRecentOnly &&
-    effectiveShowLocked &&
-    hiddenSubmittedAssignmentIds.size === 0 &&
-    submittingByAssignmentId.size === 0;
+    effectiveShowLocked;
 
   const typeCounts =
     queueMode === STUDY_QUEUE_TYPES.lesson
@@ -367,9 +363,7 @@ export function useStudyExplorerDerivedData({
     viewedLevel === null &&
     isAllStudyTypeFilter(typeFilter) &&
     !effectiveRecentOnly &&
-    effectiveShowLocked &&
-    hiddenSubmittedAssignmentIds.size === 0 &&
-    submittingByAssignmentId.size === 0;
+    effectiveShowLocked;
 
   const srsCounts = canUseServerSrsCounts ? (srsCountsFromServer ?? srsCountsFromLoaded) : srsCountsFromLoaded;
 
@@ -381,9 +375,7 @@ export function useStudyExplorerDerivedData({
       viewedLevel === null &&
       isAllStudyTypeFilter(typeFilter) &&
       !effectiveRecentOnly &&
-      effectiveShowLocked &&
-      hiddenSubmittedAssignmentIds.size === 0 &&
-      submittingByAssignmentId.size === 0
+      effectiveShowLocked
     ) {
       return fromServer;
     }
@@ -413,8 +405,6 @@ export function useStudyExplorerDerivedData({
     viewedLevel,
     typeFilter,
     effectiveShowLocked,
-    hiddenSubmittedAssignmentIds.size,
-    submittingByAssignmentId.size,
   ]);
 
   const modalItems = useMemo(() => {
