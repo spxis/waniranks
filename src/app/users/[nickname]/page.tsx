@@ -255,6 +255,12 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   const levelProgressByLevel = Object.fromEntries(
     availableProgressLevels.map((level) => [level, computeLevelSnapshot(level)]),
   ) as Record<number, LevelProgressSnapshot>;
+  const levelItemCountsByLevel = Object.fromEntries(
+    availableProgressLevels.map((level) => {
+      const progress = levelProgressByLevel[level] ?? computeLevelSnapshot(level);
+      return [level, progress.radical.total + progress.kanji.total + progress.vocabulary.total];
+    }),
+  ) as Record<number, number>;
 
   const createEmptyItemSpreadDetails = (): ItemSpreadGroupDetails => ({
     [WK_STATUSES.apprentice]: { levels: [], stages: [] },
@@ -423,6 +429,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               accountId={account.id}
               maxLevel={account.wkLevel}
               accountPendingReviews={account.pendingReviews}
+              levelItemCountsByLevel={levelItemCountsByLevel}
               initialQueueMode={initialQueueMode}
               initialStudyMode={initialStudyMode}
               initialStudyFilters={{

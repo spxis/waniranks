@@ -171,7 +171,7 @@ export default function StudyExplorerPanel({
                 disabled={filtersLoading}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : badgeClass(viewedLevel === null)}`}
               >
-                {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(totalLessonsInVisibleLevels)})</span>
+                {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(totalLessonsInVisibleLevels)})</span>
               </button>
               {lessonLevelOptions.map(([level, count]) => (
                 <button
@@ -181,7 +181,7 @@ export default function StudyExplorerPanel({
                   disabled={filtersLoading}
                   className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== level ? disabledBadgeClass() : badgeClass(viewedLevel === level)}`}
                 >
-                  L{level} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                  L{level} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                 </button>
               ))}
             </>
@@ -193,7 +193,7 @@ export default function StudyExplorerPanel({
                 disabled={filtersLoading}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : badgeClass(viewedLevel === null)}`}
               >
-                {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(totalReviewsInVisibleLevels)})</span>
+                {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(totalReviewsInVisibleLevels)})</span>
               </button>
               {reviewLevelChips.map((chip) => {
                 if (chip.kind === "range") {
@@ -219,7 +219,7 @@ export default function StudyExplorerPanel({
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
-                    L{chip.level} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(levelCount)})</span>
+                    L{chip.level} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(levelCount)})</span>
                   </button>
                 );
               })}
@@ -261,7 +261,7 @@ export default function StudyExplorerPanel({
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
-                    {srsFilterButtonLabel(status)} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                    {srsFilterButtonLabel(status)} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                   </button>
                   );
                 })}
@@ -290,7 +290,7 @@ export default function StudyExplorerPanel({
                     disabled={disabled}
                     className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}
                   >
-                    SRS {stage} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                    SRS {stage} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                   </button>
                   );
                 })}

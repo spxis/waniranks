@@ -23,6 +23,7 @@ import type { LevelExplorerContentProps as Props } from "./LevelExplorerContent.
 export default function LevelExplorerContent({
   accountId,
   levelOptions,
+  levelItemCountsByLevel,
   selectedLevels,
   searchAvailableLevels,
   visibleTypes,
@@ -294,7 +295,7 @@ export default function LevelExplorerContent({
                   selectedLevels.has(level),
                 )}`}
               >
-                L{level}
+                L{level} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(levelItemCountsByLevel[level] ?? 0)})</span>
               </button>
             ))}
           </div>
@@ -333,7 +334,7 @@ export default function LevelExplorerContent({
                     disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)
                   }`}
                 >
-                  {srsFilterButtonLabel(status)} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                  {srsFilterButtonLabel(status)} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                 </button>
               );
             })}
@@ -393,7 +394,7 @@ export default function LevelExplorerContent({
                         disabled ? disabledBadgeClass() : isJlptLevel ? jlptStyle : badgeClass(active)
                       }`}
                     >
-                      {LEVEL_EXPLORER_JLPT_FILTER_LABELS[level]} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                      {LEVEL_EXPLORER_JLPT_FILTER_LABELS[level]} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                     </button>
                   );
                 })}
@@ -414,7 +415,7 @@ export default function LevelExplorerContent({
                         disabled ? disabledBadgeClass() : badgeClass(reviewTimingFilter === timing)
                       }`}
                     >
-                      {label} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                      {label} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                     </button>
                   );
                 })}
@@ -422,7 +423,7 @@ export default function LevelExplorerContent({
               {reviewTimingFilter === LEVEL_REVIEW_TIMING_FILTERS.overdue && overdueOutsideSelectedLevels > 0 ? (
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/55">
                   Showing {formatNumber(reviewTimingCounts.overdue)} overdue in selected levels, with {formatNumber(overdueOutsideSelectedLevels)} more overdue in other levels
-                  <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(accountPendingReviews)} total pending reviews)</span>.
+                  <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(accountPendingReviews)} total pending reviews)</span>.
                 </p>
               ) : null}
             </div>

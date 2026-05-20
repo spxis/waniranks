@@ -57,6 +57,7 @@ type Props = {
   isActive?: boolean;
   maxLevel: number;
   accountPendingReviews: number;
+  levelItemCountsByLevel: Record<number, number>;
   initialSnapshot: Snapshot;
   initialSrsFilter?: SrsFilter;
   showEnglish?: boolean;
@@ -70,6 +71,7 @@ export default function LevelExplorerController({
   isActive = true,
   maxLevel,
   accountPendingReviews,
+  levelItemCountsByLevel,
   initialSnapshot,
   initialSrsFilter = LEVEL_SRS_FILTERS.all,
   showEnglish = false,
@@ -413,6 +415,7 @@ export default function LevelExplorerController({
     <LevelExplorerContent
       accountId={accountId}
       levelOptions={levelOptions}
+      levelItemCountsByLevel={levelItemCountsByLevel}
       selectedLevels={selectedLevels}
       searchAvailableLevels={searchAvailableLevels}
       stickyMerge={stickyMerge}

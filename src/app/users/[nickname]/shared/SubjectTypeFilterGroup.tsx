@@ -44,7 +44,7 @@ export default function SubjectTypeFilterGroup({
         onClick={onClickAll}
         className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${allDisabledStyle ? disabledBadgeClass() : `${badgeClass(allActive)}${disabled ? " cursor-not-allowed opacity-70" : ""}`}`}
       >
-        {allLabel} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatCount(allCount ?? counts.all)})</span>
+        {allLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatCount(allCount ?? counts.all)})</span>
       </button>
       {SUBJECT_TYPE_VALUES.map((type) => (
         <SubjectTypeFilterButton

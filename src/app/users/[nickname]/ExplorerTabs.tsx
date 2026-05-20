@@ -14,6 +14,7 @@ type Props = {
   accountId: string;
   maxLevel: number;
   accountPendingReviews: number;
+  levelItemCountsByLevel: Record<number, number>;
   initialQueueMode?: QueueType | null;
   initialStudyMode?: boolean | null;
   initialSnapshot: Snapshot;
@@ -34,6 +35,7 @@ export default function ExplorerTabs({
   accountId,
   maxLevel,
   accountPendingReviews,
+  levelItemCountsByLevel,
   initialQueueMode = null,
   initialStudyMode = null,
   initialSnapshot,
@@ -394,7 +396,7 @@ export default function ExplorerTabs({
                 onClick={() => setQueueMode(QUEUE_TYPES.review)}
                 className={queueModeSegmentClass(QUEUE_TYPES.review, queueMode)}
               >
-                Reviews <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})</span>
+                Reviews <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({typeof studyCounts?.reviews === "number" ? studyCounts.reviews : "..."})</span>
               </button>
               <button
                 type="button"
@@ -403,7 +405,7 @@ export default function ExplorerTabs({
                 onClick={() => setQueueMode(QUEUE_TYPES.lesson)}
                 className={queueModeSegmentClass(QUEUE_TYPES.lesson, queueMode)}
               >
-                Lessons <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})</span>
+                Lessons <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({typeof studyCounts?.lessons === "number" ? studyCounts.lessons : "..."})</span>
               </button>
             </div>
           ) : null}
@@ -441,6 +443,7 @@ export default function ExplorerTabs({
           isActive={activeTab === "level"}
           maxLevel={maxLevel}
           accountPendingReviews={accountPendingReviews}
+          levelItemCountsByLevel={levelItemCountsByLevel}
           initialSnapshot={initialSnapshot}
           initialSrsFilter={initialSrsFilter}
           showEnglish={showEnglish}

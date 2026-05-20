@@ -130,7 +130,7 @@ export default function JlptExplorerContent({
           <div>
             <h2 className="text-xl font-black text-foreground">JLPT Explorer</h2>
             <p className="text-xs uppercase tracking-[0.08em] text-foreground/70">
-              Browse all N1-N5 kanji <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(items.length)} total)</span>
+              Browse all N1-N5 kanji <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(items.length)} total)</span>
             </p>
           </div>
           <div className="w-full lg:max-w-[38rem]">
@@ -190,7 +190,7 @@ export default function JlptExplorerContent({
                   gradeFilter === "none",
                 )}`}
               >
-                None <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(gradeCounts.get("none") ?? 0)})</span>
+                None <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(gradeCounts.get("none") ?? 0)})</span>
               </button>
             ) : null}
             {availableGrades.map((grade) => (
@@ -202,7 +202,7 @@ export default function JlptExplorerContent({
                   gradeFilter === grade,
                 )}`}
               >
-                G{grade} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(gradeCounts.get(grade) ?? 0)})</span>
+                G{grade} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(gradeCounts.get(grade) ?? 0)})</span>
               </button>
             ))}
           </div>
@@ -216,7 +216,7 @@ export default function JlptExplorerContent({
                 selectedLevels.size === 5,
               )}`}
             >
-              JLPT All <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(counts.all)})</span>
+              JLPT All <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(counts.all)})</span>
             </button>
             {([
               [5, counts.n5],
@@ -235,7 +235,7 @@ export default function JlptExplorerContent({
                     : "border-teal-300 bg-teal-100 text-teal-800 hover:bg-teal-200"
                 }`}
               >
-                N{level} <span className="ml-0.5 align-baseline text-[10px] font-semibold tracking-normal opacity-75">({formatNumber(count)})</span>
+                N{level} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
               </button>
             ))}
           </div>

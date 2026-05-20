@@ -11,6 +11,7 @@ import type { VocabularyKanjiLink } from "../lib/levelExplorerItemDetails";
 export type LevelExplorerContentProps = {
   accountId: string;
   levelOptions: number[];
+  levelItemCountsByLevel: Record<number, number>;
   selectedLevels: Set<number>;
   searchAvailableLevels: Set<number> | null;
   stickyMerge: boolean;

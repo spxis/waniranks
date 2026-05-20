@@ -8,6 +8,7 @@ type Props = {
   isActive?: boolean;
   maxLevel: number;
   accountPendingReviews: number;
+  levelItemCountsByLevel: Record<number, number>;
   initialSnapshot: Snapshot;
   initialSrsFilter?: SrsFilter;
   showEnglish?: boolean;
