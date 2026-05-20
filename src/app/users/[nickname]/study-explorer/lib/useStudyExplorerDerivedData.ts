@@ -40,6 +40,23 @@ type Args = {
   revealedAssignmentIds: Set<number>;
 };
 
+function normalizePositiveLevelCounts(raw: Record<number, number> | Record<string, number> | undefined): Record<number, number> {
+  if (!raw) {
+    return {};
+  }
+
+  const normalized: Record<number, number> = {};
+  for (const [levelRaw, count] of Object.entries(raw)) {
+    const level = Number(levelRaw);
+    if (!Number.isInteger(level) || level <= 0 || typeof count !== "number" || count <= 0) {
+      continue;
+    }
+    normalized[level] = count;
+  }
+
+  return normalized;
+}
+
 export function useStudyExplorerDerivedData({
   maxLevel,
   loadedItems,
@@ -103,10 +120,31 @@ export function useStudyExplorerDerivedData({
     effectiveShowLocked,
   ]);
 
+  const reviewLevelCountsFromServer = useMemo(
+    () => normalizePositiveLevelCounts(data?.levelCounts ?? cachedQueueData?.levelCounts),
+    [cachedQueueData?.levelCounts, data?.levelCounts],
+  );
+
+  const canUseServerReviewLevelCounts =
+    queueMode === STUDY_QUEUE_TYPES.review &&
+    viewedLevel === null &&
+    isAllStudyTypeFilter(typeFilter) &&
+    isAllStudySrsFilter(effectiveSrsFilter) &&
+    effectiveSrsStageFilter === null &&
+    !effectiveRecentOnly &&
+    effectiveShowLocked &&
+    hiddenSubmittedAssignmentIds.size === 0 &&
+    submittingByAssignmentId.size === 0;
+
+  const effectiveReviewLevelCounts =
+    canUseServerReviewLevelCounts && Object.keys(reviewLevelCountsFromServer).length > 0
+      ? reviewLevelCountsFromServer
+      : reviewLevelCounts;
+
   const availableLevels = useMemo(() => {
     const output = new Set<number>();
     if (queueMode === STUDY_QUEUE_TYPES.review) {
-      for (const [levelRaw, count] of Object.entries(reviewLevelCounts)) {
+      for (const [levelRaw, count] of Object.entries(effectiveReviewLevelCounts)) {
         const level = Number(levelRaw);
         if (Number.isInteger(level) && count > 0) {
           output.add(level);
@@ -121,7 +159,7 @@ export function useStudyExplorerDerivedData({
     }
 
     return output;
-  }, [loadedItems, queueMode, effectiveRecentOnly, reviewLevelCounts]);
+  }, [effectiveRecentOnly, effectiveReviewLevelCounts, loadedItems, queueMode]);
 
   const filteredItems = useMemo(
     () =>
@@ -176,21 +214,7 @@ export function useStudyExplorerDerivedData({
   }, [loadedItems, effectiveRecentOnly, effectiveShowLocked, typeFilter]);
 
   const lessonLevelCountsFromServer = useMemo(() => {
-    const raw = data?.levelCounts ?? cachedQueueData?.levelCounts;
-    if (!raw) {
-      return {} as Record<number, number>;
-    }
-
-    const normalized: Record<number, number> = {};
-    for (const [levelRaw, count] of Object.entries(raw)) {
-      const level = Number(levelRaw);
-      if (!Number.isInteger(level) || level <= 0 || typeof count !== "number" || count <= 0) {
-        continue;
-      }
-      normalized[level] = count;
-    }
-
-    return normalized;
+    return normalizePositiveLevelCounts(data?.levelCounts ?? cachedQueueData?.levelCounts);
   }, [cachedQueueData?.levelCounts, data?.levelCounts]);
 
   const lessonLevelCounts = useMemo(() => {
@@ -397,7 +421,7 @@ export function useStudyExplorerDerivedData({
   return {
     levelOptions,
     availableLevels,
-    reviewLevelCounts,
+    reviewLevelCounts: effectiveReviewLevelCounts,
     filteredItems,
     lessonLevelCountsFromServer,
     lessonLevelCounts,
