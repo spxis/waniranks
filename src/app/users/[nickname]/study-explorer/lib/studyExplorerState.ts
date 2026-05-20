@@ -1,5 +1,5 @@
 import type { QueueResponse, StudyCounts, StudyQueueMode, StudySrsFilter, StudySrsStageFilter, StudyTypeFilter } from "./studyExplorerTypes";
-import { STUDY_SRS_FILTERS, STUDY_TYPE_FILTERS } from "./studyExplorerDomain";
+import { STUDY_QUEUE_TYPES, STUDY_SRS_FILTERS, STUDY_TYPE_FILTERS } from "./studyExplorerDomain";
 
 export type StudyExplorerStorageKeys = {
   counts: string;
@@ -113,4 +113,29 @@ export function resolveEffectiveViewedLevelFilter(
   }
 
   return effectiveViewedLevel;
+}
+
+export function shouldUseServerReviewAggregateCounts({
+  queueMode,
+  srsFilter,
+  srsStageFilter,
+  recentOnly,
+  showLocked,
+  hiddenSubmittedCount,
+}: {
+  queueMode: StudyQueueMode;
+  srsFilter: StudySrsFilter;
+  srsStageFilter: StudySrsStageFilter | null;
+  recentOnly: boolean;
+  showLocked: boolean;
+  hiddenSubmittedCount: number;
+}): boolean {
+  return (
+    queueMode === STUDY_QUEUE_TYPES.review &&
+    srsFilter === STUDY_SRS_FILTERS.all &&
+    srsStageFilter === null &&
+    !recentOnly &&
+    showLocked &&
+    hiddenSubmittedCount === 0
+  );
 }

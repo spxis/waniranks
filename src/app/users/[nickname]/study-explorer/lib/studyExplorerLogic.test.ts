@@ -10,6 +10,7 @@ import {
   resolveEffectiveSrsStageFilter,
   resolveEffectiveTypeFilter,
   resolveEffectiveViewedLevelFilter,
+  shouldUseServerReviewAggregateCounts,
 } from "./studyExplorerState";
 import {
   filterStudyItems,
@@ -280,6 +281,30 @@ describe("study explorer state helpers", () => {
   it("keeps effective viewed level when selected level still has items", () => {
     expect(resolveEffectiveViewedLevelFilter(5, 5, 1)).toBe(5);
     expect(resolveEffectiveViewedLevelFilter(null, null, 0)).toBeNull();
+  });
+
+  it("uses server review aggregates only when no local hidden submissions exist", () => {
+    expect(
+      shouldUseServerReviewAggregateCounts({
+        queueMode: "review",
+        srsFilter: "all",
+        srsStageFilter: null,
+        recentOnly: false,
+        showLocked: true,
+        hiddenSubmittedCount: 0,
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldUseServerReviewAggregateCounts({
+        queueMode: "review",
+        srsFilter: "all",
+        srsStageFilter: null,
+        recentOnly: false,
+        showLocked: true,
+        hiddenSubmittedCount: 1,
+      }),
+    ).toBe(false);
   });
 
   it("reads valid persisted study counts from localStorage", () => {

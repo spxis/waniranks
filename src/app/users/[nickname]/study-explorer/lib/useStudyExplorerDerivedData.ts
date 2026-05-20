@@ -18,6 +18,7 @@ import {
   STUDY_SUBJECT_TYPES,
 } from "./studyExplorerDomain";
 import { filterStudyItems, isRecentStudyItem } from "./studyExplorerUtils";
+import { shouldUseServerReviewAggregateCounts } from "./studyExplorerState";
 
 type Args = {
   maxLevel: number;
@@ -151,11 +152,14 @@ export function useStudyExplorerDerivedData({
   );
 
   const canUseServerReviewLevelCounts =
-    queueMode === STUDY_QUEUE_TYPES.review &&
-    isAllStudySrsFilter(effectiveSrsFilter) &&
-    effectiveSrsStageFilter === null &&
-    !effectiveRecentOnly &&
-    effectiveShowLocked;
+    shouldUseServerReviewAggregateCounts({
+      queueMode,
+      srsFilter: effectiveSrsFilter,
+      srsStageFilter: effectiveSrsStageFilter,
+      recentOnly: effectiveRecentOnly,
+      showLocked: effectiveShowLocked,
+      hiddenSubmittedCount: hiddenSubmittedAssignmentIds.size,
+    });
 
   const hasReliableReviewLevelAvailability =
     queueMode === STUDY_QUEUE_TYPES.review &&
@@ -311,11 +315,14 @@ export function useStudyExplorerDerivedData({
   ]);
 
   const canUseServerTypeCounts =
-    queueMode === STUDY_QUEUE_TYPES.review &&
-    isAllStudySrsFilter(effectiveSrsFilter) &&
-    effectiveSrsStageFilter === null &&
-    !effectiveRecentOnly &&
-    effectiveShowLocked;
+    shouldUseServerReviewAggregateCounts({
+      queueMode,
+      srsFilter: effectiveSrsFilter,
+      srsStageFilter: effectiveSrsStageFilter,
+      recentOnly: effectiveRecentOnly,
+      showLocked: effectiveShowLocked,
+      hiddenSubmittedCount: hiddenSubmittedAssignmentIds.size,
+    });
 
   const typeCounts =
     queueMode === STUDY_QUEUE_TYPES.lesson
@@ -357,11 +364,16 @@ export function useStudyExplorerDerivedData({
   }, [loadedItems, queueMode, effectiveRecentOnly, viewedLevel, typeFilter, effectiveShowLocked]);
 
   const canUseServerSrsCounts =
-    queueMode === STUDY_QUEUE_TYPES.review &&
+    shouldUseServerReviewAggregateCounts({
+      queueMode,
+      srsFilter: effectiveSrsFilter,
+      srsStageFilter: effectiveSrsStageFilter,
+      recentOnly: effectiveRecentOnly,
+      showLocked: effectiveShowLocked,
+      hiddenSubmittedCount: hiddenSubmittedAssignmentIds.size,
+    }) &&
     viewedLevel === null &&
-    isAllStudyTypeFilter(typeFilter) &&
-    !effectiveRecentOnly &&
-    effectiveShowLocked;
+    isAllStudyTypeFilter(typeFilter);
 
   const srsCounts = canUseServerSrsCounts ? (srsCountsFromServer ?? srsCountsFromLoaded) : srsCountsFromLoaded;
 
@@ -369,11 +381,16 @@ export function useStudyExplorerDerivedData({
     const fromServer = data?.srsStageCounts ?? cachedQueueData?.srsStageCounts;
     if (
       fromServer &&
-      queueMode === STUDY_QUEUE_TYPES.review &&
+      shouldUseServerReviewAggregateCounts({
+        queueMode,
+        srsFilter: effectiveSrsFilter,
+        srsStageFilter: effectiveSrsStageFilter,
+        recentOnly: effectiveRecentOnly,
+        showLocked: effectiveShowLocked,
+        hiddenSubmittedCount: hiddenSubmittedAssignmentIds.size,
+      }) &&
       viewedLevel === null &&
-      isAllStudyTypeFilter(typeFilter) &&
-      !effectiveRecentOnly &&
-      effectiveShowLocked
+      isAllStudyTypeFilter(typeFilter)
     ) {
       return fromServer;
     }
@@ -403,6 +420,9 @@ export function useStudyExplorerDerivedData({
     viewedLevel,
     typeFilter,
     effectiveShowLocked,
+    effectiveSrsFilter,
+    effectiveSrsStageFilter,
+    hiddenSubmittedAssignmentIds,
   ]);
 
   const modalItems = useMemo(() => {
