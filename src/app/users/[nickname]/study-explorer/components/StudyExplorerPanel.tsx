@@ -148,6 +148,8 @@ export default function StudyExplorerPanel({
   const totalLessonsInVisibleLevels = lessonLevelOptions.reduce((sum, [, count]) => sum + count, 0);
   const allTypeCount = queueMode === STUDY_QUEUE_TYPES.lesson ? (viewedLevel === null ? totalItems : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)) : typeCounts.all;
   const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData && (hasReliableReviewLevelAvailability || !hasMorePages));
+  const levelRowAllLabel = queueMode === STUDY_QUEUE_TYPES.review ? "All Kanji Levels" : STUDY_PANEL_TEXT.allLevelsLabel;
+  const typeRowAllLabel = viewedLevel === null ? "All Groups" : `All L${viewedLevel} Groups`;
 
   return (
     <>
@@ -190,7 +192,7 @@ export default function StudyExplorerPanel({
                 disabled={filtersLoading}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : badgeClass(viewedLevel === null)}`}
               >
-                {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(totalReviewsInVisibleLevels)})</span>
+                {levelRowAllLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(totalReviewsInVisibleLevels)})</span>
               </button>
               {reviewLevelChips.map((chip) => {
                 if (chip.kind === "range") {
@@ -227,7 +229,7 @@ export default function StudyExplorerPanel({
         <div className={`mt-2 space-y-2 ${hideControlsDuringInitialLoad ? "hidden" : ""}`}>
           <SubjectTypeFilterGroup
             counts={typeCounts}
-            allLabel={viewedLevel === null ? STUDY_PANEL_TEXT.allLevelsLabel : `All L${viewedLevel}`}
+            allLabel={typeRowAllLabel}
             allCount={allTypeCount}
             allActive={isAllStudyTypeFilter(typeFilter)}
             activeTypes={{
@@ -249,7 +251,7 @@ export default function StudyExplorerPanel({
                   const isSelected = srsFilter === status;
                   const unavailable = hasData && !isSelected && status !== STUDY_SRS_FILTERS.all && count === 0;
                   const disabled = (filtersLoading && !isSelected) || unavailable;
-                  const statusLabel = status === STUDY_SRS_FILTERS.all && viewedLevel !== null ? `All L${viewedLevel} WK` : srsFilterButtonLabel(status);
+                  const statusLabel = status === STUDY_SRS_FILTERS.all ? (viewedLevel === null ? "All Status" : `All L${viewedLevel} Status`) : srsFilterButtonLabel(status);
 
                   if (unavailable) {
                     return null;
