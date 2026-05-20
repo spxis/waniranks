@@ -113,6 +113,15 @@ export default function JlptExplorerContent({
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [effectiveVisibleCount, filteredItems.length]);
+
+  useEffect(() => {
+    if (!hasMoreRemote || isLoadingMore || isLoadingData) {
+      return;
+    }
+
+    void onLoadMoreRemote();
+  }, [hasMoreRemote, isLoadingData, isLoadingMore, onLoadMoreRemote]);
+
   const visibleItems = filteredItems.slice(0, effectiveVisibleCount);
   const selectedVisibleIndex = selectedItem
     ? visibleItems.findIndex((item) => item.kanji === selectedItem.kanji)
