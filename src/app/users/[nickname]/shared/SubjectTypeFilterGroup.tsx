@@ -17,6 +17,7 @@ type Props = {
   onClickAll: () => void;
   onClickType: (type: SubjectType) => void;
   className?: string;
+  allButtonClassName?: string;
   showPlaceholderCounts?: boolean;
   disabled?: boolean;
   hideZeroInactive?: boolean;
@@ -31,6 +32,7 @@ export default function SubjectTypeFilterGroup({
   onClickAll,
   onClickType,
   className,
+  allButtonClassName,
   showPlaceholderCounts = false,
   disabled = false,
   hideZeroInactive = false,
@@ -44,7 +46,7 @@ export default function SubjectTypeFilterGroup({
         type="button"
         disabled={disabled}
         onClick={onClickAll}
-        className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${allDisabledStyle ? disabledBadgeClass() : `${badgeClass(allActive)}${disabled ? " cursor-not-allowed opacity-70" : ""}`}`}
+        className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${allDisabledStyle ? disabledBadgeClass() : `${allButtonClassName ?? badgeClass(allActive)}${disabled ? " cursor-not-allowed opacity-70" : ""}`}`}
       >
         {allLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatCount(allCount ?? counts.all)})</span>
       </button>

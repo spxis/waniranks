@@ -35,7 +35,7 @@ import {
 } from "../../level-explorer/lib/levelExplorerDisplay";
 import type { StudyQueueItem, StudyQueueMode, StudySrsFilter, StudySrsStageFilter, StudyTypeFilter, StudyWaitSortOrder } from "../lib/studyExplorerTypes";
 import { useStudyBulkReset } from "../lib/useStudyBulkReset";
-import { badgeClass, disabledBadgeClass, groupStudyReviewLevelChips } from "../lib/studyExplorerUtils";
+import { allBadgeClass, badgeClass, disabledBadgeClass, groupStudyReviewLevelChips } from "../lib/studyExplorerUtils";
 type Props = {
   canToggleEnglish: boolean;
   showEnglish: boolean;
@@ -147,8 +147,8 @@ export default function StudyExplorerPanel({
   const allTypeCount = queueMode === STUDY_QUEUE_TYPES.lesson ? (viewedLevel === null ? totalItems : (lessonLevelCounts[viewedLevel] ?? typeCounts.all)) : typeCounts.all;
   const hasMoreMatchingItems = hasMorePages && filteredItems.length < allTypeCount;
   const showFilterPagingState = queueMode === STUDY_QUEUE_TYPES.lesson && viewedLevel !== null && hasMoreMatchingItems && filteredItems.length === 0;
-  const showLoadingOverlay = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
-  const hideControlsDuringInitialLoad = showLoadingOverlay;
+  const hideControlsDuringInitialLoad = (showLoadingIndicator || showFilterPagingState) && filteredItems.length === 0;
+  const showLoadingOverlay = hideControlsDuringInitialLoad;
   const reviewLevelChips = groupStudyReviewLevelChips(levelOptions, availableLevels, viewedLevel, hasData);
   const levelTypeLabel = typeFilter === STUDY_SUBJECT_TYPES.radical ? "Radical" : typeFilter === STUDY_SUBJECT_TYPES.kanji ? "Kanji" : "Vocab";
   const levelRowAllLabel = queueMode === STUDY_QUEUE_TYPES.lesson ? STUDY_PANEL_TEXT.allLevelsLabel : isAllStudyTypeFilter(typeFilter) ? "All Levels" : `All ${levelTypeLabel} Levels`;
@@ -173,7 +173,7 @@ export default function StudyExplorerPanel({
                 type="button"
                 onClick={() => onSetViewedLevel(null)}
                 disabled={filtersLoading}
-                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : badgeClass(viewedLevel === null)}`}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : allBadgeClass(viewedLevel === null)}`}
               >
                 {STUDY_PANEL_TEXT.allLevelsLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(totalLessonsInVisibleLevels)})</span>
               </button>
@@ -195,7 +195,7 @@ export default function StudyExplorerPanel({
                 type="button"
                 onClick={() => onSetViewedLevel(null)}
                 disabled={filtersLoading}
-                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : badgeClass(viewedLevel === null)}`}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && viewedLevel !== null ? disabledBadgeClass() : allBadgeClass(viewedLevel === null)}`}
               >
                 {levelRowAllLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(totalReviewsInVisibleLevels)})</span>
               </button>
@@ -241,6 +241,7 @@ export default function StudyExplorerPanel({
               kanji: isAllStudyTypeFilter(typeFilter) || typeFilter === STUDY_SUBJECT_TYPES.kanji,
               vocabulary: isAllStudyTypeFilter(typeFilter) || typeFilter === STUDY_SUBJECT_TYPES.vocabulary,
             }}
+            allButtonClassName={allBadgeClass(isAllStudyTypeFilter(typeFilter))}
             showPlaceholderCounts={showTypeCountPlaceholders}
             disabled={filtersLoading}
             onClickAll={() => onSetTypeFilter(STUDY_TYPE_FILTERS.all)}
@@ -261,7 +262,7 @@ export default function StudyExplorerPanel({
                   }
 
                   return (
-                    <button key={status} type="button" onClick={() => onSetSrsFilter(status)} disabled={disabled} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}>
+                    <button key={status} type="button" onClick={() => onSetSrsFilter(status)} disabled={disabled} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : status === STUDY_SRS_FILTERS.all ? allBadgeClass(isSelected) : badgeClass(isSelected)}`}>
                       {statusLabel} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
                     </button>
                   );
@@ -273,7 +274,7 @@ export default function StudyExplorerPanel({
                   type="button"
                   onClick={() => onSetSrsStageFilter(null)}
                   disabled={filtersLoading}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && !allSrsStagesSelected ? disabledBadgeClass() : badgeClass(allSrsStagesSelected)}`}
+                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${filtersLoading && !allSrsStagesSelected ? disabledBadgeClass() : allBadgeClass(allSrsStagesSelected)}`}
                 >
                   {studyPanelAllSrsPluralLabel(viewedLevel)} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(srsCounts.all)})</span>
                 </button>

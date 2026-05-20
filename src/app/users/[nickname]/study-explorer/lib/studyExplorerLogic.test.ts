@@ -80,6 +80,18 @@ describe("resolveEffectiveViewedLevel", () => {
     ).toBeNull();
   });
 
+  it("keeps review level when server counts include selected level", () => {
+    expect(
+      resolveEffectiveViewedLevel({
+        queueMode: "review",
+        viewedLevel: 17,
+        maxLevel: 60,
+        loadedItems: [makeItem({ queueType: "review", wkLevel: 9 })],
+        rawLevelCounts: { 17: 3 },
+      }),
+    ).toBe(17);
+  });
+
   it("keeps lesson level when present in levelCounts", () => {
     expect(
       resolveEffectiveViewedLevel({

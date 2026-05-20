@@ -572,6 +572,26 @@ test("study selected level still groups unavailable ranges", async ({ browser, b
   });
 });
 
+test("study clicking high level chip stays on that level", async ({ browser, baseURL }) => {
+  test.skip(!accessibleStudyUser, "No accessible user page for high-level click checks in this environment.");
+  const user = accessibleStudyUser ?? smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=study&mode=review&type=all&srs=all#explorer`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    const accessGate = page.getByText(USER_ACCESS_GATE_TEXT);
+    if ((await accessGate.count()) > 0) {
+      await expect(accessGate).toBeVisible();
+      return;
+    }
+
+    const level17Chip = page.getByRole("button", { name: /^L17\s*\(\d+\)$/i }).first();
+    await expect(level17Chip).toBeVisible();
+    await level17Chip.click();
+
+    await expect.poll(() => new URL(page.url()).searchParams.get("level")).toBe("17");
+  });
+});
+
 test("study first-load groups zero levels for narrowed review filters", async ({ browser, baseURL }) => {
   test.skip(!accessibleStudyUser, "No accessible user page for first-load level grouping checks in this environment.");
   const user = accessibleStudyUser ?? smokeUsers[0] ?? fallbackUsers[0];

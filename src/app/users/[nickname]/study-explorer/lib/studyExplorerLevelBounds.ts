@@ -43,10 +43,12 @@ export function resolveEffectiveViewedLevel({
       return null;
     }
 
+    const reviewLevelCounts = normalizeLevelCounts(rawLevelCounts);
+    const reviewLevelFromCounts = (reviewLevelCounts[viewedLevel] ?? 0) > 0;
     const reviewLevelFromLoaded = loadedItems.some(
       (item) => isReviewQueueItem(item) && item.wkLevel === viewedLevel,
     );
-    if (!reviewLevelFromLoaded) {
+    if (!reviewLevelFromCounts && !reviewLevelFromLoaded) {
       return null;
     }
 
