@@ -438,3 +438,66 @@ test("jlpt explorer keeps global counts with partial visible data", async ({ bro
     await expect(page.getByText(/N5/i).first()).toBeVisible();
   });
 });
+
+test("study keeps disabled level ranges grouped after toggling Kanji", async ({ browser, baseURL }) => {
+  test.skip(!accessibleStudyUser, "No accessible user page for study regrouping checks in this environment.");
+  const user = accessibleStudyUser ?? smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=study&mode=review&type=all&srs=all#explorer`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    const accessGate = page.getByText(USER_ACCESS_GATE_TEXT);
+    if ((await accessGate.count()) > 0) {
+      await expect(accessGate).toBeVisible();
+      return;
+    }
+
+    const kanjiButton = page.getByRole("button", { name: /^kanji\s*\(\d+\)$/i }).first();
+    await expect(kanjiButton).toBeVisible();
+
+    await kanjiButton.click();
+    await kanjiButton.click();
+
+    const groupedDisabledLevels = page
+      .locator("button:disabled")
+      .filter({ hasText: /^L\d+-L\d+$/i });
+    await expect(groupedDisabledLevels.first()).toBeVisible();
+  });
+});
+
+test("study pagination loads more on scroll reach", async ({ browser, baseURL }) => {
+  test.skip(!accessibleStudyUser, "No accessible user page for study pagination checks in this environment.");
+  const user = accessibleStudyUser ?? smokeUsers[0] ?? fallbackUsers[0];
+  const url = `${baseURL}/users/${encodeURIComponent(user)}?tab=study&mode=review&type=all&srs=all#explorer`;
+
+  await assertPageLoads(browser, url, async (page) => {
+    const accessGate = page.getByText(USER_ACCESS_GATE_TEXT);
+    if ((await accessGate.count()) > 0) {
+      await expect(accessGate).toBeVisible();
+      return;
+    }
+
+    const summary = page.getByText(/Showing\s+\d+\s+matching items\s+·\s+\d+\s+total in queue/i).first();
+    await expect(summary).toBeVisible();
+
+    const beforeText = (await summary.textContent()) ?? "";
+    const beforeMatch = beforeText.match(/Showing\s+(\d+)\s+matching items\s+·\s+(\d+)\s+total in queue/i);
+    const beforeShown = Number(beforeMatch?.[1] ?? "0");
+    const total = Number(beforeMatch?.[2] ?? "0");
+    if (beforeShown >= total) {
+      return;
+    }
+
+    const sentinel = page
+      .locator("div")
+      .filter({ hasText: /Scroll to load more|Loading more/i })
+      .first();
+    await expect(sentinel).toBeVisible();
+    await sentinel.scrollIntoViewIfNeeded();
+
+    await expect.poll(async () => {
+      const text = (await summary.textContent()) ?? "";
+      const match = text.match(/Showing\s+(\d+)\s+matching items\s+·\s+(\d+)\s+total in queue/i);
+      return Number(match?.[1] ?? "0");
+    }).toBeGreaterThan(beforeShown);
+  });
+});

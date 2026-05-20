@@ -9,8 +9,6 @@ import {
   isAllStudySrsFilter,
   isAllStudyTypeFilter,
   STUDY_EXPLORER_EMPTY_TYPE_COUNTS_BY_LEVEL,
-  STUDY_EXPLORER_LESSON_API_PAGE_SIZE,
-  STUDY_EXPLORER_REVIEW_API_PAGE_SIZE,
   STUDY_QUEUE_TYPES,
   STUDY_SRS_FILTERS,
   STUDY_TYPE_FILTERS,
@@ -48,6 +46,22 @@ import {
 
 function isStudyWaitSortOrder(value: string | null): value is StudyWaitSortOrder {
   return value === "oldest_wait" || value === "newest_wait";
+}
+
+function getStudyGridColumns(): number {
+  if (typeof window === "undefined") {
+    return 4;
+  }
+
+  if (window.matchMedia("(min-width: 1024px)").matches) {
+    return 4;
+  }
+
+  if (window.matchMedia("(min-width: 640px)").matches) {
+    return 2;
+  }
+
+  return 1;
 }
 
 export default function StudyExplorer({
@@ -98,6 +112,7 @@ export default function StudyExplorer({
   const [hasPendingStudySubmissions, setHasPendingStudySubmissions] = useState(false);
   const [showLocked, setShowLocked] = useState(initialFilters?.showLocked ?? true);
   const [recentOnly, setRecentOnly] = useState(initialFilters?.recentOnly ?? false);
+  const [gridColumns, setGridColumns] = useState<number>(() => getStudyGridColumns());
   const [waitSortOrder, setWaitSortOrder] = useState<StudyWaitSortOrder>(() => {
     if (typeof window === "undefined") {
       return "oldest_wait";
@@ -121,10 +136,10 @@ export default function StudyExplorer({
   const effectiveShowLocked = queueMode === STUDY_QUEUE_TYPES.lesson ? true : showLocked;
   const effectiveSrsStageFilter: StudySrsStageFilter | null =
     queueMode === STUDY_QUEUE_TYPES.lesson ? null : normalizeSrsStageFilter(srsFilter, srsStageFilter);
-  const initialPageSize =
-    queueMode === STUDY_QUEUE_TYPES.lesson
-      ? STUDY_EXPLORER_LESSON_API_PAGE_SIZE
-      : STUDY_EXPLORER_REVIEW_API_PAGE_SIZE;
+  const initialPageSize = useMemo(
+    () => (queueMode === STUDY_QUEUE_TYPES.lesson ? gridColumns * 40 : gridColumns * 24),
+    [gridColumns, queueMode],
+  );
 
   useLayoutEffect(() => {
     const cached = readStoredQueue(accountId, queueMode);
@@ -137,6 +152,26 @@ export default function StudyExplorer({
       setLoadMoreError(null);
     });
   }, [accountId, queueMode, storageKeys.counts]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const updateGridColumns = () => {
+      setGridColumns(getStudyGridColumns());
+    };
+
+    updateGridColumns();
+    const sm = window.matchMedia("(min-width: 640px)");
+    const lg = window.matchMedia("(min-width: 1024px)");
+    sm.addEventListener("change", updateGridColumns);
+    lg.addEventListener("change", updateGridColumns);
+    return () => {
+      sm.removeEventListener("change", updateGridColumns);
+      lg.removeEventListener("change", updateGridColumns);
+    };
+  }, []);
 
   const { data, error, isLoading, isValidating, mutate: mutateQueue } = useSWR(
     `/api/study/${accountId}/queue?mode=${queueMode}&limit=${initialPageSize}&offset=0`,
@@ -360,11 +395,6 @@ export default function StudyExplorer({
     hasMorePages,
     isLoadingMore,
     loadMorePage,
-    queueMode,
-    viewedLevel: effectiveViewedLevel,
-    typeFilter,
-    lessonLevelCounts,
-    filteredItemsLength: filteredItems.length,
   });
 
   const { submitReview, submitLessonStart, submitResetToLessons, closeReviewSession } = useStudyReviewSubmission({
@@ -411,6 +441,7 @@ export default function StudyExplorer({
         srsStageCounts={srsStageCounts}
         filteredItems={sortedFilteredItems}
         waitSortOrder={waitSortOrder}
+        gridColumns={gridColumns}
         totalItems={totalItems}
         hasMorePages={hasMorePages}
         isLoadingMore={isLoadingMore}

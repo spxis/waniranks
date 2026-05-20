@@ -121,14 +121,38 @@ export function useStudyExplorerDerivedData({
   ]);
 
   const reviewLevelCountsFromServer = useMemo(
-    () => normalizePositiveLevelCounts(data?.levelCounts ?? cachedQueueData?.levelCounts),
-    [cachedQueueData?.levelCounts, data?.levelCounts],
+    () => {
+      const levelCounts = normalizePositiveLevelCounts(data?.levelCounts ?? cachedQueueData?.levelCounts);
+      if (isAllStudyTypeFilter(typeFilter)) {
+        return levelCounts;
+      }
+
+      const typeCountsByLevel = data?.typeCountsByLevel ?? cachedQueueData?.typeCountsByLevel;
+      if (!typeCountsByLevel) {
+        return {};
+      }
+
+      const byType: Record<number, number> = {};
+      for (const [levelRaw, counts] of Object.entries(typeCountsByLevel)) {
+        const level = Number(levelRaw);
+        if (!Number.isInteger(level) || level <= 0) {
+          continue;
+        }
+
+        const count = counts?.[typeFilter] ?? 0;
+        if (count > 0) {
+          byType[level] = count;
+        }
+      }
+
+      return byType;
+    },
+    [cachedQueueData?.levelCounts, cachedQueueData?.typeCountsByLevel, data?.levelCounts, data?.typeCountsByLevel, typeFilter],
   );
 
   const canUseServerReviewLevelCounts =
     queueMode === STUDY_QUEUE_TYPES.review &&
     viewedLevel === null &&
-    isAllStudyTypeFilter(typeFilter) &&
     isAllStudySrsFilter(effectiveSrsFilter) &&
     effectiveSrsStageFilter === null &&
     !effectiveRecentOnly &&
@@ -139,7 +163,6 @@ export function useStudyExplorerDerivedData({
   const hasReliableReviewLevelAvailability =
     queueMode === STUDY_QUEUE_TYPES.review &&
     viewedLevel === null &&
-    isAllStudyTypeFilter(typeFilter) &&
     isAllStudySrsFilter(effectiveSrsFilter) &&
     effectiveSrsStageFilter === null &&
     !effectiveRecentOnly &&

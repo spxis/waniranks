@@ -65,6 +65,7 @@ type Props = {
   errorMessage: string | null;
   showLocked: boolean;
   waitSortOrder: StudyWaitSortOrder;
+  gridColumns: number;
   sentinelRef: React.RefObject<HTMLDivElement | null>;
   onSetViewedLevel: (level: number | null) => void;
   onSetTypeFilter: (filter: StudyTypeFilter) => void;
@@ -106,6 +107,7 @@ export default function StudyExplorerPanel({
   errorMessage,
   showLocked,
   waitSortOrder,
+  gridColumns,
   sentinelRef,
   onSetViewedLevel,
   onSetTypeFilter,
@@ -148,6 +150,9 @@ export default function StudyExplorerPanel({
   const levelTypeLabel = typeFilter === STUDY_SUBJECT_TYPES.radical ? "Radical" : typeFilter === STUDY_SUBJECT_TYPES.kanji ? "Kanji" : "Vocab";
   const levelRowAllLabel = queueMode === STUDY_QUEUE_TYPES.lesson ? STUDY_PANEL_TEXT.allLevelsLabel : isAllStudyTypeFilter(typeFilter) ? "All Levels" : `All ${levelTypeLabel} Levels`;
   const typeRowAllLabel = studyPanelAllGroupsLabel(viewedLevel);
+  const loadingFillCount = hasMorePages && isLoadingMore && gridColumns > 1
+    ? (gridColumns - (filteredItems.length % gridColumns)) % gridColumns
+    : 0;
   return (
     <>
       <header className="border-b border-line bg-surface-muted px-5 py-4">
@@ -439,6 +444,15 @@ export default function StudyExplorerPanel({
                   />
                 );
               })}
+              {loadingFillCount > 0
+                ? Array.from({ length: loadingFillCount }, (_, index) => (
+                    <div
+                      key={`loading-fill-${index}`}
+                      aria-hidden="true"
+                      className="rounded-2xl border border-line bg-surface-muted/70 p-4"
+                    />
+                  ))
+                : null}
             </div>
 
             {hasMorePages ? (
