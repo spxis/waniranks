@@ -246,7 +246,11 @@ export default function StudyExplorerPanel({
                   const isSelected = srsFilter === status;
                   const unavailable = hasData && !isSelected && status !== STUDY_SRS_FILTERS.all && count === 0;
                   const disabled = (filtersLoading && !isSelected) || unavailable;
-                  const statusLabel = status === STUDY_SRS_FILTERS.all && viewedLevel !== null ? `All L${viewedLevel}` : srsFilterButtonLabel(status);
+                  const statusLabel = status === STUDY_SRS_FILTERS.all && viewedLevel !== null ? `All L${viewedLevel} WK` : srsFilterButtonLabel(status);
+
+                  if (unavailable) {
+                    return null;
+                  }
 
                   return (
                     <button key={status} type="button" onClick={() => onSetSrsFilter(status)} disabled={disabled} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}>
@@ -270,6 +274,10 @@ export default function StudyExplorerPanel({
                   const isSelected = srsStageFilter === stage;
                   const unavailable = hasData && !isSelected && count === 0;
                   const disabled = (filtersLoading && !isSelected) || unavailable;
+
+                  if (unavailable) {
+                    return null;
+                  }
 
                   return (
                     <button key={stage} type="button" onClick={() => onSetSrsStageFilter(stage)} disabled={disabled} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${disabled && !isSelected ? disabledBadgeClass() : badgeClass(isSelected)}`}>
