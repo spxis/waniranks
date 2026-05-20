@@ -3,13 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { SUBJECT_TYPES, type WkStatus } from "@/lib/domainConstants";
-
 import jlptReadings from "@/data/jlptReadings.json";
 import JlptExplorerContent from "./JlptExplorerContent";
-import {
-  matchesJlptSearch,
-  normalizeSearch,
-} from "../lib/jlptDisplay";
+import { matchesJlptSearch, normalizeSearch } from "../lib/jlptDisplay";
 import type { JlptItem, UserKanjiItem } from "../../explorerTypes";
 
 type Props = {
@@ -433,17 +429,24 @@ export default function JlptExplorer({
     }
   }, [selectedKanji]);
 
-  const selectedItem = selectedKanji
-    ? filteredItems.find((item) => item.kanji === selectedKanji) ?? null
-    : null;
+  const selectedItem = selectedKanji ? filteredItems.find((item) => item.kanji === selectedKanji) ?? null : null;
 
   const availableWkLevels = useMemo(() => {
     const levels = new Set<number>();
     for (const item of effectiveItems) {
-      const match = userKanjiByChar.get(item.kanji);
-      if (typeof match?.wkLevel === "number") levels.add(match.wkLevel);
+      const wkLevel = userKanjiByChar.get(item.kanji)?.wkLevel;
+      if (typeof wkLevel === "number") levels.add(wkLevel);
     }
     return Array.from(levels).sort((a, b) => a - b);
+  }, [effectiveItems, userKanjiByChar]);
+
+  const wkLevelCounts = useMemo(() => {
+    const counts = new Map<number | "none", number>();
+    for (const item of effectiveItems) {
+      const wkLevel = userKanjiByChar.get(item.kanji)?.wkLevel;
+      counts.set(typeof wkLevel === "number" ? wkLevel : "none", (counts.get(typeof wkLevel === "number" ? wkLevel : "none") ?? 0) + 1);
+    }
+    return counts;
   }, [effectiveItems, userKanjiByChar]);
 
   const { availableGrades, gradeCounts } = useMemo(() => {
@@ -471,6 +474,7 @@ export default function JlptExplorer({
       wkFilter={wkFilter}
       wkLevelFilter={wkLevelFilter}
       availableWkLevels={availableWkLevels}
+      wkLevelCounts={wkLevelCounts}
       gradeFilter={gradeFilter}
       availableGrades={availableGrades}
       gradeCounts={gradeCounts}

@@ -27,6 +27,7 @@ export default function JlptExplorerContent({
   stickyLevels,
   wkLevelFilter,
   availableWkLevels,
+  wkLevelCounts,
   gradeFilter,
   availableGrades,
   gradeCounts,
@@ -146,7 +147,7 @@ export default function JlptExplorerContent({
                 wkLevelFilter === null,
               )}`}
             >
-              All Levels
+              All Levels <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(items.length)})</span>
             </button>
             <button
               type="button"
@@ -155,7 +156,7 @@ export default function JlptExplorerContent({
                 wkLevelFilter === "none",
               )}`}
             >
-              None
+              None <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(wkLevelCounts.get("none") ?? 0)})</span>
             </button>
             {availableWkLevels.map((level) => (
               <button
@@ -166,7 +167,7 @@ export default function JlptExplorerContent({
                   wkLevelFilter === level,
                 )}`}
               >
-                L{level}
+                L{level} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(wkLevelCounts.get(level) ?? 0)})</span>
               </button>
             ))}
           </div>

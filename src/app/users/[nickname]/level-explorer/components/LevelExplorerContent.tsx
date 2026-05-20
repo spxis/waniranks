@@ -267,10 +267,7 @@ export default function LevelExplorerContent({
   ]);
 
   return (
-    <section
-      id="explorer"
-      className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]"
-    >
+    <section id="explorer" className="overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
       <header className="flex flex-col gap-3 border-b border-line bg-surface-muted px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -287,9 +284,7 @@ export default function LevelExplorerContent({
               <button
                 key={level}
                 type="button"
-                onClick={() => {
-                  void onToggleLevel(level);
-                }}
+                onClick={() => { void onToggleLevel(level); }}
                 disabled={searchAvailableLevels !== null && !searchAvailableLevels.has(level)}
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${badgeClass(
                   selectedLevels.has(level),
@@ -323,6 +318,10 @@ export default function LevelExplorerContent({
             {SRS_FILTER_ALLOWED.map((status) => {
               const count = counts[status];
               const disabled = status !== LEVEL_SRS_FILTERS.all && count === 0;
+              const active = srsFilter === status;
+              if (disabled && !active) {
+                return null;
+              }
 
               return (
                 <button
@@ -331,7 +330,7 @@ export default function LevelExplorerContent({
                   onClick={() => onSetSrsFilter(status)}
                   disabled={disabled}
                   className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
-                    disabled ? disabledBadgeClass() : badgeClass(srsFilter === status)
+                    disabled ? disabledBadgeClass() : badgeClass(active)
                   }`}
                 >
                   {srsFilterButtonLabel(status)} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>
@@ -383,6 +382,9 @@ export default function LevelExplorerContent({
                   const jlptStyle = active
                     ? "border-teal-500 bg-teal-500 text-white"
                     : "border-teal-300 bg-teal-100 text-teal-800 hover:bg-teal-200";
+                  if (disabled && !active) {
+                    return null;
+                  }
 
                   return (
                     <button
@@ -404,6 +406,10 @@ export default function LevelExplorerContent({
                   const label = LEVEL_EXPLORER_REVIEW_TIMING_LABELS[timing];
                   const count = timing === LEVEL_REVIEW_TIMING_FILTERS.all ? counts.all : reviewTimingCounts[timing];
                   const disabled = timing !== LEVEL_REVIEW_TIMING_FILTERS.all && count === 0;
+                  const active = reviewTimingFilter === timing;
+                  if (disabled && !active) {
+                    return null;
+                  }
 
                   return (
                     <button
@@ -412,7 +418,7 @@ export default function LevelExplorerContent({
                       onClick={() => onSetReviewTimingFilter(timing)}
                       disabled={disabled}
                       className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] transition ${
-                        disabled ? disabledBadgeClass() : badgeClass(reviewTimingFilter === timing)
+                        disabled ? disabledBadgeClass() : badgeClass(active)
                       }`}
                     >
                       {label} <span className="ml-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(count)})</span>

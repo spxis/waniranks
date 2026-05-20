@@ -47,6 +47,7 @@ export type JlptExplorerContentProps = {
   wkFilter: JlptFilter;
   wkLevelFilter: number | "none" | null;
   availableWkLevels: number[];
+  wkLevelCounts: Map<number | "none", number>;
   gradeFilter: number | "none" | null;
   availableGrades: number[];
   gradeCounts: Map<number | "none", number>;
