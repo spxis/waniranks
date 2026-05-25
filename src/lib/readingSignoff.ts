@@ -248,7 +248,7 @@ function computeDayScore(input: ReadingSignoffRecord | null): { perfect: boolean
     return { perfect: false, score: 0 };
   }
 
-  const readingDone = input.pagesRead > 0 && input.minutesRead > 0;
+  const readingDone = input.pagesRead >= 15 || input.minutesRead >= 15;
   const waniDone = input.didWanikaniReviews;
   const completion = (Number(readingDone) + Number(waniDone)) / 2;
   return {

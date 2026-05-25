@@ -12,6 +12,11 @@ type LeaderboardRow = {
   learnedVocabulary: number;
   currentBookTitle: string;
   currentBookPage: number | null;
+  pagesRemainingForReadingPass: number;
+  minutesRemainingForReadingPass: number;
+  reviewCorrectToday: number;
+  reviewIncorrectToday: number;
+  reviewSuccessPercentToday: number | null;
 };
 
 type MemberSummary = {
@@ -93,17 +98,19 @@ export default function UserReadingRewardsSummary({
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">Goal by {formatCampaignDateLabel(READING_CAMPAIGN.goalDatePst)}</p>
         </div>
         <div className="mt-2 overflow-x-auto">
-          <table className="w-full min-w-[56rem] text-sm">
+          <table className="w-full min-w-[72rem] text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs uppercase tracking-[0.08em] text-foreground/65">
                 <th className="px-2 py-2">Rank</th>
-                <th className="px-2 py-2">Kid</th>
+                <th className="px-2 py-2">Player</th>
                 <th className="px-2 py-2">WK level</th>
                 <th className="px-2 py-2">Kanji learned</th>
                 <th className="px-2 py-2">Radicals learned</th>
                 <th className="px-2 py-2">Vocab learned</th>
                 <th className="px-2 py-2">Current book</th>
                 <th className="px-2 py-2">Page</th>
+                <th className="px-2 py-2">Reading left</th>
+                <th className="px-2 py-2">Reviews today</th>
                 <th className="px-2 py-2">Total earned</th>
                 <th className="px-2 py-2">Current streak</th>
                 <th className="px-2 py-2">Perfect days</th>
@@ -120,6 +127,13 @@ export default function UserReadingRewardsSummary({
                   <td className="px-2 py-2">{row.learnedVocabulary}</td>
                   <td className="px-2 py-2 max-w-[12rem] truncate" title={row.currentBookTitle}>{row.currentBookTitle}</td>
                   <td className="px-2 py-2">{row.currentBookPage ?? "-"}</td>
+                  <td className="px-2 py-2">
+                    {row.pagesRemainingForReadingPass}p / {row.minutesRemainingForReadingPass}m
+                  </td>
+                  <td className="px-2 py-2">
+                    {row.reviewCorrectToday}/{row.reviewIncorrectToday}
+                    {row.reviewSuccessPercentToday !== null ? ` (${row.reviewSuccessPercentToday}%)` : ""}
+                  </td>
                   <td className="px-2 py-2 font-black text-accent">JPY {row.totalYen.toLocaleString("en-US")}</td>
                   <td className="px-2 py-2">{row.currentStreak} days</td>
                   <td className="px-2 py-2">{row.perfectDays}</td>

@@ -124,25 +124,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     return map;
   }, [challengeBooks]);
 
-  const leaderboard = useMemo(() => {
-    const rows = computeReadingLeaderboard(trackedMembers, signoffs).map((row) => {
-      const member = trackedMembers.find((candidate) => candidate.id === row.accountId);
-      const latestSignoff = latestSignoffByAccountId.get(row.accountId);
-      return {
-        ...row,
-        nickname: member?.nickname ?? row.accountId,
-        wkLevel: member?.wkLevel ?? 0,
-        learnedKanji: member?.learnedKanji ?? 0,
-        learnedRadicals: member?.learnedRadicals ?? 0,
-        learnedVocabulary: member?.learnedVocabulary ?? 0,
-        currentBookTitle: latestSignoff?.bookTitle ?? "-",
-        currentBookPage: latestSignoff?.pagesRead ?? null,
-      };
-    });
-
-    return rows.sort((a, b) => b.totalYen - a.totalYen);
-  }, [latestSignoffByAccountId, signoffs, trackedMembers]);
-
   function toggleTrackedMember(memberId: string, tracked: boolean) {
     setViewerTrackedMemberIds((prev) => {
       const current = new Set(prev ?? serverDefaultTrackedMemberIds);
@@ -179,6 +160,61 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     return byDayAndMember;
   }, [signoffEntries]);
 
+  const todayStatsByAccountId = useMemo(() => {
+    const map = new Map<string, {
+      pagesRead: number;
+      minutesRead: number;
+      reviewCorrect: number;
+      reviewIncorrect: number;
+      reviewSuccessPercent: number | null;
+    }>();
+
+    const byMember = signoffByDayAndMember.get(today) ?? new Map<string, ReadingSignoffRecord>();
+    const byMemberEntries = signoffEntriesByDayAndMember.get(today) ?? new Map<string, ReadingSignoffEntryRecord[]>();
+
+    for (const member of trackedMembers) {
+      const daySignoff = byMember.get(member.id);
+      const entries = byMemberEntries.get(member.id) ?? [];
+      const reviewCorrect = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
+      const reviewIncorrect = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
+      const reviewWork = reviewCorrect + reviewIncorrect;
+
+      map.set(member.id, {
+        pagesRead: daySignoff?.pagesRead ?? 0,
+        minutesRead: daySignoff?.minutesRead ?? 0,
+        reviewCorrect,
+        reviewIncorrect,
+        reviewSuccessPercent: reviewWork > 0 ? Math.round((reviewCorrect / reviewWork) * 100) : null,
+      });
+    }
+
+    return map;
+  }, [signoffByDayAndMember, signoffEntriesByDayAndMember, today, trackedMembers]);
+
+  const leaderboard = useMemo(() => {
+    const rows = computeReadingLeaderboard(trackedMembers, signoffs).map((row) => {
+      const member = trackedMembers.find((candidate) => candidate.id === row.accountId);
+      const latestSignoff = latestSignoffByAccountId.get(row.accountId);
+      return {
+        ...row,
+        nickname: member?.nickname ?? row.accountId,
+        wkLevel: member?.wkLevel ?? 0,
+        learnedKanji: member?.learnedKanji ?? 0,
+        learnedRadicals: member?.learnedRadicals ?? 0,
+        learnedVocabulary: member?.learnedVocabulary ?? 0,
+        currentBookTitle: latestSignoff?.bookTitle ?? "-",
+        currentBookPage: latestSignoff?.pagesRead ?? null,
+        pagesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.pagesRead ?? 0)),
+        minutesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.minutesRead ?? 0)),
+        reviewCorrectToday: todayStatsByAccountId.get(row.accountId)?.reviewCorrect ?? 0,
+        reviewIncorrectToday: todayStatsByAccountId.get(row.accountId)?.reviewIncorrect ?? 0,
+        reviewSuccessPercentToday: todayStatsByAccountId.get(row.accountId)?.reviewSuccessPercent ?? null,
+      };
+    });
+
+    return rows.sort((a, b) => b.totalYen - a.totalYen);
+  }, [latestSignoffByAccountId, signoffs, todayStatsByAccountId, trackedMembers]);
+
   const calendarCells = useMemo(() => buildCalendarCells(monthKey), [monthKey]);
 
   function findEntry(memberId: string, dateKey: string): ReadingSignoffRecord | null {
@@ -190,6 +226,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   }
 
   const modalMember = members.find((member) => member.id === selectedMemberId) ?? null;
+  const accountMember = members.find((member) => member.id === accountId) ?? null;
   const modalDate = form?.signoffDatePst ?? modalDateKey;
   const modalExistingEntry = findEntry(selectedMemberId, modalDate);
 
@@ -205,8 +242,11 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   }
 
   function openCheckinModal(dateKey: string) {
+    const defaultMemberId = members.some((member) => member.id === accountId)
+      ? accountId
+      : members[0]?.id ?? accountId;
     setModalDateKey(dateKey);
-    setModalMember(accountId, dateKey);
+    setModalMember(defaultMemberId, dateKey);
     setSubmitState("idle");
     setSubmitMessage("");
     setAddIsbn("");
@@ -346,7 +386,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         leaderboard={leaderboard}
         members={members}
         trackedMemberSet={trackedMemberSet}
-        showTrackingManager={viewerCanChooseMember}
+        showTrackingManager={true}
         onToggleTrackedMember={toggleTrackedMember}
       />
 
@@ -387,7 +427,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         form={form}
         members={members}
         selectedMemberId={selectedMemberId}
-        selectedMemberName={modalMember?.nickname ?? "Kid"}
+        selectedMemberName={modalMember?.nickname ?? accountMember?.nickname ?? members[0]?.nickname ?? "Player"}
         viewerCanChooseMember={viewerCanChooseMember}
         memberBooks={booksForMember(selectedMemberId)}
         addIsbn={addIsbn}

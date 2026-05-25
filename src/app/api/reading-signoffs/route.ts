@@ -44,6 +44,17 @@ const patchBodySchema = z.object({
   tracked: z.boolean(),
 });
 
+type ReadingSignoffEntryDelegate = {
+  findMany: typeof prisma.readingSignoffEntry.findMany;
+  findFirst: typeof prisma.readingSignoffEntry.findFirst;
+  create: typeof prisma.readingSignoffEntry.create;
+};
+
+function getReadingSignoffEntryDelegate(): ReadingSignoffEntryDelegate | null {
+  const delegate = (prisma as unknown as { readingSignoffEntry?: ReadingSignoffEntryDelegate }).readingSignoffEntry;
+  return delegate ?? null;
+}
+
 export async function GET(request: Request) {
   return withApiRouteTelemetry({
     route: "/api/reading-signoffs",
@@ -103,15 +114,18 @@ export async function GET(request: Request) {
           orderBy: [{ signoffDatePst: "asc" }, { updatedAt: "desc" }],
         });
 
-        const signoffEntries = await prisma.readingSignoffEntry.findMany({
-          where: {
-            accountId: { in: targetAccountIds },
-            signoffDatePst: {
-              startsWith: `${parsed.data.month}-`,
-            },
-          },
-          orderBy: [{ signoffDatePst: "asc" }, { createdAt: "asc" }],
-        });
+        const readingSignoffEntry = getReadingSignoffEntryDelegate();
+        const signoffEntries = readingSignoffEntry
+          ? await readingSignoffEntry.findMany({
+              where: {
+                accountId: { in: targetAccountIds },
+                signoffDatePst: {
+                  startsWith: `${parsed.data.month}-`,
+                },
+              },
+              orderBy: [{ signoffDatePst: "asc" }, { createdAt: "asc" }],
+            })
+          : [];
 
         const latestSignoffs = await readingSignoff.findMany({
           where: {
@@ -266,11 +280,14 @@ export async function POST(request: Request) {
         const nextPagesRead = (existing?.pagesRead ?? 0) + parsed.data.pagesRead;
         const nextMinutesRead = (existing?.minutesRead ?? 0) + parsed.data.minutesRead;
 
-        const previousEntry = await prisma.readingSignoffEntry.findFirst({
-          where: { accountId: account.id },
-          orderBy: [{ createdAt: "desc" }],
-          select: { createdAt: true },
-        });
+        const readingSignoffEntry = getReadingSignoffEntryDelegate();
+        const previousEntry = readingSignoffEntry
+          ? await readingSignoffEntry.findFirst({
+              where: { accountId: account.id },
+              orderBy: [{ createdAt: "desc" }],
+              select: { createdAt: true },
+            })
+          : null;
 
         const reviewWindowStart = previousEntry?.createdAt ?? new Date(`${parsed.data.signoffDatePst}T00:00:00.000Z`);
         const reviewWindowWhere = {
@@ -300,20 +317,22 @@ export async function POST(request: Request) {
           : null;
         const entryDidWanikaniReviews = parsed.data.didWanikaniReviews || reviewWorkDone > 0;
 
-        await prisma.readingSignoffEntry.create({
-          data: {
-            accountId: account.id,
-            signoffDatePst: parsed.data.signoffDatePst,
-            bookTitle: parsed.data.bookTitle,
-            pagesRead: parsed.data.pagesRead,
-            minutesRead: parsed.data.minutesRead,
-            didWanikaniReviews: entryDidWanikaniReviews,
-            reviewWorkDone,
-            reviewCorrect,
-            reviewIncorrect,
-            reviewSuccessPercent,
-          },
-        });
+        if (readingSignoffEntry) {
+          await readingSignoffEntry.create({
+            data: {
+              accountId: account.id,
+              signoffDatePst: parsed.data.signoffDatePst,
+              bookTitle: parsed.data.bookTitle,
+              pagesRead: parsed.data.pagesRead,
+              minutesRead: parsed.data.minutesRead,
+              didWanikaniReviews: entryDidWanikaniReviews,
+              reviewWorkDone,
+              reviewCorrect,
+              reviewIncorrect,
+              reviewSuccessPercent,
+            },
+          });
+        }
 
         const nextDidWanikaniReviews = Boolean(existing?.didWanikaniReviews || entryDidWanikaniReviews);
 
