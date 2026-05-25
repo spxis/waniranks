@@ -146,7 +146,7 @@ export default function UserReadingCalendar({
                             ))}
                             {entries.length > 0 ? (
                               <div className="truncate">
-                                Reviews K {totalReviewKanji} / V {totalReviewVocabulary} / R {totalReviewRadical}
+                                Reviews Kanji {totalReviewKanji} / Vocab {totalReviewVocabulary} / Radicals {totalReviewRadical}
                                 {totalReviewWork === 0 ? " (+0 bonus)" : ""}
                               </div>
                             ) : null}

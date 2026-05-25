@@ -133,7 +133,7 @@ export default function UserReadingRewardsSummary({
                     {row.pagesRemainingForReadingPass}p / {row.minutesRemainingForReadingPass}m
                   </td>
                   <td className="px-2 py-2">
-                    K {row.reviewKanjiToday} / V {row.reviewVocabularyToday} / R {row.reviewRadicalToday}
+                    Kanji {row.reviewKanjiToday} / Vocab {row.reviewVocabularyToday} / Radicals {row.reviewRadicalToday}
                     {row.zeroReviewsBonusToday ? " (+0 bonus)" : row.reviewTotalToday > 0 ? ` (${row.reviewTotalToday} total)` : ""}
                   </td>
                   <td className="px-2 py-2 font-black text-accent">JPY {row.totalYen.toLocaleString("en-US")}</td>

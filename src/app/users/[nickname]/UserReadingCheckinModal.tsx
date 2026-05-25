@@ -6,6 +6,8 @@ import type {
   ReadingReviewQueueSnapshot,
   ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
+import { SUBJECT_TYPES } from "@/lib/domainConstants";
+import { subjectTypePluralLabel } from "./shared/subjectTypeLabels";
 
 type Member = {
   id: string;
@@ -108,6 +110,7 @@ export default function UserReadingCheckinModal({
   const pagesGoalForBonus = 15;
   const pagesToBonus = Math.max(0, pagesGoalForBonus - form.pagesRead);
   const bonusReady = pagesToBonus === 0;
+  const reviewsCompletedAllowed = selectedReviewQueue.total === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 sm:p-6">
@@ -239,17 +242,30 @@ export default function UserReadingCheckinModal({
             type="button"
             className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-left"
             onClick={onQuickWaniKani}
+            disabled={!reviewsCompletedAllowed}
           >
             <p className="text-sm font-black text-foreground">WaniKani reviews to 0</p>
-            <p className="text-xs text-foreground/70">Checks off WaniKani completion for the night.</p>
+            <p className="text-xs text-foreground/70">
+              {reviewsCompletedAllowed
+                ? "Checks off review completion for this check-in."
+                : "Unlocks when your current due reviews are 0."}
+            </p>
           </button>
         </div>
 
         <section className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Current review queue snapshot</p>
-          <p className="mt-1 text-sm font-semibold text-foreground/85">
-            K {selectedReviewQueue.kanji} / V {selectedReviewQueue.vocabulary} / R {selectedReviewQueue.radical}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-foreground/85">
+            <span className="subject-pill subject-pill--radical">
+              {subjectTypePluralLabel(SUBJECT_TYPES.radical)} left: {selectedReviewQueue.radical}
+            </span>
+            <span className="subject-pill subject-pill--kanji">
+              {subjectTypePluralLabel(SUBJECT_TYPES.kanji)} left: {selectedReviewQueue.kanji}
+            </span>
+            <span className="subject-pill subject-pill--vocabulary">
+              {subjectTypePluralLabel(SUBJECT_TYPES.vocabulary)} left: {selectedReviewQueue.vocabulary}
+            </span>
+          </div>
           <p className={`mt-1 text-xs ${selectedReviewQueue.total === 0 ? "text-emerald-700" : "text-foreground/70"}`}>
             {selectedReviewQueue.total === 0
               ? "Special bonus active: review queue is at 0."
@@ -322,10 +338,20 @@ export default function UserReadingCheckinModal({
           <label className="sm:col-span-2 flex items-center gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2">
             <input
               type="checkbox"
-              checked={form.didWanikaniReviews}
-              onChange={(event) => onDidReviewsChange(event.target.checked)}
+              checked={reviewsCompletedAllowed ? form.didWanikaniReviews : false}
+              disabled={!reviewsCompletedAllowed}
+              onChange={(event) => {
+                if (!reviewsCompletedAllowed) {
+                  return;
+                }
+
+                onDidReviewsChange(event.target.checked);
+              }}
             />
-            <span className="text-sm font-semibold text-foreground/80">WaniKani reviews completed (auto-checked when K/V/R is 0)</span>
+            <span className="text-sm font-semibold text-foreground/80">
+              Reviews completed
+              {!reviewsCompletedAllowed ? " (available only when current due reviews are 0)" : ""}
+            </span>
           </label>
 
           {modalExistingEntry ? (
