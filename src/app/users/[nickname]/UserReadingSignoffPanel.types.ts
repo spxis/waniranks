@@ -39,11 +39,12 @@ export type FormState = {
 };
 
 export function createFormState(dateKey: string, entry: ReadingSignoffRecord | null): FormState {
+  void entry;
   return {
     signoffDatePst: dateKey,
-    bookTitle: entry?.bookTitle ?? "",
-    pagesRead: entry?.pagesRead ?? 10,
-    minutesRead: entry?.minutesRead ?? 20,
-    didWanikaniReviews: entry?.didWanikaniReviews ?? false,
+    bookTitle: "",
+    pagesRead: 10,
+    minutesRead: 20,
+    didWanikaniReviews: false,
   };
 }

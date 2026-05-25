@@ -240,6 +240,19 @@ export async function POST(request: Request) {
           );
         }
 
+        const existing = await readingSignoff.findUnique({
+          where: {
+            accountId_signoffDatePst: {
+              accountId: account.id,
+              signoffDatePst: parsed.data.signoffDatePst,
+            },
+          },
+        });
+
+        const nextPagesRead = (existing?.pagesRead ?? 0) + parsed.data.pagesRead;
+        const nextMinutesRead = (existing?.minutesRead ?? 0) + parsed.data.minutesRead;
+        const nextDidWanikaniReviews = Boolean(existing?.didWanikaniReviews || parsed.data.didWanikaniReviews);
+
         const saved = await readingSignoff.upsert({
           where: {
             accountId_signoffDatePst: {
@@ -249,9 +262,9 @@ export async function POST(request: Request) {
           },
           update: {
             bookTitle: parsed.data.bookTitle,
-            pagesRead: parsed.data.pagesRead,
-            minutesRead: parsed.data.minutesRead,
-            didWanikaniReviews: parsed.data.didWanikaniReviews,
+            pagesRead: nextPagesRead,
+            minutesRead: nextMinutesRead,
+            didWanikaniReviews: nextDidWanikaniReviews,
             reviewsLeft: account.pendingReviews,
             apprenticeCount: account.apprenticeCount,
             currentWkLevel: account.wkLevel,

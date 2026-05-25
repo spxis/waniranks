@@ -37,6 +37,7 @@ export type LatestSignoffSummary = {
 
 export type ReadingSignoffDelegate = {
   findMany: typeof prisma.readingSignoff.findMany;
+  findUnique: typeof prisma.readingSignoff.findUnique;
   upsert: typeof prisma.readingSignoff.upsert;
 };
 

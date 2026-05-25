@@ -79,6 +79,7 @@ export default function UserReadingCalendar({
 
           const key = dayKey(monthKey, day);
           const byMember = signoffByDayAndMember.get(key) ?? new Map<string, ReadingSignoffRecord>();
+          const activeMembers = trackedMembers.filter((member) => byMember.has(member.id));
           const isToday = key === today;
           const isCampaignStart = key === READING_CAMPAIGN.startDatePst;
           const isCampaignGoal = key === READING_CAMPAIGN.goalDatePst;
@@ -113,22 +114,22 @@ export default function UserReadingCalendar({
               </p>
               <div className="mt-1 space-y-1">
                 <div className="space-y-1">
-                  {trackedMembers.map((member) => {
-                    const entry = byMember.get(member.id);
-                    const checkedIn = Boolean(entry);
-                    const statusClass = checkedIn
-                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                      : "bg-surface-muted text-foreground/55 border-line";
+                  {activeMembers.map((member) => {
                     return (
                       <div
                         key={`${key}-${member.id}`}
-                        className={`flex w-full items-center justify-between rounded border px-1 py-0.5 text-[10px] font-semibold ${statusClass}`}
+                        className="flex w-full items-center justify-between rounded border border-emerald-300 bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-800"
                       >
                         <span className="truncate">{member.nickname}</span>
-                        <span>{checkedIn ? "Yes" : "No"}</span>
+                        <span>Yes</span>
                       </div>
                     );
                   })}
+                  {activeMembers.length === 0 ? (
+                    <div className="rounded border border-line bg-surface-muted px-1 py-0.5 text-[10px] font-semibold text-foreground/55">
+                      No activity
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   type="button"
