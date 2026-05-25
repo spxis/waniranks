@@ -1,4 +1,6 @@
-import { READING_BOOK_OPTIONS, type ReadingSignoffRecord } from "@/lib/readingSignoff";
+import Image from "next/image";
+
+import type { ReadingChallengeBookRecord, ReadingSignoffRecord } from "@/lib/readingSignoff";
 
 type Member = {
   id: string;
@@ -7,13 +9,11 @@ type Member = {
 
 type FormState = {
   signoffDatePst: string;
-  bookTitle: (typeof READING_BOOK_OPTIONS)[number];
+  bookTitle: string;
   pagesRead: number;
   minutesRead: number;
   didWanikaniReviews: boolean;
 };
-
-type ChallengeBooksState = [string, string, string];
 
 type SubmitState = "idle" | "saving" | "saved" | "error";
 
@@ -24,18 +24,22 @@ type UserReadingCheckinModalProps = {
   selectedMemberId: string;
   selectedMemberName: string;
   viewerCanChooseMember: boolean;
-  challengeBooks: ChallengeBooksState;
+  memberBooks: ReadingChallengeBookRecord[];
+  addIsbn: string;
+  bookActionMessage: string;
   submitState: SubmitState;
   submitMessage: string;
   modalExistingEntry: ReadingSignoffRecord | null;
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
   onMemberChange: (nextMemberId: string) => void;
-  onChallengeBookChange: (index: number, value: string) => void;
+  onAddIsbnChange: (value: string) => void;
+  onAddBook: () => Promise<void>;
+  onDeleteBook: (bookId: string) => Promise<void>;
   onQuickReading: () => void;
   onQuickWaniKani: () => void;
   onDateChange: (nextDate: string) => void;
-  onBookChange: (nextBook: (typeof READING_BOOK_OPTIONS)[number]) => void;
+  onBookChange: (nextBook: string) => void;
   onPagesChange: (nextPages: number) => void;
   onMinutesChange: (nextMinutes: number) => void;
   onDidReviewsChange: (nextDidReviews: boolean) => void;
@@ -48,14 +52,18 @@ export default function UserReadingCheckinModal({
   selectedMemberId,
   selectedMemberName,
   viewerCanChooseMember,
-  challengeBooks,
+  memberBooks,
+  addIsbn,
+  bookActionMessage,
   submitState,
   submitMessage,
   modalExistingEntry,
   onClose,
   onSubmit,
   onMemberChange,
-  onChallengeBookChange,
+  onAddIsbnChange,
+  onAddBook,
+  onDeleteBook,
   onQuickReading,
   onQuickWaniKani,
   onDateChange,
@@ -106,23 +114,83 @@ export default function UserReadingCheckinModal({
         ) : null}
 
         <section className="mt-4 rounded-xl border border-line bg-surface-muted p-3">
-          <h4 className="text-sm font-black text-foreground">3 challenge books</h4>
-          <p className="mt-1 text-xs text-foreground/70">These are required to join this challenge.</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            {challengeBooks.map((book, index) => (
-              <label key={`challenge-book-${index}`} className="flex flex-col gap-1">
-                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/65">Book {index + 1}</span>
-                <input
-                  type="text"
-                  maxLength={80}
-                  className="h-10 rounded-lg border border-line bg-surface px-3 text-sm"
-                  value={book}
-                  onChange={(event) => onChallengeBookChange(index, event.target.value)}
-                  required
-                />
-              </label>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-black text-foreground">Challenge books</h4>
+            <span className="text-xs text-foreground/70">Need at least 3 books to play</span>
           </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {memberBooks.map((book) => {
+              const selected = form.bookTitle === book.title;
+              return (
+                <div key={book.id} className={`rounded-lg border p-2 ${selected ? "border-accent bg-accent/5" : "border-line bg-surface"}`}>
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => onBookChange(book.title)}
+                  >
+                    <div className="aspect-[3/4] overflow-hidden rounded border border-line bg-surface-muted">
+                      {book.thumbnailUrl ? (
+                        <Image
+                          src={book.thumbnailUrl}
+                          alt={book.title}
+                          width={160}
+                          height={220}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground/60">No cover</div>
+                      )}
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs font-semibold text-foreground">{book.title}</p>
+                    <p className="text-[10px] text-foreground/60">ISBN {book.isbn}</p>
+                  </button>
+                  <div className="mt-1 flex items-center justify-between gap-1">
+                    {book.infoUrl ? (
+                      <a
+                        href={book.infoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-bold uppercase tracking-[0.08em] text-accent"
+                      >
+                        Open
+                      </a>
+                    ) : <span />}
+                    <button
+                      type="button"
+                      onClick={() => onDeleteBook(book.id)}
+                      className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="flex-1 min-w-[12rem]">
+              <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/65">Add by ISBN</span>
+              <input
+                type="text"
+                maxLength={32}
+                className="mt-1 h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm"
+                value={addIsbn}
+                onChange={(event) => onAddIsbnChange(event.target.value)}
+                placeholder="4-09-140108-2"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                void onAddBook();
+              }}
+              className="h-10 rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.08em]"
+            >
+              Add book
+            </button>
+          </div>
+          {bookActionMessage ? <p className="mt-2 text-xs text-foreground/70">{bookActionMessage}</p> : null}
         </section>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -158,17 +226,13 @@ export default function UserReadingCheckinModal({
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Book</span>
-            <select
+            <input
+              type="text"
               className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
               value={form.bookTitle}
-              onChange={(event) => onBookChange(event.target.value as (typeof READING_BOOK_OPTIONS)[number])}
-            >
-              {READING_BOOK_OPTIONS.map((book) => (
-                <option key={book} value={book}>
-                  {book}
-                </option>
-              ))}
-            </select>
+              onChange={(event) => onBookChange(event.target.value)}
+              required
+            />
           </label>
 
           <label className="flex flex-col gap-1">

@@ -5,7 +5,6 @@ import useSWR from "swr";
 
 import {
   READING_CAMPAIGN,
-  READING_BOOK_OPTIONS,
   buildCalendarCells,
   campaignDaysRemaining,
   computeReadingLeaderboard,
@@ -14,9 +13,10 @@ import {
   getTodayDateInputValue,
   initials,
   isCampaignDate,
+  normalizeIsbn,
   shiftMonth,
   toMonthKey,
-  type ReadingChallengePlayerRecord,
+  type ReadingChallengeBookRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
@@ -31,7 +31,7 @@ type Member = {
 type ReadingSignoffResponse = {
   members: Member[];
   viewerCanChooseMember: boolean;
-  challengePlayers: ReadingChallengePlayerRecord[];
+  challengeBooks: ReadingChallengeBookRecord[];
   signoffs: ReadingSignoffRecord[];
 };
 
@@ -41,26 +41,16 @@ type UserReadingSignoffPanelProps = {
 
 type FormState = {
   signoffDatePst: string;
-  bookTitle: (typeof READING_BOOK_OPTIONS)[number];
+  bookTitle: string;
   pagesRead: number;
   minutesRead: number;
   didWanikaniReviews: boolean;
 };
 
-type ChallengeBooksState = [string, string, string];
-
-function toChallengeBooksState(input: [string, string, string] | null): ChallengeBooksState {
-  if (!input) {
-    return ["", "", ""];
-  }
-
-  return [input[0], input[1], input[2]];
-}
-
 function createFormState(dateKey: string, entry: ReadingSignoffRecord | null): FormState {
   return {
     signoffDatePst: dateKey,
-    bookTitle: (entry?.bookTitle as (typeof READING_BOOK_OPTIONS)[number]) ?? READING_BOOK_OPTIONS[0],
+    bookTitle: entry?.bookTitle ?? "",
     pagesRead: entry?.pagesRead ?? 10,
     minutesRead: entry?.minutesRead ?? 20,
     didWanikaniReviews: entry?.didWanikaniReviews ?? false,
@@ -74,7 +64,8 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const [modalDateKey, setModalDateKey] = useState(today);
   const [form, setForm] = useState<FormState | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string>(accountId);
-  const [challengeBooks, setChallengeBooks] = useState<ChallengeBooksState>(["", "", ""]);
+  const [addIsbn, setAddIsbn] = useState("");
+  const [bookActionMessage, setBookActionMessage] = useState("");
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState<string>("");
 
@@ -95,17 +86,19 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const members = useMemo(() => data?.members ?? [], [data?.members]);
   const viewerCanChooseMember = data?.viewerCanChooseMember ?? false;
   const signoffs = useMemo(() => data?.signoffs ?? [], [data?.signoffs]);
-  const challengePlayers = useMemo(() => data?.challengePlayers ?? [], [data?.challengePlayers]);
+  const challengeBooks = useMemo(() => data?.challengeBooks ?? [], [data?.challengeBooks]);
   const todayMonthKey = today.slice(0, 7);
   const daysRemaining = campaignDaysRemaining(today);
 
-  const challengeBooksByAccountId = useMemo(() => {
-    const map = new Map<string, [string, string, string]>();
-    for (const player of challengePlayers) {
-      map.set(player.accountId, player.challengeBooks);
+  const booksByAccountId = useMemo(() => {
+    const map = new Map<string, ReadingChallengeBookRecord[]>();
+    for (const book of challengeBooks) {
+      const list = map.get(book.accountId) ?? [];
+      list.push(book);
+      map.set(book.accountId, list);
     }
     return map;
-  }, [challengePlayers]);
+  }, [challengeBooks]);
 
   const leaderboard = useMemo(() => {
     const rows = computeReadingLeaderboard(members, signoffs).map((row) => {
@@ -135,22 +128,92 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     return signoffByDayAndMember.get(dateKey)?.get(memberId) ?? null;
   }
 
+  function booksForMember(memberId: string): ReadingChallengeBookRecord[] {
+    return booksByAccountId.get(memberId) ?? [];
+  }
+
   const modalMember = members.find((member) => member.id === selectedMemberId) ?? null;
   const modalDate = form?.signoffDatePst ?? modalDateKey;
   const modalExistingEntry = findEntry(selectedMemberId, modalDate);
 
   function setModalMember(memberId: string, dateKey: string) {
+    const memberBooks = booksForMember(memberId);
+    const existingEntry = findEntry(memberId, dateKey);
     setSelectedMemberId(memberId);
-    setForm(createFormState(dateKey, findEntry(memberId, dateKey)));
-    setChallengeBooks(toChallengeBooksState(challengeBooksByAccountId.get(memberId) ?? null));
+    setForm({
+      ...createFormState(dateKey, existingEntry),
+      bookTitle: existingEntry?.bookTitle ?? memberBooks[0]?.title ?? "",
+    });
+    setBookActionMessage("");
   }
 
   function openCheckinModal(dateKey: string) {
     setModalDateKey(dateKey);
-    setModalMember(viewerCanChooseMember ? accountId : accountId, dateKey);
+    setModalMember(accountId, dateKey);
     setSubmitState("idle");
     setSubmitMessage("");
+    setAddIsbn("");
     setModalOpen(true);
+  }
+
+  function updateForm(mutator: (input: FormState) => FormState) {
+    setForm((prev) => (prev ? mutator(prev) : prev));
+  }
+
+  async function addBookByIsbn() {
+    setBookActionMessage("");
+    const normalizedIsbn = normalizeIsbn(addIsbn);
+    if (!normalizedIsbn) {
+      setBookActionMessage("Enter a valid ISBN-10 or ISBN-13.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/reading-books", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          accountId: selectedMemberId,
+          isbn: normalizedIsbn,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Could not add that book yet.");
+      }
+
+      setBookActionMessage("Book added.");
+      setAddIsbn("");
+      await mutate();
+    } catch (error) {
+      setBookActionMessage(error instanceof Error ? error.message : "Could not add that book yet.");
+    }
+  }
+
+  async function deleteBook(bookId: string) {
+    setBookActionMessage("");
+
+    try {
+      const response = await fetch("/api/reading-books", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          accountId: selectedMemberId,
+          bookId,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Could not delete that book.");
+      }
+
+      setBookActionMessage("Book removed.");
+      await mutate();
+    } catch (error) {
+      setBookActionMessage(error instanceof Error ? error.message : "Could not delete that book.");
+    }
   }
 
   async function submitSignoff(event: React.FormEvent<HTMLFormElement>) {
@@ -163,25 +226,12 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     setSubmitMessage("");
 
     try {
-      const normalizedBooks = challengeBooks.map((book) => book.trim()) as ChallengeBooksState;
-      if (normalizedBooks.some((book) => book.length === 0)) {
-        throw new Error("Enter all 3 challenge books before saving check-in.");
+      if (booksForMember(selectedMemberId).length < 3) {
+        throw new Error("Add at least 3 books before saving check-in.");
       }
 
-      const challengeResponse = await fetch("/api/reading-signoffs", {
-        method: "PUT",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          accountId: selectedMemberId,
-          challengeBooks: normalizedBooks,
-        }),
-      });
-
-      const challengePayload = (await challengeResponse.json()) as { error?: string };
-      if (!challengeResponse.ok) {
-        throw new Error(challengePayload.error ?? "Could not save challenge books.");
+      if (!form.bookTitle.trim()) {
+        throw new Error("Pick a book from the collection before saving.");
       }
 
       const response = await fetch("/api/reading-signoffs", {
@@ -371,90 +421,25 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         selectedMemberId={selectedMemberId}
         selectedMemberName={modalMember?.nickname ?? "Kid"}
         viewerCanChooseMember={viewerCanChooseMember}
-        challengeBooks={challengeBooks}
+        memberBooks={booksForMember(selectedMemberId)}
+        addIsbn={addIsbn}
+        bookActionMessage={bookActionMessage}
         submitState={submitState}
         submitMessage={submitMessage}
         modalExistingEntry={modalExistingEntry}
         onClose={() => setModalOpen(false)}
         onSubmit={submitSignoff}
         onMemberChange={(nextMemberId) => setModalMember(nextMemberId, modalDate)}
-        onChallengeBookChange={(index, value) => {
-          setChallengeBooks((prev) => {
-            const next: ChallengeBooksState = [prev[0], prev[1], prev[2]];
-            next[index] = value;
-            return next;
-          });
-        }}
-        onQuickReading={() => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return {
-              ...prev,
-              pagesRead: Math.max(1, prev.pagesRead),
-              minutesRead: Math.max(10, prev.minutesRead),
-            };
-          });
-        }}
-        onQuickWaniKani={() => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return {
-              ...prev,
-              didWanikaniReviews: true,
-            };
-          });
-        }}
-        onDateChange={(nextDate) => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return { ...prev, signoffDatePst: nextDate };
-          });
-        }}
-        onBookChange={(nextBook) => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return { ...prev, bookTitle: nextBook };
-          });
-        }}
-        onPagesChange={(nextPages) => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return { ...prev, pagesRead: nextPages };
-          });
-        }}
-        onMinutesChange={(nextMinutes) => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return { ...prev, minutesRead: nextMinutes };
-          });
-        }}
-        onDidReviewsChange={(nextDidReviews) => {
-          setForm((prev) => {
-            if (!prev) {
-              return prev;
-            }
-
-            return { ...prev, didWanikaniReviews: nextDidReviews };
-          });
-        }}
+        onAddIsbnChange={setAddIsbn}
+        onAddBook={addBookByIsbn}
+        onDeleteBook={deleteBook}
+        onQuickReading={() => updateForm((prev) => ({ ...prev, pagesRead: Math.max(1, prev.pagesRead), minutesRead: Math.max(10, prev.minutesRead) }))}
+        onQuickWaniKani={() => updateForm((prev) => ({ ...prev, didWanikaniReviews: true }))}
+        onDateChange={(nextDate) => updateForm((prev) => ({ ...prev, signoffDatePst: nextDate }))}
+        onBookChange={(nextBook) => updateForm((prev) => ({ ...prev, bookTitle: nextBook }))}
+        onPagesChange={(nextPages) => updateForm((prev) => ({ ...prev, pagesRead: nextPages }))}
+        onMinutesChange={(nextMinutes) => updateForm((prev) => ({ ...prev, minutesRead: nextMinutes }))}
+        onDidReviewsChange={(nextDidReviews) => updateForm((prev) => ({ ...prev, didWanikaniReviews: nextDidReviews }))}
       />
     </section>
   );

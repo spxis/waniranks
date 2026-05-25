@@ -13,10 +13,14 @@ import {
 } from "@/lib/inviteSession";
 import { prisma } from "@/lib/prisma";
 import {
+  READING_CHALLENGE_BOOK_SEEDS_BY_NICKNAME,
   READING_BOOK_OPTIONS,
   isMonthKey,
   isPstDateKey,
-  type ReadingChallengePlayerRecord,
+  normalizeIsbn,
+  toOpenLibraryBookUrl,
+  toOpenLibraryCoverUrl,
+  type ReadingChallengeBookRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 
@@ -45,13 +49,6 @@ const postBodySchema = z.object({
   didWanikaniReviews: z.boolean(),
 });
 
-const putBodySchema = z.object({
-  accountId: z.string().cuid(),
-  challengeBooks: z
-    .array(z.string().trim().min(1).max(80))
-    .length(3),
-});
-
 type ViewerAccountSummary = {
   id: string;
   nickname: string;
@@ -63,16 +60,36 @@ type ReadingSignoffDelegate = {
   upsert: typeof prisma.readingSignoff.upsert;
 };
 
-type ReadingChallengePlayerDelegate = {
+type ReadingChallengeBookDelegate = {
   findMany: (args: {
     where: { accountId: { in: string[] } };
-    select: { accountId: true; challengeBooks: true };
-  }) => Promise<Array<{ accountId: string; challengeBooks: string[] }>>;
-  upsert: (args: {
-    where: { accountId: string };
-    update: { challengeBooks: string[] };
-    create: { accountId: string; challengeBooks: string[] };
-  }) => Promise<{ accountId: string; challengeBooks: string[] }>;
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }];
+    select: {
+      id: true;
+      accountId: true;
+      isbn: true;
+      title: true;
+      thumbnailUrl: true;
+      infoUrl: true;
+    };
+  }) => Promise<Array<{
+    id: string;
+    accountId: string;
+    isbn: string;
+    title: string;
+    thumbnailUrl: string | null;
+    infoUrl: string | null;
+  }>>;
+  createMany: (args: {
+    data: Array<{
+      accountId: string;
+      isbn: string;
+      title: string;
+      thumbnailUrl: string | null;
+      infoUrl: string | null;
+    }>;
+    skipDuplicates: true;
+  }) => Promise<{ count: number }>;
 };
 
 function getReadingSignoffDelegate(): ReadingSignoffDelegate | null {
@@ -80,8 +97,8 @@ function getReadingSignoffDelegate(): ReadingSignoffDelegate | null {
   return delegate ?? null;
 }
 
-function getReadingChallengePlayerDelegate(): ReadingChallengePlayerDelegate | null {
-  const delegate = (prisma as unknown as { readingChallengePlayer?: ReadingChallengePlayerDelegate }).readingChallengePlayer;
+function getReadingChallengeBookDelegate(): ReadingChallengeBookDelegate | null {
+  const delegate = (prisma as unknown as { readingChallengeBook?: ReadingChallengeBookDelegate }).readingChallengeBook;
   return delegate ?? null;
 }
 
@@ -154,19 +171,70 @@ async function resolveViewerAccounts(request: Request): Promise<ViewerAccountSum
   });
 }
 
-function toChallengePlayerRecord(row: { accountId: string; challengeBooks: string[] }): ReadingChallengePlayerRecord | null {
-  if (row.challengeBooks.length !== 3) {
-    return null;
-  }
-
+function toChallengeBookRecord(row: {
+  id: string;
+  accountId: string;
+  isbn: string;
+  title: string;
+  thumbnailUrl: string | null;
+  infoUrl: string | null;
+}): ReadingChallengeBookRecord {
   return {
+    id: row.id,
     accountId: row.accountId,
-    challengeBooks: [row.challengeBooks[0], row.challengeBooks[1], row.challengeBooks[2]],
+    isbn: row.isbn,
+    title: row.title,
+    thumbnailUrl: row.thumbnailUrl,
+    infoUrl: row.infoUrl,
   };
 }
 
-function isChallengePlayerRecord(value: ReadingChallengePlayerRecord | null): value is ReadingChallengePlayerRecord {
-  return value !== null;
+async function ensureSeedBooks(
+  accounts: ViewerAccountSummary[],
+  challengeBooks: ReadingChallengeBookRecord[],
+  readingChallengeBook: ReadingChallengeBookDelegate,
+): Promise<void> {
+  const accountIdsWithBooks = new Set(challengeBooks.map((book) => book.accountId));
+  const seedsToInsert: Array<{
+    accountId: string;
+    isbn: string;
+    title: string;
+    thumbnailUrl: string | null;
+    infoUrl: string | null;
+  }> = [];
+
+  for (const account of accounts) {
+    if (accountIdsWithBooks.has(account.id)) {
+      continue;
+    }
+
+    const seedBooks = READING_CHALLENGE_BOOK_SEEDS_BY_NICKNAME[account.nickname.trim().toLowerCase()];
+    if (!seedBooks) {
+      continue;
+    }
+
+    for (const seedBook of seedBooks) {
+      const normalizedIsbn = normalizeIsbn(seedBook.isbn);
+      if (!normalizedIsbn) {
+        continue;
+      }
+
+      seedsToInsert.push({
+        accountId: account.id,
+        isbn: normalizedIsbn,
+        title: seedBook.title,
+        thumbnailUrl: toOpenLibraryCoverUrl(normalizedIsbn),
+        infoUrl: toOpenLibraryBookUrl(normalizedIsbn),
+      });
+    }
+  }
+
+  if (seedsToInsert.length > 0) {
+    await readingChallengeBook.createMany({
+      data: seedsToInsert,
+      skipDuplicates: true,
+    });
+  }
 }
 
 export async function GET(request: Request) {
@@ -202,7 +270,7 @@ export async function GET(request: Request) {
           : viewerAccounts.map((account) => account.id);
 
         const readingSignoff = getReadingSignoffDelegate();
-        const readingChallengePlayer = getReadingChallengePlayerDelegate();
+        const readingChallengeBook = getReadingChallengeBookDelegate();
         if (!readingSignoff) {
           return NextResponse.json(
             { error: "Reading check-ins are not ready yet. Restart the dev server and try again." },
@@ -210,7 +278,7 @@ export async function GET(request: Request) {
           );
         }
 
-        if (!readingChallengePlayer) {
+        if (!readingChallengeBook) {
           return NextResponse.json(
             { error: "Reading challenge setup is not ready yet. Restart the dev server and try again." },
             { status: 503 },
@@ -227,13 +295,36 @@ export async function GET(request: Request) {
           orderBy: [{ signoffDatePst: "asc" }, { updatedAt: "desc" }],
         });
 
-        const challengePlayers = await readingChallengePlayer.findMany({
+        const challengeBooksRaw = await readingChallengeBook.findMany({
           where: {
             accountId: { in: targetAccountIds },
           },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           select: {
+            id: true,
             accountId: true,
-            challengeBooks: true,
+            isbn: true,
+            title: true,
+            thumbnailUrl: true,
+            infoUrl: true,
+          },
+        });
+
+        const challengeBooks = challengeBooksRaw.map(toChallengeBookRecord);
+        await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook);
+
+        const challengeBooksAfterSeed = await readingChallengeBook.findMany({
+          where: {
+            accountId: { in: targetAccountIds },
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            accountId: true,
+            isbn: true,
+            title: true,
+            thumbnailUrl: true,
+            infoUrl: true,
           },
         });
 
@@ -241,7 +332,7 @@ export async function GET(request: Request) {
           {
             members: viewerAccounts,
             viewerCanChooseMember: await isAuthorizedAdmin(request),
-            challengePlayers: challengePlayers.map(toChallengePlayerRecord).filter(isChallengePlayerRecord),
+            challengeBooks: challengeBooksAfterSeed.map(toChallengeBookRecord),
             signoffs: signoffs.map(toReadingSignoffRecord),
           },
           { status: 200 },
@@ -325,55 +416,6 @@ export async function POST(request: Request) {
       } catch (error) {
         console.error(error);
         return NextResponse.json({ error: "Could not save reading signoff." }, { status: 500 });
-      }
-    },
-  });
-}
-
-export async function PUT(request: Request) {
-  return withApiRouteTelemetry({
-    route: "/api/reading-signoffs",
-    method: "PUT",
-    request,
-    execute: async () => {
-      try {
-        const parsed = putBodySchema.safeParse(await request.json());
-        if (!parsed.success) {
-          return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
-        }
-
-        if (!(await canAccessAccount(request, parsed.data.accountId))) {
-          return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-        }
-
-        const readingChallengePlayer = getReadingChallengePlayerDelegate();
-        if (!readingChallengePlayer) {
-          return NextResponse.json(
-            { error: "Reading challenge setup is not ready yet. Restart the dev server and try again." },
-            { status: 503 },
-          );
-        }
-
-        const saved = await readingChallengePlayer.upsert({
-          where: { accountId: parsed.data.accountId },
-          update: {
-            challengeBooks: parsed.data.challengeBooks,
-          },
-          create: {
-            accountId: parsed.data.accountId,
-            challengeBooks: parsed.data.challengeBooks,
-          },
-        });
-
-        const challengePlayer = toChallengePlayerRecord(saved);
-        if (!challengePlayer) {
-          return NextResponse.json({ error: "Could not save challenge books." }, { status: 500 });
-        }
-
-        return NextResponse.json({ challengePlayer }, { status: 200 });
-      } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Could not save challenge books." }, { status: 500 });
       }
     },
   });

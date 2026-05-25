@@ -40,9 +40,31 @@ export type ReadingSignoffRecord = {
   updatedAt: string;
 };
 
-export type ReadingChallengePlayerRecord = {
+export type ReadingChallengeBookRecord = {
+  id: string;
   accountId: string;
-  challengeBooks: [string, string, string];
+  isbn: string;
+  title: string;
+  thumbnailUrl: string | null;
+  infoUrl: string | null;
+};
+
+export type ReadingChallengeBookSeed = {
+  isbn: string;
+  title: string;
+};
+
+export const READING_CHALLENGE_BOOK_SEEDS_BY_NICKNAME: Record<string, ReadingChallengeBookSeed[]> = {
+  kamiko: [
+    { isbn: "4-8402-2466-8", title: "よつばと! 1" },
+    { isbn: "4-09-140108-2", title: "ドラえもん 1" },
+    { isbn: "4-09-141753-1", title: "大長編ドラえもん. vol.13 (のび太とブリキの迷宮)" },
+  ],
+  hanako: [
+    { isbn: "4-09-149574-5", title: "ドラえもんカラー作品集. 第4巻" },
+    { isbn: "4-09-140502-9", title: "ドラえもん 22" },
+    { isbn: "4-09-140103-1", title: "ドラえもん 1" },
+  ],
 };
 
 export type ReadingLeaderboardRow = {
@@ -59,6 +81,25 @@ export type ReadingLeaderboardInputMember = {
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_PATTERN = /^\d{4}-\d{2}$/;
+const ISBN10_PATTERN = /^\d{9}[\dX]$/i;
+const ISBN13_PATTERN = /^\d{13}$/;
+
+export function normalizeIsbn(input: string): string | null {
+  const compact = input.replace(/[^\dXx]/g, "").toUpperCase();
+  if (ISBN10_PATTERN.test(compact) || ISBN13_PATTERN.test(compact)) {
+    return compact;
+  }
+
+  return null;
+}
+
+export function toOpenLibraryCoverUrl(isbn: string): string {
+  return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
+}
+
+export function toOpenLibraryBookUrl(isbn: string): string {
+  return `https://openlibrary.org/isbn/${isbn}`;
+}
 
 export function isPstDateKey(value: string): boolean {
   if (!DATE_PATTERN.test(value)) {

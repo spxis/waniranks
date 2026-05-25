@@ -193,12 +193,16 @@ model ReadingSignoff {
   @@index([accountId])
 }
 
-model ReadingChallengePlayer {
-  id             String   @id @default(cuid())
-  accountId      String   @unique
-  challengeBooks String[] @default([])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+model ReadingChallengeBook {
+  id           String   @id @default(cuid())
+  accountId    String
+  isbn         String
+  title        String
+  thumbnailUrl String?
+  infoUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
+  @@unique([accountId, isbn])
   @@index([accountId])
 }
