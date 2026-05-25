@@ -122,6 +122,8 @@ export default function UserReadingCalendar({
                 <div className="space-y-1">
                   {activeMembers.map((member) => {
                     const entries = byMemberEntries.get(member.id) ?? [];
+                    const daySignoff = byMember.get(member.id) ?? null;
+                    const logCount = entries.length > 0 ? entries.length : daySignoff ? 1 : 0;
                     const totalReviewKanji = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
                     const totalReviewVocabulary = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
                     const totalReviewRadical = entries.reduce((sum, entry) => sum + (entry.reviewSuccessPercent ?? 0), 0);
@@ -133,7 +135,7 @@ export default function UserReadingCalendar({
                       >
                         <div className="flex items-center justify-between gap-1">
                           <span className="truncate">{member.nickname}</span>
-                          <span>{entries.length} logs</span>
+                          <span>{logCount} logs</span>
                         </div>
                         {entries.length > 0 ? (
                           <div className="mt-0.5 space-y-0.5 text-[9px] font-semibold text-emerald-900/90">
@@ -148,6 +150,16 @@ export default function UserReadingCalendar({
                                 {totalReviewWork === 0 ? " (+0 bonus)" : ""}
                               </div>
                             ) : null}
+                          </div>
+                        ) : daySignoff ? (
+                          <div className="mt-0.5 space-y-0.5 text-[9px] font-semibold text-emerald-900/90">
+                            <div className="truncate">
+                              {daySignoff.pagesRead}p {daySignoff.minutesRead}m {daySignoff.didWanikaniReviews ? "WK" : "Read"}
+                            </div>
+                            <div className="truncate">
+                              Reviews total {daySignoff.reviewsLeft}
+                              {daySignoff.didWanikaniReviews && daySignoff.reviewsLeft === 0 ? " (+0 bonus)" : ""}
+                            </div>
                           </div>
                         ) : null}
                       </div>

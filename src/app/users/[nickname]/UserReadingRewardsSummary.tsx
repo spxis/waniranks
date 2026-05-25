@@ -113,7 +113,7 @@ export default function UserReadingRewardsSummary({
                 <th className="px-2 py-2">Page</th>
                 <th className="px-2 py-2">Reading left</th>
                 <th className="px-2 py-2">Reviews today</th>
-                <th className="px-2 py-2">Total earned</th>
+                <th className="px-2 py-2">Cumulative earned</th>
                 <th className="px-2 py-2">Current streak</th>
                 <th className="px-2 py-2">Perfect days</th>
               </tr>
