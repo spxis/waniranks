@@ -28,6 +28,7 @@ type MemberSummary = {
 
 type UserReadingRewardsSummaryProps = {
   daysRemaining: number;
+  isLoading: boolean;
   leaderboard: LeaderboardRow[];
   members: MemberSummary[];
   trackedMemberSet: Set<string>;
@@ -37,6 +38,7 @@ type UserReadingRewardsSummaryProps = {
 
 export default function UserReadingRewardsSummary({
   daysRemaining,
+  isLoading,
   leaderboard,
   members,
   trackedMemberSet,
@@ -119,6 +121,23 @@ export default function UserReadingRewardsSummary({
               </tr>
             </thead>
             <tbody>
+              {isLoading && leaderboard.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="px-2 py-6">
+                    <div className="flex items-center justify-center gap-2 text-sm font-semibold text-foreground/70">
+                      <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+                      <span>Loading leaderboard...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoading && leaderboard.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="px-2 py-6 text-center text-sm font-semibold text-foreground/65">
+                    No tracked players yet. Turn players on above to start the leaderboard.
+                  </td>
+                </tr>
+              ) : null}
               {leaderboard.map((row, index) => (
                 <tr key={row.accountId} className="border-b border-line/60 text-foreground/85">
                   <td className="px-2 py-2 font-black">#{index + 1}</td>

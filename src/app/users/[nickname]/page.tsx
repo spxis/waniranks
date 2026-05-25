@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserKanjiIndex } from "@/lib/wanikani";
 import ExplorerTabs from "./ExplorerTabs";
 import UserReadPanel from "./UserReadPanel";
-import UserReadingSignoffPanel from "./UserReadingSignoffPanel";
+import UserReadingSignoffSection from "./UserReadingSignoffSection";
 import UserDashboardTabs from "./UserDashboardTabs";
 import {
   QUEUE_TYPES,
@@ -479,7 +479,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               initialTab={initialReadTab}
             />
           )}
-          readContent={<UserReadingSignoffPanel accountId={account.id} />}
+          readContent={<UserReadingSignoffSection accountId={account.id} />}
         />
       </main>
     </div>

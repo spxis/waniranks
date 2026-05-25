@@ -1,18 +1,13 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-import {
-  getStoredJson,
-  setStoredJson,
-} from "@/lib/clientStorage";
+import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
 import {
   buildCalendarCells,
   campaignDaysRemaining,
   computeReadingLeaderboard,
   getTodayDateInputValue,
   normalizeIsbn,
-  toMonthKey,
   type ReadingChallengeBookRecord,
   type ReadingSignoffEntryRecord,
   type ReadingSignoffRecord,
@@ -27,9 +22,14 @@ import {
   type TodayStats,
   type UserReadingSignoffPanelProps,
 } from "./UserReadingSignoffPanel.types";
-export default function UserReadingSignoffPanel({ accountId }: UserReadingSignoffPanelProps) {
+export default function UserReadingSignoffPanel({
+  accountId,
+  initialMonthKey,
+  initialData,
+}: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
-  const [monthKey, setMonthKey] = useState(() => toMonthKey(new Date()));
+  const resolvedInitialMonthKey = initialMonthKey ?? today.slice(0, 7);
+  const [monthKey, setMonthKey] = useState(resolvedInitialMonthKey);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDateKey, setModalDateKey] = useState(today);
   const [form, setForm] = useState<FormState | null>(null);
@@ -39,7 +39,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const [modalDirty, setModalDirty] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState<string>("");
-
   const swrKey = `/api/reading-signoffs?month=${encodeURIComponent(monthKey)}`;
   const { data, mutate, isLoading } = useSWR<ReadingSignoffResponse>(
     swrKey,
@@ -51,7 +50,12 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
       }
       return payload;
     },
-    { revalidateOnFocus: true },
+    {
+      fallbackData: monthKey === resolvedInitialMonthKey ? (initialData ?? undefined) : undefined,
+      keepPreviousData: true,
+      revalidateOnFocus: true,
+      revalidateOnMount: !initialData,
+    },
   );
 
   const members = useMemo(() => data?.members ?? [], [data?.members]);
@@ -421,6 +425,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     <section className="space-y-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6">
       <UserReadingRewardsSummary
         daysRemaining={daysRemaining}
+        isLoading={isLoading}
         leaderboard={leaderboard}
         members={members}
         trackedMemberSet={trackedMemberSet}

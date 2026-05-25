@@ -35,6 +35,8 @@ export type ReadingSignoffResponse = {
 
 export type UserReadingSignoffPanelProps = {
   accountId: string;
+  initialMonthKey?: string;
+  initialData?: ReadingSignoffResponse | null;
 };
 
 export type FormState = {
