@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type SetStateAction } from "react";
 import useSWR from "swr";
 import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
 import { getReadingDailyEarningsForecast } from "@/lib/readingEarnings";
-import { buildCalendarCells, campaignDaysRemaining, computeReadingLeaderboard, getTodayDateInputValue, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
+import { READING_CAMPAIGN, buildCalendarCells, campaignDaysRemaining, computeReadingLeaderboard, getTodayDateInputValue, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
 import UserReadingCalendar from "./UserReadingCalendar";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
 import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
@@ -16,8 +16,14 @@ export default function UserReadingSignoffPanel({
   initialData,
 }: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
-  const resolvedInitialMonthKey = initialMonthKey ?? today.slice(0, 7);
-  const [monthKey, setMonthKey] = useState(resolvedInitialMonthKey);
+  const campaignStartMonthKey = READING_CAMPAIGN.startDatePst.slice(0, 7);
+  const campaignGoalMonthKey = READING_CAMPAIGN.goalDatePst.slice(0, 7);
+  const clampMonthToCampaign = (value: string): string => (value < campaignStartMonthKey ? campaignStartMonthKey : value > campaignGoalMonthKey ? campaignGoalMonthKey : value);
+  const resolvedInitialMonthKey = clampMonthToCampaign(initialMonthKey ?? today.slice(0, 7));
+  const monthStorageKey = `reading-calendar-month:${accountId}`;
+  const [monthKey, setMonthKey] = useState(() => clampMonthToCampaign(getStoredJson<string>(monthStorageKey, resolvedInitialMonthKey)));
+  const setBoundedMonthKey = (nextMonth: SetStateAction<string>) =>
+    setMonthKey((prevMonth) => clampMonthToCampaign(typeof nextMonth === "function" ? nextMonth(prevMonth) : nextMonth));
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDateKey, setModalDateKey] = useState(today);
   const [form, setForm] = useState<FormState | null>(null);
@@ -61,6 +67,10 @@ export default function UserReadingSignoffPanel({
 
   const trackedStorageKey = `reading-tracked-members:${accountId}`;
   const serverDefaultTrackedMemberIds = useMemo(() => (trackedMemberAccountIds.length === 0 ? members.map((member) => member.id) : trackedMemberAccountIds), [members, trackedMemberAccountIds]);
+
+  useEffect(() => {
+    setStoredJson(monthStorageKey, monthKey);
+  }, [monthKey, monthStorageKey]);
 
   useEffect(() => {
     if (members.length === 0) {
@@ -438,7 +448,7 @@ export default function UserReadingSignoffPanel({
         signoffByDayAndMember={signoffByDayAndMember}
         signoffEntriesByDayAndMember={signoffEntriesByDayAndMember}
         viewerCanChooseMember={viewerCanChooseMember}
-        onMonthChange={setMonthKey}
+        onMonthChange={setBoundedMonthKey}
         onOpenCheckinModal={openCheckinModal}
       />
 

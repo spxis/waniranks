@@ -71,6 +71,10 @@ export default function UserReadingCalendar({
 
   const showCalendarLoadingOverlay =
     isLoading && signoffByDayAndMember.size === 0 && signoffEntriesByDayAndMember.size === 0;
+  const minMonthKey = READING_CAMPAIGN.startDatePst.slice(0, 7);
+  const maxMonthKey = READING_CAMPAIGN.goalDatePst.slice(0, 7);
+  const canGoPrevMonth = monthKey > minMonthKey;
+  const canGoNextMonth = monthKey < maxMonthKey;
 
   return (
     <section className="space-y-3 rounded-xl border border-line bg-surface p-3">
@@ -79,16 +83,28 @@ export default function UserReadingCalendar({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.08em]"
-            onClick={() => onMonthChange((prev) => shiftMonth(prev, -1))}
+            className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => {
+              if (!canGoPrevMonth) {
+                return;
+              }
+              onMonthChange((prev) => shiftMonth(prev, -1));
+            }}
+            disabled={!canGoPrevMonth}
           >
             Prev
           </button>
           <p className="min-w-36 text-center text-sm font-bold text-foreground/80">{formatMonthLabel(monthKey)}</p>
           <button
             type="button"
-            className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.08em]"
-            onClick={() => onMonthChange((prev) => shiftMonth(prev, 1))}
+            className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => {
+              if (!canGoNextMonth) {
+                return;
+              }
+              onMonthChange((prev) => shiftMonth(prev, 1));
+            }}
+            disabled={!canGoNextMonth}
           >
             Next
           </button>
