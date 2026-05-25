@@ -50,6 +50,16 @@ type ViewerAccountSummary = {
   wkUsername: string;
 };
 
+type ReadingSignoffDelegate = {
+  findMany: typeof prisma.readingSignoff.findMany;
+  upsert: typeof prisma.readingSignoff.upsert;
+};
+
+function getReadingSignoffDelegate(): ReadingSignoffDelegate | null {
+  const delegate = (prisma as unknown as { readingSignoff?: ReadingSignoffDelegate }).readingSignoff;
+  return delegate ?? null;
+}
+
 function toReadingSignoffRecord(row: {
   id: string;
   accountId: string;
@@ -151,7 +161,15 @@ export async function GET(request: Request) {
           ? [requestedAccountId]
           : viewerAccounts.map((account) => account.id);
 
-        const signoffs = await prisma.readingSignoff.findMany({
+        const readingSignoff = getReadingSignoffDelegate();
+        if (!readingSignoff) {
+          return NextResponse.json(
+            { error: "Reading check-ins are not ready yet. Restart the dev server and try again." },
+            { status: 503 },
+          );
+        }
+
+        const signoffs = await readingSignoff.findMany({
           where: {
             accountId: { in: targetAccountIds },
             signoffDatePst: {
@@ -206,7 +224,15 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Account not found." }, { status: 404 });
         }
 
-        const saved = await prisma.readingSignoff.upsert({
+        const readingSignoff = getReadingSignoffDelegate();
+        if (!readingSignoff) {
+          return NextResponse.json(
+            { error: "Reading check-ins are not ready yet. Restart the dev server and try again." },
+            { status: 503 },
+          );
+        }
+
+        const saved = await readingSignoff.upsert({
           where: {
             accountId_signoffDatePst: {
               accountId: account.id,

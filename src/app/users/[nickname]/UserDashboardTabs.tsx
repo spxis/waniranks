@@ -69,16 +69,7 @@ export default function UserDashboardTabs({
       ).sort((a, b) => a - b),
     [availableProgressLevels, wkLevel],
   );
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    if (initialDashboardTab !== "learn") {
-      return initialDashboardTab;
-    }
-    return getStoredEnum(
-      tabStorageKey,
-      ["learn", "stats", "news", "read"] as const,
-      "learn",
-    );
-  });
+  const [activeTab, setActiveTab] = useState<TabId>(initialDashboardTab);
   const [selectedProgressLevel, setSelectedProgressLevel] = useState<number>(() => {
     if (typeof window === "undefined") {
       return wkLevel;
@@ -109,6 +100,29 @@ export default function UserDashboardTabs({
       window.clearInterval(timer);
     };
   }, []);
+  useEffect(() => {
+    // Avoid SSR/client hydration mismatch: only read localStorage after mount.
+    if (initialDashboardTab !== "learn") {
+      return;
+    }
+
+    const persistedTab = getStoredEnum(
+      tabStorageKey,
+      ["learn", "stats", "news", "read"] as const,
+      "learn",
+    );
+
+    if (persistedTab !== activeTab) {
+      const restoreTimer = window.setTimeout(() => {
+        setActiveTab(persistedTab);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(restoreTimer);
+      };
+    }
+  }, [activeTab, initialDashboardTab, tabStorageKey]);
+
   useEffect(() => {
     const onUserRefreshed = (event: Event) => {
       const custom = event as CustomEvent<{ accountId?: string }>;
