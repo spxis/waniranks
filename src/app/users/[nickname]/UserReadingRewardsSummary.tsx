@@ -154,8 +154,8 @@ export default function UserReadingRewardsSummary({
           <ol className="mt-3 space-y-1.5">
             {leaderboard.map((row, index) => (
               <li key={row.accountId} className="rounded-lg border border-line bg-surface-muted/60 px-2.5 py-2">
-                <div className="grid gap-y-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-x-3">
-                  <div className="min-w-0 flex items-center gap-2 sm:col-start-1 sm:row-start-1">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1.5">
+                  <div className="min-w-0 flex items-center gap-2">
                     <span className="inline-flex rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-black text-foreground">
                       #{index + 1}
                     </span>
@@ -163,9 +163,9 @@ export default function UserReadingRewardsSummary({
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/65">WK {row.wkLevel}</p>
                     <p className="text-[11px] font-semibold text-foreground/70">Streak {row.currentStreak}d</p>
                   </div>
-                  <p className="text-sm font-black text-accent sm:col-start-3 sm:row-start-1 sm:text-right">{formatYen(row.totalYen)}</p>
+                  <p className="col-start-2 row-span-2 text-right text-sm font-black text-accent">{formatYen(row.totalYen)}</p>
 
-                  <div className="min-w-0 sm:col-start-2 sm:row-start-1">
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="inline-flex items-center rounded-full border border-radical bg-radical px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
                         {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].short}
