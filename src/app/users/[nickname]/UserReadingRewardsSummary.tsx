@@ -62,6 +62,16 @@ export default function UserReadingRewardsSummary({
     return `JPY ${value.toLocaleString("en-US")}`;
   }
 
+  function formatCount(value: number): string {
+    return value.toLocaleString("en-US");
+  }
+
+  const subjectPillClassByType = {
+    [SUBJECT_TYPES.radical]: "subject-pill--radical",
+    [SUBJECT_TYPES.kanji]: "subject-pill--kanji",
+    [SUBJECT_TYPES.vocabulary]: "subject-pill--vocabulary",
+  } as const;
+
   return (
     <>
       <section className="rounded-2xl border border-line bg-[linear-gradient(135deg,rgba(15,111,255,0.14),rgba(56,189,248,0.1),rgba(244,114,182,0.12))] p-4 sm:p-5">
@@ -130,7 +140,7 @@ export default function UserReadingRewardsSummary({
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">Goal by {formatCampaignDateLabel(READING_CAMPAIGN.goalDatePst)}</p>
         </div>
         <p className="mt-2 text-xs text-foreground/65">
-          No right-scroll layout: each player is shown in a compact two-line summary.
+          Compact player cards with chip-style progress metrics.
         </p>
 
         {isLoading && leaderboard.length === 0 ? (
@@ -148,35 +158,75 @@ export default function UserReadingRewardsSummary({
 
         {leaderboard.length > 0 ? (
           <ol className="mt-3 space-y-2">
-            {leaderboard.map((row, index) => (
-              <li key={row.accountId} className="rounded-lg border border-line bg-surface-muted/70 px-3 py-3">
+            {leaderboard.map((row, index) => {
+              const subjectProgress = [
+                {
+                  type: SUBJECT_TYPES.kanji,
+                  label: SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.kanji].singular,
+                  learned: row.learnedKanji,
+                  today: row.reviewKanjiToday,
+                },
+                {
+                  type: SUBJECT_TYPES.radical,
+                  label: SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].plural,
+                  learned: row.learnedRadicals,
+                  today: row.reviewRadicalToday,
+                },
+                {
+                  type: SUBJECT_TYPES.vocabulary,
+                  label: SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.vocabulary].plural,
+                  learned: row.learnedVocabulary,
+                  today: row.reviewVocabularyToday,
+                },
+              ] as const;
+
+              return (
+              <li
+                key={row.accountId}
+                className="rounded-xl border border-line bg-surface px-3 py-3 shadow-[0_10px_24px_rgba(15,111,255,0.06)]"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-black text-foreground">
+                      <span className="inline-flex rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[11px] font-black text-foreground">
                         #{index + 1}
                       </span>
                       <p className="text-sm font-black text-foreground">{row.nickname}</p>
                       <p className="text-xs font-semibold uppercase tracking-[0.06em] text-foreground/65">WK {row.wkLevel}</p>
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-1.5 text-xs font-semibold text-foreground/80">
-                      <span className="rounded-full border border-line bg-surface px-2 py-0.5">
-                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.kanji].singular} learned {row.learnedKanji} (today {row.reviewKanjiToday})
+                  </div>
+
+                  <div className="rounded-lg border border-line bg-surface-muted px-2.5 py-2 text-right">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-foreground/60">Total earned</p>
+                    <p className="text-lg font-black text-accent">{formatYen(row.totalYen)}</p>
+                    <div className="mt-1 flex flex-wrap justify-end gap-1">
+                      <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-foreground/75">
+                        Streak {row.currentStreak}d
                       </span>
-                      <span className="rounded-full border border-line bg-surface px-2 py-0.5">
-                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].plural} learned {row.learnedRadicals} (today {row.reviewRadicalToday})
-                      </span>
-                      <span className="rounded-full border border-line bg-surface px-2 py-0.5">
-                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.vocabulary].plural} learned {row.learnedVocabulary} (today {row.reviewVocabularyToday})
+                      <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-foreground/75">
+                        Perfect {row.perfectDays}
                       </span>
                     </div>
                   </div>
+                </div>
 
-                  <div className="text-right">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-foreground/60">Cumulative earned</p>
-                    <p className="text-lg font-black text-accent">{formatYen(row.totalYen)}</p>
-                    <p className="text-xs font-semibold text-foreground/70">Streak {row.currentStreak}d • Perfect {row.perfectDays}</p>
-                  </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  {subjectProgress.map((metric) => (
+                    <article key={metric.type} className="rounded-lg border border-line bg-surface-muted px-2 py-2">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className={`subject-pill ${subjectPillClassByType[metric.type]}`}>{metric.label}</span>
+                        <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-foreground/70">
+                          Learned
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className={`subject-pill ${subjectPillClassByType[metric.type]}`}>{formatCount(metric.learned)}</span>
+                        <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-foreground/75">
+                          Today {formatCount(metric.today)}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
                 </div>
 
                 <div className="mt-2 grid gap-2 lg:grid-cols-3">
@@ -226,7 +276,8 @@ export default function UserReadingRewardsSummary({
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ol>
         ) : null}
       </section>
