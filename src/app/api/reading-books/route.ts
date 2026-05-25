@@ -57,15 +57,46 @@ function getReadingSignoffDelegate(): ReadingSignoffDelegate | null {
   return delegate ?? null;
 }
 
-async function fetchBookTitleByIsbn(isbn: string): Promise<string | null> {
-  const response = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`, { cache: "no-store" });
-  if (!response.ok) {
+async function fetchOpenBdTitleByIsbn(isbn: string): Promise<string | null> {
+  try {
+    const response = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as Array<{ summary?: { title?: string } } | null>;
+    const title = payload[0]?.summary?.title?.trim() ?? null;
+    return title && title.length > 0 ? title : null;
+  } catch {
     return null;
   }
+}
 
-  const payload = (await response.json()) as Array<{ summary?: { title?: string } } | null>;
-  const title = payload[0]?.summary?.title?.trim() ?? null;
-  return title && title.length > 0 ? title : null;
+async function fetchOpenLibraryTitleByIsbn(isbn: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as Record<string, { title?: string } | undefined>;
+    const title = payload[`ISBN:${isbn}`]?.title?.trim() ?? null;
+    return title && title.length > 0 ? title : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchBookTitleByIsbn(isbn: string): Promise<string | null> {
+  const openBdTitle = await fetchOpenBdTitleByIsbn(isbn);
+  if (openBdTitle) {
+    return openBdTitle;
+  }
+
+  return fetchOpenLibraryTitleByIsbn(isbn);
 }
 
 export async function POST(request: Request) {
