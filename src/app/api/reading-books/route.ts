@@ -30,6 +30,27 @@ type ReadingChallengeBookDelegate = {
       infoUrl: string | null;
     };
   }) => Promise<{ id: string; accountId: string; isbn: string; title: string; thumbnailUrl: string | null; infoUrl: string | null }>;
+  findFirst: (args: {
+    where: {
+      accountId: string;
+      isbn: string;
+    };
+    select: {
+      id: true;
+      accountId: true;
+      isbn: true;
+      title: true;
+      thumbnailUrl: true;
+      infoUrl: true;
+    };
+  }) => Promise<{
+    id: string;
+    accountId: string;
+    isbn: string;
+    title: string;
+    thumbnailUrl: string | null;
+    infoUrl: string | null;
+  } | null>;
   findUnique: (args: {
     where: { id: string };
     select: { id: true; accountId: true; title: true };
@@ -64,6 +85,15 @@ function toHttpsUrl(value: string | null | undefined): string | null {
   }
 
   return trimmed.replace(/^http:\/\//, "https://");
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const code = (error as { code?: string }).code;
+  return code === "P2002" || error.message.includes("Unique constraint");
 }
 
 async function fetchOpenBdMetadataByIsbn(isbn: string): Promise<{
@@ -201,16 +231,33 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Enter a valid ISBN-10 or ISBN-13." }, { status: 400 });
         }
 
-        const metadata = await fetchBookMetadataByIsbn(isbn);
-        if (!metadata.title) {
-          return NextResponse.json({ error: "Could not find that ISBN. Check the number and try again." }, { status: 404 });
+        const existing = await readingChallengeBook.findFirst({
+          where: {
+            accountId: parsed.data.accountId,
+            isbn,
+          },
+          select: {
+            id: true,
+            accountId: true,
+            isbn: true,
+            title: true,
+            thumbnailUrl: true,
+            infoUrl: true,
+          },
+        });
+
+        if (existing) {
+          return NextResponse.json({ book: existing, existed: true }, { status: 200 });
         }
+
+        const metadata = await fetchBookMetadataByIsbn(isbn);
+        const resolvedTitle = metadata.title ?? `ISBN ${isbn}`;
 
         const created = await readingChallengeBook.create({
           data: {
             accountId: parsed.data.accountId,
             isbn,
-            title: metadata.title,
+            title: resolvedTitle,
             thumbnailUrl: metadata.thumbnailUrl,
             infoUrl: metadata.infoUrl,
           },
@@ -218,7 +265,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ book: created }, { status: 201 });
       } catch (error) {
-        if (error instanceof Error && error.message.includes("Unique constraint")) {
+        if (isUniqueConstraintError(error)) {
           return NextResponse.json({ error: "That ISBN is already in this collection." }, { status: 409 });
         }
 
