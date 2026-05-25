@@ -122,12 +122,10 @@ export default function UserReadingCalendar({
                 <div className="space-y-1">
                   {activeMembers.map((member) => {
                     const entries = byMemberEntries.get(member.id) ?? [];
+                    const totalReviewKanji = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
+                    const totalReviewVocabulary = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
+                    const totalReviewRadical = entries.reduce((sum, entry) => sum + (entry.reviewSuccessPercent ?? 0), 0);
                     const totalReviewWork = entries.reduce((sum, entry) => sum + entry.reviewWorkDone, 0);
-                    const totalReviewCorrect = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
-                    const totalReviewIncorrect = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
-                    const reviewSuccessPercent = totalReviewWork > 0
-                      ? Math.round((totalReviewCorrect / totalReviewWork) * 100)
-                      : null;
                     return (
                       <div
                         key={`${key}-${member.id}`}
@@ -144,9 +142,10 @@ export default function UserReadingCalendar({
                                 +{entry.pagesRead}p {entry.minutesRead}m {entry.didWanikaniReviews ? "WK" : "Read"}
                               </div>
                             ))}
-                            {totalReviewWork > 0 ? (
+                            {entries.length > 0 ? (
                               <div className="truncate">
-                                Reviews {totalReviewCorrect}/{totalReviewIncorrect} ({reviewSuccessPercent ?? 0}%)
+                                Reviews K {totalReviewKanji} / V {totalReviewVocabulary} / R {totalReviewRadical}
+                                {totalReviewWork === 0 ? " (+0 bonus)" : ""}
                               </div>
                             ) : null}
                           </div>

@@ -14,9 +14,11 @@ type LeaderboardRow = {
   currentBookPage: number | null;
   pagesRemainingForReadingPass: number;
   minutesRemainingForReadingPass: number;
-  reviewCorrectToday: number;
-  reviewIncorrectToday: number;
-  reviewSuccessPercentToday: number | null;
+  reviewKanjiToday: number;
+  reviewVocabularyToday: number;
+  reviewRadicalToday: number;
+  reviewTotalToday: number;
+  zeroReviewsBonusToday: boolean;
 };
 
 type MemberSummary = {
@@ -131,8 +133,8 @@ export default function UserReadingRewardsSummary({
                     {row.pagesRemainingForReadingPass}p / {row.minutesRemainingForReadingPass}m
                   </td>
                   <td className="px-2 py-2">
-                    {row.reviewCorrectToday}/{row.reviewIncorrectToday}
-                    {row.reviewSuccessPercentToday !== null ? ` (${row.reviewSuccessPercentToday}%)` : ""}
+                    K {row.reviewKanjiToday} / V {row.reviewVocabularyToday} / R {row.reviewRadicalToday}
+                    {row.zeroReviewsBonusToday ? " (+0 bonus)" : row.reviewTotalToday > 0 ? ` (${row.reviewTotalToday} total)` : ""}
                   </td>
                   <td className="px-2 py-2 font-black text-accent">JPY {row.totalYen.toLocaleString("en-US")}</td>
                   <td className="px-2 py-2">{row.currentStreak} days</td>

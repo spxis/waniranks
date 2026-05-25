@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-
 import {
   getStoredJson,
   setStoredJson,
@@ -27,7 +26,6 @@ import {
   type ReadingSignoffResponse,
   type UserReadingSignoffPanelProps,
 } from "./UserReadingSignoffPanel.types";
-
 export default function UserReadingSignoffPanel({ accountId }: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
   const [monthKey, setMonthKey] = useState(() => toMonthKey(new Date()));
@@ -60,6 +58,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const trackedMemberAccountIds = useMemo(() => data?.trackedMemberAccountIds ?? [], [data?.trackedMemberAccountIds]);
   const signoffs = useMemo(() => data?.signoffs ?? [], [data?.signoffs]);
   const signoffEntries = useMemo(() => data?.signoffEntries ?? [], [data?.signoffEntries]);
+  const reviewQueues = useMemo(() => data?.reviewQueues ?? [], [data?.reviewQueues]);
   const challengeBooks = useMemo(() => data?.challengeBooks ?? [], [data?.challengeBooks]);
   const latestSignoffs = useMemo(() => data?.latestSignoffs ?? [], [data?.latestSignoffs]);
   const [viewerTrackedMemberIds, setViewerTrackedMemberIds] = useState<string[] | null>(null);
@@ -92,7 +91,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     if (viewerTrackedMemberIds === null) {
       return;
     }
-
     setStoredJson(trackedStorageKey, viewerTrackedMemberIds);
   }, [trackedStorageKey, viewerTrackedMemberIds]);
 
@@ -100,7 +98,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     if (!viewerTrackedMemberIds) {
       return new Set(serverDefaultTrackedMemberIds);
     }
-
     return new Set(viewerTrackedMemberIds);
   }, [serverDefaultTrackedMemberIds, viewerTrackedMemberIds]);
 
@@ -132,7 +129,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
       } else {
         current.delete(memberId);
       }
-
       return Array.from(current);
     });
   }
@@ -160,13 +156,20 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     return byDayAndMember;
   }, [signoffEntries]);
 
+  const reviewQueueByAccountId = useMemo(
+    () => new Map(reviewQueues.map((row) => [row.accountId, row])),
+    [reviewQueues],
+  );
+
   const todayStatsByAccountId = useMemo(() => {
     const map = new Map<string, {
       pagesRead: number;
       minutesRead: number;
-      reviewCorrect: number;
-      reviewIncorrect: number;
-      reviewSuccessPercent: number | null;
+      reviewKanji: number;
+      reviewVocabulary: number;
+      reviewRadical: number;
+      reviewTotal: number;
+      zeroReviewsBonus: boolean;
     }>();
 
     const byMember = signoffByDayAndMember.get(today) ?? new Map<string, ReadingSignoffRecord>();
@@ -175,16 +178,21 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     for (const member of trackedMembers) {
       const daySignoff = byMember.get(member.id);
       const entries = byMemberEntries.get(member.id) ?? [];
-      const reviewCorrect = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
-      const reviewIncorrect = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
-      const reviewWork = reviewCorrect + reviewIncorrect;
+      const reviewKanji = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
+      const reviewVocabulary = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
+      const reviewRadical = entries.reduce((sum, entry) => sum + (entry.reviewSuccessPercent ?? 0), 0);
+      const reviewTotal = entries.reduce((sum, entry) => sum + entry.reviewWorkDone, 0);
+      const fallbackTotal = daySignoff?.reviewsLeft ?? 0;
+      const effectiveTotal = reviewTotal > 0 || entries.length > 0 ? reviewTotal : fallbackTotal;
 
       map.set(member.id, {
         pagesRead: daySignoff?.pagesRead ?? 0,
         minutesRead: daySignoff?.minutesRead ?? 0,
-        reviewCorrect,
-        reviewIncorrect,
-        reviewSuccessPercent: reviewWork > 0 ? Math.round((reviewCorrect / reviewWork) * 100) : null,
+        reviewKanji,
+        reviewVocabulary,
+        reviewRadical,
+        reviewTotal: effectiveTotal,
+        zeroReviewsBonus: Boolean(daySignoff?.didWanikaniReviews && effectiveTotal === 0),
       });
     }
 
@@ -206,9 +214,11 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         currentBookPage: latestSignoff?.pagesRead ?? null,
         pagesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.pagesRead ?? 0)),
         minutesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.minutesRead ?? 0)),
-        reviewCorrectToday: todayStatsByAccountId.get(row.accountId)?.reviewCorrect ?? 0,
-        reviewIncorrectToday: todayStatsByAccountId.get(row.accountId)?.reviewIncorrect ?? 0,
-        reviewSuccessPercentToday: todayStatsByAccountId.get(row.accountId)?.reviewSuccessPercent ?? null,
+        reviewKanjiToday: todayStatsByAccountId.get(row.accountId)?.reviewKanji ?? 0,
+        reviewVocabularyToday: todayStatsByAccountId.get(row.accountId)?.reviewVocabulary ?? 0,
+        reviewRadicalToday: todayStatsByAccountId.get(row.accountId)?.reviewRadical ?? 0,
+        reviewTotalToday: todayStatsByAccountId.get(row.accountId)?.reviewTotal ?? 0,
+        zeroReviewsBonusToday: todayStatsByAccountId.get(row.accountId)?.zeroReviewsBonus ?? false,
       };
     });
 
@@ -227,6 +237,13 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
 
   const modalMember = members.find((member) => member.id === selectedMemberId) ?? null;
   const accountMember = members.find((member) => member.id === accountId) ?? null;
+  const selectedReviewQueue = reviewQueueByAccountId.get(selectedMemberId) ?? {
+    accountId: selectedMemberId,
+    radical: 0,
+    kanji: 0,
+    vocabulary: 0,
+    total: 0,
+  };
   const modalDate = form?.signoffDatePst ?? modalDateKey;
   const modalExistingEntry = findEntry(selectedMemberId, modalDate);
 
@@ -319,7 +336,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
       if (!response.ok) {
         throw new Error(payload.error ?? "Could not delete that book.");
       }
-
       setBookActionMessage("Book removed.");
       await mutate();
     } catch (error) {
@@ -435,6 +451,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         submitState={submitState}
         submitMessage={submitMessage}
         isDirty={modalDirty || addIsbn.trim().length > 0}
+        selectedReviewQueue={selectedReviewQueue}
         modalExistingEntry={modalExistingEntry}
         onRequestClose={requestCloseModal}
         onSubmit={submitSignoff}

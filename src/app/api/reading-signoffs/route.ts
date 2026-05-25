@@ -6,6 +6,7 @@ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { isAuthorizedAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import {
+  currentReviewQueueFromAssignmentCache,
   isMonthKey,
   isPstDateKey,
 } from "@/lib/readingSignoff";
@@ -181,6 +182,27 @@ export async function GET(request: Request) {
           },
         });
 
+        const accountReviewQueues = await prisma.account.findMany({
+          where: {
+            id: { in: targetAccountIds },
+          },
+          select: {
+            id: true,
+            assignmentCache: true,
+          },
+        });
+
+        const reviewQueues = accountReviewQueues.map((row) => {
+          const queue = currentReviewQueueFromAssignmentCache(row.assignmentCache);
+          return {
+            accountId: row.id,
+            radical: queue.radical,
+            kanji: queue.kanji,
+            vocabulary: queue.vocabulary,
+            total: queue.total,
+          };
+        });
+
         const trackedMemberAccountIds = readingChallengeMember
           ? (() => {
               return readingChallengeMember.findMany({
@@ -206,6 +228,7 @@ export async function GET(request: Request) {
             challengeBooks: challengeBooksAfterSeed.map(toChallengeBookRecord),
             signoffs: signoffs.map(toReadingSignoffRecord),
             signoffEntries: signoffEntries.map(toReadingSignoffEntryRecord),
+            reviewQueues,
             latestSignoffs: targetAccountIds
               .map((accountId) => latestByAccountId.get(accountId))
               .filter((value): value is LatestSignoffSummary => Boolean(value)),
@@ -240,9 +263,9 @@ export async function POST(request: Request) {
           where: { id: parsed.data.accountId },
           select: {
             id: true,
-            pendingReviews: true,
             apprenticeCount: true,
             wkLevel: true,
+            assignmentCache: true,
           },
         });
 
@@ -281,41 +304,12 @@ export async function POST(request: Request) {
         const nextMinutesRead = (existing?.minutesRead ?? 0) + parsed.data.minutesRead;
 
         const readingSignoffEntry = getReadingSignoffEntryDelegate();
-        const previousEntry = readingSignoffEntry
-          ? await readingSignoffEntry.findFirst({
-              where: { accountId: account.id },
-              orderBy: [{ createdAt: "desc" }],
-              select: { createdAt: true },
-            })
-          : null;
-
-        const reviewWindowStart = previousEntry?.createdAt ?? new Date(`${parsed.data.signoffDatePst}T00:00:00.000Z`);
-        const reviewWindowWhere = {
-          accountId: account.id,
-          submittedAt: {
-            gt: reviewWindowStart,
-          },
-        } as const;
-
-        const reviewCorrect = await prisma.studyReviewAttempt.count({
-          where: {
-            ...reviewWindowWhere,
-            result: "correct",
-          },
-        });
-
-        const reviewIncorrect = await prisma.studyReviewAttempt.count({
-          where: {
-            ...reviewWindowWhere,
-            result: { in: ["wrong", "skipped"] },
-          },
-        });
-
-        const reviewWorkDone = reviewCorrect + reviewIncorrect;
-        const reviewSuccessPercent = reviewWorkDone > 0
-          ? Math.round((reviewCorrect / reviewWorkDone) * 100)
-          : null;
-        const entryDidWanikaniReviews = parsed.data.didWanikaniReviews || reviewWorkDone > 0;
+        const reviewQueue = currentReviewQueueFromAssignmentCache(account.assignmentCache);
+        const reviewWorkDone = reviewQueue.total;
+        const reviewCorrect = reviewQueue.kanji;
+        const reviewIncorrect = reviewQueue.vocabulary;
+        const reviewSuccessPercent = reviewQueue.radical;
+        const entryDidWanikaniReviews = reviewQueue.total === 0;
 
         if (readingSignoffEntry) {
           await readingSignoffEntry.create({
@@ -348,7 +342,7 @@ export async function POST(request: Request) {
             pagesRead: nextPagesRead,
             minutesRead: nextMinutesRead,
             didWanikaniReviews: nextDidWanikaniReviews,
-            reviewsLeft: account.pendingReviews,
+            reviewsLeft: reviewQueue.total,
             apprenticeCount: account.apprenticeCount,
             currentWkLevel: account.wkLevel,
           },
@@ -358,8 +352,8 @@ export async function POST(request: Request) {
             bookTitle: parsed.data.bookTitle,
             pagesRead: parsed.data.pagesRead,
             minutesRead: parsed.data.minutesRead,
-            didWanikaniReviews: parsed.data.didWanikaniReviews,
-            reviewsLeft: account.pendingReviews,
+            didWanikaniReviews: nextDidWanikaniReviews,
+            reviewsLeft: reviewQueue.total,
             apprenticeCount: account.apprenticeCount,
             currentWkLevel: account.wkLevel,
           },

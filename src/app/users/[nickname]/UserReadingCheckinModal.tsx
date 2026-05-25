@@ -1,7 +1,11 @@
 import Image from "next/image";
 import { useEffect } from "react";
 
-import type { ReadingChallengeBookRecord, ReadingSignoffRecord } from "@/lib/readingSignoff";
+import type {
+  ReadingChallengeBookRecord,
+  ReadingReviewQueueSnapshot,
+  ReadingSignoffRecord,
+} from "@/lib/readingSignoff";
 
 type Member = {
   id: string;
@@ -31,6 +35,7 @@ type UserReadingCheckinModalProps = {
   submitState: SubmitState;
   submitMessage: string;
   isDirty: boolean;
+  selectedReviewQueue: ReadingReviewQueueSnapshot;
   modalExistingEntry: ReadingSignoffRecord | null;
   onRequestClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
@@ -60,6 +65,7 @@ export default function UserReadingCheckinModal({
   submitState,
   submitMessage,
   isDirty,
+  selectedReviewQueue,
   modalExistingEntry,
   onRequestClose,
   onSubmit,
@@ -239,6 +245,18 @@ export default function UserReadingCheckinModal({
           </button>
         </div>
 
+        <section className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Current review queue snapshot</p>
+          <p className="mt-1 text-sm font-semibold text-foreground/85">
+            K {selectedReviewQueue.kanji} / V {selectedReviewQueue.vocabulary} / R {selectedReviewQueue.radical}
+          </p>
+          <p className={`mt-1 text-xs ${selectedReviewQueue.total === 0 ? "text-emerald-700" : "text-foreground/70"}`}>
+            {selectedReviewQueue.total === 0
+              ? "Special bonus active: review queue is at 0."
+              : `${selectedReviewQueue.total} total reviews currently due.`}
+          </p>
+        </section>
+
         <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={onSubmit}>
           <label className="flex flex-col gap-1">
             <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Date</span>
@@ -307,7 +325,7 @@ export default function UserReadingCheckinModal({
               checked={form.didWanikaniReviews}
               onChange={(event) => onDidReviewsChange(event.target.checked)}
             />
-            <span className="text-sm font-semibold text-foreground/80">WaniKani reviews completed</span>
+            <span className="text-sm font-semibold text-foreground/80">WaniKani reviews completed (auto-checked when K/V/R is 0)</span>
           </label>
 
           {modalExistingEntry ? (

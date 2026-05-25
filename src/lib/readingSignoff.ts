@@ -17,6 +17,7 @@ export const READING_CAMPAIGN = {
   weeklyPerfectScore: 9.1,
   pagesBonusThreshold: 15,
   pagesBonusYen: 250,
+  zeroReviewsBonusYen: 150,
 } as const;
 
 export type ReadingBookOption = (typeof READING_BOOK_OPTIONS)[number];
@@ -55,6 +56,14 @@ export type ReadingSignoffEntryRecord = {
   reviewIncorrect: number;
   reviewSuccessPercent: number | null;
   createdAt: string;
+};
+
+export type ReadingReviewQueueSnapshot = {
+  accountId: string;
+  radical: number;
+  kanji: number;
+  vocabulary: number;
+  total: number;
 };
 
 export type ReadingChallengeBookRecord = {
@@ -243,6 +252,80 @@ export function isCampaignDate(dateKey: string): boolean {
   return dateKey >= READING_CAMPAIGN.startDatePst && dateKey <= READING_CAMPAIGN.goalDatePst;
 }
 
+export function currentReviewQueueFromAssignmentCache(
+  assignmentCache: unknown,
+  now: Date = new Date(),
+): Omit<ReadingReviewQueueSnapshot, "accountId"> {
+  const output = {
+    radical: 0,
+    kanji: 0,
+    vocabulary: 0,
+    total: 0,
+  };
+
+  if (!Array.isArray(assignmentCache)) {
+    return output;
+  }
+
+  const nowMs = now.getTime();
+
+  for (const row of assignmentCache) {
+    if (!row || typeof row !== "object") {
+      continue;
+    }
+
+    const data = (row as { data?: unknown }).data;
+    if (!data || typeof data !== "object") {
+      continue;
+    }
+
+    const assignment = data as {
+      subject_type?: unknown;
+      srs_stage?: unknown;
+      available_at?: unknown;
+      unlocked_at?: unknown;
+    };
+
+    const srsStage = typeof assignment.srs_stage === "number" ? assignment.srs_stage : 0;
+    if (srsStage <= 0) {
+      continue;
+    }
+
+    if (typeof assignment.unlocked_at !== "string" || assignment.unlocked_at.length === 0) {
+      continue;
+    }
+
+    if (typeof assignment.available_at !== "string") {
+      continue;
+    }
+
+    const availableAtMs = new Date(assignment.available_at).getTime();
+    if (Number.isNaN(availableAtMs) || availableAtMs > nowMs) {
+      continue;
+    }
+
+    const subjectType = assignment.subject_type;
+    if (subjectType === "kanji") {
+      output.kanji += 1;
+      output.total += 1;
+      continue;
+    }
+
+    if (subjectType === "vocabulary" || subjectType === "kana_vocabulary") {
+      output.vocabulary += 1;
+      output.total += 1;
+      continue;
+    }
+
+    if (subjectType === "radical") {
+      output.radical += 1;
+      output.total += 1;
+    }
+  }
+
+  return output;
+}
+
 function computeDayScore(input: ReadingSignoffRecord | null): { perfect: boolean; score: number } {
   if (!input) {
     return { perfect: false, score: 0 };
@@ -278,6 +361,7 @@ export function computeReadingLeaderboard(
     let streak = 0;
     let perfectDays = 0;
     let pagesBonusTotal = 0;
+    let zeroReviewsBonusTotal = 0;
 
     for (let cursor = new Date(startDate); cursor <= endDate; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
       const dateKey = toDateKeyUtc(cursor);
@@ -286,6 +370,10 @@ export function computeReadingLeaderboard(
 
       if (record && record.pagesRead >= READING_CAMPAIGN.pagesBonusThreshold) {
         pagesBonusTotal += READING_CAMPAIGN.pagesBonusYen;
+      }
+
+      if (record && record.didWanikaniReviews && record.reviewsLeft === 0) {
+        zeroReviewsBonusTotal += READING_CAMPAIGN.zeroReviewsBonusYen;
       }
 
       if (perfect) {
@@ -312,7 +400,7 @@ export function computeReadingLeaderboard(
 
     return {
       accountId: member.id,
-      totalYen: weeklyYen.reduce((sum, value) => sum + value, 0) + pagesBonusTotal,
+      totalYen: weeklyYen.reduce((sum, value) => sum + value, 0) + pagesBonusTotal + zeroReviewsBonusTotal,
       currentStreak: streak,
       perfectDays,
       weeklyYen,

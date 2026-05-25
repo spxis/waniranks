@@ -1,5 +1,6 @@
 import type {
   ReadingChallengeBookRecord,
+  ReadingReviewQueueSnapshot,
   ReadingSignoffEntryRecord,
   ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
@@ -28,6 +29,7 @@ export type ReadingSignoffResponse = {
   challengeBooks: ReadingChallengeBookRecord[];
   signoffs: ReadingSignoffRecord[];
   signoffEntries: ReadingSignoffEntryRecord[];
+  reviewQueues: ReadingReviewQueueSnapshot[];
   latestSignoffs: LatestSignoff[];
 };
 
