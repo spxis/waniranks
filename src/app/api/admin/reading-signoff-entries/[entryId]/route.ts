@@ -22,6 +22,7 @@ const patchBodySchema = z.object({
   signoffDatePst: z.string().refine((value) => isPstDateKey(value), {
     message: "Invalid signoff date.",
   }),
+  submittedAt: z.string().datetime({ offset: true }).optional(),
   bookTitle: z.string().trim().min(1).max(180),
   pagesRead: z.number().int().min(0).max(2000),
   minutesRead: z.number().int().min(0).max(1440),
@@ -74,6 +75,7 @@ export async function PATCH(request: Request, context: RouteContext) {
             },
             data: {
               signoffDatePst: parsedBody.data.signoffDatePst,
+              createdAt: parsedBody.data.submittedAt ? new Date(parsedBody.data.submittedAt) : undefined,
               bookTitle: parsedBody.data.bookTitle.trim(),
               pagesRead: parsedBody.data.pagesRead,
               minutesRead: parsedBody.data.minutesRead,
@@ -153,6 +155,7 @@ export async function PATCH(request: Request, context: RouteContext) {
           },
           data: {
             signoffDatePst: parsedBody.data.signoffDatePst,
+              createdAt: parsedBody.data.submittedAt ? new Date(parsedBody.data.submittedAt) : undefined,
             bookTitle: parsedBody.data.bookTitle.trim(),
             pagesRead: parsedBody.data.pagesRead,
             minutesRead: parsedBody.data.minutesRead,

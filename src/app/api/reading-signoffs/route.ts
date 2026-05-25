@@ -35,6 +35,7 @@ const postBodySchema = z.object({
   signoffDatePst: z.string().refine((value) => isPstDateKey(value), {
     message: "Invalid signoff date.",
   }),
+  submittedAt: z.string().datetime({ offset: true }).optional(),
   bookTitle: z.string().trim().min(1).max(180),
   pagesRead: z.number().int().min(0).max(2000),
   minutesRead: z.number().int().min(0).max(1440),
@@ -257,9 +258,16 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
         }
 
-        if (!(await canAccessAccount(request, parsed.data.accountId))) {
+        const viewerIsAdmin = await isAuthorizedAdmin(request);
+        if (!viewerIsAdmin && !(await canAccessAccount(request, parsed.data.accountId))) {
           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
         }
+
+        if (parsed.data.submittedAt && !viewerIsAdmin) {
+          return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+        }
+
+        const submittedAt = parsed.data.submittedAt ? new Date(parsed.data.submittedAt) : null;
 
         const account = await prisma.account.findUnique({
           where: { id: parsed.data.accountId },
@@ -329,6 +337,7 @@ export async function POST(request: Request) {
             data: {
               accountId: account.id,
               signoffDatePst: parsed.data.signoffDatePst,
+              createdAt: submittedAt ?? undefined,
               bookTitle: normalizedBookTitle,
               pagesRead: parsed.data.pagesRead,
               minutesRead: parsed.data.minutesRead,
@@ -362,6 +371,7 @@ export async function POST(request: Request) {
           create: {
             accountId: account.id,
             signoffDatePst: parsed.data.signoffDatePst,
+            createdAt: submittedAt ?? undefined,
             bookTitle: normalizedBookTitle,
             pagesRead: parsed.data.pagesRead,
             minutesRead: parsed.data.minutesRead,

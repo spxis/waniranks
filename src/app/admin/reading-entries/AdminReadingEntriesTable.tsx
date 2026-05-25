@@ -10,6 +10,7 @@ type AdminReadingEntriesTableProps = {
   draft: EntryEditDraft | null;
   loading: boolean;
   saving: boolean;
+  localTimezoneLabel: string;
   onDraftChange: (nextDraft: EntryEditDraft) => void;
   onBeginEdit: (entry: AdminReadingEntry) => void;
   onCancelEdit: () => void;
@@ -23,6 +24,7 @@ export default function AdminReadingEntriesTable({
   draft,
   loading,
   saving,
+  localTimezoneLabel,
   onDraftChange,
   onBeginEdit,
   onCancelEdit,
@@ -74,6 +76,24 @@ export default function AdminReadingEntriesTable({
                     <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-foreground/55">
                       Updated {formatDateTimeShort(entry.updatedAt)}
                     </p>
+                  ) : null}
+                  {isEditing && draft.source === "entry" ? (
+                    <label className="mt-2 flex max-w-48 flex-col gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/60">
+                        Submitted time ({localTimezoneLabel})
+                      </span>
+                      <input
+                        type="datetime-local"
+                        className="h-9 rounded-md border border-line bg-white px-2 text-xs"
+                        value={draft.submittedAtLocal}
+                        onChange={(event) => {
+                          onDraftChange({
+                            ...draft,
+                            submittedAtLocal: event.target.value,
+                          });
+                        }}
+                      />
+                    </label>
                   ) : null}
                 </td>
 

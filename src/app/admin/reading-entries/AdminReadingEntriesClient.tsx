@@ -25,6 +25,33 @@ function getErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
+function toDateTimeLocalInputValue(input: string): string {
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hour = String(parsed.getHours()).padStart(2, "0");
+  const minute = String(parsed.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+function fromDateTimeLocalInputValue(input: string): string | null {
+  if (input.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
 export default function AdminReadingEntriesClient() {
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -33,6 +60,7 @@ export default function AdminReadingEntriesClient() {
 
   const [monthFilter, setMonthFilter] = useState("");
   const [accountFilter, setAccountFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState<"entry" | "daily">("entry");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
@@ -55,6 +83,7 @@ export default function AdminReadingEntriesClient() {
   const entries = data?.entries ?? [];
   const members = data?.members ?? [];
   const pagination = data?.pagination ?? { page, pageSize, pageCount: 1, total: 0 };
+  const localTimezoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -70,8 +99,10 @@ export default function AdminReadingEntriesClient() {
       params.set("accountId", accountFilter);
     }
 
+    params.set("source", sourceFilter);
+
     return params.toString();
-  }, [accountFilter, monthFilter, page, pageSize]);
+  }, [accountFilter, monthFilter, page, pageSize, sourceFilter]);
 
   const loadEntries = useCallback(async () => {
     if (!sessionAuthorized) {
@@ -130,7 +161,9 @@ export default function AdminReadingEntriesClient() {
     setStatus({ type: "idle", message: "" });
     setEditingEntryId(entry.id);
     setDraft({
+      source: entry.source,
       signoffDatePst: entry.signoffDatePst,
+      submittedAtLocal: toDateTimeLocalInputValue(entry.createdAt),
       bookTitle: entry.bookTitle,
       pagesRead: entry.pagesRead,
       minutesRead: entry.minutesRead,
@@ -153,6 +186,10 @@ export default function AdminReadingEntriesClient() {
     setStatus({ type: "idle", message: "" });
 
     try {
+      const submittedAt = draft.source === "entry"
+        ? fromDateTimeLocalInputValue(draft.submittedAtLocal)
+        : null;
+
       const response = await fetch(`/api/admin/reading-signoff-entries/${encodeURIComponent(editingEntryId)}`, {
         method: "PATCH",
         headers: {
@@ -160,6 +197,7 @@ export default function AdminReadingEntriesClient() {
         },
         body: JSON.stringify({
           signoffDatePst: draft.signoffDatePst,
+          submittedAt: submittedAt ?? undefined,
           bookTitle: draft.bookTitle,
           pagesRead: draft.pagesRead,
           minutesRead: draft.minutesRead,
@@ -285,7 +323,7 @@ export default function AdminReadingEntriesClient() {
 
           {sessionAuthorized ? (
             <>
-              <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface-muted p-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface-muted p-4 sm:grid-cols-2 lg:grid-cols-6">
                 <label className="flex flex-col gap-1 lg:col-span-1">
                   <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Month</span>
                   <input
@@ -319,6 +357,21 @@ export default function AdminReadingEntriesClient() {
                 </label>
 
                 <label className="flex flex-col gap-1 lg:col-span-1">
+                  <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">View</span>
+                  <select
+                    className="h-10 rounded-lg border border-line bg-surface px-3 text-sm"
+                    value={sourceFilter}
+                    onChange={(event) => {
+                      setSourceFilter(event.target.value as "entry" | "daily");
+                      setPage(1);
+                    }}
+                  >
+                    <option value="entry">Individual logs</option>
+                    <option value="daily">Daily totals</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1 lg:col-span-1">
                   <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Page size</span>
                   <select
                     className="h-10 rounded-lg border border-line bg-surface px-3 text-sm"
@@ -341,6 +394,7 @@ export default function AdminReadingEntriesClient() {
                     onClick={() => {
                       setMonthFilter("");
                       setAccountFilter("all");
+                      setSourceFilter("entry");
                       setPage(1);
                     }}
                     className="h-10 rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80"
@@ -361,6 +415,10 @@ export default function AdminReadingEntriesClient() {
                 </div>
               </div>
 
+              <p className="mt-2 text-xs text-foreground/65">
+                Times use your local timezone ({localTimezoneLabel}) and are stored in UTC.
+              </p>
+
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-foreground/75">
                 <span>
                   Total check-ins: <strong className="text-foreground">{pagination.total}</strong>
@@ -378,6 +436,7 @@ export default function AdminReadingEntriesClient() {
                 draft={draft}
                 loading={loading}
                 saving={saving}
+                localTimezoneLabel={localTimezoneLabel}
                 onDraftChange={setDraft}
                 onBeginEdit={beginEdit}
                 onCancelEdit={cancelEdit}

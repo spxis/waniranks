@@ -37,7 +37,9 @@ export type ReadingEntriesResponse = {
 };
 
 export type EntryEditDraft = {
+  source: "daily" | "entry";
   signoffDatePst: string;
+  submittedAtLocal: string;
   bookTitle: string;
   pagesRead: number;
   minutesRead: number;

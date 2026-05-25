@@ -4,6 +4,7 @@ import type { ReadingChallengeBookRecord, ReadingReviewQueueSnapshot, ReadingSig
 import { SUBJECT_TYPES } from "@/lib/domainConstants";
 import { subjectTypePluralLabel } from "./shared/subjectTypeLabels";
 import ExplorerConfirmDialog from "./shared/ExplorerConfirmDialog";
+import UserReadingCheckinModalAdminDateField from "./UserReadingCheckinModalAdminDateField";
 
 type Member = {
   id: string;
@@ -27,6 +28,8 @@ type UserReadingCheckinModalProps = {
   selectedMemberId: string;
   selectedMemberName: string;
   viewerCanChooseMember: boolean;
+  allowSignoffDateEdit: boolean;
+  maxSignoffDatePst: string;
   memberBooks: ReadingChallengeBookRecord[];
   addIsbn: string;
   bookActionMessage: string;
@@ -39,6 +42,7 @@ type UserReadingCheckinModalProps = {
   onRequestClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
   onMemberChange: (nextMemberId: string) => void;
+  onSignoffDateChange: (nextDateKey: string) => void;
   onAddIsbnChange: (value: string) => void;
   onAddBook: () => Promise<void>;
   onDeleteBook: (bookId: string) => Promise<void>;
@@ -57,6 +61,8 @@ export default function UserReadingCheckinModal({
   selectedMemberId,
   selectedMemberName,
   viewerCanChooseMember,
+  allowSignoffDateEdit,
+  maxSignoffDatePst,
   memberBooks,
   addIsbn,
   bookActionMessage,
@@ -69,6 +75,7 @@ export default function UserReadingCheckinModal({
   onRequestClose,
   onSubmit,
   onMemberChange,
+  onSignoffDateChange,
   onAddIsbnChange,
   onAddBook,
   onDeleteBook,
@@ -125,16 +132,8 @@ export default function UserReadingCheckinModal({
   const zeroReviewsBonusActive = selectedReviewQueue.total === 0;
   const hasReadingActivity = form.pagesRead > 0 || form.minutesRead > 0;
   const hasWaniKaniActivity = form.didWanikaniReviews;
-  const checkinMode: "none" | "reading" | "wanikani" | "both" = hasReadingActivity
-    ? hasWaniKaniActivity ? "both" : "reading"
-    : hasWaniKaniActivity ? "wanikani" : "none";
-  const saveScopeLabel = checkinMode === "both"
-    ? "reading + WaniKani"
-    : checkinMode === "reading"
-      ? "reading"
-      : checkinMode === "wanikani"
-        ? "WaniKani"
-        : "nothing yet";
+  const checkinMode: "none" | "reading" | "wanikani" | "both" = hasReadingActivity ? (hasWaniKaniActivity ? "both" : "reading") : (hasWaniKaniActivity ? "wanikani" : "none");
+  const saveScopeLabel = checkinMode === "both" ? "reading + WaniKani" : checkinMode === "reading" ? "reading" : checkinMode === "wanikani" ? "WaniKani" : "nothing yet";
   const showReading = checkinMode === "reading" || checkinMode === "both";
   const showWaniKani = checkinMode === "wanikani" || checkinMode === "both";
 
@@ -178,6 +177,7 @@ export default function UserReadingCheckinModal({
             </select>
           </label>
         ) : null}
+        {allowSignoffDateEdit ? <UserReadingCheckinModalAdminDateField value={form.signoffDatePst} maxDate={maxSignoffDatePst} onChange={onSignoffDateChange} /> : null}
 
         <section className="mt-4 rounded-xl border border-line bg-surface-muted p-3">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">What are you checking in?</p>
@@ -337,7 +337,6 @@ export default function UserReadingCheckinModal({
             ) : null}
           </section>
         ) : null}
-
         {previewBook ? (
           <div
             className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4"
@@ -371,7 +370,6 @@ export default function UserReadingCheckinModal({
             </div>
           </div>
         ) : null}
-
         {showWaniKani ? (
           <section className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Current review queue snapshot</p>
@@ -393,7 +391,6 @@ export default function UserReadingCheckinModal({
             </p>
           </section>
         ) : null}
-
         <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={onSubmit}>
           {showReading ? (
             <>

@@ -89,14 +89,8 @@ export default function UserReadingSignoffPanel({
     return new Set(viewerTrackedMemberIds);
   }, [serverDefaultTrackedMemberIds, viewerTrackedMemberIds]);
 
-  const trackedMembers = useMemo(
-    () => members.filter((member) => trackedMemberSet.has(member.id)),
-    [members, trackedMemberSet],
-  );
-  const latestSignoffByAccountId = useMemo(
-    () => new Map(latestSignoffs.map((row) => [row.accountId, row])),
-    [latestSignoffs],
-  );
+  const trackedMembers = useMemo(() => members.filter((member) => trackedMemberSet.has(member.id)), [members, trackedMemberSet]);
+  const latestSignoffByAccountId = useMemo(() => new Map(latestSignoffs.map((row) => [row.accountId, row])), [latestSignoffs]);
 
   const booksByAccountId = useMemo(() => {
     const map = new Map<string, ReadingChallengeBookRecord[]>();
@@ -198,6 +192,7 @@ export default function UserReadingSignoffPanel({
       const member = trackedMembers.find((candidate) => candidate.id === row.accountId);
       const latestSignoff = latestSignoffByAccountId.get(row.accountId);
       const forecast = dailyForecastByAccountId.get(row.accountId);
+      const currentBookThumbnailUrl = (booksByAccountId.get(row.accountId) ?? []).find((book) => book.title === (latestSignoff?.bookTitle ?? ""))?.thumbnailUrl ?? null;
       return {
         ...row,
         nickname: member?.nickname ?? row.accountId,
@@ -206,6 +201,7 @@ export default function UserReadingSignoffPanel({
         learnedRadicals: member?.learnedRadicals ?? 0,
         learnedVocabulary: member?.learnedVocabulary ?? 0,
         currentBookTitle: latestSignoff?.bookTitle ?? "-",
+        currentBookThumbnailUrl,
         currentBookPage: latestSignoff?.pagesRead ?? null,
         pagesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.pagesRead ?? 0)),
         minutesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.minutesRead ?? 0)),
@@ -224,7 +220,7 @@ export default function UserReadingSignoffPanel({
     });
 
     return rows.sort((a, b) => b.totalYen - a.totalYen);
-  }, [dailyForecastByAccountId, latestSignoffByAccountId, signoffs, today, todayStatsByAccountId, trackedMembers]);
+  }, [booksByAccountId, dailyForecastByAccountId, latestSignoffByAccountId, signoffs, today, todayStatsByAccountId, trackedMembers]);
 
   const calendarCells = useMemo(() => buildCalendarCells(monthKey), [monthKey]);
 
@@ -462,6 +458,8 @@ export default function UserReadingSignoffPanel({
         selectedMemberId={selectedMemberId}
         selectedMemberName={modalMember?.nickname ?? accountMember?.nickname ?? members[0]?.nickname ?? "Player"}
         viewerCanChooseMember={viewerCanChooseMember}
+        allowSignoffDateEdit={viewerCanChooseMember}
+        maxSignoffDatePst={today}
         memberBooks={booksForMember(selectedMemberId)}
         addIsbn={addIsbn}
         bookActionMessage={bookActionMessage}
@@ -477,6 +475,7 @@ export default function UserReadingSignoffPanel({
           setModalDirty(true);
           setModalMember(nextMemberId, modalDate);
         }}
+        onSignoffDateChange={(nextDateKey) => updateFormField((prev) => ({ ...prev, signoffDatePst: nextDateKey }))}
         onAddIsbnChange={(value) => {
           setAddIsbn(value);
           setModalDirty(true);

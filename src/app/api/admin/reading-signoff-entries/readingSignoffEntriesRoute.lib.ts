@@ -94,7 +94,7 @@ export function toAdminReadingSignoffEntryRecord(
     pagesRead: row.pagesRead,
     minutesRead: row.minutesRead,
     didWanikaniReviews: row.didWanikaniReviews,
-    reviewsLeft: 0,
+    reviewsLeft: row.reviewWorkDone,
     reviewWorkDone: row.reviewWorkDone,
     reviewCorrect: row.reviewCorrect,
     reviewIncorrect: row.reviewIncorrect,

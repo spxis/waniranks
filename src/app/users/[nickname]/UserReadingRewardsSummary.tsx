@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { READING_CAMPAIGN, formatCampaignDateLabel } from "@/lib/readingSignoff";
 
 type LeaderboardRow = {
@@ -11,6 +12,7 @@ type LeaderboardRow = {
   learnedRadicals: number;
   learnedVocabulary: number;
   currentBookTitle: string;
+  currentBookThumbnailUrl: string | null;
   currentBookPage: number | null;
   pagesRemainingForReadingPass: number;
   minutesRemainingForReadingPass: number;
@@ -169,7 +171,20 @@ export default function UserReadingRewardsSummary({
                   <td className="px-2 py-2">{row.learnedKanji}</td>
                   <td className="px-2 py-2">{row.learnedRadicals}</td>
                   <td className="px-2 py-2">{row.learnedVocabulary}</td>
-                  <td className="px-2 py-2 max-w-48 truncate" title={row.currentBookTitle}>{row.currentBookTitle}</td>
+                  <td className="px-2 py-2 max-w-48" title={row.currentBookTitle}>
+                    <div className="flex items-center gap-1.5">
+                      {row.currentBookThumbnailUrl ? (
+                        <Image
+                          src={row.currentBookThumbnailUrl}
+                          alt=""
+                          width={16}
+                          height={22}
+                          className="h-5 w-4 shrink-0 rounded border border-line object-cover"
+                        />
+                      ) : null}
+                      <span className="block min-w-0 truncate">{row.currentBookTitle}</span>
+                    </div>
+                  </td>
                   <td className="px-2 py-2">{row.currentBookPage ?? "-"}</td>
                   <td className="px-2 py-2">
                     {row.pagesRemainingForReadingPass}p / {row.minutesRemainingForReadingPass}m
