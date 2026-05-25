@@ -154,8 +154,8 @@ export default function UserReadingRewardsSummary({
           <ol className="mt-3 space-y-1.5">
             {leaderboard.map((row, index) => (
               <li key={row.accountId} className="rounded-lg border border-line bg-surface-muted/60 px-2.5 py-2">
-                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1.5">
-                  <div className="min-w-0 flex items-center gap-2 col-start-1 row-start-1">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start">
+                  <div className="col-start-1 row-start-1 min-w-0 flex items-center gap-2">
                     <span className="inline-flex rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-black text-foreground">
                       #{index + 1}
                     </span>
@@ -163,28 +163,30 @@ export default function UserReadingRewardsSummary({
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/65">WK {row.wkLevel}</p>
                     <p className="text-[11px] font-semibold text-foreground/70">Streak {row.currentStreak}d</p>
                   </div>
-                  <p className="col-start-3 row-start-1 row-span-2 text-right text-sm font-black text-accent">{formatYen(row.totalYen)}</p>
+                  <p className="col-start-2 row-start-1 text-right text-sm font-black text-accent sm:col-start-3 sm:row-span-2">{formatYen(row.totalYen)}</p>
 
-                  <div className="min-w-0 col-start-2 row-start-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center rounded-full border border-radical bg-radical px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
-                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].short}
-                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                          ({formatCount(row.reviewRadicalToday)})
+                  <div className="col-span-2 col-start-1 row-start-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1">
+                    <div className="overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+                      <div className="flex min-w-max items-center gap-1.5 sm:min-w-0 sm:flex-wrap">
+                        <span className="inline-flex items-center rounded-full border border-radical bg-radical px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
+                          {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].short}
+                          <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                            ({formatCount(row.reviewRadicalToday)})
+                          </span>
                         </span>
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-kanji bg-kanji px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
-                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.kanji].short}
-                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                          ({formatCount(row.reviewKanjiToday)})
+                        <span className="inline-flex items-center rounded-full border border-kanji bg-kanji px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
+                          {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.kanji].short}
+                          <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                            ({formatCount(row.reviewKanjiToday)})
+                          </span>
                         </span>
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-vocabulary bg-vocabulary px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
-                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.vocabulary].short}
-                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                          ({formatCount(row.reviewVocabularyToday)})
+                        <span className="inline-flex items-center rounded-full border border-vocabulary bg-vocabulary px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
+                          {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.vocabulary].short}
+                          <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                            ({formatCount(row.reviewVocabularyToday)})
+                          </span>
                         </span>
-                      </span>
+                      </div>
                     </div>
 
                     <div className="mt-1 flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
