@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { authOptions, isAdminEmail } from "@/lib/auth";
 import { refreshDueAccounts } from "@/lib/sync";
+import {
+  READING_CAMPAIGN,
+  campaignDaysRemaining,
+  computeReadingLeaderboard,
+  getTodayDateInputValue,
+  type ReadingSignoffRecord,
+} from "@/lib/readingSignoff";
 import LeaderboardAdminActions from "./LeaderboardAdminActions";
 import UserHeaderMenu from "./users/[nickname]/UserHeaderMenu";
 import { resolveViewerMenuInfo } from "./users/[nickname]/userPageAuth";
@@ -66,10 +73,18 @@ export default async function Home() {
   const readingChallengeHref = viewerWkUsername
     ? `/users/${encodeURIComponent(viewerWkUsername)}?dashboard=read`
     : "/join";
+  const challengeToday = getTodayDateInputValue();
+  const challengeDaysLeft = campaignDaysRemaining(challengeToday);
 
   let leaderboard: LeaderboardRow[] = [];
   let setupMessage = "";
   let runtimeError = "";
+  let challengeTrackedPlayers = 0;
+  let challengeTeamYen = 0;
+  let challengeLeaderName = "No leader yet";
+  let challengeLeaderYen = 0;
+  let challengeSecondName = "-";
+  let challengeSecondYen = 0;
 
   try {
     const refreshPromise = refreshDueAccounts(1).catch((error) => {
@@ -180,6 +195,69 @@ export default async function Home() {
           },
         };
       });
+
+      const readingSignoffRows = await prisma.readingSignoff.findMany({
+        select: {
+          id: true,
+          accountId: true,
+          signoffDatePst: true,
+          bookTitle: true,
+          pagesRead: true,
+          minutesRead: true,
+          didWanikaniReviews: true,
+          reviewsLeft: true,
+          apprenticeCount: true,
+          currentWkLevel: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      const trackedRows = await prisma.readingChallengeMember.findMany({
+        select: {
+          accountId: true,
+          tracked: true,
+        },
+      });
+
+      const trackedByAccountId = new Map(trackedRows.map((row) => [row.accountId, row.tracked]));
+      const trackedChallengeAccountIds = leaderboard
+        .map((row) => row.id)
+        .filter((accountId) => trackedByAccountId.get(accountId) !== false);
+
+      challengeTrackedPlayers = trackedChallengeAccountIds.length;
+
+      const readingSignoffs: ReadingSignoffRecord[] = readingSignoffRows.map((row) => ({
+        id: row.id,
+        accountId: row.accountId,
+        signoffDatePst: row.signoffDatePst,
+        bookTitle: row.bookTitle,
+        pagesRead: row.pagesRead,
+        minutesRead: row.minutesRead,
+        didWanikaniReviews: row.didWanikaniReviews,
+        reviewsLeft: row.reviewsLeft,
+        apprenticeCount: row.apprenticeCount,
+        currentWkLevel: row.currentWkLevel,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      }));
+
+      const challengeRows = computeReadingLeaderboard(
+        trackedChallengeAccountIds.map((accountId) => ({ id: accountId })),
+        readingSignoffs,
+        challengeToday,
+      ).sort((a, b) => b.totalYen - a.totalYen);
+
+      challengeTeamYen = challengeRows.reduce((sum, row) => sum + row.totalYen, 0);
+
+      const nicknameByAccountId = new Map(leaderboard.map((row) => [row.id, row.nickname]));
+      const leader = challengeRows[0] ?? null;
+      const second = challengeRows[1] ?? null;
+
+      challengeLeaderName = leader ? (nicknameByAccountId.get(leader.accountId) ?? "Top player") : "No leader yet";
+      challengeLeaderYen = leader?.totalYen ?? 0;
+      challengeSecondName = second ? (nicknameByAccountId.get(second.accountId) ?? "-") : "-";
+      challengeSecondYen = second?.totalYen ?? 0;
     }
 
     void refreshPromise;
@@ -196,12 +274,16 @@ export default async function Home() {
         )
       : 0;
   const topScore = leaderboard[0]?.score ?? 0;
+  const leaderRemainingToGoal = Math.max(0, READING_CAMPAIGN.maxYen - challengeLeaderYen);
+  const leaderDailyPaceNeeded = challengeDaysLeft > 0
+    ? Math.ceil(leaderRemainingToGoal / challengeDaysLeft)
+    : leaderRemainingToGoal;
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-12">
       <div className="noise-overlay pointer-events-none absolute inset-0" />
       <main className="relative mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
-        <section className="animate-enter rounded-[2rem] border border-line/80 bg-surface/85 p-5 shadow-[0_24px_80px_rgba(15,111,255,0.17)] backdrop-blur sm:p-8">
+        <section className="animate-enter rounded-4xl border border-line/80 bg-surface/85 p-5 shadow-[0_24px_80px_rgba(15,111,255,0.17)] backdrop-blur sm:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-accent">
@@ -256,17 +338,17 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="animate-enter animate-enter-delay-1 mt-6 overflow-hidden rounded-[2rem] border border-line bg-gradient-to-br from-amber-100/90 via-orange-100/80 to-rose-100/80 shadow-[0_24px_70px_rgba(237,137,54,0.2)]">
+        <section className="animate-enter animate-enter-delay-1 mt-6 overflow-hidden rounded-4xl border border-line bg-linear-to-br from-amber-100/90 via-orange-100/80 to-rose-100/80 shadow-[0_24px_70px_rgba(237,137,54,0.2)]">
           <div className="grid gap-4 p-5 sm:p-7 lg:grid-cols-[1.3fr,0.9fr] lg:items-end">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800/90">
                 Reading Challenge
               </p>
               <h2 className="mt-2 text-3xl font-black leading-[0.95] text-amber-950 sm:text-4xl lg:text-5xl">
-                Keep the streak alive every day.
+                {challengeDaysLeft} days left to hit JPY {formatNumber(READING_CAMPAIGN.maxYen)}.
               </h2>
               <p className="mt-3 max-w-2xl text-sm font-semibold text-amber-900/80 sm:text-base">
-                Log pages, track WaniKani effort, and watch your campaign progress in one place.
+                Top earner: {challengeLeaderName} with JPY {formatNumber(challengeLeaderYen)}. Team pot: JPY {formatNumber(challengeTeamYen)}.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -277,20 +359,48 @@ export default async function Home() {
                 Open Read Challenge
               </Link>
               <Link
-                href={viewerWkUsername ? `/users/${encodeURIComponent(viewerWkUsername)}?dashboard=stats` : "/"}
+                href={readingChallengeHref}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-amber-300/80 bg-white px-5 text-xs font-bold uppercase tracking-[0.14em] text-amber-900 transition hover:bg-amber-50"
               >
-                View My Stats
+                Log Today&apos;s Check-in
               </Link>
+            </div>
+          </div>
+          <div className="grid gap-2 border-t border-amber-200/70 bg-white/55 px-5 py-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-7">
+            <div className="rounded-xl border border-amber-200/80 bg-white/80 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-900/70">Days remaining</p>
+              <p className="mt-1 text-xl font-black text-amber-950">{challengeDaysLeft}</p>
+            </div>
+            <div className="rounded-xl border border-amber-200/80 bg-white/80 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-900/70">Tracked players</p>
+              <p className="mt-1 text-xl font-black text-amber-950">{formatNumber(challengeTrackedPlayers)}</p>
+            </div>
+            <div className="rounded-xl border border-amber-200/80 bg-white/80 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-900/70">Leader + runner-up</p>
+              <p className="mt-1 text-sm font-black text-amber-950">
+                {challengeLeaderName} JPY {formatNumber(challengeLeaderYen)}
+              </p>
+              <p className="text-xs font-semibold text-amber-900/75">
+                {challengeSecondName !== "-" ? `${challengeSecondName} JPY ${formatNumber(challengeSecondYen)}` : "Waiting for challenger"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-200/80 bg-white/80 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-900/70">Leader pace to goal</p>
+              <p className="mt-1 text-sm font-black text-amber-950">
+                JPY {formatNumber(leaderDailyPaceNeeded)} / day
+              </p>
+              <p className="text-xs font-semibold text-amber-900/75">
+                Remaining: JPY {formatNumber(leaderRemainingToGoal)}
+              </p>
             </div>
           </div>
         </section>
 
-        <section className="animate-enter animate-enter-delay-2 mt-6 overflow-hidden rounded-[2rem] border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
+        <section className="animate-enter animate-enter-delay-2 mt-6 overflow-hidden rounded-4xl border border-line bg-surface/90 shadow-[0_20px_55px_rgba(8,16,36,0.12)]">
           {runtimeError ? (
             <div className="border-b border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-900">
               <p className="font-bold uppercase tracking-[0.08em]">Runtime error detected</p>
-              <p className="mt-1 break-words font-medium">{runtimeError}</p>
+              <p className="mt-1 wrap-break-word font-medium">{runtimeError}</p>
             </div>
           ) : null}
           {leaderboard.length === 0 ? (
