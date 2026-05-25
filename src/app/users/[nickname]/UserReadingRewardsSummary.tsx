@@ -154,8 +154,8 @@ export default function UserReadingRewardsSummary({
           <ol className="mt-3 space-y-1.5">
             {leaderboard.map((row, index) => (
               <li key={row.accountId} className="rounded-lg border border-line bg-surface-muted/60 px-2.5 py-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0 flex items-center gap-2">
+                <div className="grid gap-y-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-x-3">
+                  <div className="min-w-0 flex items-center gap-2 sm:col-start-1 sm:row-start-1">
                     <span className="inline-flex rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-black text-foreground">
                       #{index + 1}
                     </span>
@@ -163,47 +163,49 @@ export default function UserReadingRewardsSummary({
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/65">WK {row.wkLevel}</p>
                     <p className="text-[11px] font-semibold text-foreground/70">Streak {row.currentStreak}d</p>
                   </div>
-                  <p className="text-sm font-black text-accent">{formatYen(row.totalYen)}</p>
-                </div>
+                  <p className="text-sm font-black text-accent sm:col-start-3 sm:row-start-1 sm:text-right">{formatYen(row.totalYen)}</p>
 
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-full border border-radical bg-radical px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
-                    {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].short}
-                    <span className="ml-0 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                      ({formatCount(row.reviewRadicalToday)})
-                    </span>
-                  </span>
-                  <span className="inline-flex items-center rounded-full border border-kanji bg-kanji px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
-                    {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.kanji].short}
-                    <span className="ml-0 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                      ({formatCount(row.reviewKanjiToday)})
-                    </span>
-                  </span>
-                  <span className="inline-flex items-center rounded-full border border-vocabulary bg-vocabulary px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
-                    {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.vocabulary].short}
-                    <span className="ml-0 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                      ({formatCount(row.reviewVocabularyToday)})
-                    </span>
-                  </span>
-                </div>
+                  <div className="min-w-0 sm:col-start-2 sm:row-start-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center rounded-full border border-radical bg-radical px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
+                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.radical].short}
+                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                          ({formatCount(row.reviewRadicalToday)})
+                        </span>
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-kanji bg-kanji px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
+                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.kanji].short}
+                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                          ({formatCount(row.reviewKanjiToday)})
+                        </span>
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-vocabulary bg-vocabulary px-3 py-1 text-xs font-bold uppercase tracking-widest whitespace-nowrap text-white">
+                        {SUBJECT_TYPE_DISPLAY[SUBJECT_TYPES.vocabulary].short}
+                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                          ({formatCount(row.reviewVocabularyToday)})
+                        </span>
+                      </span>
+                    </div>
 
-                <div className="mt-1 flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
-                  {row.currentBookThumbnailUrl ? (
-                    <Image
-                      src={row.currentBookThumbnailUrl}
-                      alt=""
-                      width={14}
-                      height={20}
-                      className="h-5 w-3.5 shrink-0 rounded border border-line object-cover"
-                    />
-                  ) : null}
-                  <p className="min-w-0 truncate text-xs font-semibold text-foreground/80">
-                    {row.currentBookTitle}
-                    <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
-                      (p{row.currentBookPage ?? "-"})
-                    </span>
-                    <span className="text-foreground/65"> - left {row.pagesRemainingForReadingPass}p / {row.minutesRemainingForReadingPass}m</span>
-                  </p>
+                    <div className="mt-1 flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
+                      {row.currentBookThumbnailUrl ? (
+                        <Image
+                          src={row.currentBookThumbnailUrl}
+                          alt=""
+                          width={14}
+                          height={20}
+                          className="h-5 w-3.5 shrink-0 rounded border border-line object-cover"
+                        />
+                      ) : null}
+                      <p className="min-w-0 truncate text-xs font-semibold text-foreground/80">
+                        {row.currentBookTitle}
+                        <span className="ml-0.5 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">
+                          (p{row.currentBookPage ?? "-"})
+                        </span>
+                        <span className="text-foreground/65"> - left {row.pagesRemainingForReadingPass}p / {row.minutesRemainingForReadingPass}m</span>
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </li>
             ))}
