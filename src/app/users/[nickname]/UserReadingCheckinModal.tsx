@@ -48,6 +48,7 @@ type UserReadingCheckinModalProps = {
   onDeleteBook: (bookId: string) => Promise<void>;
   onQuickReading: () => void;
   onQuickWaniKani: () => void;
+  onQuickBoth: () => void;
   onDateChange: (nextDate: string) => void;
   onBookChange: (nextBook: string) => void;
   onPagesChange: (nextPages: number) => void;
@@ -78,6 +79,7 @@ export default function UserReadingCheckinModal({
   onDeleteBook,
   onQuickReading,
   onQuickWaniKani,
+  onQuickBoth,
   onDateChange,
   onBookChange,
   onPagesChange,
@@ -128,6 +130,18 @@ export default function UserReadingCheckinModal({
   const pagesToBonus = Math.max(0, pagesGoalForBonus - form.pagesRead);
   const bonusReady = pagesToBonus === 0;
   const zeroReviewsBonusActive = selectedReviewQueue.total === 0;
+  const hasReadingActivity = form.pagesRead > 0 || form.minutesRead > 0;
+  const hasWaniKaniActivity = form.didWanikaniReviews;
+  const checkinMode: "none" | "reading" | "wanikani" | "both" = hasReadingActivity
+    ? hasWaniKaniActivity ? "both" : "reading"
+    : hasWaniKaniActivity ? "wanikani" : "none";
+  const saveScopeLabel = checkinMode === "both"
+    ? "reading + WaniKani"
+    : checkinMode === "reading"
+      ? "reading"
+      : checkinMode === "wanikani"
+        ? "WaniKani"
+        : "nothing yet";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 sm:p-6">
@@ -221,49 +235,86 @@ export default function UserReadingCheckinModal({
             })}
           </div>
 
-          <div className="mt-3 flex flex-wrap items-end gap-2">
-            <label className="flex-1 min-w-[12rem]">
-              <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/65">Add by ISBN</span>
-              <input
-                type="text"
-                maxLength={32}
-                className="mt-1 h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm"
-                value={addIsbn}
-                onChange={(event) => onAddIsbnChange(event.target.value)}
-                placeholder="4-09-140108-2"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => {
-                void onAddBook();
-              }}
-              className="h-10 rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.08em]"
-            >
-              Add book
-            </button>
-          </div>
+          <details className="mt-3 group">
+            <summary className="inline-flex h-10 cursor-pointer list-none items-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.08em] marker:hidden">
+              <span className="group-open:hidden">Add book</span>
+              <span className="hidden group-open:inline">Close add book</span>
+            </summary>
+            <div className="mt-2 flex flex-wrap items-end gap-2">
+              <label className="flex-1 min-w-[12rem]">
+                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/65">Add by ISBN</span>
+                <input
+                  type="text"
+                  maxLength={32}
+                  className="mt-1 h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm"
+                  value={addIsbn}
+                  onChange={(event) => onAddIsbnChange(event.target.value)}
+                  placeholder="4-09-140108-2"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  void onAddBook();
+                }}
+                className="h-10 rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.08em]"
+              >
+                Save book
+              </button>
+            </div>
+          </details>
           {bookActionMessage ? <p className="mt-2 text-xs text-foreground/70">{bookActionMessage}</p> : null}
         </section>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <section className="mt-4 rounded-xl border border-line bg-surface-muted p-3">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Check-in mode</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <button
+              type="button"
+              className={`rounded-xl border px-3 py-3 text-left ${checkinMode === "reading" ? "border-accent bg-accent/10" : "border-line bg-surface"}`}
+              onClick={onQuickReading}
+            >
+              <p className="text-sm font-black text-foreground">Reading</p>
+              <p className="text-xs text-foreground/70">Logs reading only.</p>
+            </button>
+            <button
+              type="button"
+              className={`rounded-xl border px-3 py-3 text-left ${checkinMode === "wanikani" ? "border-accent bg-accent/10" : "border-line bg-surface"}`}
+              onClick={onQuickWaniKani}
+            >
+              <p className="text-sm font-black text-foreground">WaniKani</p>
+              <p className="text-xs text-foreground/70">Logs WaniKani only.</p>
+            </button>
+            <button
+              type="button"
+              className={`rounded-xl border px-3 py-3 text-left ${checkinMode === "both" ? "border-accent bg-accent/10" : "border-line bg-surface"}`}
+              onClick={onQuickBoth}
+            >
+              <p className="text-sm font-black text-foreground">Both</p>
+              <p className="text-xs text-foreground/70">Logs reading + WaniKani.</p>
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-foreground/70">
+            Save check-in will log: <span className="font-bold text-foreground">{saveScopeLabel}</span>
+          </p>
+        </section>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-left"
             onClick={onQuickReading}
           >
-            <p className="text-sm font-black text-foreground">Reading check-in</p>
-            <p className="text-xs text-foreground/70">Marks reading with current pages/minutes values.</p>
+            <p className="text-sm font-black text-foreground">Quick reading</p>
+            <p className="text-xs text-foreground/70">Sets reading mode in one click.</p>
           </button>
           <button
             type="button"
             className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-left"
             onClick={onQuickWaniKani}
           >
-            <p className="text-sm font-black text-foreground">WaniKani activity check-in</p>
-            <p className="text-xs text-foreground/70">
-              Marks WaniKani activity and sets reading counts to 0.
-            </p>
+            <p className="text-sm font-black text-foreground">Quick WaniKani</p>
+            <p className="text-xs text-foreground/70">Sets WaniKani-only mode in one click.</p>
           </button>
         </div>
 
@@ -305,9 +356,10 @@ export default function UserReadingCheckinModal({
               className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
               value={form.bookTitle}
               onChange={(event) => onBookChange(event.target.value)}
+              disabled={!hasReadingActivity}
             >
               <option value="">
-                No reading (reviews-only check-in)
+                No reading (WaniKani-only check-in)
               </option>
               {memberBooks.map((book) => (
                 <option key={book.id} value={book.title}>
@@ -326,7 +378,7 @@ export default function UserReadingCheckinModal({
               className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
               value={form.pagesRead}
               onChange={(event) => onPagesChange(Number(event.target.value))}
-              required
+              disabled={!hasReadingActivity}
             />
             <span className={`text-[11px] ${bonusReady ? "text-emerald-700" : "text-foreground/70"}`}>
               {bonusReady
@@ -344,7 +396,7 @@ export default function UserReadingCheckinModal({
               className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
               value={form.minutesRead}
               onChange={(event) => onMinutesChange(Number(event.target.value))}
-              required
+              disabled={!hasReadingActivity}
             />
           </label>
 
@@ -368,7 +420,7 @@ export default function UserReadingCheckinModal({
           ) : null}
 
           <p className="sm:col-span-2 text-xs text-foreground/70">
-            WaniKani-only check-in is allowed: set pages and minutes to 0, enable WaniKani activity, and leave Book unselected.
+            WaniKani-only check-in is valid: no reading numbers and no selected book.
           </p>
 
           <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
@@ -377,7 +429,7 @@ export default function UserReadingCheckinModal({
               className="inline-flex h-10 items-center rounded-full border border-line bg-surface px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground transition hover:bg-surface-muted"
               disabled={submitState === "saving"}
             >
-              {submitState === "saving" ? "Saving" : "Save check-in"}
+              {submitState === "saving" ? "Saving" : `Save ${saveScopeLabel} check-in`}
             </button>
             {submitMessage ? (
               <p className={`text-sm ${submitState === "error" ? "text-red-700" : "text-foreground/75"}`}>

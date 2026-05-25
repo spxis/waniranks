@@ -241,12 +241,11 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const modalExistingEntry = findEntry(selectedMemberId, modalDate);
 
   function setModalMember(memberId: string, dateKey: string) {
-    const memberBooks = booksForMember(memberId);
     const existingEntry = findEntry(memberId, dateKey);
     setSelectedMemberId(memberId);
     setForm({
       ...createFormState(dateKey, existingEntry),
-      bookTitle: existingEntry?.bookTitle ?? memberBooks[0]?.title ?? "",
+      bookTitle: existingEntry?.bookTitle ?? "",
     });
     setBookActionMessage("");
   }
@@ -393,6 +392,31 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     }
   }
 
+  function updateReadingMode(includeWaniKani: boolean) {
+    setModalDirty(true);
+    updateForm((prev) => ({
+      ...prev,
+      pagesRead: Math.max(1, prev.pagesRead),
+      minutesRead: Math.max(10, prev.minutesRead),
+      didWanikaniReviews: includeWaniKani,
+    }));
+  }
+
+  function updateWaniKaniOnlyMode() {
+    setModalDirty(true);
+    updateForm((prev) => ({
+      ...prev,
+      bookTitle: "",
+      pagesRead: 0,
+      minutesRead: 0,
+      didWanikaniReviews: true,
+    }));
+  }
+
+  function updateFormField(mutator: (input: FormState) => FormState) {
+    setModalDirty(true);
+    updateForm(mutator);
+  }
   return (
     <section className="space-y-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6">
       <UserReadingRewardsSummary
@@ -429,13 +453,6 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         onOpenCheckinModal={openCheckinModal}
       />
 
-      <section className="rounded-xl border border-line bg-surface p-3">
-        <h3 className="text-base font-black text-foreground">How to use</h3>
-        <p className="mt-2 text-sm text-foreground/75">
-          Use the day button to open one check-in modal. If you are an admin, you can pick any user there. Everyone must set 3 challenge books.
-        </p>
-      </section>
-
       <UserReadingCheckinModal
         open={modalOpen}
         form={form}
@@ -463,34 +480,14 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         }}
         onAddBook={addBookByIsbn}
         onDeleteBook={deleteBook}
-        onQuickReading={() => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, pagesRead: Math.max(1, prev.pagesRead), minutesRead: Math.max(10, prev.minutesRead) }));
-        }}
-        onQuickWaniKani={() => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, pagesRead: 0, minutesRead: 0, didWanikaniReviews: true }));
-        }}
-        onDateChange={(nextDate) => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, signoffDatePst: nextDate }));
-        }}
-        onBookChange={(nextBook) => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, bookTitle: nextBook }));
-        }}
-        onPagesChange={(nextPages) => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, pagesRead: nextPages }));
-        }}
-        onMinutesChange={(nextMinutes) => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, minutesRead: nextMinutes }));
-        }}
-        onDidReviewsChange={(nextDidReviews) => {
-          setModalDirty(true);
-          updateForm((prev) => ({ ...prev, didWanikaniReviews: nextDidReviews }));
-        }}
+        onQuickReading={() => updateReadingMode(false)}
+        onQuickWaniKani={updateWaniKaniOnlyMode}
+        onQuickBoth={() => updateReadingMode(true)}
+        onDateChange={(nextDate) => updateFormField((prev) => ({ ...prev, signoffDatePst: nextDate }))}
+        onBookChange={(nextBook) => updateFormField((prev) => ({ ...prev, bookTitle: nextBook }))}
+        onPagesChange={(nextPages) => updateFormField((prev) => ({ ...prev, pagesRead: nextPages }))}
+        onMinutesChange={(nextMinutes) => updateFormField((prev) => ({ ...prev, minutesRead: nextMinutes }))}
+        onDidReviewsChange={(nextDidReviews) => updateFormField((prev) => ({ ...prev, didWanikaniReviews: nextDidReviews }))}
       />
     </section>
   );
