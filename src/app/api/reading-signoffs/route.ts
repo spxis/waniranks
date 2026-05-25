@@ -100,13 +100,6 @@ export async function GET(request: Request) {
           );
         }
 
-        if (!readingChallengeMember) {
-          return NextResponse.json(
-            { error: "Reading challenge setup is not ready yet. Restart the dev server and try again." },
-            { status: 503 },
-          );
-        }
-
         const signoffs = await readingSignoff.findMany({
           where: {
             accountId: { in: targetAccountIds },
@@ -171,24 +164,28 @@ export async function GET(request: Request) {
           },
         });
 
-        const trackedMembers = await readingChallengeMember.findMany({
-          where: {
-            accountId: { in: targetAccountIds },
-          },
-          select: {
-            accountId: true,
-            tracked: true,
-          },
-        });
-
-        const trackedByAccountId = new Map(trackedMembers.map((row) => [row.accountId, row.tracked]));
-        const trackedMemberAccountIds = targetAccountIds.filter((accountId) => trackedByAccountId.get(accountId) !== false);
+        const trackedMemberAccountIds = readingChallengeMember
+          ? (() => {
+              return readingChallengeMember.findMany({
+                where: {
+                  accountId: { in: targetAccountIds },
+                },
+                select: {
+                  accountId: true,
+                  tracked: true,
+                },
+              }).then((trackedMembers) => {
+                const trackedByAccountId = new Map(trackedMembers.map((row) => [row.accountId, row.tracked]));
+                return targetAccountIds.filter((accountId) => trackedByAccountId.get(accountId) !== false);
+              });
+            })()
+          : Promise.resolve(targetAccountIds);
 
         return NextResponse.json(
           {
             members: viewerAccounts,
             viewerCanChooseMember: await isAuthorizedAdmin(request),
-            trackedMemberAccountIds,
+            trackedMemberAccountIds: await trackedMemberAccountIds,
             challengeBooks: challengeBooksAfterSeed.map(toChallengeBookRecord),
             signoffs: signoffs.map(toReadingSignoffRecord),
             latestSignoffs: targetAccountIds
