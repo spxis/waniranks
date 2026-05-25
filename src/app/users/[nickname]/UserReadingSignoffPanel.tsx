@@ -4,11 +4,21 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 
 import {
+  READING_CAMPAIGN,
   READING_BOOK_OPTIONS,
+  buildCalendarCells,
+  campaignDaysRemaining,
+  computeReadingLeaderboard,
+  dayKey,
+  formatMonthLabel,
   getTodayDateInputValue,
+  initials,
+  isCampaignDate,
+  shiftMonth,
   toMonthKey,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
+import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
 
 type Member = {
   id: string;
@@ -32,61 +42,6 @@ type FormState = {
   minutesRead: number;
   didWanikaniReviews: boolean;
 };
-
-function formatMonthLabel(monthKey: string): string {
-  const parsed = new Date(`${monthKey}-01T12:00:00.000Z`);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(parsed);
-}
-
-function shiftMonth(monthKey: string, offset: number): string {
-  const parsed = new Date(`${monthKey}-01T12:00:00.000Z`);
-  parsed.setUTCMonth(parsed.getUTCMonth() + offset);
-  return toMonthKey(parsed);
-}
-
-function buildCalendarCells(monthKey: string): Array<number | null> {
-  const [yearRaw, monthRaw] = monthKey.split("-");
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
-    return [];
-  }
-
-  const firstDay = new Date(Date.UTC(year, month - 1, 1));
-  const startWeekday = firstDay.getUTCDay();
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const cells: Array<number | null> = [];
-
-  for (let index = 0; index < startWeekday; index += 1) {
-    cells.push(null);
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push(day);
-  }
-
-  while (cells.length % 7 !== 0) {
-    cells.push(null);
-  }
-
-  return cells;
-}
-
-function dayKey(monthKey: string, day: number): string {
-  return `${monthKey}-${String(day).padStart(2, "0")}`;
-}
-
-function initials(label: string): string {
-  return label
-    .split(/\s+/)
-    .map((part) => part.slice(0, 1).toUpperCase())
-    .join("")
-    .slice(0, 2);
-}
 
 export default function UserReadingSignoffPanel({ accountId }: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
@@ -114,6 +69,19 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const members = useMemo(() => data?.members ?? [], [data?.members]);
   const signoffs = useMemo(() => data?.signoffs ?? [], [data?.signoffs]);
   const todayMonthKey = today.slice(0, 7);
+  const daysRemaining = campaignDaysRemaining(today);
+
+  const leaderboard = useMemo(() => {
+    const rows = computeReadingLeaderboard(members, signoffs).map((row) => {
+      const member = members.find((candidate) => candidate.id === row.accountId);
+      return {
+        ...row,
+        nickname: member?.nickname ?? row.accountId,
+      };
+    });
+
+    return rows.sort((a, b) => b.totalYen - a.totalYen);
+  }, [members, signoffs]);
 
   const signoffByDayAndMember = useMemo(() => {
     const byDayAndMember = new Map<string, Map<string, ReadingSignoffRecord>>();
@@ -195,6 +163,8 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
 
   return (
     <section className="space-y-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6">
+      <UserReadingRewardsSummary daysRemaining={daysRemaining} leaderboard={leaderboard} />
+
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-2xl font-black text-foreground">Read check-ins</h2>
@@ -259,21 +229,36 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
             const key = dayKey(monthKey, day);
             const byMember = signoffByDayAndMember.get(key) ?? new Map<string, ReadingSignoffRecord>();
             const isToday = key === today;
+            const isCampaignStart = key === READING_CAMPAIGN.startDatePst;
+            const isCampaignGoal = key === READING_CAMPAIGN.goalDatePst;
+            const isInsideCampaign = isCampaignDate(key);
 
             return (
               <div
                 key={key}
                 className={`min-h-[6rem] rounded-lg border bg-surface p-1 ${
-                  isToday ? "border-accent shadow-[inset_0_0_0_1px_rgba(15,111,255,0.35)]" : "border-line"
+                  isToday
+                    ? "border-accent shadow-[inset_0_0_0_1px_rgba(15,111,255,0.35)]"
+                    : isCampaignGoal
+                      ? "border-emerald-500 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.4)]"
+                      : isCampaignStart
+                        ? "border-fuchsia-500 shadow-[inset_0_0_0_1px_rgba(217,70,239,0.3)]"
+                        : "border-line"
                 }`}
               >
                 <p className="flex items-center justify-between text-xs font-black text-foreground">
                   <span>{day}</span>
-                  {isToday ? (
-                    <span className="rounded-full border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent">
-                      Today
-                    </span>
-                  ) : null}
+                  <span className="flex items-center gap-1">
+                    {isCampaignStart ? (
+                      <span className="rounded-full border border-fuchsia-500/40 bg-fuchsia-500/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em] text-fuchsia-700">Start</span>
+                    ) : null}
+                    {isCampaignGoal ? (
+                      <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em] text-emerald-700">Goal</span>
+                    ) : null}
+                    {isToday ? (
+                      <span className="rounded-full border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent">Today</span>
+                    ) : null}
+                  </span>
                 </p>
                 <div className="mt-1 space-y-1">
                   {members.map((member) => {
@@ -291,6 +276,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
                         type="button"
                         onClick={() => openCheckinModal({ memberId: member.id, signoffDatePst: key, entry })}
                         className={`flex w-full items-center justify-between rounded border px-1 py-0.5 text-[10px] font-semibold transition hover:brightness-95 ${statusClass}`}
+                        disabled={!isInsideCampaign}
                       >
                         <span>{initials(member.nickname)}</span>
                         <span>
