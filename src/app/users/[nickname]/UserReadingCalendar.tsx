@@ -74,21 +74,23 @@ export default function UserReadingCalendar({
       <div className="grid grid-cols-7 gap-1">
         {calendarCells.map((day, index) => {
           if (!day) {
-            return <div key={`blank-${index}`} className="min-h-[6rem] rounded-lg border border-dashed border-line/50 bg-surface-muted/60" />;
+            return <div key={`blank-${index}`} className="min-h-[7.5rem] rounded-lg border border-dashed border-line/50 bg-surface-muted/60" />;
           }
 
           const key = dayKey(monthKey, day);
           const byMember = signoffByDayAndMember.get(key) ?? new Map<string, ReadingSignoffRecord>();
           const activeMembers = trackedMembers.filter((member) => byMember.has(member.id));
           const isToday = key === today;
+          const isBeforeToday = key < today;
           const isCampaignStart = key === READING_CAMPAIGN.startDatePst;
           const isCampaignGoal = key === READING_CAMPAIGN.goalDatePst;
           const isInsideCampaign = isCampaignDate(key);
+          const canCheckIn = isInsideCampaign && !isBeforeToday;
 
           return (
             <div
               key={key}
-              className={`min-h-[6rem] rounded-lg border bg-surface p-1 ${
+              className={`min-h-[7.5rem] rounded-lg border bg-surface p-1 ${
                 isToday
                   ? "border-accent shadow-[inset_0_0_0_1px_rgba(15,111,255,0.35)]"
                   : isCampaignGoal
@@ -131,14 +133,15 @@ export default function UserReadingCalendar({
                     </div>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onOpenCheckinModal(key)}
-                  className="mt-1 inline-flex w-full items-center justify-center rounded border border-line bg-surface-muted px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] transition hover:bg-surface"
-                  disabled={!isInsideCampaign}
-                >
-                  Check in
-                </button>
+                {canCheckIn ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenCheckinModal(key)}
+                    className="mt-1 inline-flex w-full items-center justify-center rounded border border-line bg-surface-muted px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] transition hover:bg-surface"
+                  >
+                    Check in
+                  </button>
+                ) : null}
               </div>
             </div>
           );

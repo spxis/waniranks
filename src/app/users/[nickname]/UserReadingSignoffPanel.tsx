@@ -1,8 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
+import {
+  getStoredJson,
+  setStoredJson,
+} from "@/lib/clientStorage";
 import {
   buildCalendarCells,
   campaignDaysRemaining,
@@ -56,16 +60,47 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const signoffs = useMemo(() => data?.signoffs ?? [], [data?.signoffs]);
   const challengeBooks = useMemo(() => data?.challengeBooks ?? [], [data?.challengeBooks]);
   const latestSignoffs = useMemo(() => data?.latestSignoffs ?? [], [data?.latestSignoffs]);
+  const [viewerTrackedMemberIds, setViewerTrackedMemberIds] = useState<string[] | null>(null);
   const todayMonthKey = today.slice(0, 7);
   const daysRemaining = campaignDaysRemaining(today);
 
-  const trackedMemberSet = useMemo(() => {
-    if (trackedMemberAccountIds.length === 0) {
-      return new Set(members.map((member) => member.id));
+  const trackedStorageKey = `reading-tracked-members:${accountId}`;
+  const serverDefaultTrackedMemberIds = useMemo(
+    () => (trackedMemberAccountIds.length === 0 ? members.map((member) => member.id) : trackedMemberAccountIds),
+    [members, trackedMemberAccountIds],
+  );
+
+  useEffect(() => {
+    if (members.length === 0) {
+      return;
     }
 
-    return new Set(trackedMemberAccountIds);
-  }, [members, trackedMemberAccountIds]);
+    setViewerTrackedMemberIds((prev) => {
+      const validMemberIds = new Set(members.map((member) => member.id));
+      if (prev === null) {
+        const stored = getStoredJson<string[]>(trackedStorageKey, serverDefaultTrackedMemberIds);
+        return stored.filter((id) => validMemberIds.has(id));
+      }
+
+      return prev.filter((id) => validMemberIds.has(id));
+    });
+  }, [members, serverDefaultTrackedMemberIds, trackedStorageKey]);
+
+  useEffect(() => {
+    if (viewerTrackedMemberIds === null) {
+      return;
+    }
+
+    setStoredJson(trackedStorageKey, viewerTrackedMemberIds);
+  }, [trackedStorageKey, viewerTrackedMemberIds]);
+
+  const trackedMemberSet = useMemo(() => {
+    if (!viewerTrackedMemberIds) {
+      return new Set(serverDefaultTrackedMemberIds);
+    }
+
+    return new Set(viewerTrackedMemberIds);
+  }, [serverDefaultTrackedMemberIds, viewerTrackedMemberIds]);
 
   const trackedMembers = useMemo(
     () => members.filter((member) => trackedMemberSet.has(member.id)),
@@ -106,24 +141,17 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     return rows.sort((a, b) => b.totalYen - a.totalYen);
   }, [latestSignoffByAccountId, signoffs, trackedMembers]);
 
-  async function toggleTrackedMember(memberId: string, tracked: boolean) {
-    try {
-      const response = await fetch("/api/reading-signoffs", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ accountId: memberId, tracked }),
-      });
-
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Could not update tracked members.");
+  function toggleTrackedMember(memberId: string, tracked: boolean) {
+    setViewerTrackedMemberIds((prev) => {
+      const current = new Set(prev ?? serverDefaultTrackedMemberIds);
+      if (tracked) {
+        current.add(memberId);
+      } else {
+        current.delete(memberId);
       }
 
-      await mutate();
-    } catch (error) {
-      setSubmitMessage(error instanceof Error ? error.message : "Could not update tracked members.");
-      setSubmitState("error");
-    }
+      return Array.from(current);
+    });
   }
 
   const signoffByDayAndMember = useMemo(() => {

@@ -9,7 +9,7 @@ export const READING_BOOK_OPTIONS = [
 ] as const;
 
 export const READING_CAMPAIGN = {
-  startDatePst: "2026-05-25",
+  startDatePst: "2026-05-24",
   goalDatePst: "2026-07-20",
   tripDatePst: "2026-07-21",
   maxYen: 40_000,
