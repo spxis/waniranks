@@ -1,4 +1,8 @@
-import type { ReadingChallengeBookRecord, ReadingSignoffRecord } from "@/lib/readingSignoff";
+import type {
+  ReadingChallengeBookRecord,
+  ReadingSignoffEntryRecord,
+  ReadingSignoffRecord,
+} from "@/lib/readingSignoff";
 
 export type Member = {
   id: string;
@@ -23,6 +27,7 @@ export type ReadingSignoffResponse = {
   trackedMemberAccountIds: string[];
   challengeBooks: ReadingChallengeBookRecord[];
   signoffs: ReadingSignoffRecord[];
+  signoffEntries: ReadingSignoffEntryRecord[];
   latestSignoffs: LatestSignoff[];
 };
 

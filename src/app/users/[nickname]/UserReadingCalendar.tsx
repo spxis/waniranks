@@ -4,6 +4,7 @@ import {
   formatMonthLabel,
   isCampaignDate,
   shiftMonth,
+  type ReadingSignoffEntryRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 import type { Dispatch, SetStateAction } from "react";
@@ -18,6 +19,7 @@ type UserReadingCalendarProps = {
   trackedMembers: Member[];
   calendarCells: Array<number | null>;
   signoffByDayAndMember: Map<string, Map<string, ReadingSignoffRecord>>;
+  signoffEntriesByDayAndMember: Map<string, Map<string, ReadingSignoffEntryRecord[]>>;
   onMonthChange: Dispatch<SetStateAction<string>>;
   onOpenCheckinModal: (dateKey: string) => void;
 };
@@ -32,6 +34,7 @@ export default function UserReadingCalendar({
   trackedMembers,
   calendarCells,
   signoffByDayAndMember,
+  signoffEntriesByDayAndMember,
   onMonthChange,
   onOpenCheckinModal,
 }: UserReadingCalendarProps) {
@@ -79,7 +82,8 @@ export default function UserReadingCalendar({
 
           const key = dayKey(monthKey, day);
           const byMember = signoffByDayAndMember.get(key) ?? new Map<string, ReadingSignoffRecord>();
-          const activeMembers = trackedMembers.filter((member) => byMember.has(member.id));
+          const byMemberEntries = signoffEntriesByDayAndMember.get(key) ?? new Map<string, ReadingSignoffEntryRecord[]>();
+          const activeMembers = trackedMembers.filter((member) => byMemberEntries.has(member.id) || byMember.has(member.id));
           const isToday = key === today;
           const isBeforeToday = key < today;
           const isCampaignStart = key === READING_CAMPAIGN.startDatePst;
@@ -117,13 +121,36 @@ export default function UserReadingCalendar({
               <div className="mt-1 space-y-1">
                 <div className="space-y-1">
                   {activeMembers.map((member) => {
+                    const entries = byMemberEntries.get(member.id) ?? [];
+                    const totalReviewWork = entries.reduce((sum, entry) => sum + entry.reviewWorkDone, 0);
+                    const totalReviewCorrect = entries.reduce((sum, entry) => sum + entry.reviewCorrect, 0);
+                    const totalReviewIncorrect = entries.reduce((sum, entry) => sum + entry.reviewIncorrect, 0);
+                    const reviewSuccessPercent = totalReviewWork > 0
+                      ? Math.round((totalReviewCorrect / totalReviewWork) * 100)
+                      : null;
                     return (
                       <div
                         key={`${key}-${member.id}`}
-                        className="flex w-full items-center justify-between rounded border border-emerald-300 bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-800"
+                        className="rounded border border-emerald-300 bg-emerald-100 px-1 py-1 text-[10px] font-semibold text-emerald-800"
                       >
-                        <span className="truncate">{member.nickname}</span>
-                        <span>Yes</span>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="truncate">{member.nickname}</span>
+                          <span>{entries.length} logs</span>
+                        </div>
+                        {entries.length > 0 ? (
+                          <div className="mt-0.5 space-y-0.5 text-[9px] font-semibold text-emerald-900/90">
+                            {entries.map((entry) => (
+                              <div key={entry.id} className="truncate">
+                                +{entry.pagesRead}p {entry.minutesRead}m {entry.didWanikaniReviews ? "WK" : "Read"}
+                              </div>
+                            ))}
+                            {totalReviewWork > 0 ? (
+                              <div className="truncate">
+                                Reviews {totalReviewCorrect}/{totalReviewIncorrect} ({reviewSuccessPercent ?? 0}%)
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}

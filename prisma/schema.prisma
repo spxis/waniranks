@@ -193,6 +193,25 @@ model ReadingSignoff {
   @@index([accountId])
 }
 
+model ReadingSignoffEntry {
+  id                   String   @id @default(cuid())
+  accountId            String
+  signoffDatePst       String
+  bookTitle            String
+  pagesRead            Int
+  minutesRead          Int
+  didWanikaniReviews   Boolean  @default(false)
+  reviewWorkDone       Int      @default(0)
+  reviewCorrect        Int      @default(0)
+  reviewIncorrect      Int      @default(0)
+  reviewSuccessPercent Int?
+  createdAt            DateTime @default(now())
+
+  @@index([accountId, signoffDatePst])
+  @@index([accountId, createdAt])
+  @@index([signoffDatePst])
+}
+
 model ReadingChallengeBook {
   id           String   @id @default(cuid())
   accountId    String

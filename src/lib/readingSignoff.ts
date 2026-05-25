@@ -42,6 +42,21 @@ export type ReadingSignoffRecord = {
   updatedAt: string;
 };
 
+export type ReadingSignoffEntryRecord = {
+  id: string;
+  accountId: string;
+  signoffDatePst: string;
+  bookTitle: string;
+  pagesRead: number;
+  minutesRead: number;
+  didWanikaniReviews: boolean;
+  reviewWorkDone: number;
+  reviewCorrect: number;
+  reviewIncorrect: number;
+  reviewSuccessPercent: number | null;
+  createdAt: string;
+};
+
 export type ReadingChallengeBookRecord = {
   id: string;
   accountId: string;

@@ -15,6 +15,7 @@ import {
   toOpenLibraryBookUrl,
   toOpenLibraryCoverUrl,
   type ReadingChallengeBookRecord,
+  type ReadingSignoffEntryRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 
@@ -147,6 +148,36 @@ export function toReadingSignoffRecord(row: {
     currentWkLevel: row.currentWkLevel,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export function toReadingSignoffEntryRecord(row: {
+  id: string;
+  accountId: string;
+  signoffDatePst: string;
+  bookTitle: string;
+  pagesRead: number;
+  minutesRead: number;
+  didWanikaniReviews: boolean;
+  reviewWorkDone: number;
+  reviewCorrect: number;
+  reviewIncorrect: number;
+  reviewSuccessPercent: number | null;
+  createdAt: Date;
+}): ReadingSignoffEntryRecord {
+  return {
+    id: row.id,
+    accountId: row.accountId,
+    signoffDatePst: row.signoffDatePst,
+    bookTitle: row.bookTitle,
+    pagesRead: row.pagesRead,
+    minutesRead: row.minutesRead,
+    didWanikaniReviews: row.didWanikaniReviews,
+    reviewWorkDone: row.reviewWorkDone,
+    reviewCorrect: row.reviewCorrect,
+    reviewIncorrect: row.reviewIncorrect,
+    reviewSuccessPercent: row.reviewSuccessPercent,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 

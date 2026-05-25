@@ -16,6 +16,7 @@ import {
   getReadingSignoffDelegate,
   resolveViewerAccounts,
   toChallengeBookRecord,
+  toReadingSignoffEntryRecord,
   toReadingSignoffRecord,
   type LatestSignoffSummary,
 } from "./readingSignoffsRoute.lib";
@@ -102,6 +103,16 @@ export async function GET(request: Request) {
           orderBy: [{ signoffDatePst: "asc" }, { updatedAt: "desc" }],
         });
 
+        const signoffEntries = await prisma.readingSignoffEntry.findMany({
+          where: {
+            accountId: { in: targetAccountIds },
+            signoffDatePst: {
+              startsWith: `${parsed.data.month}-`,
+            },
+          },
+          orderBy: [{ signoffDatePst: "asc" }, { createdAt: "asc" }],
+        });
+
         const latestSignoffs = await readingSignoff.findMany({
           where: {
             accountId: { in: targetAccountIds },
@@ -180,6 +191,7 @@ export async function GET(request: Request) {
             trackedMemberAccountIds: await trackedMemberAccountIds,
             challengeBooks: challengeBooksAfterSeed.map(toChallengeBookRecord),
             signoffs: signoffs.map(toReadingSignoffRecord),
+            signoffEntries: signoffEntries.map(toReadingSignoffEntryRecord),
             latestSignoffs: targetAccountIds
               .map((accountId) => latestByAccountId.get(accountId))
               .filter((value): value is LatestSignoffSummary => Boolean(value)),
@@ -253,7 +265,57 @@ export async function POST(request: Request) {
 
         const nextPagesRead = (existing?.pagesRead ?? 0) + parsed.data.pagesRead;
         const nextMinutesRead = (existing?.minutesRead ?? 0) + parsed.data.minutesRead;
-        const nextDidWanikaniReviews = Boolean(existing?.didWanikaniReviews || parsed.data.didWanikaniReviews);
+
+        const previousEntry = await prisma.readingSignoffEntry.findFirst({
+          where: { accountId: account.id },
+          orderBy: [{ createdAt: "desc" }],
+          select: { createdAt: true },
+        });
+
+        const reviewWindowStart = previousEntry?.createdAt ?? new Date(`${parsed.data.signoffDatePst}T00:00:00.000Z`);
+        const reviewWindowWhere = {
+          accountId: account.id,
+          submittedAt: {
+            gt: reviewWindowStart,
+          },
+        } as const;
+
+        const reviewCorrect = await prisma.studyReviewAttempt.count({
+          where: {
+            ...reviewWindowWhere,
+            result: "correct",
+          },
+        });
+
+        const reviewIncorrect = await prisma.studyReviewAttempt.count({
+          where: {
+            ...reviewWindowWhere,
+            result: { in: ["wrong", "skipped"] },
+          },
+        });
+
+        const reviewWorkDone = reviewCorrect + reviewIncorrect;
+        const reviewSuccessPercent = reviewWorkDone > 0
+          ? Math.round((reviewCorrect / reviewWorkDone) * 100)
+          : null;
+        const entryDidWanikaniReviews = parsed.data.didWanikaniReviews || reviewWorkDone > 0;
+
+        await prisma.readingSignoffEntry.create({
+          data: {
+            accountId: account.id,
+            signoffDatePst: parsed.data.signoffDatePst,
+            bookTitle: parsed.data.bookTitle,
+            pagesRead: parsed.data.pagesRead,
+            minutesRead: parsed.data.minutesRead,
+            didWanikaniReviews: entryDidWanikaniReviews,
+            reviewWorkDone,
+            reviewCorrect,
+            reviewIncorrect,
+            reviewSuccessPercent,
+          },
+        });
+
+        const nextDidWanikaniReviews = Boolean(existing?.didWanikaniReviews || entryDidWanikaniReviews);
 
         const saved = await readingSignoff.upsert({
           where: {

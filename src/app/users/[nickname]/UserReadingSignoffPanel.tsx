@@ -15,6 +15,7 @@ import {
   normalizeIsbn,
   toMonthKey,
   type ReadingChallengeBookRecord,
+  type ReadingSignoffEntryRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 import UserReadingCalendar from "./UserReadingCalendar";
@@ -58,6 +59,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   const viewerCanChooseMember = data?.viewerCanChooseMember ?? false;
   const trackedMemberAccountIds = useMemo(() => data?.trackedMemberAccountIds ?? [], [data?.trackedMemberAccountIds]);
   const signoffs = useMemo(() => data?.signoffs ?? [], [data?.signoffs]);
+  const signoffEntries = useMemo(() => data?.signoffEntries ?? [], [data?.signoffEntries]);
   const challengeBooks = useMemo(() => data?.challengeBooks ?? [], [data?.challengeBooks]);
   const latestSignoffs = useMemo(() => data?.latestSignoffs ?? [], [data?.latestSignoffs]);
   const [viewerTrackedMemberIds, setViewerTrackedMemberIds] = useState<string[] | null>(null);
@@ -163,6 +165,19 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     }
     return byDayAndMember;
   }, [signoffs]);
+
+  const signoffEntriesByDayAndMember = useMemo(() => {
+    const byDayAndMember = new Map<string, Map<string, ReadingSignoffEntryRecord[]>>();
+    for (const entry of signoffEntries) {
+      const dayMap = byDayAndMember.get(entry.signoffDatePst) ?? new Map<string, ReadingSignoffEntryRecord[]>();
+      const list = dayMap.get(entry.accountId) ?? [];
+      list.push(entry);
+      dayMap.set(entry.accountId, list);
+      byDayAndMember.set(entry.signoffDatePst, dayMap);
+    }
+
+    return byDayAndMember;
+  }, [signoffEntries]);
 
   const calendarCells = useMemo(() => buildCalendarCells(monthKey), [monthKey]);
 
@@ -355,6 +370,7 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         trackedMembers={trackedMembers}
         calendarCells={calendarCells}
         signoffByDayAndMember={signoffByDayAndMember}
+        signoffEntriesByDayAndMember={signoffEntriesByDayAndMember}
         onMonthChange={setMonthKey}
         onOpenCheckinModal={openCheckinModal}
       />
