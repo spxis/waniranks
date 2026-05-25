@@ -194,6 +194,12 @@ export default function AdminPage() {
           >
             Back to leaderboard
           </Link>
+          <Link
+            href="/admin/reading-entries"
+            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+          >
+            Reading entries
+          </Link>
           <div className="ml-auto">
             <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
           </div>
