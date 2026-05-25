@@ -217,54 +217,59 @@ export default function UserReadingCheckinModal({
               <h4 className="text-sm font-black text-foreground">Challenge books</h4>
               <span className="text-xs text-foreground/70">Need at least 3 books to play</span>
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
-              {memberBooks.map((book) => {
-                const selected = form.bookTitle === book.title;
-                return (
-                  <div key={book.id} className={`rounded-lg border p-1.5 ${selected ? "border-accent bg-accent/5" : "border-line bg-surface"}`}>
-                    <button
-                      type="button"
-                      className="w-full text-left"
-                      onClick={() => onBookChange(book.title)}
+            <div className="mt-2 overflow-x-auto pb-1">
+              <div className="flex min-w-max gap-1.5">
+                {memberBooks.map((book) => {
+                  const selected = form.bookTitle === book.title;
+                  return (
+                    <div
+                      key={book.id}
+                      className={`w-33 shrink-0 rounded-lg border p-1.5 ${selected ? "border-accent bg-accent/5" : "border-line bg-surface"}`}
                     >
-                      <div className="aspect-3/4 overflow-hidden rounded border border-line bg-surface-muted">
-                        {book.thumbnailUrl ? (
-                          <Image
-                            src={book.thumbnailUrl}
-                            alt={book.title}
-                            width={120}
-                            height={160}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground/60">No cover</div>
-                        )}
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs font-semibold text-foreground">{book.title}</p>
-                      <p className="text-[10px] text-foreground/60">ISBN {book.isbn}</p>
-                    </button>
-                    <div className="mt-1 flex items-center justify-between gap-1">
-                      {book.infoUrl ? (
-                        <a
-                          href={book.infoUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] font-bold uppercase tracking-[0.08em] text-accent"
-                        >
-                          Open
-                        </a>
-                      ) : <span />}
                       <button
                         type="button"
-                        onClick={() => onDeleteBook(book.id)}
-                        className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700"
+                        className="w-full text-left"
+                        onClick={() => onBookChange(book.title)}
                       >
-                        Delete
+                        <div className="aspect-3/4 overflow-hidden rounded border border-line bg-surface-muted">
+                          {book.thumbnailUrl ? (
+                            <Image
+                              src={book.thumbnailUrl}
+                              alt={book.title}
+                              width={120}
+                              height={160}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground/60">No cover</div>
+                          )}
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-xs font-semibold text-foreground">{book.title}</p>
+                        <p className="text-[10px] text-foreground/60">ISBN {book.isbn}</p>
                       </button>
+                      <div className="mt-1 flex items-center justify-between gap-1">
+                        {book.infoUrl ? (
+                          <a
+                            href={book.infoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-bold uppercase tracking-[0.08em] text-accent"
+                          >
+                            Open
+                          </a>
+                        ) : <span />}
+                        <button
+                          type="button"
+                          onClick={() => onDeleteBook(book.id)}
+                          className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             <details className="mt-3 group">
