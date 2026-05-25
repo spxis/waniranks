@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
 import { canAccessAccount } from "@/lib/accountAccess";
 import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { prisma } from "@/lib/prisma";
-import {
-  normalizeIsbn,
-  toOpenLibraryCoverUrl,
-  toOpenLibraryBookUrl,
-} from "@/lib/readingSignoff";
+import { normalizeIsbn, toOpenLibraryCoverUrl, toOpenLibraryBookUrl } from "@/lib/readingSignoff";
 
 const postBodySchema = z.object({
   accountId: z.string().cuid(),
@@ -20,52 +15,30 @@ const deleteBodySchema = z.object({
   bookId: z.string().cuid(),
 });
 
+type ReadingBookRow = {
+  id: string;
+  accountId: string;
+  isbn: string;
+  title: string;
+  thumbnailUrl: string | null;
+  infoUrl: string | null;
+};
+
 type ReadingChallengeBookDelegate = {
-  create: (args: {
-    data: {
-      accountId: string;
-      isbn: string;
-      title: string;
-      thumbnailUrl: string | null;
-      infoUrl: string | null;
-    };
-  }) => Promise<{ id: string; accountId: string; isbn: string; title: string; thumbnailUrl: string | null; infoUrl: string | null }>;
-  findFirst: (args: {
-    where: {
-      accountId: string;
-      isbn: string;
-    };
-    select: {
-      id: true;
-      accountId: true;
-      isbn: true;
-      title: true;
-      thumbnailUrl: true;
-      infoUrl: true;
-    };
-  }) => Promise<{
-    id: string;
-    accountId: string;
-    isbn: string;
-    title: string;
-    thumbnailUrl: string | null;
-    infoUrl: string | null;
-  } | null>;
+  create: (args: { data: { accountId: string; isbn: string; title: string; thumbnailUrl: string | null; infoUrl: string | null } }) => Promise<ReadingBookRow>;
+  findFirst: (args: { where: Record<string, unknown>; select: Record<string, true> }) => Promise<ReadingBookRow | null>;
+  findMany: (args: { where: Record<string, unknown>; orderBy?: Record<string, "asc" | "desc">; select: Record<string, true> }) => Promise<Array<ReadingBookRow & { updatedAt?: Date }>>;
   findUnique: (args: {
     where: { id: string };
     select: { id: true; accountId: true; title: true };
   }) => Promise<{ id: string; accountId: string; title: string } | null>;
+  update: (args: { where: { id: string }; data: { title?: string; thumbnailUrl?: string | null; infoUrl?: string | null } }) => Promise<ReadingBookRow>;
+  updateMany: (args: { where: Record<string, unknown>; data: { title?: string; thumbnailUrl?: string; infoUrl?: string } }) => Promise<{ count: number }>;
   delete: (args: { where: { id: string } }) => Promise<void>;
 };
 
 type ReadingSignoffDelegate = {
-  findFirst: (args: {
-    where: {
-      accountId: string;
-      bookTitle: string;
-    };
-    select: { id: true };
-  }) => Promise<{ id: string } | null>;
+  findFirst: (args: { where: { accountId: string; bookTitle: string }; select: { id: true } }) => Promise<{ id: string } | null>;
 };
 
 function getReadingChallengeBookDelegate(): ReadingChallengeBookDelegate | null {
@@ -94,6 +67,122 @@ function isUniqueConstraintError(error: unknown): boolean {
 
   const code = (error as { code?: string }).code;
   return code === "P2002" || error.message.includes("Unique constraint");
+}
+
+function isFallbackIsbnTitle(title: string, isbn: string): boolean {
+  const normalized = title.trim().toLowerCase();
+  const normalizedIsbn = isbn.trim().toLowerCase();
+  return normalized === `isbn ${normalizedIsbn}` || normalized === `isbn:${normalizedIsbn}`;
+}
+
+type SharedBookMetadata = {
+  title: string | null;
+  thumbnailUrl: string | null;
+  infoUrl: string | null;
+};
+
+async function getSharedBookMetadataByIsbn(
+  readingChallengeBook: ReadingChallengeBookDelegate,
+  isbn: string,
+): Promise<SharedBookMetadata> {
+  const rows = await readingChallengeBook.findMany({
+    where: { isbn },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      accountId: true,
+      isbn: true,
+      title: true,
+      thumbnailUrl: true,
+      infoUrl: true,
+      updatedAt: true,
+    },
+  });
+
+  const rowWithRealTitle = rows.find((row) => !isFallbackIsbnTitle(row.title, isbn));
+  const rowWithThumbnail = rows.find((row) => Boolean(row.thumbnailUrl));
+  const rowWithInfo = rows.find((row) => Boolean(row.infoUrl));
+
+  return {
+    title: rowWithRealTitle?.title ?? null,
+    thumbnailUrl: rowWithThumbnail?.thumbnailUrl ?? null,
+    infoUrl: rowWithInfo?.infoUrl ?? null,
+  };
+}
+
+function buildMetadataUpdateData(input: {
+  currentTitle: string;
+  isbn: string;
+  nextTitle: string | null;
+  currentThumbnailUrl: string | null;
+  nextThumbnailUrl: string | null;
+  currentInfoUrl: string | null;
+  nextInfoUrl: string | null;
+}): {
+  title?: string;
+  thumbnailUrl?: string;
+  infoUrl?: string;
+} {
+  const data: {
+    title?: string;
+    thumbnailUrl?: string;
+    infoUrl?: string;
+  } = {};
+
+  if (input.nextTitle && (isFallbackIsbnTitle(input.currentTitle, input.isbn) || input.currentTitle.trim().length === 0)) {
+    data.title = input.nextTitle;
+  }
+
+  if (!input.currentThumbnailUrl && input.nextThumbnailUrl) {
+    data.thumbnailUrl = input.nextThumbnailUrl;
+  }
+
+  if (!input.currentInfoUrl && input.nextInfoUrl) {
+    data.infoUrl = input.nextInfoUrl;
+  }
+
+  return data;
+}
+
+async function propagateSharedMetadata(
+  readingChallengeBook: ReadingChallengeBookDelegate,
+  isbn: string,
+  metadata: SharedBookMetadata,
+): Promise<void> {
+  const updateData: {
+    title?: string;
+    thumbnailUrl?: string;
+    infoUrl?: string;
+  } = {};
+
+  if (metadata.title) {
+    updateData.title = metadata.title;
+  }
+
+  if (metadata.thumbnailUrl) {
+    updateData.thumbnailUrl = metadata.thumbnailUrl;
+  }
+
+  if (metadata.infoUrl) {
+    updateData.infoUrl = metadata.infoUrl;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return;
+  }
+
+  await readingChallengeBook.updateMany({
+    where: {
+      isbn,
+      OR: [
+        { title: { startsWith: "ISBN " } },
+        { title: { startsWith: "isbn " } },
+        { thumbnailUrl: null },
+        { infoUrl: null },
+      ],
+    },
+    data: updateData,
+  });
 }
 
 async function fetchOpenBdMetadataByIsbn(isbn: string): Promise<{
@@ -246,21 +335,66 @@ export async function POST(request: Request) {
           },
         });
 
-        if (existing) {
-          return NextResponse.json({ book: existing, existed: true }, { status: 200 });
+        const sharedMetadata = await getSharedBookMetadataByIsbn(readingChallengeBook, isbn);
+
+        let externalMetadata:
+          | {
+              title: string | null;
+              thumbnailUrl: string;
+              infoUrl: string;
+            }
+          | null = null;
+
+        if (!sharedMetadata.title || !sharedMetadata.thumbnailUrl || !sharedMetadata.infoUrl) {
+          externalMetadata = await fetchBookMetadataByIsbn(isbn);
         }
 
-        const metadata = await fetchBookMetadataByIsbn(isbn);
-        const resolvedTitle = metadata.title ?? `ISBN ${isbn}`;
+        const resolvedMetadata: SharedBookMetadata = {
+          title: sharedMetadata.title ?? externalMetadata?.title ?? null,
+          thumbnailUrl: sharedMetadata.thumbnailUrl ?? externalMetadata?.thumbnailUrl ?? toOpenLibraryCoverUrl(isbn),
+          infoUrl: sharedMetadata.infoUrl ?? externalMetadata?.infoUrl ?? toOpenLibraryBookUrl(isbn),
+        };
+
+        if (existing) {
+          const updateData = buildMetadataUpdateData({
+            currentTitle: existing.title,
+            isbn,
+            nextTitle: resolvedMetadata.title,
+            currentThumbnailUrl: existing.thumbnailUrl,
+            nextThumbnailUrl: resolvedMetadata.thumbnailUrl,
+            currentInfoUrl: existing.infoUrl,
+            nextInfoUrl: resolvedMetadata.infoUrl,
+          });
+
+          if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ book: existing, existed: true, refreshed: false }, { status: 200 });
+          }
+
+          const updated = await readingChallengeBook.update({
+            where: { id: existing.id },
+            data: updateData,
+          });
+
+          await propagateSharedMetadata(readingChallengeBook, isbn, resolvedMetadata);
+          return NextResponse.json({ book: updated, existed: true, refreshed: true }, { status: 200 });
+        }
+
+        const resolvedTitle = resolvedMetadata.title ?? `ISBN ${isbn}`;
 
         const created = await readingChallengeBook.create({
           data: {
             accountId: parsed.data.accountId,
             isbn,
             title: resolvedTitle,
-            thumbnailUrl: metadata.thumbnailUrl,
-            infoUrl: metadata.infoUrl,
+            thumbnailUrl: resolvedMetadata.thumbnailUrl,
+            infoUrl: resolvedMetadata.infoUrl,
           },
+        });
+
+        await propagateSharedMetadata(readingChallengeBook, isbn, {
+          title: isFallbackIsbnTitle(created.title, isbn) ? null : created.title,
+          thumbnailUrl: created.thumbnailUrl,
+          infoUrl: created.infoUrl,
         });
 
         return NextResponse.json({ book: created }, { status: 201 });

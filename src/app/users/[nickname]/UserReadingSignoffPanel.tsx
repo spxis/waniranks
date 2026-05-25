@@ -2,26 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
-import {
-  buildCalendarCells,
-  campaignDaysRemaining,
-  computeReadingLeaderboard,
-  getTodayDateInputValue,
-  normalizeIsbn,
-  type ReadingChallengeBookRecord,
-  type ReadingSignoffEntryRecord,
-  type ReadingSignoffRecord,
-} from "@/lib/readingSignoff";
+import { buildCalendarCells, campaignDaysRemaining, computeReadingLeaderboard, getTodayDateInputValue, normalizeIsbn, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
 import UserReadingCalendar from "./UserReadingCalendar";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
 import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
-import {
-  createFormState,
-  type FormState,
-  type ReadingSignoffResponse,
-  type TodayStats,
-  type UserReadingSignoffPanelProps,
-} from "./UserReadingSignoffPanel.types";
+import { createFormState, type FormState, type ReadingSignoffResponse, type TodayStats, type UserReadingSignoffPanelProps } from "./UserReadingSignoffPanel.types";
 export default function UserReadingSignoffPanel({
   accountId,
   initialMonthKey,
@@ -294,12 +279,16 @@ export default function UserReadingSignoffPanel({
         }),
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as { error?: string; existed?: boolean; refreshed?: boolean };
       if (!response.ok) {
         throw new Error(payload.error ?? "Could not add that book yet.");
       }
 
-      setBookActionMessage("Book added.");
+      if (payload.existed) {
+        setBookActionMessage(payload.refreshed ? "Book already in this collection. Metadata refreshed." : "Book already in this collection.");
+      } else {
+        setBookActionMessage("Book added.");
+      }
       setAddIsbn("");
       await mutate();
     } catch (error) {
