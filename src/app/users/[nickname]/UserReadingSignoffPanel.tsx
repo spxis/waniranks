@@ -437,6 +437,7 @@ export default function UserReadingSignoffPanel({
         calendarCells={calendarCells}
         signoffByDayAndMember={signoffByDayAndMember}
         signoffEntriesByDayAndMember={signoffEntriesByDayAndMember}
+        viewerCanChooseMember={viewerCanChooseMember}
         onMonthChange={setMonthKey}
         onOpenCheckinModal={openCheckinModal}
       />

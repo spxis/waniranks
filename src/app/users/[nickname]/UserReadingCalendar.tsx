@@ -4,7 +4,9 @@ import {
   dayKey,
   formatMonthLabel,
   isCampaignDate,
+  parseDateKeyAsUtc,
   shiftMonth,
+  toDateKeyUtc,
   type ReadingChallengeBookRecord,
   type ReadingSignoffEntryRecord,
   type ReadingSignoffRecord,
@@ -23,6 +25,7 @@ type UserReadingCalendarProps = {
   calendarCells: Array<number | null>;
   signoffByDayAndMember: Map<string, Map<string, ReadingSignoffRecord>>;
   signoffEntriesByDayAndMember: Map<string, Map<string, ReadingSignoffEntryRecord[]>>;
+  viewerCanChooseMember: boolean;
   onMonthChange: Dispatch<SetStateAction<string>>;
   onOpenCheckinModal: (dateKey: string) => void;
 };
@@ -39,6 +42,7 @@ export default function UserReadingCalendar({
   calendarCells,
   signoffByDayAndMember,
   signoffEntriesByDayAndMember,
+  viewerCanChooseMember,
   onMonthChange,
   onOpenCheckinModal,
 }: UserReadingCalendarProps) {
@@ -53,6 +57,21 @@ export default function UserReadingCalendar({
     return map;
   }, [challengeBooks]);
 
+  const regularWindowStart = useMemo(() => {
+    const parsed = parseDateKeyAsUtc(today);
+    parsed.setUTCDate(parsed.getUTCDate() - 7);
+    return toDateKeyUtc(parsed);
+  }, [today]);
+
+  const regularWindowEnd = useMemo(() => {
+    const parsed = parseDateKeyAsUtc(today);
+    parsed.setUTCDate(parsed.getUTCDate() + 2);
+    return toDateKeyUtc(parsed);
+  }, [today]);
+
+  const showCalendarLoadingOverlay =
+    isLoading && signoffByDayAndMember.size === 0 && signoffEntriesByDayAndMember.size === 0;
+
   return (
     <section className="space-y-3 rounded-xl border border-line bg-surface p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -65,7 +84,7 @@ export default function UserReadingCalendar({
           >
             Prev
           </button>
-          <p className="min-w-[9rem] text-center text-sm font-bold text-foreground/80">{formatMonthLabel(monthKey)}</p>
+          <p className="min-w-36 text-center text-sm font-bold text-foreground/80">{formatMonthLabel(monthKey)}</p>
           <button
             type="button"
             className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.08em]"
@@ -83,16 +102,17 @@ export default function UserReadingCalendar({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/60">
-        {WEEKDAY_LABELS.map((weekday) => (
-          <div key={weekday}>{weekday}</div>
-        ))}
-      </div>
+      <div className="relative">
+        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/60">
+          {WEEKDAY_LABELS.map((weekday) => (
+            <div key={weekday}>{weekday}</div>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-7 gap-1">
-        {calendarCells.map((day, index) => {
+        <div className="mt-1 grid grid-cols-7 gap-1">
+          {calendarCells.map((day, index) => {
           if (!day) {
-            return <div key={`blank-${index}`} className="min-h-[7.5rem] rounded-lg border border-dashed border-line/50 bg-surface-muted/60" />;
+            return <div key={`blank-${index}`} className="min-h-30 rounded-lg border border-dashed border-line/50 bg-surface-muted/60" />;
           }
 
           const key = dayKey(monthKey, day);
@@ -100,16 +120,16 @@ export default function UserReadingCalendar({
           const byMemberEntries = signoffEntriesByDayAndMember.get(key) ?? new Map<string, ReadingSignoffEntryRecord[]>();
           const activeMembers = trackedMembers.filter((member) => byMemberEntries.has(member.id) || byMember.has(member.id));
           const isToday = key === today;
-          const isBeforeToday = key < today;
           const isCampaignStart = key === READING_CAMPAIGN.startDatePst;
           const isCampaignGoal = key === READING_CAMPAIGN.goalDatePst;
           const isInsideCampaign = isCampaignDate(key);
-          const canCheckIn = isInsideCampaign && !isBeforeToday;
+          const regularWindowIncludesDate = key >= regularWindowStart && key <= regularWindowEnd;
+          const canCheckIn = isInsideCampaign && (viewerCanChooseMember || regularWindowIncludesDate);
 
           return (
             <div
               key={key}
-              className={`min-h-[7.5rem] rounded-lg border bg-surface p-1 ${
+              className={`min-h-30 rounded-lg border bg-surface p-1 ${
                 isToday
                   ? "border-accent shadow-[inset_0_0_0_1px_rgba(15,111,255,0.35)]"
                   : isCampaignGoal
@@ -211,11 +231,6 @@ export default function UserReadingCalendar({
                       </div>
                     );
                   })}
-                  {activeMembers.length === 0 && isLoading ? (
-                    <div className="rounded border border-line bg-surface-muted px-1 py-0.5 text-[10px] font-semibold text-foreground/55">
-                      Loading...
-                    </div>
-                  ) : null}
                   {activeMembers.length === 0 && !isLoading ? (
                     <div className="rounded border border-line bg-surface-muted px-1 py-0.5 text-[10px] font-semibold text-foreground/55">
                       No activity
@@ -234,15 +249,18 @@ export default function UserReadingCalendar({
               </div>
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
 
-      {isLoading ? (
-        <p className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
-          <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
-          <span>Loading calendar...</span>
-        </p>
-      ) : null}
+        {showCalendarLoadingOverlay ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-surface/80 backdrop-blur-[1px]">
+            <p className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-foreground/75 shadow-sm">
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+              <span>Loading calendar...</span>
+            </p>
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
