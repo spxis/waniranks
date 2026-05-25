@@ -12,8 +12,8 @@ import { prisma } from "@/lib/prisma";
 import {
   READING_CHALLENGE_BOOK_SEEDS_BY_NICKNAME,
   normalizeIsbn,
+  toBookCoverUrl,
   toOpenLibraryBookUrl,
-  toOpenLibraryCoverUrl,
   type ReadingChallengeBookRecord,
   type ReadingSignoffEntryRecord,
   type ReadingSignoffRecord,
@@ -302,7 +302,7 @@ export async function ensureSeedBooks(
         accountId: account.id,
         isbn: normalizedIsbn,
         title: seedBook.title,
-        thumbnailUrl: toOpenLibraryCoverUrl(normalizedIsbn),
+        thumbnailUrl: toBookCoverUrl(normalizedIsbn),
         infoUrl: toOpenLibraryBookUrl(normalizedIsbn),
       });
     }
@@ -314,4 +314,40 @@ export async function ensureSeedBooks(
       skipDuplicates: true,
     });
   }
+}
+
+/**
+ * Existing rows seeded before openBD support stored Open Library cover URLs,
+ * which 404 for Japanese manga. Rewrite those to the openBD cover URL once.
+ */
+export async function backfillStaleCoverUrls(
+  challengeBooks: ReadingChallengeBookRecord[],
+): Promise<void> {
+  const updates: Array<{ id: string; thumbnailUrl: string }> = [];
+
+  for (const book of challengeBooks) {
+    const desired = toBookCoverUrl(book.isbn);
+    if (desired === book.thumbnailUrl) {
+      continue;
+    }
+
+    if (!desired.includes("cover.openbd.jp")) {
+      continue;
+    }
+
+    updates.push({ id: book.id, thumbnailUrl: desired });
+  }
+
+  if (updates.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    updates.map((update) =>
+      prisma.readingChallengeBook.update({
+        where: { id: update.id },
+        data: { thumbnailUrl: update.thumbnailUrl },
+      }),
+    ),
+  );
 }

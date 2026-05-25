@@ -6,8 +6,8 @@ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeIsbn,
+  toBookCoverUrl,
   toOpenLibraryBookUrl,
-  toOpenLibraryCoverUrl,
 } from "@/lib/readingSignoff";
 
 const postBodySchema = z.object({
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
             accountId: parsed.data.accountId,
             isbn,
             title: fetchedTitle,
-            thumbnailUrl: toOpenLibraryCoverUrl(isbn),
+            thumbnailUrl: toBookCoverUrl(isbn),
             infoUrl: toOpenLibraryBookUrl(isbn),
           },
         });

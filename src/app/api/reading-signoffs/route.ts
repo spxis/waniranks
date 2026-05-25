@@ -11,6 +11,7 @@ import {
   isPstDateKey,
 } from "@/lib/readingSignoff";
 import {
+  backfillStaleCoverUrls,
   ensureSeedBooks,
   getReadingChallengeBookDelegate,
   getReadingChallengeMemberDelegate,
@@ -166,6 +167,7 @@ export async function GET(request: Request) {
 
         const challengeBooks = challengeBooksRaw.map(toChallengeBookRecord);
         await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook);
+        await backfillStaleCoverUrls(challengeBooks);
 
         const challengeBooksAfterSeed = await readingChallengeBook.findMany({
           where: {

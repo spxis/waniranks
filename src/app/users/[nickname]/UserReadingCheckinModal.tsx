@@ -219,11 +219,11 @@ export default function UserReadingCheckinModal({
               <h4 className="text-sm font-black text-foreground">Challenge books</h4>
               <span className="text-xs text-foreground/70">Need at least 3 books to play</span>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
               {memberBooks.map((book) => {
                 const selected = form.bookTitle === book.title;
                 return (
-                  <div key={book.id} className={`rounded-lg border p-2 ${selected ? "border-accent bg-accent/5" : "border-line bg-surface"}`}>
+                  <div key={book.id} className={`rounded-lg border p-1.5 ${selected ? "border-accent bg-accent/5" : "border-line bg-surface"}`}>
                     <button
                       type="button"
                       className="w-full text-left"
@@ -234,8 +234,8 @@ export default function UserReadingCheckinModal({
                           <Image
                             src={book.thumbnailUrl}
                             alt={book.title}
-                            width={160}
-                            height={220}
+                            width={120}
+                            height={160}
                             className="h-full w-full object-cover"
                           />
                         ) : (
