@@ -9,16 +9,19 @@ export type AdminReadingEntry = {
   accountId: string;
   nickname: string;
   wkUsername: string;
+  source: "daily" | "entry";
   signoffDatePst: string;
   bookTitle: string;
   pagesRead: number;
   minutesRead: number;
   didWanikaniReviews: boolean;
+  reviewsLeft: number;
   reviewWorkDone: number;
   reviewCorrect: number;
   reviewIncorrect: number;
   reviewSuccessPercent: number | null;
   createdAt: string;
+  updatedAt: string | null;
 };
 
 export type ReadingEntriesResponse = {
@@ -39,4 +42,5 @@ export type EntryEditDraft = {
   pagesRead: number;
   minutesRead: number;
   didWanikaniReviews: boolean;
+  reviewsLeft: number;
 };

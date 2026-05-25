@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 import AdminControlRoom from "./AdminControlRoom";
+import AdminStudyHistory from "./AdminStudyHistory";
 import type { AdminSessionStatus, Status } from "./AdminPage.types";
 import type { ViewerMenuInfo } from "../users/[nickname]/UserDashboardTabs.types";
 import UserHeaderMenu from "../users/[nickname]/UserHeaderMenu";
@@ -187,23 +188,35 @@ export default function AdminPage() {
     <div className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <div className="noise-overlay pointer-events-none absolute inset-0" />
       <main className="relative mx-auto w-full max-w-6xl space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Back to leaderboard
-          </Link>
-          <Link
-            href="/admin/reading-entries"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Reading entries
-          </Link>
-          <div className="ml-auto">
-            <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+        <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/60">Admin navigation</p>
+            <div className="ml-auto">
+              <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+            </div>
           </div>
-        </div>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <Link
+              href="/"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Back to leaderboard
+            </Link>
+            <Link
+              href="/admin/users"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Manage users
+            </Link>
+            <Link
+              href="/admin/reading-entries"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Reading check-ins
+            </Link>
+          </div>
+        </section>
 
         <AdminControlRoom
           nickname={nickname}
@@ -235,6 +248,8 @@ export default function AdminPage() {
             void enrichJlptKanji();
           }}
         />
+
+        <AdminStudyHistory sessionAuthorized={sessionAuthorized} />
       </main>
     </div>
   );

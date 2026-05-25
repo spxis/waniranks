@@ -31,28 +31,26 @@ export default function AdminReadingEntriesTable({
 }: AdminReadingEntriesTableProps) {
   return (
     <div className="mt-4 overflow-auto rounded-xl border border-line">
-      <table className="w-full min-w-245 text-left text-xs sm:text-sm">
+      <table className="w-full min-w-205 text-left text-xs sm:text-sm">
         <thead className="bg-surface-muted text-[11px] uppercase tracking-[0.08em] text-foreground/70">
           <tr>
-            <th className="px-3 py-2">Created</th>
+            <th className="px-3 py-2">Created / Updated</th>
             <th className="px-3 py-2">Member</th>
+            <th className="px-3 py-2">Source</th>
             <th className="px-3 py-2">Date</th>
             <th className="px-3 py-2">Book</th>
             <th className="px-3 py-2">Pages</th>
             <th className="px-3 py-2">Minutes</th>
             <th className="px-3 py-2">WK done</th>
-            <th className="px-3 py-2">Queue</th>
-            <th className="px-3 py-2">Correct</th>
-            <th className="px-3 py-2">Incorrect</th>
-            <th className="px-3 py-2">Success</th>
+            <th className="px-3 py-2">Reviews left</th>
             <th className="px-3 py-2">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line/50 bg-surface">
           {entries.length === 0 ? (
             <tr>
-              <td colSpan={12} className="px-3 py-6 text-center text-sm text-foreground/70">
-                No reading entries found for the selected filters.
+              <td colSpan={10} className="px-3 py-6 text-center text-sm text-foreground/70">
+                No check-ins found for the selected filters.
               </td>
             </tr>
           ) : null}
@@ -72,11 +70,24 @@ export default function AdminReadingEntriesTable({
                       invalidLabel: "-",
                     })}
                   </p>
+                  {entry.updatedAt ? (
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-foreground/55">
+                      Updated {formatDateTimeShort(entry.updatedAt)}
+                    </p>
+                  ) : null}
                 </td>
 
                 <td className="whitespace-nowrap px-3 py-2">
                   <p className="font-semibold text-foreground/90">{entry.nickname}</p>
                   <p className="text-[11px] text-foreground/60">{entry.wkUsername}</p>
+                </td>
+
+                <td className="px-3 py-2">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${entry.source === "daily" ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-sky-200 bg-sky-50 text-sky-700"}`}
+                  >
+                    {entry.source === "daily" ? "Daily" : "Entry"}
+                  </span>
                 </td>
 
                 <td className="px-3 py-2">
@@ -137,40 +148,33 @@ export default function AdminReadingEntriesTable({
                 </td>
 
                 <td className="px-3 py-2">
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      className="h-9 w-20 rounded-md border border-line bg-white px-2 text-xs"
-                      min={0}
-                      max={1440}
-                      value={draft.minutesRead}
-                      onChange={(event) => {
-                        onDraftChange({
-                          ...draft,
-                          minutesRead: Number(event.target.value),
-                        });
-                      }}
-                    />
-                  ) : (
-                    entry.minutesRead
-                  )}
+                  {isEditing ? <input
+                    type="number"
+                    className="h-9 w-20 rounded-md border border-line bg-white px-2 text-xs"
+                    min={0}
+                    max={1440}
+                    value={draft.minutesRead}
+                    onChange={(event) => {
+                      onDraftChange({
+                        ...draft,
+                        minutesRead: Number(event.target.value),
+                      });
+                    }}
+                  /> : entry.minutesRead}
                 </td>
 
                 <td className="px-3 py-2">
                   {isEditing ? (
-                    <label className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/80">
-                      <input
-                        type="checkbox"
-                        checked={draft.didWanikaniReviews}
-                        onChange={(event) => {
-                          onDraftChange({
-                            ...draft,
-                            didWanikaniReviews: event.target.checked,
-                          });
-                        }}
-                      />
-                      Yes
-                    </label>
+                    <label className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/80"><input
+                      type="checkbox"
+                      checked={draft.didWanikaniReviews}
+                      onChange={(event) => {
+                        onDraftChange({
+                          ...draft,
+                          didWanikaniReviews: event.target.checked,
+                        });
+                      }}
+                    />Yes</label>
                   ) : entry.didWanikaniReviews ? (
                     "Yes"
                   ) : (
@@ -178,11 +182,24 @@ export default function AdminReadingEntriesTable({
                   )}
                 </td>
 
-                <td className="px-3 py-2">{entry.reviewWorkDone}</td>
-                <td className="px-3 py-2">{entry.reviewCorrect}</td>
-                <td className="px-3 py-2">{entry.reviewIncorrect}</td>
                 <td className="px-3 py-2">
-                  {typeof entry.reviewSuccessPercent === "number" ? `${entry.reviewSuccessPercent}%` : "-"}
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      className="h-9 w-24 rounded-md border border-line bg-white px-2 text-xs"
+                      min={0}
+                      max={20000}
+                      value={draft.reviewsLeft}
+                      onChange={(event) => {
+                        onDraftChange({
+                          ...draft,
+                          reviewsLeft: Number(event.target.value),
+                        });
+                      }}
+                    />
+                  ) : (
+                    entry.reviewsLeft
+                  )}
                 </td>
 
                 <td className="px-3 py-2">

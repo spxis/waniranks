@@ -150,6 +150,14 @@ export default function UserHeaderMenu({
   }
 
   const resolvedUserPageUsername = viewerMenuInfo?.wkUsername ?? viewedWkUsername ?? null;
+  const dashboardPageLinks = resolvedUserPageUsername
+    ? [
+        { label: "Learn", href: `/users/${encodeURIComponent(resolvedUserPageUsername)}?dashboard=learn` },
+        { label: "Stats", href: `/users/${encodeURIComponent(resolvedUserPageUsername)}?dashboard=stats` },
+        { label: "News", href: `/users/${encodeURIComponent(resolvedUserPageUsername)}?dashboard=news` },
+        { label: "Read", href: `/users/${encodeURIComponent(resolvedUserPageUsername)}?dashboard=read` },
+      ]
+    : [];
   const showNavigationSection = Boolean(viewerMenuInfo || viewedWkUsername || showAdminActions || resolvedUserPageUsername);
 
   return (
@@ -249,6 +257,25 @@ export default function UserHeaderMenu({
                     </Link>
                   ) : null}
                 </div>
+
+                {dashboardPageLinks.length > 0 ? (
+                  <div className="mt-3 rounded-xl border border-line bg-surface-muted/70 p-2">
+                    <p className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/60">
+                      Top pages
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {dashboardPageLinks.map((link) => (
+                        <Link
+                          key={link.label}
+                          href={link.href}
+                          className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface-muted"
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 

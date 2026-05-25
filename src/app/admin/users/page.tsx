@@ -171,23 +171,31 @@ export default function AdminUsersPage() {
   return (
     <div className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <main className="relative mx-auto w-full max-w-6xl space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Back to admin
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Leaderboard
-          </Link>
-          <div className="ml-auto">
-            <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+        <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin"
+              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Back to admin
+            </Link>
+            <Link
+              href="/admin/reading-entries"
+              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Reading check-ins
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Leaderboard
+            </Link>
+            <div className="ml-auto">
+              <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+            </div>
           </div>
-        </div>
+        </section>
 
         {checkingSession ? (
           <p className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">Checking admin session...</p>

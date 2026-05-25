@@ -4,11 +4,18 @@ export type ReadingSignoffEntryDelegate = {
   findMany: typeof prisma.readingSignoffEntry.findMany;
   findUnique: typeof prisma.readingSignoffEntry.findUnique;
   count: typeof prisma.readingSignoffEntry.count;
+  updateMany: typeof prisma.readingSignoffEntry.updateMany;
+  deleteMany: typeof prisma.readingSignoffEntry.deleteMany;
   update: typeof prisma.readingSignoffEntry.update;
   delete: typeof prisma.readingSignoffEntry.delete;
 };
 
 export type ReadingSignoffDelegate = {
+  findMany: typeof prisma.readingSignoff.findMany;
+  findUnique: typeof prisma.readingSignoff.findUnique;
+  count: typeof prisma.readingSignoff.count;
+  update: typeof prisma.readingSignoff.update;
+  delete: typeof prisma.readingSignoff.delete;
   upsert: typeof prisma.readingSignoff.upsert;
   deleteMany: typeof prisma.readingSignoff.deleteMany;
 };
@@ -28,16 +35,19 @@ export type AdminReadingSignoffEntryRecord = {
   accountId: string;
   nickname: string;
   wkUsername: string;
+  source: "daily" | "entry";
   signoffDatePst: string;
   bookTitle: string;
   pagesRead: number;
   minutesRead: number;
   didWanikaniReviews: boolean;
+  reviewsLeft: number;
   reviewWorkDone: number;
   reviewCorrect: number;
   reviewIncorrect: number;
   reviewSuccessPercent: number | null;
   createdAt: string;
+  updatedAt: string | null;
 };
 
 type ReadingSignoffEntryRow = {
@@ -55,6 +65,19 @@ type ReadingSignoffEntryRow = {
   createdAt: Date;
 };
 
+type ReadingSignoffRow = {
+  id: string;
+  accountId: string;
+  signoffDatePst: string;
+  bookTitle: string;
+  pagesRead: number;
+  minutesRead: number;
+  didWanikaniReviews: boolean;
+  reviewsLeft: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export function toAdminReadingSignoffEntryRecord(
   row: ReadingSignoffEntryRow,
   memberByAccountId: Map<string, { nickname: string; wkUsername: string }>,
@@ -65,16 +88,45 @@ export function toAdminReadingSignoffEntryRecord(
     accountId: row.accountId,
     nickname: member?.nickname ?? "Unknown",
     wkUsername: member?.wkUsername ?? "-",
+    source: "entry",
     signoffDatePst: row.signoffDatePst,
     bookTitle: row.bookTitle,
     pagesRead: row.pagesRead,
     minutesRead: row.minutesRead,
     didWanikaniReviews: row.didWanikaniReviews,
+    reviewsLeft: 0,
     reviewWorkDone: row.reviewWorkDone,
     reviewCorrect: row.reviewCorrect,
     reviewIncorrect: row.reviewIncorrect,
     reviewSuccessPercent: row.reviewSuccessPercent,
     createdAt: row.createdAt.toISOString(),
+    updatedAt: null,
+  };
+}
+
+export function toAdminReadingSignoffRecord(
+  row: ReadingSignoffRow,
+  memberByAccountId: Map<string, { nickname: string; wkUsername: string }>,
+): AdminReadingSignoffEntryRecord {
+  const member = memberByAccountId.get(row.accountId);
+  return {
+    id: row.id,
+    accountId: row.accountId,
+    nickname: member?.nickname ?? "Unknown",
+    wkUsername: member?.wkUsername ?? "-",
+    source: "daily",
+    signoffDatePst: row.signoffDatePst,
+    bookTitle: row.bookTitle,
+    pagesRead: row.pagesRead,
+    minutesRead: row.minutesRead,
+    didWanikaniReviews: row.didWanikaniReviews,
+    reviewsLeft: row.reviewsLeft,
+    reviewWorkDone: 0,
+    reviewCorrect: 0,
+    reviewIncorrect: 0,
+    reviewSuccessPercent: null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 

@@ -63,6 +63,9 @@ export default async function Home() {
   });
   const canViewAllUserPages = isAdminEmail(viewerEmail);
   const viewerWkUsername = viewerMenuInfo?.wkUsername ?? null;
+  const readingChallengeHref = viewerWkUsername
+    ? `/users/${encodeURIComponent(viewerWkUsername)}?dashboard=read`
+    : "/join";
 
   let leaderboard: LeaderboardRow[] = [];
   let setupMessage = "";
@@ -250,6 +253,36 @@ export default async function Home() {
               </p>
               <p className="text-sm font-semibold text-foreground/65">{formatNumber(topScore)} pts</p>
             </article>
+          </div>
+        </section>
+
+        <section className="animate-enter animate-enter-delay-1 mt-6 overflow-hidden rounded-[2rem] border border-line bg-gradient-to-br from-amber-100/90 via-orange-100/80 to-rose-100/80 shadow-[0_24px_70px_rgba(237,137,54,0.2)]">
+          <div className="grid gap-4 p-5 sm:p-7 lg:grid-cols-[1.3fr,0.9fr] lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800/90">
+                Reading Challenge
+              </p>
+              <h2 className="mt-2 text-3xl font-black leading-[0.95] text-amber-950 sm:text-4xl lg:text-5xl">
+                Keep the streak alive every day.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm font-semibold text-amber-900/80 sm:text-base">
+                Log pages, track WaniKani effort, and watch your campaign progress in one place.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              <Link
+                href={readingChallengeHref}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-amber-300/70 bg-amber-900 px-5 text-xs font-bold uppercase tracking-[0.14em] text-white transition hover:bg-amber-800"
+              >
+                Open Read Challenge
+              </Link>
+              <Link
+                href={viewerWkUsername ? `/users/${encodeURIComponent(viewerWkUsername)}?dashboard=stats` : "/"}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-amber-300/80 bg-white px-5 text-xs font-bold uppercase tracking-[0.14em] text-amber-900 transition hover:bg-amber-50"
+              >
+                View My Stats
+              </Link>
+            </div>
           </div>
         </section>
 

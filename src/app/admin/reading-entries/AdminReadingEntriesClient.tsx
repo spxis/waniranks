@@ -86,14 +86,14 @@ export default function AdminReadingEntriesClient() {
 
       const payload = (await response.json()) as ReadingEntriesResponse;
       if (!response.ok) {
-        throw new Error(getErrorMessage(payload, "Could not load reading entries."));
+        throw new Error(getErrorMessage(payload, "Could not load check-ins."));
       }
 
       setData(payload);
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Could not load reading entries.",
+        message: error instanceof Error ? error.message : "Could not load check-ins.",
       });
     } finally {
       setLoading(false);
@@ -135,6 +135,7 @@ export default function AdminReadingEntriesClient() {
       pagesRead: entry.pagesRead,
       minutesRead: entry.minutesRead,
       didWanikaniReviews: entry.didWanikaniReviews,
+      reviewsLeft: entry.reviewsLeft,
     });
   }
 
@@ -163,21 +164,22 @@ export default function AdminReadingEntriesClient() {
           pagesRead: draft.pagesRead,
           minutesRead: draft.minutesRead,
           didWanikaniReviews: draft.didWanikaniReviews,
+          reviewsLeft: draft.reviewsLeft,
         }),
       });
 
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        throw new Error(getErrorMessage(payload, "Could not update entry."));
+        throw new Error(getErrorMessage(payload, "Could not update check-in."));
       }
 
-      setStatus({ type: "ok", message: "Entry updated." });
+      setStatus({ type: "ok", message: "Check-in updated." });
       cancelEdit();
       await loadEntries();
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Could not update entry.",
+        message: error instanceof Error ? error.message : "Could not update check-in.",
       });
     } finally {
       setSaving(false);
@@ -185,7 +187,7 @@ export default function AdminReadingEntriesClient() {
   }
 
   async function deleteEntry(entry: AdminReadingEntry) {
-    const confirmed = window.confirm(`Delete this entry for ${entry.nickname} on ${entry.signoffDatePst}?`);
+    const confirmed = window.confirm(`Delete this check-in for ${entry.nickname} on ${entry.signoffDatePst}?`);
     if (!confirmed) {
       return;
     }
@@ -200,10 +202,10 @@ export default function AdminReadingEntriesClient() {
 
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        throw new Error(getErrorMessage(payload, "Could not delete entry."));
+        throw new Error(getErrorMessage(payload, "Could not delete check-in."));
       }
 
-      setStatus({ type: "ok", message: "Entry deleted." });
+      setStatus({ type: "ok", message: "Check-in deleted." });
 
       if (entries.length === 1 && page > 1) {
         setPage((prev) => Math.max(1, prev - 1));
@@ -217,7 +219,7 @@ export default function AdminReadingEntriesClient() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Could not delete entry.",
+        message: error instanceof Error ? error.message : "Could not delete check-in.",
       });
     } finally {
       setSaving(false);
@@ -227,28 +229,34 @@ export default function AdminReadingEntriesClient() {
   return (
     <div className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <main className="relative mx-auto w-full max-w-7xl space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Back to admin
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          >
-            Leaderboard
-          </Link>
-          <div className="ml-auto">
-            <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
-          </div>
-        </div>
-
         <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Reading check-in entries</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin"
+              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Back to admin
+            </Link>
+            <Link
+              href="/admin/users"
+              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Manage users
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Leaderboard
+            </Link>
+            <div className="ml-auto">
+              <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
+            </div>
+          </div>
+
+          <h1 className="mt-4 text-xl font-bold text-foreground sm:text-2xl">All reading check-ins</h1>
           <p className="mt-2 text-sm text-foreground/75">
-            Browse all reading entries, edit any row, or delete incorrect submissions.
+            Browse daily reading check-ins across all members. Edit or remove incorrect submissions.
           </p>
 
           {checkingSession ? (
@@ -355,7 +363,7 @@ export default function AdminReadingEntriesClient() {
 
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-foreground/75">
                 <span>
-                  Total entries: <strong className="text-foreground">{pagination.total}</strong>
+                  Total check-ins: <strong className="text-foreground">{pagination.total}</strong>
                 </span>
                 <span>
                   Page: <strong className="text-foreground">{pagination.page}</strong> / {pagination.pageCount}

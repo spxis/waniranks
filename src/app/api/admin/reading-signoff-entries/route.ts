@@ -7,8 +7,8 @@ import { isAuthorizedAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { isMonthKey } from "@/lib/readingSignoff";
 import {
-  getReadingSignoffEntryDelegate,
-  toAdminReadingSignoffEntryRecord,
+  getReadingSignoffDelegate,
+  toAdminReadingSignoffRecord,
 } from "./readingSignoffEntriesRoute.lib";
 
 const querySchema = z.object({
@@ -46,15 +46,15 @@ export async function GET(request: Request) {
           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
         }
 
-        const readingSignoffEntry = getReadingSignoffEntryDelegate();
-        if (!readingSignoffEntry) {
+        const readingSignoff = getReadingSignoffDelegate();
+        if (!readingSignoff) {
           return NextResponse.json(
-            { error: "Reading entries are not ready yet. Restart the dev server and try again." },
+            { error: "Reading check-ins are not ready yet. Restart the dev server and try again." },
             { status: 503 },
           );
         }
 
-        const where: Prisma.ReadingSignoffEntryWhereInput = {};
+        const where: Prisma.ReadingSignoffWhereInput = {};
         if (parsed.data.month) {
           where.signoffDatePst = { startsWith: `${parsed.data.month}-` };
         }
@@ -65,10 +65,10 @@ export async function GET(request: Request) {
         const offset = (parsed.data.page - 1) * parsed.data.pageSize;
 
         const [total, rows, members] = await Promise.all([
-          readingSignoffEntry.count({ where }),
-          readingSignoffEntry.findMany({
+          readingSignoff.count({ where }),
+          readingSignoff.findMany({
             where,
-            orderBy: [{ signoffDatePst: "desc" }, { createdAt: "desc" }],
+            orderBy: [{ signoffDatePst: "desc" }, { updatedAt: "desc" }],
             skip: offset,
             take: parsed.data.pageSize,
           }),
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
         return NextResponse.json(
           {
             members,
-            entries: rows.map((row) => toAdminReadingSignoffEntryRecord(row, memberByAccountId)),
+            entries: rows.map((row) => toAdminReadingSignoffRecord(row, memberByAccountId)),
             pagination: {
               page: parsed.data.page,
               pageSize: parsed.data.pageSize,
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
         );
       } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: "Could not load reading entries." }, { status: 500 });
+        return NextResponse.json({ error: "Could not load check-ins." }, { status: 500 });
       }
     },
   });
