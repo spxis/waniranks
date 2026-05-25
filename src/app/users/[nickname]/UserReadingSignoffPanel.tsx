@@ -16,8 +16,10 @@ import {
   isCampaignDate,
   shiftMonth,
   toMonthKey,
+  type ReadingChallengePlayerRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
+import UserReadingCheckinModal from "./UserReadingCheckinModal";
 import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
 
 type Member = {
@@ -28,6 +30,8 @@ type Member = {
 
 type ReadingSignoffResponse = {
   members: Member[];
+  viewerCanChooseMember: boolean;
+  challengePlayers: ReadingChallengePlayerRecord[];
   signoffs: ReadingSignoffRecord[];
 };
 
@@ -43,12 +47,34 @@ type FormState = {
   didWanikaniReviews: boolean;
 };
 
+type ChallengeBooksState = [string, string, string];
+
+function toChallengeBooksState(input: [string, string, string] | null): ChallengeBooksState {
+  if (!input) {
+    return ["", "", ""];
+  }
+
+  return [input[0], input[1], input[2]];
+}
+
+function createFormState(dateKey: string, entry: ReadingSignoffRecord | null): FormState {
+  return {
+    signoffDatePst: dateKey,
+    bookTitle: (entry?.bookTitle as (typeof READING_BOOK_OPTIONS)[number]) ?? READING_BOOK_OPTIONS[0],
+    pagesRead: entry?.pagesRead ?? 10,
+    minutesRead: entry?.minutesRead ?? 20,
+    didWanikaniReviews: entry?.didWanikaniReviews ?? false,
+  };
+}
+
 export default function UserReadingSignoffPanel({ accountId }: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
   const [monthKey, setMonthKey] = useState(() => toMonthKey(new Date()));
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalDateKey, setModalDateKey] = useState(today);
   const [form, setForm] = useState<FormState | null>(null);
-  const [modalMemberId, setModalMemberId] = useState<string>(accountId);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>(accountId);
+  const [challengeBooks, setChallengeBooks] = useState<ChallengeBooksState>(["", "", ""]);
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState<string>("");
 
@@ -67,9 +93,19 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
   );
 
   const members = useMemo(() => data?.members ?? [], [data?.members]);
+  const viewerCanChooseMember = data?.viewerCanChooseMember ?? false;
   const signoffs = useMemo(() => data?.signoffs ?? [], [data?.signoffs]);
+  const challengePlayers = useMemo(() => data?.challengePlayers ?? [], [data?.challengePlayers]);
   const todayMonthKey = today.slice(0, 7);
   const daysRemaining = campaignDaysRemaining(today);
+
+  const challengeBooksByAccountId = useMemo(() => {
+    const map = new Map<string, [string, string, string]>();
+    for (const player of challengePlayers) {
+      map.set(player.accountId, player.challengeBooks);
+    }
+    return map;
+  }, [challengePlayers]);
 
   const leaderboard = useMemo(() => {
     const rows = computeReadingLeaderboard(members, signoffs).map((row) => {
@@ -95,24 +131,23 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
 
   const calendarCells = useMemo(() => buildCalendarCells(monthKey), [monthKey]);
 
-  const modalMember = members.find((member) => member.id === modalMemberId) ?? null;
-  const modalDate = form?.signoffDatePst ?? today;
-  const modalExistingEntry = signoffByDayAndMember.get(modalDate)?.get(modalMemberId) ?? null;
+  function findEntry(memberId: string, dateKey: string): ReadingSignoffRecord | null {
+    return signoffByDayAndMember.get(dateKey)?.get(memberId) ?? null;
+  }
 
-  function openCheckinModal(input: {
-    memberId: string;
-    signoffDatePst: string;
-    entry: ReadingSignoffRecord | undefined;
-  }) {
-    const entry = input.entry;
-    setModalMemberId(input.memberId);
-    setForm({
-      signoffDatePst: input.signoffDatePst,
-      bookTitle: (entry?.bookTitle as (typeof READING_BOOK_OPTIONS)[number]) ?? READING_BOOK_OPTIONS[0],
-      pagesRead: entry?.pagesRead ?? 10,
-      minutesRead: entry?.minutesRead ?? 20,
-      didWanikaniReviews: entry?.didWanikaniReviews ?? false,
-    });
+  const modalMember = members.find((member) => member.id === selectedMemberId) ?? null;
+  const modalDate = form?.signoffDatePst ?? modalDateKey;
+  const modalExistingEntry = findEntry(selectedMemberId, modalDate);
+
+  function setModalMember(memberId: string, dateKey: string) {
+    setSelectedMemberId(memberId);
+    setForm(createFormState(dateKey, findEntry(memberId, dateKey)));
+    setChallengeBooks(toChallengeBooksState(challengeBooksByAccountId.get(memberId) ?? null));
+  }
+
+  function openCheckinModal(dateKey: string) {
+    setModalDateKey(dateKey);
+    setModalMember(viewerCanChooseMember ? accountId : accountId, dateKey);
     setSubmitState("idle");
     setSubmitMessage("");
     setModalOpen(true);
@@ -128,13 +163,34 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
     setSubmitMessage("");
 
     try {
+      const normalizedBooks = challengeBooks.map((book) => book.trim()) as ChallengeBooksState;
+      if (normalizedBooks.some((book) => book.length === 0)) {
+        throw new Error("Enter all 3 challenge books before saving check-in.");
+      }
+
+      const challengeResponse = await fetch("/api/reading-signoffs", {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          accountId: selectedMemberId,
+          challengeBooks: normalizedBooks,
+        }),
+      });
+
+      const challengePayload = (await challengeResponse.json()) as { error?: string };
+      if (!challengeResponse.ok) {
+        throw new Error(challengePayload.error ?? "Could not save challenge books.");
+      }
+
       const response = await fetch("/api/reading-signoffs", {
         method: "POST",
         headers: {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          accountId: modalMemberId,
+          accountId: selectedMemberId,
           signoffDatePst: form.signoffDatePst,
           bookTitle: form.bookTitle,
           pagesRead: form.pagesRead,
@@ -169,10 +225,10 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
         <div>
           <h2 className="text-2xl font-black text-foreground">Read check-ins</h2>
           <p className="mt-1 text-sm text-foreground/75">
-            Click a kid on any day to open the check-in modal and mark nightly activities.
+            Use one daily check-in button to update reading and WaniKani progress.
           </p>
           <p className="mt-1 text-xs text-foreground/60">
-            You can edit both today and previous dates.
+            Every player needs 3 challenge books saved in the modal.
           </p>
         </div>
       </header>
@@ -261,30 +317,37 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
                   </span>
                 </p>
                 <div className="mt-1 space-y-1">
-                  {members.map((member) => {
-                    const entry = byMember.get(member.id);
-                    const hasReading = Boolean(entry && entry.pagesRead > 0 && entry.minutesRead > 0);
-                    const waniDone = Boolean(entry?.didWanikaniReviews);
-                    const statusClass = entry
-                      ? hasReading && waniDone
-                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                        : "bg-amber-100 text-amber-900 border-amber-300"
-                      : "bg-surface-muted text-foreground/55 border-line";
-                    return (
-                      <button
-                        key={`${key}-${member.id}`}
-                        type="button"
-                        onClick={() => openCheckinModal({ memberId: member.id, signoffDatePst: key, entry })}
-                        className={`flex w-full items-center justify-between rounded border px-1 py-0.5 text-[10px] font-semibold transition hover:brightness-95 ${statusClass}`}
-                        disabled={!isInsideCampaign}
-                      >
-                        <span>{initials(member.nickname)}</span>
-                        <span>
-                          {hasReading ? "R" : "-"}/{waniDone ? "W" : "-"}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  <div className="space-y-1">
+                    {members.map((member) => {
+                      const entry = byMember.get(member.id);
+                      const hasReading = Boolean(entry && entry.pagesRead > 0 && entry.minutesRead > 0);
+                      const waniDone = Boolean(entry?.didWanikaniReviews);
+                      const statusClass = entry
+                        ? hasReading && waniDone
+                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                          : "bg-amber-100 text-amber-900 border-amber-300"
+                        : "bg-surface-muted text-foreground/55 border-line";
+                      return (
+                        <div
+                          key={`${key}-${member.id}`}
+                          className={`flex w-full items-center justify-between rounded border px-1 py-0.5 text-[10px] font-semibold ${statusClass}`}
+                        >
+                          <span>{initials(member.nickname)}</span>
+                          <span>
+                            {hasReading ? "R" : "-"}/{waniDone ? "W" : "-"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openCheckinModal(key)}
+                    className="mt-1 inline-flex w-full items-center justify-center rounded border border-line bg-surface-muted px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] transition hover:bg-surface"
+                    disabled={!isInsideCampaign}
+                  >
+                    Check in
+                  </button>
                 </div>
               </div>
             );
@@ -297,183 +360,102 @@ export default function UserReadingSignoffPanel({ accountId }: UserReadingSignof
       <section className="rounded-xl border border-line bg-surface p-3">
         <h3 className="text-base font-black text-foreground">How to use</h3>
         <p className="mt-2 text-sm text-foreground/75">
-          In each day cell, tap a kid badge to open their check-in modal. The badge shows activity status as R/W, and today is highlighted.
+          Use the day button to open one check-in modal. If you are an admin, you can pick any user there. Everyone must set 3 challenge books.
         </p>
       </section>
 
-      {modalOpen && form ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 sm:p-6">
-          <div className="w-full max-w-2xl rounded-2xl border border-line bg-surface p-4 shadow-2xl sm:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/60">Nightly check-in</p>
-                <h3 className="text-xl font-black text-foreground">
-                  {modalMember?.nickname ?? "Kid"} on {form.signoffDatePst}
-                </h3>
-                <p className="mt-1 text-sm text-foreground/70">
-                  Tap activity buttons, answer details, then save.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.08em]"
-              >
-                Close
-              </button>
-            </div>
+      <UserReadingCheckinModal
+        open={modalOpen}
+        form={form}
+        members={members}
+        selectedMemberId={selectedMemberId}
+        selectedMemberName={modalMember?.nickname ?? "Kid"}
+        viewerCanChooseMember={viewerCanChooseMember}
+        challengeBooks={challengeBooks}
+        submitState={submitState}
+        submitMessage={submitMessage}
+        modalExistingEntry={modalExistingEntry}
+        onClose={() => setModalOpen(false)}
+        onSubmit={submitSignoff}
+        onMemberChange={(nextMemberId) => setModalMember(nextMemberId, modalDate)}
+        onChallengeBookChange={(index, value) => {
+          setChallengeBooks((prev) => {
+            const next: ChallengeBooksState = [prev[0], prev[1], prev[2]];
+            next[index] = value;
+            return next;
+          });
+        }}
+        onQuickReading={() => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-left"
-                onClick={() => {
-                  setForm((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      pagesRead: Math.max(1, prev.pagesRead),
-                      minutesRead: Math.max(10, prev.minutesRead),
-                    };
-                  });
-                }}
-              >
-                <p className="text-sm font-black text-foreground">Reading check-in</p>
-                <p className="text-xs text-foreground/70">Marks reading with current pages/minutes values.</p>
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-left"
-                onClick={() => {
-                  setForm((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      didWanikaniReviews: true,
-                    };
-                  });
-                }}
-              >
-                <p className="text-sm font-black text-foreground">WaniKani reviews to 0</p>
-                <p className="text-xs text-foreground/70">Checks off WaniKani completion for the night.</p>
-              </button>
-            </div>
+            return {
+              ...prev,
+              pagesRead: Math.max(1, prev.pagesRead),
+              minutesRead: Math.max(10, prev.minutesRead),
+            };
+          });
+        }}
+        onQuickWaniKani={() => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-            <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={submitSignoff}>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Date</span>
-                <input
-                  type="date"
-                  className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
-                  value={form.signoffDatePst}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    setForm((prev) => {
-                      if (!prev) return prev;
-                      return { ...prev, signoffDatePst: next };
-                    });
-                  }}
-                  required
-                />
-              </label>
+            return {
+              ...prev,
+              didWanikaniReviews: true,
+            };
+          });
+        }}
+        onDateChange={(nextDate) => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Book</span>
-                <select
-                  className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
-                  value={form.bookTitle}
-                  onChange={(event) => {
-                    setForm((prev) => {
-                      if (!prev) return prev;
-                      return {
-                        ...prev,
-                        bookTitle: event.target.value as (typeof READING_BOOK_OPTIONS)[number],
-                      };
-                    });
-                  }}
-                >
-                  {READING_BOOK_OPTIONS.map((book) => (
-                    <option key={book} value={book}>
-                      {book}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            return { ...prev, signoffDatePst: nextDate };
+          });
+        }}
+        onBookChange={(nextBook) => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Pages read</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={2000}
-                  className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
-                  value={form.pagesRead}
-                  onChange={(event) => {
-                    setForm((prev) => {
-                      if (!prev) return prev;
-                      return { ...prev, pagesRead: Number(event.target.value) };
-                    });
-                  }}
-                  required
-                />
-              </label>
+            return { ...prev, bookTitle: nextBook };
+          });
+        }}
+        onPagesChange={(nextPages) => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Minutes read</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={1440}
-                  className="h-10 rounded-lg border border-line bg-surface-muted px-3 text-sm"
-                  value={form.minutesRead}
-                  onChange={(event) => {
-                    setForm((prev) => {
-                      if (!prev) return prev;
-                      return { ...prev, minutesRead: Number(event.target.value) };
-                    });
-                  }}
-                  required
-                />
-              </label>
+            return { ...prev, pagesRead: nextPages };
+          });
+        }}
+        onMinutesChange={(nextMinutes) => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-              <label className="sm:col-span-2 flex items-center gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={form.didWanikaniReviews}
-                  onChange={(event) => {
-                    setForm((prev) => {
-                      if (!prev) return prev;
-                      return { ...prev, didWanikaniReviews: event.target.checked };
-                    });
-                  }}
-                />
-                <span className="text-sm font-semibold text-foreground/80">WaniKani reviews completed</span>
-              </label>
+            return { ...prev, minutesRead: nextMinutes };
+          });
+        }}
+        onDidReviewsChange={(nextDidReviews) => {
+          setForm((prev) => {
+            if (!prev) {
+              return prev;
+            }
 
-              {modalExistingEntry ? (
-                <p className="sm:col-span-2 text-xs text-foreground/70">
-                  Previous saved snapshot: reviews left {modalExistingEntry.reviewsLeft}, apprentice {modalExistingEntry.apprenticeCount}, level {modalExistingEntry.currentWkLevel}
-                </p>
-              ) : null}
-
-              <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-                <button
-                  type="submit"
-                  className="inline-flex h-10 items-center rounded-full border border-line bg-surface px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground transition hover:bg-surface-muted"
-                  disabled={submitState === "saving"}
-                >
-                  {submitState === "saving" ? "Saving" : "Save check-in"}
-                </button>
-                {submitMessage ? (
-                  <p className={`text-sm ${submitState === "error" ? "text-red-700" : "text-foreground/75"}`}>
-                    {submitMessage}
-                  </p>
-                ) : null}
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+            return { ...prev, didWanikaniReviews: nextDidReviews };
+          });
+        }}
+      />
     </section>
   );
 }

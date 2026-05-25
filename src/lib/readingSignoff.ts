@@ -40,6 +40,11 @@ export type ReadingSignoffRecord = {
   updatedAt: string;
 };
 
+export type ReadingChallengePlayerRecord = {
+  accountId: string;
+  challengeBooks: [string, string, string];
+};
+
 export type ReadingLeaderboardRow = {
   accountId: string;
   totalYen: number;

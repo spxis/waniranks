@@ -192,3 +192,13 @@ model ReadingSignoff {
   @@index([signoffDatePst])
   @@index([accountId])
 }
+
+model ReadingChallengePlayer {
+  id             String   @id @default(cuid())
+  accountId      String   @unique
+  challengeBooks String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([accountId])
+}

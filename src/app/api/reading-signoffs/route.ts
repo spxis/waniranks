@@ -16,6 +16,7 @@ import {
   READING_BOOK_OPTIONS,
   isMonthKey,
   isPstDateKey,
+  type ReadingChallengePlayerRecord,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 
@@ -44,6 +45,13 @@ const postBodySchema = z.object({
   didWanikaniReviews: z.boolean(),
 });
 
+const putBodySchema = z.object({
+  accountId: z.string().cuid(),
+  challengeBooks: z
+    .array(z.string().trim().min(1).max(80))
+    .length(3),
+});
+
 type ViewerAccountSummary = {
   id: string;
   nickname: string;
@@ -55,8 +63,25 @@ type ReadingSignoffDelegate = {
   upsert: typeof prisma.readingSignoff.upsert;
 };
 
+type ReadingChallengePlayerDelegate = {
+  findMany: (args: {
+    where: { accountId: { in: string[] } };
+    select: { accountId: true; challengeBooks: true };
+  }) => Promise<Array<{ accountId: string; challengeBooks: string[] }>>;
+  upsert: (args: {
+    where: { accountId: string };
+    update: { challengeBooks: string[] };
+    create: { accountId: string; challengeBooks: string[] };
+  }) => Promise<{ accountId: string; challengeBooks: string[] }>;
+};
+
 function getReadingSignoffDelegate(): ReadingSignoffDelegate | null {
   const delegate = (prisma as unknown as { readingSignoff?: ReadingSignoffDelegate }).readingSignoff;
+  return delegate ?? null;
+}
+
+function getReadingChallengePlayerDelegate(): ReadingChallengePlayerDelegate | null {
+  const delegate = (prisma as unknown as { readingChallengePlayer?: ReadingChallengePlayerDelegate }).readingChallengePlayer;
   return delegate ?? null;
 }
 
@@ -129,6 +154,21 @@ async function resolveViewerAccounts(request: Request): Promise<ViewerAccountSum
   });
 }
 
+function toChallengePlayerRecord(row: { accountId: string; challengeBooks: string[] }): ReadingChallengePlayerRecord | null {
+  if (row.challengeBooks.length !== 3) {
+    return null;
+  }
+
+  return {
+    accountId: row.accountId,
+    challengeBooks: [row.challengeBooks[0], row.challengeBooks[1], row.challengeBooks[2]],
+  };
+}
+
+function isChallengePlayerRecord(value: ReadingChallengePlayerRecord | null): value is ReadingChallengePlayerRecord {
+  return value !== null;
+}
+
 export async function GET(request: Request) {
   return withApiRouteTelemetry({
     route: "/api/reading-signoffs",
@@ -162,9 +202,17 @@ export async function GET(request: Request) {
           : viewerAccounts.map((account) => account.id);
 
         const readingSignoff = getReadingSignoffDelegate();
+        const readingChallengePlayer = getReadingChallengePlayerDelegate();
         if (!readingSignoff) {
           return NextResponse.json(
             { error: "Reading check-ins are not ready yet. Restart the dev server and try again." },
+            { status: 503 },
+          );
+        }
+
+        if (!readingChallengePlayer) {
+          return NextResponse.json(
+            { error: "Reading challenge setup is not ready yet. Restart the dev server and try again." },
             { status: 503 },
           );
         }
@@ -179,9 +227,21 @@ export async function GET(request: Request) {
           orderBy: [{ signoffDatePst: "asc" }, { updatedAt: "desc" }],
         });
 
+        const challengePlayers = await readingChallengePlayer.findMany({
+          where: {
+            accountId: { in: targetAccountIds },
+          },
+          select: {
+            accountId: true,
+            challengeBooks: true,
+          },
+        });
+
         return NextResponse.json(
           {
             members: viewerAccounts,
+            viewerCanChooseMember: await isAuthorizedAdmin(request),
+            challengePlayers: challengePlayers.map(toChallengePlayerRecord).filter(isChallengePlayerRecord),
             signoffs: signoffs.map(toReadingSignoffRecord),
           },
           { status: 200 },
@@ -265,6 +325,55 @@ export async function POST(request: Request) {
       } catch (error) {
         console.error(error);
         return NextResponse.json({ error: "Could not save reading signoff." }, { status: 500 });
+      }
+    },
+  });
+}
+
+export async function PUT(request: Request) {
+  return withApiRouteTelemetry({
+    route: "/api/reading-signoffs",
+    method: "PUT",
+    request,
+    execute: async () => {
+      try {
+        const parsed = putBodySchema.safeParse(await request.json());
+        if (!parsed.success) {
+          return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
+        }
+
+        if (!(await canAccessAccount(request, parsed.data.accountId))) {
+          return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+        }
+
+        const readingChallengePlayer = getReadingChallengePlayerDelegate();
+        if (!readingChallengePlayer) {
+          return NextResponse.json(
+            { error: "Reading challenge setup is not ready yet. Restart the dev server and try again." },
+            { status: 503 },
+          );
+        }
+
+        const saved = await readingChallengePlayer.upsert({
+          where: { accountId: parsed.data.accountId },
+          update: {
+            challengeBooks: parsed.data.challengeBooks,
+          },
+          create: {
+            accountId: parsed.data.accountId,
+            challengeBooks: parsed.data.challengeBooks,
+          },
+        });
+
+        const challengePlayer = toChallengePlayerRecord(saved);
+        if (!challengePlayer) {
+          return NextResponse.json({ error: "Could not save challenge books." }, { status: 500 });
+        }
+
+        return NextResponse.json({ challengePlayer }, { status: 200 });
+      } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: "Could not save challenge books." }, { status: 500 });
       }
     },
   });
