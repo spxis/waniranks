@@ -6,7 +6,7 @@ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeIsbn,
-  toBookCoverUrl,
+  toOpenLibraryCoverUrl,
   toOpenLibraryBookUrl,
 } from "@/lib/readingSignoff";
 
@@ -57,18 +57,41 @@ function getReadingSignoffDelegate(): ReadingSignoffDelegate | null {
   return delegate ?? null;
 }
 
-async function fetchOpenBdTitleByIsbn(isbn: string): Promise<string | null> {
+function toHttpsUrl(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/^http:\/\//, "https://");
+}
+
+async function fetchOpenBdMetadataByIsbn(isbn: string): Promise<{
+  title: string | null;
+  thumbnailUrl: string | null;
+}> {
   try {
     const response = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`, { cache: "no-store" });
     if (!response.ok) {
-      return null;
+      return { title: null, thumbnailUrl: null };
     }
 
-    const payload = (await response.json()) as Array<{ summary?: { title?: string } } | null>;
-    const title = payload[0]?.summary?.title?.trim() ?? null;
-    return title && title.length > 0 ? title : null;
+    const payload = (await response.json()) as Array<{
+      summary?: {
+        title?: string;
+        cover?: string;
+      };
+    } | null>;
+
+    const summary = payload[0]?.summary;
+    const title = summary?.title?.trim() ?? null;
+    const thumbnailUrl = toHttpsUrl(summary?.cover);
+    return {
+      title: title && title.length > 0 ? title : null,
+      thumbnailUrl,
+    };
   } catch {
-    return null;
+    return { title: null, thumbnailUrl: null };
   }
 }
 
@@ -90,41 +113,63 @@ async function fetchOpenLibraryTitleByIsbn(isbn: string): Promise<string | null>
   }
 }
 
-async function fetchGoogleBooksTitleByIsbn(isbn: string): Promise<string | null> {
+async function fetchGoogleBooksMetadataByIsbn(isbn: string): Promise<{
+  title: string | null;
+  thumbnailUrl: string | null;
+  infoUrl: string | null;
+}> {
   try {
     const response = await fetch(
       `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`,
       { cache: "no-store" },
     );
     if (!response.ok) {
-      return null;
+      return { title: null, thumbnailUrl: null, infoUrl: null };
     }
 
     const payload = (await response.json()) as {
       items?: Array<{
-        volumeInfo?: { title?: string };
+        volumeInfo?: {
+          title?: string;
+          infoLink?: string;
+          imageLinks?: {
+            thumbnail?: string;
+            smallThumbnail?: string;
+          };
+        };
       }>;
     };
 
-    const title = payload.items?.[0]?.volumeInfo?.title?.trim() ?? null;
-    return title && title.length > 0 ? title : null;
+    const volumeInfo = payload.items?.[0]?.volumeInfo;
+    const title = volumeInfo?.title?.trim() ?? null;
+    const thumbnailUrl = toHttpsUrl(volumeInfo?.imageLinks?.thumbnail ?? volumeInfo?.imageLinks?.smallThumbnail);
+    const infoUrl = toHttpsUrl(volumeInfo?.infoLink);
+
+    return {
+      title: title && title.length > 0 ? title : null,
+      thumbnailUrl,
+      infoUrl,
+    };
   } catch {
-    return null;
+    return { title: null, thumbnailUrl: null, infoUrl: null };
   }
 }
 
-async function fetchBookTitleByIsbn(isbn: string): Promise<string | null> {
-  const openBdTitle = await fetchOpenBdTitleByIsbn(isbn);
-  if (openBdTitle) {
-    return openBdTitle;
-  }
-
+async function fetchBookMetadataByIsbn(isbn: string): Promise<{
+  title: string | null;
+  thumbnailUrl: string;
+  infoUrl: string;
+}> {
+  const openBd = await fetchOpenBdMetadataByIsbn(isbn);
   const openLibraryTitle = await fetchOpenLibraryTitleByIsbn(isbn);
-  if (openLibraryTitle) {
-    return openLibraryTitle;
-  }
+  const google = await fetchGoogleBooksMetadataByIsbn(isbn);
 
-  return fetchGoogleBooksTitleByIsbn(isbn);
+  const title = openBd.title ?? openLibraryTitle ?? google.title;
+  return {
+    title,
+    thumbnailUrl: openBd.thumbnailUrl ?? google.thumbnailUrl ?? toOpenLibraryCoverUrl(isbn),
+    infoUrl: google.infoUrl ?? toOpenLibraryBookUrl(isbn),
+  };
 }
 
 export async function POST(request: Request) {
@@ -156,8 +201,8 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Enter a valid ISBN-10 or ISBN-13." }, { status: 400 });
         }
 
-        const fetchedTitle = await fetchBookTitleByIsbn(isbn);
-        if (!fetchedTitle) {
+        const metadata = await fetchBookMetadataByIsbn(isbn);
+        if (!metadata.title) {
           return NextResponse.json({ error: "Could not find that ISBN. Check the number and try again." }, { status: 404 });
         }
 
@@ -165,9 +210,9 @@ export async function POST(request: Request) {
           data: {
             accountId: parsed.data.accountId,
             isbn,
-            title: fetchedTitle,
-            thumbnailUrl: toBookCoverUrl(isbn),
-            infoUrl: toOpenLibraryBookUrl(isbn),
+            title: metadata.title,
+            thumbnailUrl: metadata.thumbnailUrl,
+            infoUrl: metadata.infoUrl,
           },
         });
 

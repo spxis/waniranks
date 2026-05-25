@@ -130,45 +130,6 @@ export function toOpenLibraryCoverUrl(isbn: string): string {
   return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
 }
 
-function isbn10ToIsbn13(isbn10: string): string | null {
-  if (!/^\d{9}[\dX]$/i.test(isbn10)) {
-    return null;
-  }
-
-  const core = `978${isbn10.slice(0, 9)}`;
-  let sum = 0;
-  for (let i = 0; i < 12; i += 1) {
-    const digit = core.charCodeAt(i) - 48;
-    sum += i % 2 === 0 ? digit : digit * 3;
-  }
-
-  const check = (10 - (sum % 10)) % 10;
-  return `${core}${check}`;
-}
-
-export function toIsbn13(isbn: string): string | null {
-  const normalized = isbn.replace(/[^\dXx]/g, "").toUpperCase();
-  if (ISBN13_PATTERN.test(normalized)) {
-    return normalized;
-  }
-
-  return isbn10ToIsbn13(normalized);
-}
-
-/**
- * Japanese ISBNs (978-4 / 4-) get their cover from openBD, which has full
- * coverage for Japanese books and manga. Everything else falls back to Open
- * Library, which is best for Western titles.
- */
-export function toBookCoverUrl(isbn: string): string {
-  const isbn13 = toIsbn13(isbn);
-  if (isbn13 && isbn13.startsWith("9784")) {
-    return `https://cover.openbd.jp/${isbn13}.jpg`;
-  }
-
-  return toOpenLibraryCoverUrl(isbn);
-}
-
 export function toOpenLibraryBookUrl(isbn: string): string {
   return `https://openlibrary.org/isbn/${isbn}`;
 }

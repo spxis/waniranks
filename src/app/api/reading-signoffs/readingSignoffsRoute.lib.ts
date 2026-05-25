@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import {
   READING_CHALLENGE_BOOK_SEEDS_BY_NICKNAME,
   normalizeIsbn,
-  toBookCoverUrl,
+  toOpenLibraryCoverUrl,
   toOpenLibraryBookUrl,
   type ReadingChallengeBookRecord,
   type ReadingSignoffEntryRecord,
@@ -302,7 +302,7 @@ export async function ensureSeedBooks(
         accountId: account.id,
         isbn: normalizedIsbn,
         title: seedBook.title,
-        thumbnailUrl: toBookCoverUrl(normalizedIsbn),
+        thumbnailUrl: toOpenLibraryCoverUrl(normalizedIsbn),
         infoUrl: toOpenLibraryBookUrl(normalizedIsbn),
       });
     }
@@ -316,9 +316,84 @@ export async function ensureSeedBooks(
   }
 }
 
+function toHttpsUrl(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/^http:\/\//, "https://");
+}
+
+function isLikelyJapaneseIsbn(isbn: string): boolean {
+  const normalized = isbn.replace(/[^\dXx]/g, "").toUpperCase();
+  return normalized.startsWith("4") || normalized.startsWith("9784");
+}
+
+async function fetchOpenBdCoverByIsbn(isbn: string): Promise<string | null> {
+  try {
+    const response = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as Array<{
+      summary?: {
+        cover?: string;
+      };
+    } | null>;
+    return toHttpsUrl(payload[0]?.summary?.cover);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchGoogleBooksCoverByIsbn(isbn: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as {
+      items?: Array<{
+        volumeInfo?: {
+          imageLinks?: {
+            thumbnail?: string;
+            smallThumbnail?: string;
+          };
+        };
+      }>;
+    };
+
+    return toHttpsUrl(payload.items?.[0]?.volumeInfo?.imageLinks?.thumbnail ?? payload.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail);
+  } catch {
+    return null;
+  }
+}
+
+async function resolveStableCoverUrl(isbn: string): Promise<string> {
+  if (isLikelyJapaneseIsbn(isbn)) {
+    const openBdCover = await fetchOpenBdCoverByIsbn(isbn);
+    if (openBdCover) {
+      return openBdCover;
+    }
+  }
+
+  const googleCover = await fetchGoogleBooksCoverByIsbn(isbn);
+  if (googleCover) {
+    return googleCover;
+  }
+
+  return toOpenLibraryCoverUrl(isbn);
+}
+
 /**
- * Existing rows seeded before openBD support stored Open Library cover URLs,
- * which 404 for Japanese manga. Rewrite those to the openBD cover URL once.
+ * Heal rows with broken openBD deterministic URLs and enrich JP ISBN rows with
+ * a stable cover source when possible.
  */
 export async function backfillStaleCoverUrls(
   challengeBooks: ReadingChallengeBookRecord[],
@@ -326,16 +401,21 @@ export async function backfillStaleCoverUrls(
   const updates: Array<{ id: string; thumbnailUrl: string }> = [];
 
   for (const book of challengeBooks) {
-    const desired = toBookCoverUrl(book.isbn);
-    if (desired === book.thumbnailUrl) {
+    const isBrokenOpenBd = book.thumbnailUrl?.includes("cover.openbd.jp") ?? false;
+    const shouldEnrichJapaneseCover =
+      isLikelyJapaneseIsbn(book.isbn) &&
+      (!book.thumbnailUrl || book.thumbnailUrl.includes("covers.openlibrary.org") || isBrokenOpenBd);
+
+    if (!isBrokenOpenBd && !shouldEnrichJapaneseCover) {
       continue;
     }
 
-    if (!desired.includes("cover.openbd.jp")) {
+    const stableCover = await resolveStableCoverUrl(book.isbn);
+    if (stableCover === book.thumbnailUrl) {
       continue;
     }
 
-    updates.push({ id: book.id, thumbnailUrl: desired });
+    updates.push({ id: book.id, thumbnailUrl: stableCover });
   }
 
   if (updates.length === 0) {
