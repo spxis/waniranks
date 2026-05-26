@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
+import { getStoredPositiveInt, setLocalStorageItem } from "@/lib/clientStorage";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
 type Attempt = {
@@ -29,6 +31,10 @@ type HistoryData = {
   };
 };
 
+const HISTORY_PAGE_STORAGE_KEY = "admin-study-history:page";
+const HISTORY_PAGE_SIZE_STORAGE_KEY = "admin-study-history:page-size";
+const HISTORY_PAGE_SIZE_OPTIONS = [20, 30, 50] as const;
+
 function toLocalDateTimeInput(isoValue: string): string {
   const date = new Date(isoValue);
   if (Number.isNaN(date.getTime())) {
@@ -47,6 +53,7 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
   const [status, setStatus] = useState<string>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
+  const [paginationReady, setPaginationReady] = useState(false);
   const [editingAttemptId, setEditingAttemptId] = useState<string | null>(null);
   const [editResult, setEditResult] = useState<"correct" | "wrong" | "skipped">("correct");
   const [editSubmittedAt, setEditSubmittedAt] = useState("");
@@ -57,7 +64,12 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
     try {
       const res = await fetch(`/api/admin/study-history?lite=1&page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load study history.");
-      setData((await res.json()) as HistoryData);
+      const payload = (await res.json()) as HistoryData;
+      setData(payload);
+
+      if (payload.pagination.page !== page) {
+        setPage(payload.pagination.page);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
@@ -67,11 +79,39 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
 
   useEffect(() => {
     if (!sessionAuthorized) {
+      setPaginationReady(true);
+      return;
+    }
+
+    const storedPage = getStoredPositiveInt(HISTORY_PAGE_STORAGE_KEY);
+    if (storedPage !== null) {
+      setPage(storedPage);
+    }
+
+    const storedPageSize = getStoredPositiveInt(HISTORY_PAGE_SIZE_STORAGE_KEY);
+    if (storedPageSize !== null && HISTORY_PAGE_SIZE_OPTIONS.includes(storedPageSize as (typeof HISTORY_PAGE_SIZE_OPTIONS)[number])) {
+      setPageSize(storedPageSize);
+    }
+
+    setPaginationReady(true);
+  }, [sessionAuthorized]);
+
+  useEffect(() => {
+    if (!paginationReady) {
+      return;
+    }
+
+    setLocalStorageItem(HISTORY_PAGE_STORAGE_KEY, String(page));
+    setLocalStorageItem(HISTORY_PAGE_SIZE_STORAGE_KEY, String(pageSize));
+  }, [page, pageSize, paginationReady]);
+
+  useEffect(() => {
+    if (!sessionAuthorized || !paginationReady) {
       return;
     }
 
     void load();
-  }, [load, sessionAuthorized]);
+  }, [load, sessionAuthorized, paginationReady]);
 
   async function saveAttempt() {
     if (!editingAttemptId) {

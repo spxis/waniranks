@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
-import { setStoredEnum } from "@/lib/clientStorage";
 import type { ViewerMenuInfo } from "../users/[nickname]/UserDashboardTabs.types";
 import UserHeaderMenu from "../users/[nickname]/UserHeaderMenu";
 import AdminCampaignManager from "./AdminCampaignManager";
@@ -12,7 +11,8 @@ import AdminControlRoom from "./AdminControlRoom";
 import type { AdminSessionStatus, Status } from "./AdminPage.types";
 import AdminStudyHistory from "./AdminStudyHistory";
 import {
-  ADMIN_WORKSPACE_STORAGE_KEY,
+  ADMIN_WORKSPACE_COOKIE_KEY,
+  ADMIN_WORKSPACE_COOKIE_MAX_AGE_SECONDS,
   type AdminWorkspaceTab,
   routeForAdminWorkspaceTab,
 } from "./AdminWorkspaceTabs";
@@ -54,7 +54,12 @@ export default function AdminWorkspacePage({ activeTab }: AdminWorkspacePageProp
     : null;
 
   useEffect(() => {
-    setStoredEnum(ADMIN_WORKSPACE_STORAGE_KEY, activeTab);
+    document.cookie = [
+      `${ADMIN_WORKSPACE_COOKIE_KEY}=${activeTab}`,
+      "Path=/admin",
+      `Max-Age=${ADMIN_WORKSPACE_COOKIE_MAX_AGE_SECONDS}`,
+      "SameSite=Lax",
+    ].join("; ");
   }, [activeTab]);
 
   useEffect(() => {
@@ -224,31 +229,7 @@ export default function AdminWorkspacePage({ activeTab }: AdminWorkspacePageProp
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-line bg-surface-muted/70 p-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/60">Quick links</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Link
-                href="/"
-                className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
-              >
-                Leaderboard
-              </Link>
-              <Link
-                href="/admin/users"
-                className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
-              >
-                Users
-              </Link>
-              <Link
-                href="/admin/reading-entries"
-                className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
-              >
-                Reading check-ins
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link href={routeForAdminWorkspaceTab("operations")} className={tabClassName(activeTab === "operations")}>
               Account operations
             </Link>
@@ -257,6 +238,22 @@ export default function AdminWorkspacePage({ activeTab }: AdminWorkspacePageProp
             </Link>
             <Link href={routeForAdminWorkspaceTab("history")} className={tabClassName(activeTab === "history")}>
               Submission history
+            </Link>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/60">Additional admin pages</p>
+            <Link
+              href="/admin/users"
+              className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Users
+            </Link>
+            <Link
+              href="/admin/reading-entries"
+              className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
+            >
+              Reading check-ins
             </Link>
           </div>
         </section>
