@@ -2,20 +2,29 @@
 import { useEffect, useMemo, useState, type SetStateAction } from "react";
 import useSWR from "swr";
 import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
+import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
 import { getReadingDailyEarningsForecast } from "@/lib/readingEarnings";
 import { READING_CAMPAIGN, buildCalendarCells, campaignDaysRemaining, computeReadingLeaderboard, getTodayDateInputValue, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
+import UserReadingCampaignHeader from "./UserReadingCampaignHeader";
 import UserReadingCalendar from "./UserReadingCalendar";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
 import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
 import { applyReadingCheckinMode, getRememberedReadingCheckinMode, rememberReadingCheckinMode, type ReadingCheckinMode } from "./UserReadingSignoffPanel.mode";
 import { addReadingBookByIsbn, deleteReadingBookById, getRememberedBook, rememberSelectedBook } from "./UserReadingSignoffPanel.books";
-import { createFormState, type FormState, type ReadingSignoffResponse, type TodayStats, type UserReadingSignoffPanelProps } from "./UserReadingSignoffPanel.types";
+import { createFormState, type FormState, type ReadingCampaignOption, type ReadingSignoffResponse, type TodayStats, type UserReadingSignoffPanelProps } from "./UserReadingSignoffPanel.types";
 export default function UserReadingSignoffPanel({
   accountId,
   initialMonthKey,
   initialData,
 }: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
+  const campaigns = useMemo<ReadingCampaignOption[]>(() => [{
+    id: ACTIVE_READING_CHALLENGE.id,
+    name: ACTIVE_READING_CHALLENGE.name,
+    startDatePst: ACTIVE_READING_CHALLENGE.startDatePst,
+    goalDatePst: ACTIVE_READING_CHALLENGE.goalDatePst,
+  }], []);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(ACTIVE_READING_CHALLENGE.id);
   const campaignStartMonthKey = READING_CAMPAIGN.startDatePst.slice(0, 7);
   const campaignGoalMonthKey = READING_CAMPAIGN.goalDatePst.slice(0, 7);
   const clampMonthToCampaign = (value: string): string => (value < campaignStartMonthKey ? campaignStartMonthKey : value > campaignGoalMonthKey ? campaignGoalMonthKey : value);
@@ -34,7 +43,7 @@ export default function UserReadingSignoffPanel({
   const [modalDirty, setModalDirty] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState<string>("");
-  const swrKey = `/api/reading-signoffs?month=${encodeURIComponent(monthKey)}`;
+  const swrKey = `/api/reading-signoffs?month=${encodeURIComponent(monthKey)}&challengeId=${encodeURIComponent(selectedCampaignId)}`;
   const { data, mutate, isLoading } = useSWR<ReadingSignoffResponse>(
     swrKey,
     async (url: string) => {
@@ -52,7 +61,6 @@ export default function UserReadingSignoffPanel({
       revalidateOnMount: !initialData,
     },
   );
-
   const members = useMemo(() => data?.members ?? [], [data?.members]);
   const viewerCanChooseMember = data?.viewerCanChooseMember ?? false;
   const trackedMemberAccountIds = useMemo(() => data?.trackedMemberAccountIds ?? [], [data?.trackedMemberAccountIds]);
@@ -64,14 +72,12 @@ export default function UserReadingSignoffPanel({
   const [viewerTrackedMemberIds, setViewerTrackedMemberIds] = useState<string[] | null>(null);
   const todayMonthKey = today.slice(0, 7);
   const daysRemaining = campaignDaysRemaining(today);
-
   const trackedStorageKey = `reading-tracked-members:${accountId}`;
   const serverDefaultTrackedMemberIds = useMemo(() => (trackedMemberAccountIds.length === 0 ? members.map((member) => member.id) : trackedMemberAccountIds), [members, trackedMemberAccountIds]);
 
   useEffect(() => {
     setStoredJson(monthStorageKey, monthKey);
   }, [monthKey, monthStorageKey]);
-
   useEffect(() => {
     if (members.length === 0) {
       return;
@@ -376,6 +382,7 @@ export default function UserReadingSignoffPanel({
         },
         body: JSON.stringify({
           accountId: selectedMemberId,
+          challengeId: selectedCampaignId,
           signoffDatePst: form.signoffDatePst,
           bookTitle: submittedBookTitle,
           pagesRead: form.pagesRead,
@@ -425,17 +432,11 @@ export default function UserReadingSignoffPanel({
         onToggleTrackedMember={toggleTrackedMember}
       />
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-black text-foreground">Read check-ins</h2>
-          <p className="mt-1 text-sm text-foreground/75">
-            Use one daily check-in button to update reading and WaniKani progress.
-          </p>
-          <p className="mt-1 text-xs text-foreground/60">
-            Every player needs 3 challenge books saved in the modal.
-          </p>
-        </div>
-      </header>
+      <UserReadingCampaignHeader
+        campaigns={campaigns}
+        selectedCampaignId={selectedCampaignId}
+        onCampaignChange={setSelectedCampaignId}
+      />
 
       <UserReadingCalendar
         monthKey={monthKey}

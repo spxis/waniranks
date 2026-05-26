@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/prisma";
+
 export type ReadingSignoffEntryDelegate = {
   findMany: (args: {
     where: Record<string, unknown>;
@@ -21,3 +23,18 @@ export type ReadingSignoffEntryDelegate = {
     data: Record<string, unknown>;
   }) => Promise<unknown>;
 };
+
+export function getReadingSignoffEntryDelegate(): ReadingSignoffEntryDelegate | null {
+  const delegate = (prisma as unknown as { readingSignoffEntry?: ReadingSignoffEntryDelegate }).readingSignoffEntry;
+  return delegate ?? null;
+}
+
+export function challengeReadScope(challengeId: string | null): Record<string, unknown> {
+  if (!challengeId) {
+    return {};
+  }
+
+  return {
+    OR: [{ challengeId }, { challengeId: null }],
+  };
+}

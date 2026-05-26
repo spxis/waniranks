@@ -75,9 +75,9 @@ export const FIRST_READING_CHALLENGE: ReadingChallengeDefinition = {
       minutes: 15,
     },
     bonuses: {
-      weeklyCapYen: [900, 950, 1000, 1050, 1100, 1150, 1200, 1250],
+      weeklyCapYen: [700, 750, 800, 850, 900, 950, 1000, 1100],
       pages: {
-        threshold: 15,
+        threshold: 25,
         yen: 250,
       },
       minutes: {

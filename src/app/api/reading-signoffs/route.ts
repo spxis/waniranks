@@ -12,6 +12,10 @@ import {
   isPstDateKey,
 } from "@/lib/readingSignoff";
 import {
+  challengeReadScope,
+  getReadingSignoffEntryDelegate,
+} from "./readingSignoffsRoute.types";
+import {
   backfillStaleCoverUrls,
   ensureSeedBooks,
   getReadingChallengeBookDelegate,
@@ -23,17 +27,18 @@ import {
   toReadingSignoffRecord,
   type LatestSignoffSummary,
 } from "./readingSignoffsRoute.lib";
-import type { ReadingSignoffEntryDelegate } from "./readingSignoffsRoute.types";
 
 const getQuerySchema = z.object({
   month: z.string().refine((value) => isMonthKey(value), {
     message: "Invalid month key.",
   }),
+  challengeId: z.string().min(1).max(120).optional(),
   accountId: z.string().cuid().optional(),
 });
 
 const postBodySchema = z.object({
   accountId: z.string().cuid(),
+  challengeId: z.string().min(1).max(120).optional(),
   signoffDatePst: z.string().refine((value) => isPstDateKey(value), {
     message: "Invalid signoff date.",
   }),
@@ -49,21 +54,6 @@ const patchBodySchema = z.object({
   tracked: z.boolean(),
 });
 
-function getReadingSignoffEntryDelegate(): ReadingSignoffEntryDelegate | null {
-  const delegate = (prisma as unknown as { readingSignoffEntry?: ReadingSignoffEntryDelegate }).readingSignoffEntry;
-  return delegate ?? null;
-}
-
-function challengeReadScope(challengeId: string | null): Record<string, unknown> {
-  if (!challengeId) {
-    return {};
-  }
-
-  return {
-    OR: [{ challengeId }, { challengeId: null }],
-  };
-}
-
 export async function GET(request: Request) {
   return withApiRouteTelemetry({
     route: "/api/reading-signoffs",
@@ -74,6 +64,7 @@ export async function GET(request: Request) {
         const url = new URL(request.url);
         const parsed = getQuerySchema.safeParse({
           month: url.searchParams.get("month") ?? "",
+          challengeId: url.searchParams.get("challengeId") ?? undefined,
           accountId: url.searchParams.get("accountId") ?? undefined,
         });
 
@@ -87,6 +78,11 @@ export async function GET(request: Request) {
         }
 
         const activeChallengeId = await ensureActiveReadingChallengeId();
+        const selectedChallengeId = parsed.data.challengeId ?? activeChallengeId;
+
+        if (parsed.data.challengeId && activeChallengeId && parsed.data.challengeId !== activeChallengeId) {
+          return NextResponse.json({ error: "Selected campaign is not available yet." }, { status: 404 });
+        }
 
         const viewerAccountIds = new Set(viewerAccounts.map((account) => account.id));
         const requestedAccountId = parsed.data.accountId ?? null;
@@ -121,7 +117,7 @@ export async function GET(request: Request) {
             signoffDatePst: {
               startsWith: `${parsed.data.month}-`,
             },
-            ...challengeReadScope(activeChallengeId),
+            ...challengeReadScope(selectedChallengeId),
           },
           orderBy: [{ signoffDatePst: "asc" }, { updatedAt: "desc" }],
         });
@@ -134,7 +130,7 @@ export async function GET(request: Request) {
                 signoffDatePst: {
                   startsWith: `${parsed.data.month}-`,
                 },
-                ...challengeReadScope(activeChallengeId),
+                ...challengeReadScope(selectedChallengeId),
               },
               orderBy: [{ signoffDatePst: "asc" }, { createdAt: "asc" }],
             })
@@ -143,7 +139,7 @@ export async function GET(request: Request) {
         const latestSignoffs = await readingSignoff.findMany({
           where: {
             accountId: { in: targetAccountIds },
-            ...challengeReadScope(activeChallengeId),
+            ...challengeReadScope(selectedChallengeId),
           },
           orderBy: [{ updatedAt: "desc" }],
         });
@@ -165,7 +161,7 @@ export async function GET(request: Request) {
         const challengeBooksRaw = await readingChallengeBook.findMany({
           where: {
             accountId: { in: targetAccountIds },
-            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+            ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: {
@@ -179,13 +175,13 @@ export async function GET(request: Request) {
         });
 
         const challengeBooks = challengeBooksRaw.map(toChallengeBookRecord);
-        await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook, activeChallengeId);
+        await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook, selectedChallengeId);
         await backfillStaleCoverUrls(challengeBooks);
 
         const challengeBooksAfterSeed = await readingChallengeBook.findMany({
           where: {
             accountId: { in: targetAccountIds },
-            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+            ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: {
@@ -224,7 +220,7 @@ export async function GET(request: Request) {
               return readingChallengeMember.findMany({
                 where: {
                   accountId: { in: targetAccountIds },
-                  ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+                  ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
                 },
                 select: {
                   accountId: true,
@@ -240,6 +236,7 @@ export async function GET(request: Request) {
         return NextResponse.json(
           {
             members: viewerAccounts,
+            selectedChallengeId,
             viewerCanChooseMember: await isAuthorizedAdmin(request),
             trackedMemberAccountIds: await trackedMemberAccountIds,
             challengeBooks: challengeBooksAfterSeed.map(toChallengeBookRecord),
@@ -278,6 +275,11 @@ export async function POST(request: Request) {
         }
 
         const activeChallengeId = await ensureActiveReadingChallengeId();
+        const selectedChallengeId = parsed.data.challengeId ?? activeChallengeId;
+
+        if (parsed.data.challengeId && activeChallengeId && parsed.data.challengeId !== activeChallengeId) {
+          return NextResponse.json({ error: "Selected campaign is not available yet." }, { status: 404 });
+        }
 
         if (parsed.data.submittedAt && !viewerIsAdmin) {
           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -310,7 +312,7 @@ export async function POST(request: Request) {
         const challengeBooks = await readingChallengeBook.findMany({
           where: {
             accountId: { in: [account.id] },
-            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+            ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: {
@@ -356,7 +358,7 @@ export async function POST(request: Request) {
         const existingChallengeId =
           ((existing as { challengeId?: string | null } | null)?.challengeId ?? null);
 
-        if (existing && activeChallengeId && existingChallengeId && existingChallengeId !== activeChallengeId) {
+        if (existing && selectedChallengeId && existingChallengeId && existingChallengeId !== selectedChallengeId) {
           return NextResponse.json({ error: "Signoff belongs to a different challenge." }, { status: 409 });
         }
 
@@ -377,7 +379,7 @@ export async function POST(request: Request) {
         if (readingSignoffEntry) {
           await readingSignoffEntry.create({
             data: {
-              ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+              ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
               accountId: account.id,
               signoffDatePst: parsed.data.signoffDatePst,
               createdAt: submittedAt ?? undefined,
@@ -403,8 +405,8 @@ export async function POST(request: Request) {
             },
           },
           update: {
-            ...(existingChallengeId ?? activeChallengeId
-              ? { challengeId: existingChallengeId ?? activeChallengeId }
+            ...(existingChallengeId ?? selectedChallengeId
+              ? { challengeId: existingChallengeId ?? selectedChallengeId }
               : {}),
             bookTitle: normalizedBookTitle,
             pagesRead: nextPagesRead,
@@ -415,7 +417,7 @@ export async function POST(request: Request) {
             currentWkLevel: account.wkLevel,
           },
           create: {
-            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+            ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
             accountId: account.id,
             signoffDatePst: parsed.data.signoffDatePst,
             createdAt: submittedAt ?? undefined,

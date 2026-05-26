@@ -70,6 +70,13 @@ export default function AdminChallengeSimulator({
         </table>
       </div>
 
+      <div className="mt-2 text-xs text-foreground/70">
+        Perfect day means both reading threshold and WaniKani review activity were completed for that day.
+      </div>
+      <div className="mt-1 text-xs text-foreground/70">
+        Weekly bonus values are capped by scoringRules.bonuses.weeklyCapYen.
+      </div>
+
       <details className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
         <summary className="cursor-pointer text-sm font-bold text-foreground">Challenge definition JSON</summary>
         <pre className="mt-2 overflow-x-auto rounded-lg bg-surface p-2 text-xs text-foreground/80">

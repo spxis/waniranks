@@ -22,8 +22,16 @@ export type LatestSignoff = {
   signoffDatePst: string;
 };
 
+export type ReadingCampaignOption = {
+  id: string;
+  name: string;
+  startDatePst: string;
+  goalDatePst: string;
+};
+
 export type ReadingSignoffResponse = {
   members: Member[];
+  selectedChallengeId?: string;
   viewerCanChooseMember: boolean;
   trackedMemberAccountIds: string[];
   challengeBooks: ReadingChallengeBookRecord[];
