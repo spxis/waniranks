@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { isAuthorizedAdmin } from "@/lib/admin";
-import { getStudyHistoryPage, parseStudyHistoryQuery } from "@/lib/studyHistoryView";
+import { getAdminStudyHistoryPage, parseAdminStudyHistoryQuery } from "@/lib/studyHistoryAdminView";
+import {
+  getStudyHistoryPage,
+  parseStudyHistoryQuery,
+} from "@/lib/studyHistoryView";
 import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 
 export async function GET(request: Request) {
@@ -15,8 +19,10 @@ export async function GET(request: Request) {
       }
 
       const url = new URL(request.url);
-      const query = parseStudyHistoryQuery(url);
-      const payload = await getStudyHistoryPage(query);
+      const useLitePayload = url.searchParams.get("lite") === "1";
+      const payload = useLitePayload
+        ? await getAdminStudyHistoryPage(parseAdminStudyHistoryQuery(url))
+        : await getStudyHistoryPage(parseStudyHistoryQuery(url));
 
       return NextResponse.json(payload);
     },

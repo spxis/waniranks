@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
 type Attempt = {
@@ -45,18 +45,17 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
-  const [expanded, setExpanded] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
   const [editingAttemptId, setEditingAttemptId] = useState<string | null>(null);
   const [editResult, setEditResult] = useState<"correct" | "wrong" | "skipped">("correct");
   const [editSubmittedAt, setEditSubmittedAt] = useState("");
 
-  const load = useCallback(async (force = false) => {
-    setExpanded(true);
-    if (data && !force) return;
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/study-history?page=1&pageSize=100", { cache: "no-store" });
+      const res = await fetch(`/api/admin/study-history?lite=1&page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load study history.");
       setData((await res.json()) as HistoryData);
     } catch (err) {
@@ -64,7 +63,15 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
     } finally {
       setLoading(false);
     }
-  }, [data]);
+  }, [page, pageSize]);
+
+  useEffect(() => {
+    if (!sessionAuthorized) {
+      return;
+    }
+
+    void load();
+  }, [load, sessionAuthorized]);
 
   async function saveAttempt() {
     if (!editingAttemptId) {
@@ -91,7 +98,7 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
 
       setStatus("Study attempt updated.");
       setEditingAttemptId(null);
-      await load(true);
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update study attempt.");
     } finally {
@@ -122,7 +129,7 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
         setEditingAttemptId(null);
       }
       setStatus("Study attempt deleted.");
-      await load(true);
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not delete study attempt.");
     } finally {
@@ -146,16 +153,29 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
 
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-      <button
-        type="button"
-        onClick={() => (expanded ? setExpanded(false) : void load())}
-        className="text-sm font-bold uppercase tracking-widest text-foreground"
-      >
-        Study Submission History {expanded ? "▲" : "▼"}
-      </button>
+      <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Study Submission History</h2>
 
-      {expanded && (
-        <div className="mt-4 space-y-4">
+      <div className="mt-4 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-foreground/70">Use smaller pages for faster loading and cleaner edits.</p>
+          <label className="flex items-center gap-2 text-xs font-semibold text-foreground/75">
+            Page size
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPage(1);
+                setPageSize(Number(event.target.value));
+              }}
+              className="h-8 rounded border border-line bg-surface px-2"
+              disabled={loading || saving}
+            >
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
+        </div>
+
           {loading && <p className="text-sm text-muted">Loading...</p>}
           {error && <p className="text-sm text-red-500">{error}</p>}
           {status ? <p className="text-sm text-emerald-700">{status}</p> : null}
@@ -307,15 +327,32 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
                 </table>
               </div>
 
-              {data.pagination.total > data.attempts.length ? (
-                <p className="text-xs text-foreground/60">
-                  Showing {data.attempts.length} of {data.pagination.total} attempts. Use filters later for deeper slices.
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-foreground/65">
+                <p>
+                  Page {data.pagination.page} of {data.pagination.totalPages} · {data.pagination.total.toLocaleString("en-US")} total attempts
                 </p>
-              ) : null}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                    disabled={!data.pagination.hasPrevious || loading || saving}
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage((prev) => prev + 1)}
+                    disabled={!data.pagination.hasNext || loading || saving}
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </>
           )}
-        </div>
-      )}
+      </div>
     </section>
   );
 }

@@ -28,7 +28,17 @@ function isMissingTableError(error: unknown): boolean {
   }
 
   const code = (error as { code?: string }).code;
-  return code === "P2021" || error.message.includes("does not exist");
+  return code === "P2021" || code === "P2022" || error.message.includes("does not exist") || error.message.includes("column");
+}
+
+function isSchemaMismatchError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message.includes("Unknown argument")
+    || error.message.includes("Unknown field")
+    || error.message.includes("PrismaClientValidationError");
 }
 
 async function deactivateOtherActiveCampaigns(campaignId: string): Promise<void> {
@@ -77,6 +87,13 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ campaigns }, { status: 200 });
       } catch (error) {
+        if (isSchemaMismatchError(error)) {
+          return NextResponse.json(
+            { error: "Campaign schema is out of date. Run pnpm db:push and pnpm prisma generate, then restart." },
+            { status: 503 },
+          );
+        }
+
         if (isMissingTableError(error)) {
           return NextResponse.json({ error: "Campaign storage is not ready. Run pnpm db:push and reload." }, { status: 503 });
         }
@@ -145,6 +162,13 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Campaign id or slug is already used." }, { status: 409 });
         }
 
+        if (isSchemaMismatchError(error)) {
+          return NextResponse.json(
+            { error: "Campaign schema is out of date. Run pnpm db:push and pnpm prisma generate, then restart." },
+            { status: 503 },
+          );
+        }
+
         if (isMissingTableError(error)) {
           return NextResponse.json({ error: "Campaign storage is not ready. Run pnpm db:push and reload." }, { status: 503 });
         }
@@ -211,6 +235,13 @@ export async function PATCH(request: Request) {
       } catch (error) {
         if (isUniqueConstraintError(error)) {
           return NextResponse.json({ error: "Campaign id or slug is already used." }, { status: 409 });
+        }
+
+        if (isSchemaMismatchError(error)) {
+          return NextResponse.json(
+            { error: "Campaign schema is out of date. Run pnpm db:push and pnpm prisma generate, then restart." },
+            { status: 503 },
+          );
         }
 
         if (isMissingTableError(error)) {
