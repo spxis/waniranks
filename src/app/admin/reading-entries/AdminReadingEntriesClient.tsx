@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { Status } from "@/app/admin/AdminPage.types";
+import AdminPanelHeader from "@/app/admin/AdminPanelHeader";
 
 import AdminPaginationControls from "@/app/admin/AdminPaginationControls";
 
@@ -248,14 +249,11 @@ export default function AdminReadingEntriesClient({
 
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-      {!embedded ? (
-        <>
-          <h1 className="text-xl font-bold text-foreground sm:text-2xl">All reading check-ins</h1>
-          <p className="mt-2 text-sm text-foreground/75">
-            Browse daily reading check-ins across all members. Edit or remove incorrect submissions.
-          </p>
-        </>
-      ) : null}
+      <AdminPanelHeader
+        label="Reading check-ins"
+        title={embedded ? "Manage reading check-ins" : "All reading check-ins"}
+        description="Browse daily reading check-ins across all members and correct incorrect submissions."
+      />
 
       {checkingSession ? (
         <p className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">

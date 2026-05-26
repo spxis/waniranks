@@ -1,5 +1,6 @@
 import AdminStatusBadge from "./AdminStatusBadge";
 import type { AdminControlRoomProps } from "./AdminControlRoom.types";
+import AdminPanelHeader from "./AdminPanelHeader";
 
 async function startGoogleSignIn(callbackPath: string, prompt?: "select_account") {
   try {
@@ -36,20 +37,20 @@ export default function AdminControlRoom({
 }: AdminControlRoomProps) {
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-widest text-accent">Control room</p>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Admin Panel</h1>
+      <AdminPanelHeader
+        label="Account operations"
+        title="Admin panel"
+        description="Manage family accounts, rotate tokens, and push fresh stats to the leaderboard."
+        actions={
         <AdminStatusBadge
           checkingSession={checkingSession}
           sessionAuthorized={sessionAuthorized}
           signedIn={signedIn}
           emailAllowed={emailAllowed}
         />
-      </div>
-      <p className="mt-3 text-sm text-foreground/75">
-        Manage family accounts, rotate tokens, and push fresh stats to the leaderboard.
-        Admin access requires Google OAuth and allowlisted emails.
-      </p>
+        }
+      />
+      <p className="mt-2 text-xs text-foreground/65">Admin access requires Google OAuth and allowlisted emails.</p>
 
       {googleConfigured ? (
         <div className="mt-4 flex flex-wrap gap-2">

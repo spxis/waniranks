@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getStoredPositiveInt, setLocalStorageItem } from "@/lib/clientStorage";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
+import AdminPanelHeader from "./AdminPanelHeader";
 import AdminPaginationControls from "./AdminPaginationControls";
 
 type Attempt = {
@@ -215,7 +216,11 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
 
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-      <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Study submission history</h2>
+      <AdminPanelHeader
+        label="Submission history"
+        title="Study submission history"
+        description="Review, edit, or remove study submissions in one place."
+      />
 
       <div className="mt-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

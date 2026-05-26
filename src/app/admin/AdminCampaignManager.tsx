@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import AdminCampaignEditorForm from "./AdminCampaignEditorForm";
 import AdminChallengeSimulator from "./AdminChallengeSimulator";
+import AdminPanelHeader from "./AdminPanelHeader";
 import { CAMPAIGN_AUTH_REQUIRED_MESSAGE, fetchCampaigns, parseSimulationChallenge } from "./AdminCampaignManager.data";
 import {
   CAMPAIGN_CREATE_PICKER_VALUE,
@@ -299,25 +300,23 @@ export default function AdminCampaignManager({
 
   return (
     <section id="reading-campaigns" className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/60">Reading campaigns</p>
-          <h3 className="mt-1 text-xl font-black text-foreground">Manage campaign definitions</h3>
-          <p className="mt-1 text-sm text-foreground/70">
-            Edit an existing campaign, or create a draft for experiments.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            void refreshCampaigns({ preferredCampaignId: selectedCampaignId || undefined });
-          }}
-          className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-          disabled={loading || !sessionAuthorized || checkingSession}
-        >
-          {loading ? "Refreshing..." : "Refresh campaigns"}
-        </button>
-      </div>
+      <AdminPanelHeader
+        label="Campaign workspace"
+        title="Manage campaign definitions"
+        description="Edit an existing campaign, or create a draft for experiments."
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              void refreshCampaigns({ preferredCampaignId: selectedCampaignId || undefined });
+            }}
+            className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
+            disabled={loading || !sessionAuthorized || checkingSession}
+          >
+            {loading ? "Refreshing..." : "Refresh campaigns"}
+          </button>
+        }
+      />
 
       {loadError ? (
         <div

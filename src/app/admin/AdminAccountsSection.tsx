@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { formatDateShort, formatDateTimeShort } from "@/lib/timeFormat";
 
+import AdminPanelHeader from "./AdminPanelHeader";
+
 export type AdminAccount = {
   id: string;
   nickname: string;
@@ -69,10 +71,11 @@ export default function AdminAccountsSection({
 
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-      <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Users</h2>
-      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-foreground/65">
-        Admin can impersonate by opening a user page and submitting study actions with that user token.
-      </p>
+      <AdminPanelHeader
+        label="Users"
+        title="Manage accounts"
+        description="Refresh users, rotate invite codes, and open per-user admin history."
+      />
       <div className="mt-4 overflow-x-auto rounded-xl border border-line">
         {accounts.length === 0 ? (
           <p className="p-4 text-sm text-foreground/70">No accounts yet.</p>
