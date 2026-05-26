@@ -1,6 +1,6 @@
 "use client";
 
-import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
+import type { ReadingChallengeScoringRules } from "@/lib/readingChallengeRules";
 
 type AdminScoringRulesBuilderProps = {
   value: string;
@@ -8,7 +8,7 @@ type AdminScoringRulesBuilderProps = {
   onChange: (nextValue: string) => void;
 };
 
-type ScoringRules = typeof ACTIVE_READING_CHALLENGE.scoringRules;
+type ScoringRules = ReadingChallengeScoringRules;
 
 function toJson(rules: ScoringRules): string {
   return JSON.stringify(rules, null, 2);
@@ -19,7 +19,7 @@ function parseRules(value: string): { rules: ScoringRules | null; error: string 
     const parsed = JSON.parse(value) as ScoringRules;
     return { rules: parsed, error: null };
   } catch {
-    return { rules: null, error: "JSON is invalid. Fix it in Advanced editor or reset builder." };
+    return { rules: null, error: "JSON is invalid. Fix it in Advanced JSON editor." };
   }
 }
 
@@ -77,14 +77,6 @@ export default function AdminScoringRulesBuilder({ value, disabled, onChange }: 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-widest text-foreground/65">Scoring rules builder</p>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => onChange(toJson(ACTIVE_READING_CHALLENGE.scoringRules))}
-            className="h-8 rounded-full border border-line bg-white px-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700 disabled:opacity-60"
-            disabled={disabled}
-          >
-            Reset to 40k base
-          </button>
           <button
             type="button"
             onClick={applyGenerousPreset}

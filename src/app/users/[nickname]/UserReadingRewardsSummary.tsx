@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { SUBJECT_TYPE_DISPLAY, SUBJECT_TYPES } from "@/lib/domainConstants";
-import { READING_CAMPAIGN, formatCampaignDateLabel } from "@/lib/readingSignoff";
+import { formatCampaignDateLabel } from "@/lib/readingSignoff";
 
 type LeaderboardRow = {
   accountId: string;
@@ -31,19 +31,29 @@ type LeaderboardRow = {
 };
 
 type UserReadingRewardsSummaryProps = {
+  campaignName: string;
+  campaignStartDatePst: string;
+  campaignGoalDatePst: string;
+  campaignTripDatePst: string;
+  campaignTargetBaseYen: number;
   daysRemaining: number;
   isLoading: boolean;
   leaderboard: LeaderboardRow[];
 };
 
 export default function UserReadingRewardsSummary({
+  campaignName,
+  campaignStartDatePst,
+  campaignGoalDatePst,
+  campaignTripDatePst,
+  campaignTargetBaseYen,
   daysRemaining,
   isLoading,
   leaderboard,
 }: UserReadingRewardsSummaryProps) {
   const teamTotalYen = leaderboard.reduce((sum, row) => sum + row.totalYen, 0);
   const leaderYen = leaderboard[0]?.totalYen ?? 0;
-  const leaderRemainingYen = Math.max(0, READING_CAMPAIGN.maxYen - leaderYen);
+  const leaderRemainingYen = Math.max(0, campaignTargetBaseYen - leaderYen);
 
   function formatYen(value: number): string {
     return `JPY ${value.toLocaleString("en-US")}`;
@@ -66,15 +76,17 @@ export default function UserReadingRewardsSummary({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-accent">Japan mission</p>
-            <h2 className="mt-1 text-2xl font-black text-foreground sm:text-3xl">40,000 yen challenge</h2>
+            <h2 className="mt-1 text-2xl font-black text-foreground sm:text-3xl">
+              {campaignTargetBaseYen.toLocaleString("en-US")} yen challenge
+            </h2>
             <p className="mt-1 text-sm text-foreground/75">
-              Start {formatCampaignDateLabel(READING_CAMPAIGN.startDatePst)} to goal {formatCampaignDateLabel(READING_CAMPAIGN.goalDatePst)}.
+              {campaignName}: start {formatCampaignDateLabel(campaignStartDatePst)} to goal {formatCampaignDateLabel(campaignGoalDatePst)}.
             </p>
           </div>
           <div className="rounded-xl border border-accent/30 bg-surface/80 px-4 py-3 text-right">
             <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/65">Days to trip</p>
             <p className="text-3xl font-black text-foreground">{daysRemaining}</p>
-            <p className="text-xs text-foreground/70">Trip: {formatCampaignDateLabel(READING_CAMPAIGN.tripDatePst)}</p>
+            <p className="text-xs text-foreground/70">Trip: {formatCampaignDateLabel(campaignTripDatePst)}</p>
           </div>
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -85,7 +97,7 @@ export default function UserReadingRewardsSummary({
             Leader earned: <strong className="text-foreground">JPY {leaderYen.toLocaleString("en-US")}</strong>
           </div>
           <div className="rounded-xl border border-line bg-surface/70 px-3 py-2 text-xs font-semibold text-foreground/75">
-            Leader to 40,000: <strong className="text-foreground">JPY {leaderRemainingYen.toLocaleString("en-US")}</strong>
+            Leader to {campaignTargetBaseYen.toLocaleString("en-US")}: <strong className="text-foreground">JPY {leaderRemainingYen.toLocaleString("en-US")}</strong>
           </div>
         </div>
       </section>
@@ -93,7 +105,7 @@ export default function UserReadingRewardsSummary({
       <section className="rounded-xl border border-line bg-surface p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-black text-foreground">Rewards leaderboard</h3>
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">Goal by {formatCampaignDateLabel(READING_CAMPAIGN.goalDatePst)}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">Goal by {formatCampaignDateLabel(campaignGoalDatePst)}</p>
         </div>
         <p className="mt-2 text-xs text-foreground/65">
           Fast scan: reading status + kanji reviewed + total yen.

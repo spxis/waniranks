@@ -8,7 +8,11 @@ export function resolveReadingCampaignOptions(
   fallbackCampaignId: string,
 ): ReadingCampaignOption[] {
   if (campaigns?.length) {
-    return campaigns;
+    return campaigns.map((campaign) => ({
+      ...campaign,
+      tripDatePst: campaign.tripDatePst ?? ACTIVE_READING_CHALLENGE.tripDatePst,
+      targetBaseYen: campaign.targetBaseYen ?? ACTIVE_READING_CHALLENGE.targetBaseYen,
+    }));
   }
 
   return [
@@ -18,6 +22,8 @@ export function resolveReadingCampaignOptions(
       status: ACTIVE_READING_CHALLENGE.status,
       startDatePst: READING_CAMPAIGN.startDatePst,
       goalDatePst: READING_CAMPAIGN.goalDatePst,
+      tripDatePst: ACTIVE_READING_CHALLENGE.tripDatePst,
+      targetBaseYen: ACTIVE_READING_CHALLENGE.targetBaseYen,
     },
   ];
 }

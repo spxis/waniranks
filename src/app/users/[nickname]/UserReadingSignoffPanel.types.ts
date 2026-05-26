@@ -28,6 +28,8 @@ export type ReadingCampaignOption = {
   status?: string;
   startDatePst: string;
   goalDatePst: string;
+  tripDatePst?: string;
+  targetBaseYen?: number;
 };
 
 export type ReadingSignoffResponse = {

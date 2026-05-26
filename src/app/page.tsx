@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { ensureActiveReadingChallengeId } from "@/lib/readingChallengeStore";
+import { resolveReadingCampaignSelection } from "@/lib/readingChallengeStore";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { authOptions, isAdminEmail } from "@/lib/auth";
 import { refreshDueAccounts } from "@/lib/sync";
 import {
   READING_CAMPAIGN,
-  campaignDaysRemaining,
   computeReadingLeaderboard,
   getTodayDateInputValue,
+  parseDateKeyAsUtc,
   type ReadingSignoffRecord,
 } from "@/lib/readingSignoff";
 import LeaderboardAdminActions from "./LeaderboardAdminActions";
@@ -88,7 +89,27 @@ export default async function Home() {
     ? `/users/${encodeURIComponent(viewerWkUsername)}?dashboard=read`
     : "/join";
   const challengeToday = getTodayDateInputValue();
-  const challengeDaysLeft = campaignDaysRemaining(challengeToday);
+
+  let challengeGoalDatePst = READING_CAMPAIGN.goalDatePst;
+  let challengeTargetBaseYen = READING_CAMPAIGN.maxYen;
+  try {
+    const campaignSelection = await resolveReadingCampaignSelection();
+    const selectedCampaign = campaignSelection.campaigns.find(
+      (campaign) => campaign.id === campaignSelection.selectedCampaignId,
+    ) ?? null;
+    challengeGoalDatePst = selectedCampaign?.goalDatePst ?? challengeGoalDatePst;
+    challengeTargetBaseYen = selectedCampaign?.targetBaseYen ?? challengeTargetBaseYen;
+  } catch (error) {
+    console.error("Could not resolve active campaign selection", error);
+  }
+
+  const challengeDaysLeft = (() => {
+    const todayDate = parseDateKeyAsUtc(challengeToday);
+    const goalDate = parseDateKeyAsUtc(challengeGoalDatePst);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diff = Math.floor((goalDate.getTime() - todayDate.getTime()) / msPerDay) + 1;
+    return Math.max(0, diff);
+  })();
 
   let leaderboard: LeaderboardRow[] = [];
   let setupMessage = "";
@@ -303,7 +324,7 @@ export default async function Home() {
         )
       : 0;
   const topScore = leaderboard[0]?.score ?? 0;
-  const leaderRemainingToGoal = Math.max(0, READING_CAMPAIGN.maxYen - challengeLeaderYen);
+  const leaderRemainingToGoal = Math.max(0, challengeTargetBaseYen - challengeLeaderYen);
   const leaderDailyPaceNeeded = challengeDaysLeft > 0
     ? Math.ceil(leaderRemainingToGoal / challengeDaysLeft)
     : leaderRemainingToGoal;
@@ -374,7 +395,7 @@ export default async function Home() {
                 Reading Challenge
               </p>
               <h2 className="mt-2 text-3xl font-black leading-[0.95] text-amber-950 sm:text-4xl lg:text-5xl">
-                {challengeDaysLeft} days left to hit JPY {formatNumber(READING_CAMPAIGN.maxYen)}.
+                {challengeDaysLeft} days left to hit JPY {formatNumber(challengeTargetBaseYen)}.
               </h2>
               <p className="mt-3 max-w-2xl text-sm font-semibold text-amber-900/80 sm:text-base">
                 Top earner: {challengeLeaderName} with JPY {formatNumber(challengeLeaderYen)}. Team pot: JPY {formatNumber(challengeTeamYen)}.

@@ -78,6 +78,8 @@ export type ReadingCampaignOption = {
   status: string;
   startDatePst: string;
   goalDatePst: string;
+  tripDatePst: string;
+  targetBaseYen: number;
 };
 
 export async function listReadingCampaignOptions(): Promise<ReadingCampaignOption[]> {
@@ -99,6 +101,8 @@ export async function listReadingCampaignOptions(): Promise<ReadingCampaignOptio
       status: true,
       startDatePst: true,
       goalDatePst: true,
+      tripDatePst: true,
+      targetBaseYen: true,
     },
   });
 
@@ -108,6 +112,8 @@ export async function listReadingCampaignOptions(): Promise<ReadingCampaignOptio
     status: String(row.status),
     startDatePst: String(row.startDatePst),
     goalDatePst: String(row.goalDatePst),
+    tripDatePst: String(row.tripDatePst),
+    targetBaseYen: Number(row.targetBaseYen),
   }));
 }
 

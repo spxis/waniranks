@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { getStoredJson, setStoredJson } from "@/lib/clientStorage";
 import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
 import { getReadingDailyEarningsForecast } from "@/lib/readingEarnings";
-import { buildCalendarCells, campaignDaysRemaining, computeReadingLeaderboard, getTodayDateInputValue, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
+import { buildCalendarCells, computeReadingLeaderboard, getTodayDateInputValue, parseDateKeyAsUtc, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
 import UserReadingCampaignHeader from "./UserReadingCampaignHeader";
 import UserReadingCalendar from "./UserReadingCalendar";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
@@ -58,10 +58,25 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
   const challengeBooks = useMemo(() => data?.challengeBooks ?? [], [data?.challengeBooks]);
   const latestSignoffs = useMemo(() => data?.latestSignoffs ?? [], [data?.latestSignoffs]);
   const campaigns = useMemo<ReadingCampaignOption[]>(() => resolveReadingCampaignOptions(data?.campaigns, initialData?.selectedChallengeId ?? selectedCampaignId), [data?.campaigns, initialData?.selectedChallengeId, selectedCampaignId]);
+  const selectedCampaign = useMemo(
+    () => campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? campaigns[0] ?? null,
+    [campaigns, selectedCampaignId],
+  );
+  const selectedCampaignName = selectedCampaign?.name ?? ACTIVE_READING_CHALLENGE.name;
+  const selectedCampaignStartDatePst = selectedCampaign?.startDatePst ?? ACTIVE_READING_CHALLENGE.startDatePst;
+  const selectedCampaignGoalDatePst = selectedCampaign?.goalDatePst ?? ACTIVE_READING_CHALLENGE.goalDatePst;
+  const selectedCampaignTripDatePst = selectedCampaign?.tripDatePst ?? ACTIVE_READING_CHALLENGE.tripDatePst;
+  const selectedCampaignTargetBaseYen = selectedCampaign?.targetBaseYen ?? ACTIVE_READING_CHALLENGE.targetBaseYen;
   const campaignMonthBounds = useMemo(() => resolveCampaignMonthBounds({ campaigns, selectedCampaignId }), [campaigns, selectedCampaignId]);
   const setBoundedMonthKey = (nextMonth: SetStateAction<string>) => setMonthKey((prevMonth) => clampMonthKeyToBounds(typeof nextMonth === "function" ? nextMonth(prevMonth) : nextMonth, campaignMonthBounds));
   const todayMonthKey = today.slice(0, 7);
-  const daysRemaining = campaignDaysRemaining(today);
+  const daysRemaining = useMemo(() => {
+    const todayDate = parseDateKeyAsUtc(today);
+    const tripDate = parseDateKeyAsUtc(selectedCampaignTripDatePst);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diff = Math.floor((tripDate.getTime() - todayDate.getTime()) / msPerDay) + 1;
+    return Math.max(0, diff);
+  }, [selectedCampaignTripDatePst, today]);
   const trackedMemberIds = useMemo(
     () => (trackedMemberAccountIds.length === 0 ? members.map((member) => member.id) : trackedMemberAccountIds),
     [members, trackedMemberAccountIds],
@@ -386,6 +401,11 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
   return (
     <section className="space-y-4 rounded-2xl border border-line bg-surface-muted p-4 sm:p-6">
       <UserReadingRewardsSummary
+        campaignName={selectedCampaignName}
+        campaignStartDatePst={selectedCampaignStartDatePst}
+        campaignGoalDatePst={selectedCampaignGoalDatePst}
+        campaignTripDatePst={selectedCampaignTripDatePst}
+        campaignTargetBaseYen={selectedCampaignTargetBaseYen}
         daysRemaining={daysRemaining}
         isLoading={isLoading}
         leaderboard={leaderboard}

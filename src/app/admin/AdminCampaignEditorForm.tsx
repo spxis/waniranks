@@ -25,7 +25,7 @@ export default function AdminCampaignEditorForm({
             type="text"
             value={form.id}
             onChange={(event) => onChange("id", event.target.value)}
-            placeholder="challenge_40000_jpy"
+            placeholder="challenge_target_jpy"
             className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
             disabled={disabled}
           />
