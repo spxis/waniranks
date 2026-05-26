@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { ReadingChallengeBookRecord } from "@/lib/readingSignoff";
 
@@ -45,6 +45,26 @@ export default function UserReadingDashboardBooksSection({
   }, [memberBooks, selectedMemberId]);
 
   const selectedBookTitle = selectedBookByMemberId[selectedMemberId] ?? rememberedSelectedBook;
+
+  useEffect(() => {
+    if (!editorOpen) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      setEditorOpen(false);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [editorOpen]);
 
   function handleSelectedBookChange(nextBookTitle: string) {
     setSelectedBookByMemberId((previous) => ({
