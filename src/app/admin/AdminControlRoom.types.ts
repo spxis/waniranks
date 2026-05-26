@@ -1,7 +1,5 @@
 import type { FormEvent } from "react";
 
-import type { Status } from "./AdminPage.types";
-
 export type AdminControlRoomProps = {
   nickname: string;
   token: string;
@@ -12,7 +10,6 @@ export type AdminControlRoomProps = {
   emailAllowed: boolean;
   userName: string | null;
   userEmail: string | null;
-  status: Status;
   loading: boolean;
   jlptRefreshing: boolean;
   jlptEnriching: boolean;

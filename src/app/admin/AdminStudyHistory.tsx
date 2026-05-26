@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getStoredPositiveInt, setLocalStorageItem } from "@/lib/clientStorage";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
+import { useAdminFeedback } from "./AdminFeedbackProvider";
 import AdminPanelHeader from "./AdminPanelHeader";
 import AdminPaginationControls from "./AdminPaginationControls";
 
@@ -49,11 +50,10 @@ function toLocalDateTimeInput(isoValue: string): string {
 }
 
 export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthorized: boolean }) {
+  const { confirmAction, showToast } = useAdminFeedback();
   const [data, setData] = useState<HistoryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
   const [paginationReady, setPaginationReady] = useState(false);
@@ -64,7 +64,6 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch(`/api/admin/study-history?lite=1&page=${page}&pageSize=${pageSize}`, {
@@ -81,11 +80,11 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
         setPage(payload.pagination.page);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error.");
+      showToast({ tone: "error", message: err instanceof Error ? err.message : "Could not load study history." });
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, showToast]);
 
   useEffect(() => {
     if (!sessionAuthorized) {
@@ -132,8 +131,6 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
     }
 
     setSaving(true);
-    setError(null);
-    setStatus("");
 
     try {
       const response = await fetch(`/api/admin/study-history/${encodeURIComponent(editingAttemptId)}`, {
@@ -150,25 +147,28 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
         throw new Error(payload.error ?? "Could not update study attempt.");
       }
 
-      setStatus("Study attempt updated.");
+      showToast({ tone: "success", message: "Study attempt updated." });
       setEditingAttemptId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update study attempt.");
+      showToast({ tone: "error", message: err instanceof Error ? err.message : "Could not update study attempt." });
     } finally {
       setSaving(false);
     }
   }
 
   async function deleteAttempt(attempt: Attempt) {
-    const confirmed = window.confirm(`Delete this study attempt for ${attempt.nickname}?`);
+    const confirmed = await confirmAction({
+      title: "Delete study attempt",
+      description: `Delete this study attempt for ${attempt.nickname}?`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
     if (!confirmed) {
       return;
     }
 
     setSaving(true);
-    setError(null);
-    setStatus("");
 
     try {
       const response = await fetch(`/api/admin/study-history/${encodeURIComponent(attempt.id)}`, {
@@ -184,10 +184,10 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
         setEditingAttemptId(null);
       }
 
-      setStatus("Study attempt deleted.");
+      showToast({ tone: "success", message: "Study attempt deleted." });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete study attempt.");
+      showToast({ tone: "error", message: err instanceof Error ? err.message : "Could not delete study attempt." });
     } finally {
       setSaving(false);
     }
@@ -242,16 +242,6 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
             </select>
           </label>
         </div>
-
-        {error ? (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-        ) : null}
-
-        {status ? (
-          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            {status}
-          </p>
-        ) : null}
 
         <div className="flex flex-wrap gap-4 text-sm">
           <span>

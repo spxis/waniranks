@@ -110,6 +110,8 @@ Run `pnpm quality:check` after non-trivial `src/` edits. If lint issues are auto
 
 - Distinguish loading from empty (see `docs/DRY_LEARNINGS.md` #2).
 - User-facing copy must follow `BRAND_CORE.md` / `BRAND.md` voice.
+- Admin confirmations must use shared dialog components (for example `ConfirmDialog` via `useAdminFeedback().confirmAction`). Do not use `window.confirm`.
+- Admin success/error action feedback should use shared toast feedback (for example `useAdminFeedback().showToast`) rather than inline status banners like "Saved" blocks inside cards.
 
 ## Don't touch
 

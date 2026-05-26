@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import AdminCampaignEditorForm from "./AdminCampaignEditorForm";
 import AdminChallengeSimulator from "./AdminChallengeSimulator";
+import { useAdminFeedback } from "./AdminFeedbackProvider";
 import AdminPanelHeader from "./AdminPanelHeader";
-import { CAMPAIGN_AUTH_REQUIRED_MESSAGE, fetchCampaigns, parseSimulationChallenge } from "./AdminCampaignManager.data";
+import { fetchCampaigns, parseSimulationChallenge } from "./AdminCampaignManager.data";
 import {
   CAMPAIGN_CREATE_PICKER_VALUE,
   campaignToForm,
@@ -35,6 +36,7 @@ export default function AdminCampaignManager({
   checkingSession,
   initialCampaigns = [],
 }: AdminCampaignManagerProps) {
+  const { confirmAction, showToast } = useAdminFeedback();
   const defaultCampaignId = pickDefaultCampaignId(initialCampaigns);
   const initialSelectedCampaign = initialCampaigns.find((campaign) => campaign.id === defaultCampaignId) ?? null;
 
@@ -47,11 +49,6 @@ export default function AdminCampaignManager({
   const [loading, setLoading] = useState(!checkingSession && sessionAuthorized && initialCampaigns.length === 0);
   const [saving, setSaving] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<CampaignStatus | null>(null);
-  const [status, setStatus] = useState<{ type: "idle" | "ok" | "error"; message: string }>({
-    type: "idle",
-    message: "",
-  });
-  const [loadError, setLoadError] = useState<string>("");
 
   const selectedCampaignIdRef = useRef(selectedCampaignId);
   const editorModeRef = useRef(editorMode);
@@ -83,8 +80,6 @@ export default function AdminCampaignManager({
       setSelectedCampaignId("");
       setEditorMode("create");
       setForm(createDefaultCampaignForm());
-      setLoadError(CAMPAIGN_AUTH_REQUIRED_MESSAGE);
-      setStatus({ type: "idle", message: "" });
       setLoading(false);
       return;
     }
@@ -92,8 +87,6 @@ export default function AdminCampaignManager({
     if (showSpinner) {
       setLoading(true);
     }
-    setLoadError("");
-    setStatus((previous) => (previous.type === "ok" ? previous : { type: "idle", message: "" }));
 
     try {
       const nextCampaigns = await fetchCampaigns();
@@ -122,11 +115,14 @@ export default function AdminCampaignManager({
         setForm(campaignToForm(nextSelectedCampaign));
       }
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Could not fetch campaigns.");
+      showToast({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Could not fetch campaigns.",
+      });
     } finally {
       setLoading(false);
     }
-  }, [sessionAuthorized]);
+  }, [sessionAuthorized, showToast]);
 
   useEffect(() => {
     if (checkingSession) {
@@ -145,19 +141,18 @@ export default function AdminCampaignManager({
     setEditorMode("create");
     setSelectedCampaignId("");
     setForm(createDefaultCampaignForm());
-    setStatus({ type: "idle", message: "" });
   }
 
   function beginCloneCampaign() {
     if (!selectedCampaign) {
-      setStatus({ type: "error", message: "Pick a campaign to clone first." });
+      showToast({ tone: "error", message: "Pick a campaign to clone first." });
       return;
     }
 
     setEditorMode("create");
     setSelectedCampaignId("");
     setForm(cloneCampaignToDraftForm(selectedCampaign));
-    setStatus({ type: "ok", message: "Draft clone ready. Update details and save." });
+    showToast({ tone: "success", message: "Draft clone ready. Update details and save." });
   }
 
   function handleCampaignPick(nextValue: string) {
@@ -174,7 +169,6 @@ export default function AdminCampaignManager({
     setEditorMode("edit");
     setSelectedCampaignId(nextSelectedCampaign.id);
     setForm(campaignToForm(nextSelectedCampaign));
-    setStatus({ type: "idle", message: "" });
   }
 
   async function saveCampaign() {
@@ -182,7 +176,7 @@ export default function AdminCampaignManager({
     const targetCampaignId = selectedCampaign?.id ?? "";
 
     if (isEdit && !targetCampaignId) {
-      setStatus({ type: "error", message: "Pick a campaign to edit first." });
+      showToast({ tone: "error", message: "Pick a campaign to edit first." });
       return;
     }
 
@@ -191,11 +185,16 @@ export default function AdminCampaignManager({
       : form.status !== "draft";
 
     if (shouldConfirmStatusChange) {
-      const accepted = window.confirm(statusConfirmationMessage({
-        nextStatus: form.status,
-        currentCampaignId: targetCampaignId || undefined,
-        campaigns,
-      }));
+      const accepted = await confirmAction({
+        title: "Confirm status change",
+        description: statusConfirmationMessage({
+          nextStatus: form.status,
+          currentCampaignId: targetCampaignId || undefined,
+          campaigns,
+        }),
+        confirmLabel: "Continue",
+        tone: "neutral",
+      });
 
       if (!accepted) {
         return;
@@ -203,7 +202,6 @@ export default function AdminCampaignManager({
     }
 
     setSaving(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const payload = {
@@ -234,13 +232,17 @@ export default function AdminCampaignManager({
         throw new Error(responsePayload.error ?? (isEdit ? "Could not save campaign." : "Could not create campaign."));
       }
 
-      setStatus({ type: "ok", message: isEdit ? "Campaign saved." : "Campaign created." });
+      showToast({ tone: "success", message: isEdit ? "Campaign saved." : "Campaign created." });
       setEditorMode("edit");
       await refreshCampaigns({ preferredCampaignId: responsePayload.campaign.id, showSpinner: false });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : editorMode === "edit" ? "Could not save campaign." : "Could not create campaign.",
+      showToast({
+        tone: "error",
+        message: error instanceof Error
+          ? error.message
+          : editorMode === "edit"
+            ? "Could not save campaign."
+            : "Could not create campaign.",
       });
     } finally {
       setSaving(false);
@@ -249,26 +251,30 @@ export default function AdminCampaignManager({
 
   async function updateCampaignStatus(nextStatus: CampaignStatus) {
     if (!selectedCampaign) {
-      setStatus({ type: "error", message: "Pick a campaign first." });
+      showToast({ tone: "error", message: "Pick a campaign first." });
       return;
     }
 
     if (nextStatus === selectedCampaign.status) {
-      setStatus({ type: "ok", message: "Campaign already has this status." });
+      showToast({ tone: "info", message: "Campaign already has this status." });
       return;
     }
 
-    const accepted = window.confirm(statusConfirmationMessage({
-      nextStatus,
-      currentCampaignId: selectedCampaign.id,
-      campaigns,
-    }));
+    const accepted = await confirmAction({
+      title: "Confirm status change",
+      description: statusConfirmationMessage({
+        nextStatus,
+        currentCampaignId: selectedCampaign.id,
+        campaigns,
+      }),
+      confirmLabel: "Update status",
+      tone: "neutral",
+    });
     if (!accepted) {
       return;
     }
 
     setStatusUpdating(nextStatus);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch("/api/admin/reading-campaigns/status", {
@@ -284,13 +290,10 @@ export default function AdminCampaignManager({
         throw new Error(payload.error ?? "Could not update campaign status.");
       }
 
-      setStatus({ type: "ok", message: `Campaign status set to ${payload.campaign.status}.` });
+      showToast({ tone: "success", message: `Campaign status set to ${payload.campaign.status}.` });
       await refreshCampaigns({ preferredCampaignId: payload.campaign.id, showSpinner: false });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Could not update campaign status.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not update campaign status." });
     } finally {
       setStatusUpdating(null);
     }
@@ -318,19 +321,7 @@ export default function AdminCampaignManager({
         }
       />
 
-      {loadError ? (
-        <div
-          className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
-            loadError === CAMPAIGN_AUTH_REQUIRED_MESSAGE
-              ? "border-amber-200 bg-amber-50 text-amber-800"
-              : "border-red-200 bg-red-50 text-red-700"
-          }`}
-        >
-          {loadError}
-        </div>
-      ) : null}
-
-      {!checkingSession && sessionAuthorized && campaigns.length === 0 && !loadError ? (
+      {!checkingSession && sessionAuthorized && campaigns.length === 0 ? (
         <div className="mt-3 rounded-lg border border-line bg-surface-muted px-3 py-2 text-sm text-foreground/75">
           No campaigns exist yet. Create your first draft campaign.
         </div>
@@ -436,20 +427,6 @@ export default function AdminCampaignManager({
           {saving ? "Saving..." : editorMode === "edit" ? "Save campaign changes" : "Create campaign"}
         </button>
       </div>
-
-      {status.message ? (
-        <div
-          className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
-            status.type === "error"
-              ? "border-red-200 bg-red-50 text-red-700"
-              : status.type === "ok"
-                ? "border-green-200 bg-green-50 text-green-700"
-                : "border-line bg-surface text-foreground/75"
-          }`}
-        >
-          {status.message}
-        </div>
-      ) : null}
 
       {simulatorChallenge ? <AdminChallengeSimulator challenge={simulatorChallenge} /> : null}
       {!simulatorChallenge ? (

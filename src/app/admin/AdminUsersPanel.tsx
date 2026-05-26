@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useAdminFeedback } from "./AdminFeedbackProvider";
 import AdminAccountsSection, { type AdminAccount } from "./AdminAccountsSection";
-import type { Status } from "./AdminPage.types";
 
 type AdminUsersPanelProps = {
   sessionAuthorized: boolean;
@@ -16,10 +16,10 @@ export default function AdminUsersPanel({
   checkingSession,
   viewerEmail,
 }: AdminUsersPanelProps) {
+  const { showToast } = useAdminFeedback();
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [generatedInviteCodesByAccountId, setGeneratedInviteCodesByAccountId] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
 
   async function loadAccounts() {
     const response = await fetch("/api/accounts", {
@@ -43,13 +43,12 @@ export default function AdminUsersPanel({
     }
 
     void loadAccounts().catch(() => {
-      setStatus({ type: "error", message: "Could not load account list." });
+      showToast({ tone: "error", message: "Could not load account list." });
     });
-  }, [checkingSession, sessionAuthorized]);
+  }, [checkingSession, sessionAuthorized, showToast]);
 
   async function refreshOne(accountId: string) {
     setLoading(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch(`/api/accounts/${accountId}/refresh`, {
@@ -62,17 +61,14 @@ export default function AdminUsersPanel({
       }
 
       if (!data.refreshed && data.reason) {
-        setStatus({ type: "error", message: `Skipped: ${data.reason}` });
+        showToast({ tone: "error", message: `Skipped: ${data.reason}` });
       } else {
-        setStatus({ type: "ok", message: "User refreshed." });
+        showToast({ tone: "success", message: "User refreshed." });
       }
 
       await loadAccounts();
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Refresh failed.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not refresh user." });
     } finally {
       setLoading(false);
     }
@@ -80,7 +76,6 @@ export default function AdminUsersPanel({
 
   async function assignInviteCode(accountId: string): Promise<string | null> {
     setLoading(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch(`/api/accounts/${accountId}/invite-code`, {
@@ -100,8 +95,8 @@ export default function AdminUsersPanel({
       if (data.inviteCode) {
         setGeneratedInviteCodesByAccountId((prev) => ({ ...prev, [accountId]: data.inviteCode! }));
       }
-      setStatus({
-        type: "ok",
+      showToast({
+        tone: "success",
         message: data.inviteCode
           ? `Invite code generated: ${data.inviteCode} (copied if permitted).`
           : "Invite code generated.",
@@ -109,10 +104,7 @@ export default function AdminUsersPanel({
 
       return data.inviteCode ?? null;
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Could not assign invite code.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not assign invite code." });
       return null;
     } finally {
       setLoading(false);
@@ -121,7 +113,6 @@ export default function AdminUsersPanel({
 
   async function resetInviteCode(accountId: string) {
     setLoading(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch(`/api/accounts/${accountId}/invite-code`, {
@@ -143,12 +134,9 @@ export default function AdminUsersPanel({
         delete next[accountId];
         return next;
       });
-      setStatus({ type: "ok", message: "Invite code reset." });
+      showToast({ tone: "success", message: "Invite code reset." });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Could not reset invite code.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not reset invite code." });
     } finally {
       setLoading(false);
     }
@@ -158,12 +146,6 @@ export default function AdminUsersPanel({
     <>
       {checkingSession ? (
         <p className="rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">Checking admin session...</p>
-      ) : null}
-
-      {status.message ? (
-        <p className={`rounded-2xl px-4 py-3 text-sm font-semibold ${status.type === "error" ? "border border-red-200 bg-red-50 text-red-800" : "border border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
-          {status.message}
-        </p>
       ) : null}
 
       {!checkingSession && !sessionAuthorized ? (

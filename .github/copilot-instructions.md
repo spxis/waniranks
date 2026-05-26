@@ -68,6 +68,10 @@ Always run `pnpm quality:check` after non-trivial edits in `src/`. If lint issue
 - **Admin endpoints**: must verify `x-admin-key` via `src/lib/admin.ts`.
 - **Async UI**: distinguish loading from empty — see DRY learning #2 in
   `docs/DRY_LEARNINGS.md`.
+- **Admin confirmations**: use shared confirmation dialog flows (for example
+  `ConfirmDialog` via `useAdminFeedback().confirmAction`), never `window.confirm`.
+- **Admin action feedback**: use shared toast feedback (`useAdminFeedback().showToast`) for
+  success/error messages instead of inline status banners.
 - **Component constants**: within a component group/folder, use one shared
   constants file (for example `StudyExplorer.constants.ts`) rather than one
   constants file per component file.

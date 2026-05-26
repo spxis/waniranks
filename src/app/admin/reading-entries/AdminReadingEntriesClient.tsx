@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { Status } from "@/app/admin/AdminPage.types";
+import { useAdminFeedback } from "@/app/admin/AdminFeedbackProvider";
 import AdminPanelHeader from "@/app/admin/AdminPanelHeader";
 
 import AdminPaginationControls from "@/app/admin/AdminPaginationControls";
@@ -63,10 +63,10 @@ export default function AdminReadingEntriesClient({
   sessionAuthorized: sessionAuthorizedProp,
   checkingSession: checkingSessionProp,
 }: AdminReadingEntriesClientProps) {
+  const { confirmAction, showToast } = useAdminFeedback();
   const hasSessionProps = typeof sessionAuthorizedProp === "boolean" && typeof checkingSessionProp === "boolean";
   const sessionAuthorized = hasSessionProps ? sessionAuthorizedProp : false;
   const checkingSession = hasSessionProps ? checkingSessionProp : true;
-  const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
 
   const [monthFilter, setMonthFilter] = useState("");
   const [accountFilter, setAccountFilter] = useState("all");
@@ -123,14 +123,11 @@ export default function AdminReadingEntriesClient({
 
       setData(payload);
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Could not load check-ins.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not load check-ins." });
     } finally {
       setLoading(false);
     }
-  }, [queryString, sessionAuthorized]);
+  }, [queryString, sessionAuthorized, showToast]);
 
   useEffect(() => {
     if (checkingSession || !sessionAuthorized) {
@@ -141,7 +138,6 @@ export default function AdminReadingEntriesClient({
   }, [checkingSession, loadEntries, sessionAuthorized]);
 
   function beginEdit(entry: AdminReadingEntry) {
-    setStatus({ type: "idle", message: "" });
     setEditingEntryId(entry.id);
     setDraft({
       source: entry.source,
@@ -166,7 +162,6 @@ export default function AdminReadingEntriesClient({
     }
 
     setSaving(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const submittedAt = draft.source === "entry"
@@ -194,27 +189,28 @@ export default function AdminReadingEntriesClient({
         throw new Error(getErrorMessage(payload, "Could not update check-in."));
       }
 
-      setStatus({ type: "ok", message: "Check-in updated." });
+      showToast({ tone: "success", message: "Check-in updated." });
       cancelEdit();
       await loadEntries();
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Could not update check-in.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not update check-in." });
     } finally {
       setSaving(false);
     }
   }
 
   async function deleteEntry(entry: AdminReadingEntry) {
-    const confirmed = window.confirm(`Delete this check-in for ${entry.nickname} on ${entry.signoffDatePst}?`);
+    const confirmed = await confirmAction({
+      title: "Delete check-in",
+      description: `Delete this check-in for ${entry.nickname} on ${entry.signoffDatePst}?`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
     if (!confirmed) {
       return;
     }
 
     setSaving(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch(`/api/admin/reading-signoff-entries/${encodeURIComponent(entry.id)}`, {
@@ -226,7 +222,7 @@ export default function AdminReadingEntriesClient({
         throw new Error(getErrorMessage(payload, "Could not delete check-in."));
       }
 
-      setStatus({ type: "ok", message: "Check-in deleted." });
+      showToast({ tone: "success", message: "Check-in deleted." });
 
       if (entries.length === 1 && page > 1) {
         setPage((prev) => Math.max(1, prev - 1));
@@ -238,10 +234,7 @@ export default function AdminReadingEntriesClient({
         cancelEdit();
       }
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Could not delete check-in.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not delete check-in." });
     } finally {
       setSaving(false);
     }
@@ -264,18 +257,6 @@ export default function AdminReadingEntriesClient({
       {!checkingSession && !sessionAuthorized ? (
         <p className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">
           Admin tools are hidden. Sign in with an allowlisted Google account.
-        </p>
-      ) : null}
-
-      {status.message ? (
-        <p
-          className={`mt-4 rounded-2xl px-4 py-3 text-sm font-semibold ${
-            status.type === "error"
-              ? "border border-red-200 bg-red-50 text-red-800"
-              : "border border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}
-        >
-          {status.message}
         </p>
       ) : null}
 

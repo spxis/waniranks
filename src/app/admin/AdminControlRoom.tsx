@@ -23,7 +23,6 @@ export default function AdminControlRoom({
   emailAllowed,
   userName,
   userEmail,
-  status,
   loading,
   jlptRefreshing,
   jlptEnriching,
@@ -164,18 +163,6 @@ export default function AdminControlRoom({
           Admin tools hidden. Sign in with an allowlisted Google account.
         </div>
       )}
-
-      {status.message ? (
-        <p
-          className={`mt-5 rounded-2xl px-4 py-3 text-sm font-semibold ${
-            status.type === "error"
-              ? "border border-red-200 bg-red-50 text-red-800"
-              : "border border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}
-        >
-          {status.message}
-        </p>
-      ) : null}
     </section>
   );
 }

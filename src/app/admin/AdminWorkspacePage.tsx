@@ -8,7 +8,8 @@ import UserHeaderMenu from "../users/[nickname]/UserHeaderMenu";
 import AdminCampaignManager from "./AdminCampaignManager";
 import AdminControlRoom from "./AdminControlRoom";
 import type { CampaignRecord } from "./AdminCampaignManager.types";
-import type { AdminSessionStatus, Status } from "./AdminPage.types";
+import AdminFeedbackProvider, { useAdminFeedback } from "./AdminFeedbackProvider";
+import type { AdminSessionStatus } from "./AdminPage.types";
 import AdminStudyHistory from "./AdminStudyHistory";
 import AdminUsersPanel from "./AdminUsersPanel";
 import AdminReadingEntriesClient from "./reading-entries/AdminReadingEntriesClient";
@@ -38,6 +39,23 @@ export default function AdminWorkspacePage({
   initialSession,
   initialCampaigns = [],
 }: AdminWorkspacePageProps) {
+  return (
+    <AdminFeedbackProvider>
+      <AdminWorkspacePageContent
+        activeTab={activeTab}
+        initialSession={initialSession}
+        initialCampaigns={initialCampaigns}
+      />
+    </AdminFeedbackProvider>
+  );
+}
+
+function AdminWorkspacePageContent({
+  activeTab,
+  initialSession,
+  initialCampaigns = [],
+}: AdminWorkspacePageProps) {
+  const { showToast } = useAdminFeedback();
   const [nickname, setNickname] = useState("");
   const [token, setToken] = useState("");
   const hasInitialSession = Boolean(initialSession);
@@ -48,7 +66,6 @@ export default function AdminWorkspacePage({
   const [emailAllowed, setEmailAllowed] = useState(Boolean(initialSession?.emailAllowed));
   const [userName, setUserName] = useState<string | null>(initialSession?.user?.name ?? null);
   const [userEmail, setUserEmail] = useState<string | null>(initialSession?.user?.email ?? null);
-  const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
   const [loading, setLoading] = useState(false);
   const [jlptRefreshing, setJlptRefreshing] = useState(false);
   const [jlptEnriching, setJlptEnriching] = useState(false);
@@ -98,14 +115,12 @@ export default function AdminWorkspacePage({
 
   async function completeGoogleSignOut() {
     setLoading(true);
-    setStatus({ type: "idle", message: "" });
     window.location.href = "/signout?callbackUrl=/admin&clearAdmin=1";
   }
 
   async function addAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch("/api/accounts", {
@@ -123,12 +138,9 @@ export default function AdminWorkspacePage({
 
       setNickname("");
       setToken("");
-      setStatus({ type: "ok", message: "Account saved." });
+      showToast({ tone: "success", message: "Account saved." });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Request failed.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not save account." });
     } finally {
       setLoading(false);
     }
@@ -136,7 +148,6 @@ export default function AdminWorkspacePage({
 
   async function refreshAll() {
     setLoading(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch("/api/leaderboard/refresh", {
@@ -148,12 +159,9 @@ export default function AdminWorkspacePage({
         throw new Error(data.error ?? "Refresh failed.");
       }
 
-      setStatus({ type: "ok", message: "Leaderboard refreshed." });
+      showToast({ tone: "success", message: "Leaderboard refreshed." });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Refresh failed.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not refresh leaderboard." });
     } finally {
       setLoading(false);
     }
@@ -161,7 +169,6 @@ export default function AdminWorkspacePage({
 
   async function refreshJlptList() {
     setJlptRefreshing(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch("/api/jlpt/refresh", {
@@ -173,15 +180,9 @@ export default function AdminWorkspacePage({
         throw new Error(data.error ?? "JLPT list refresh failed.");
       }
 
-      setStatus({
-        type: "ok",
-        message: `JLPT list refreshed (${data.count ?? 0} records).`,
-      });
+      showToast({ tone: "success", message: `JLPT list refreshed (${data.count ?? 0} records).` });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "JLPT list refresh failed.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not refresh JLPT list." });
     } finally {
       setJlptRefreshing(false);
     }
@@ -189,7 +190,6 @@ export default function AdminWorkspacePage({
 
   async function enrichJlptKanji() {
     setJlptEnriching(true);
-    setStatus({ type: "idle", message: "" });
 
     try {
       const response = await fetch("/api/jlpt/enrich", {
@@ -212,15 +212,12 @@ export default function AdminWorkspacePage({
         throw new Error(data.error ?? "JLPT enrichment failed.");
       }
 
-      setStatus({
-        type: "ok",
+      showToast({
+        tone: "success",
         message: `JLPT enriched chunk processed=${data.processed ?? 0}, updated=${data.updated ?? 0}, failed=${data.failed ?? 0}, remaining=${data.remaining ?? 0}.`,
       });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "JLPT enrichment failed.",
-      });
+      showToast({ tone: "error", message: error instanceof Error ? error.message : "Could not enrich JLPT data." });
     } finally {
       setJlptEnriching(false);
     }
@@ -277,7 +274,6 @@ export default function AdminWorkspacePage({
               emailAllowed={emailAllowed}
               userName={userName}
               userEmail={userEmail}
-              status={status}
               loading={loading}
               jlptRefreshing={jlptRefreshing}
               jlptEnriching={jlptEnriching}
