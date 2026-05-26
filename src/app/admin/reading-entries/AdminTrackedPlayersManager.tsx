@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { AdminReadingEntryMember } from "./AdminReadingEntries.types";
 
 type AdminTrackedPlayersManagerProps = {
@@ -51,21 +53,29 @@ export default function AdminTrackedPlayersManager({
             const updating = trackingUpdatingAccountId === member.id;
 
             return (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => {
-                  onToggleTrackedMember(member.id, !tracked);
-                }}
-                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${
-                  tracked
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                    : "border-line bg-surface text-foreground/70"
-                }`}
-                disabled={controlsDisabled}
-              >
-                {member.nickname}: {updating ? "Saving..." : tracked ? "On" : "Off"}
-              </button>
+              <div key={member.id} className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleTrackedMember(member.id, !tracked);
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${
+                    tracked
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                      : "border-line bg-surface text-foreground/70"
+                  }`}
+                  disabled={controlsDisabled}
+                >
+                  {member.nickname}: {updating ? "Saving..." : tracked ? "On" : "Off"}
+                </button>
+
+                <Link
+                  href={`/users/${encodeURIComponent(member.wkUsername)}?dashboard=read`}
+                  className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80 hover:bg-surface"
+                >
+                  Open challenge
+                </Link>
+              </div>
             );
           })}
         </div>

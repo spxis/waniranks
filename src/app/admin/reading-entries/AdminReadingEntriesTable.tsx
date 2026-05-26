@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
 import type { AdminReadingEntry, EntryEditDraft } from "./AdminReadingEntries.types";
@@ -104,7 +106,12 @@ export default function AdminReadingEntriesTable({
                 </td>
 
                 <td className="whitespace-nowrap px-3 py-2">
-                  <p className="font-semibold text-foreground/90">{entry.nickname}</p>
+                  <Link
+                    href={`/users/${encodeURIComponent(entry.wkUsername)}?dashboard=read`}
+                    className="font-semibold text-foreground/90 underline-offset-2 hover:text-accent hover:underline"
+                  >
+                    {entry.nickname}
+                  </Link>
                   <p className="text-[11px] text-foreground/60">{entry.wkUsername}</p>
                 </td>
 
