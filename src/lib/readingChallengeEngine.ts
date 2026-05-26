@@ -25,6 +25,7 @@ export type ReadingChallengeLeaderboardRow = {
   perfectDays: number;
   weeklyYen: number[];
   weeklyBaseYen: number[];
+  weeklyBonusYen: number[];
   weeklyCatchupBonusYen: number[];
 };
 
@@ -164,6 +165,9 @@ export function computeChallengeLeaderboard(input: {
   return input.members.map((member) => {
     const byDate = signoffByMemberByDate.get(member.id) ?? new Map<string, ReadingSignoffLike>();
     const weeklyScores = challenge.scoringRules.weeklyCaps.map(() => 0);
+    const weeklyPagesBonusYen = challenge.scoringRules.weeklyCaps.map(() => 0);
+    const weeklyMinutesBonusYen = challenge.scoringRules.weeklyCaps.map(() => 0);
+    const weeklyZeroReviewsBonusYen = challenge.scoringRules.weeklyCaps.map(() => 0);
     const weeklyCatchupBonusYen = challenge.scoringRules.weeklyCaps.map(() => 0);
     const weekOutcomesByIndex = new Map<number, DayOutcome[]>();
 
@@ -171,10 +175,6 @@ export function computeChallengeLeaderboard(input: {
     let weekStreak = 0;
     let previousWeekIndex = -1;
     let perfectDays = 0;
-
-    let pagesBonusYen = 0;
-    let minutesBonusYen = 0;
-    let zeroReviewsBonusYen = 0;
 
     for (let cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
       const dateKey = toDateKeyUtc(cursor);
@@ -187,9 +187,11 @@ export function computeChallengeLeaderboard(input: {
         previousWeekIndex = weekIndex;
       }
 
-      pagesBonusYen += outcome.pagesBonusYen;
-      minutesBonusYen += outcome.minutesBonusYen;
-      zeroReviewsBonusYen += outcome.zeroReviewsBonusYen;
+      if (weekIndex >= 0 && weekIndex < weeklyScores.length) {
+        weeklyPagesBonusYen[weekIndex] += outcome.pagesBonusYen;
+        weeklyMinutesBonusYen[weekIndex] += outcome.minutesBonusYen;
+        weeklyZeroReviewsBonusYen[weekIndex] += outcome.zeroReviewsBonusYen;
+      }
 
       if (outcome.perfect) {
         streak += 1;
@@ -225,12 +227,23 @@ export function computeChallengeLeaderboard(input: {
       weeklyCatchupBonusYen[weekIndex] = computeWeeklyCatchupBonus(challenge, outcomes);
     }
 
+    const weeklyRawBonusYen = weeklyScores.map((_, index) => (
+      weeklyPagesBonusYen[index] +
+      weeklyMinutesBonusYen[index] +
+      weeklyZeroReviewsBonusYen[index] +
+      weeklyCatchupBonusYen[index]
+    ));
+
+    const weeklyBonusYen = weeklyRawBonusYen.map((value, index) => {
+      const cap = challenge.scoringRules.bonuses.weeklyCapYen[index];
+      if (typeof cap !== "number") {
+        return Math.max(0, value);
+      }
+      return Math.max(0, Math.min(cap, value));
+    });
+
     const baseYen = weeklyBaseYen.reduce((sum, value) => sum + value, 0);
-    const bonusYen =
-      pagesBonusYen +
-      minutesBonusYen +
-      zeroReviewsBonusYen +
-      weeklyCatchupBonusYen.reduce((sum, value) => sum + value, 0);
+    const bonusYen = weeklyBonusYen.reduce((sum, value) => sum + value, 0);
 
     return {
       accountId: member.id,
@@ -239,8 +252,9 @@ export function computeChallengeLeaderboard(input: {
       bonusYen,
       currentStreak: streak,
       perfectDays,
-      weeklyYen: weeklyBaseYen.map((value, index) => value + weeklyCatchupBonusYen[index]),
+      weeklyYen: weeklyBaseYen.map((value, index) => value + weeklyBonusYen[index]),
       weeklyBaseYen,
+      weeklyBonusYen,
       weeklyCatchupBonusYen,
     };
   });

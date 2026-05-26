@@ -36,4 +36,15 @@ describe("runReadingChallengeSimulation", () => {
     expect(failureRecovery!.weeklyCatchupBonusYen.some((value) => value > 0)).toBe(true);
     expect(failureRecovery!.totalYen).toBeGreaterThan(failureRecovery!.baseYen);
   });
+
+  it("caps total bonuses per week for max effort scenario", () => {
+    const results = runReadingChallengeSimulation(ACTIVE_READING_CHALLENGE);
+    const maximal = results.find((row) => row.scenarioId === "maximal_every_day");
+
+    expect(maximal).toBeTruthy();
+
+    const weeklyCaps = ACTIVE_READING_CHALLENGE.scoringRules.bonuses.weeklyCapYen;
+    expect(maximal!.weeklyBonusYen.every((value, index) => value <= (weeklyCaps[index] ?? Number.POSITIVE_INFINITY))).toBe(true);
+    expect(maximal!.bonusYen).toBeLessThanOrEqual(weeklyCaps.reduce((sum, value) => sum + value, 0));
+  });
 });

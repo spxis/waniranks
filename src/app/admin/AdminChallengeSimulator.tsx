@@ -44,6 +44,7 @@ export default function AdminChallengeSimulator({
               <th className="px-3 py-2">Bonus</th>
               <th className="px-3 py-2">Total</th>
               <th className="px-3 py-2">Perfect days</th>
+              <th className="px-3 py-2">Weekly bonus (capped)</th>
               <th className="px-3 py-2">Weekly payout</th>
             </tr>
           </thead>
@@ -58,6 +59,9 @@ export default function AdminChallengeSimulator({
                 <td className="px-3 py-2 font-bold text-accent">{formatYen(row.totalYen)}</td>
                 <td className="px-3 py-2 text-foreground/80">{row.perfectDays}</td>
                 <td className="px-3 py-2 text-xs text-foreground/75">
+                  {row.weeklyBonusYen.map((value, index) => `W${index + 1}:${value.toLocaleString("en-US")}`).join(" · ")}
+                </td>
+                <td className="px-3 py-2 text-xs text-foreground/75">
                   {row.weeklyYen.map((value, index) => `W${index + 1}:${value.toLocaleString("en-US")}`).join(" · ")}
                 </td>
               </tr>
@@ -67,9 +71,9 @@ export default function AdminChallengeSimulator({
       </div>
 
       <details className="mt-3 rounded-xl border border-line bg-surface-muted p-3">
-        <summary className="cursor-pointer text-sm font-bold text-foreground">Scoring rules JSON</summary>
+        <summary className="cursor-pointer text-sm font-bold text-foreground">Challenge definition JSON</summary>
         <pre className="mt-2 overflow-x-auto rounded-lg bg-surface p-2 text-xs text-foreground/80">
-          {JSON.stringify(challenge.scoringRules, null, 2)}
+          {JSON.stringify(challenge, null, 2)}
         </pre>
       </details>
     </section>

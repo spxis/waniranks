@@ -14,6 +14,7 @@ export type ReadingChallengeScoringRules = {
     minutes: number;
   };
   bonuses: {
+    weeklyCapYen: number[];
     pages: {
       threshold: number;
       yen: number;
@@ -74,6 +75,7 @@ export const FIRST_READING_CHALLENGE: ReadingChallengeDefinition = {
       minutes: 15,
     },
     bonuses: {
+      weeklyCapYen: [900, 950, 1000, 1050, 1100, 1150, 1200, 1250],
       pages: {
         threshold: 15,
         yen: 250,

@@ -19,6 +19,7 @@ export type ReadingChallengeSimulationResult = {
   bonusYen: number;
   weeklyYen: number[];
   weeklyBaseYen: number[];
+  weeklyBonusYen: number[];
   weeklyCatchupBonusYen: number[];
   perfectDays: number;
 };
@@ -170,6 +171,7 @@ export function runReadingChallengeSimulation(
       bonusYen: row.bonusYen,
       weeklyYen: row.weeklyYen,
       weeklyBaseYen: row.weeklyBaseYen,
+      weeklyBonusYen: row.weeklyBonusYen,
       weeklyCatchupBonusYen: row.weeklyCatchupBonusYen,
       perfectDays: row.perfectDays,
     };
