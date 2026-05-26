@@ -4,30 +4,9 @@ import { z } from "zod";
 import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { isAuthorizedAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { isPstDateKey } from "@/lib/readingSignoff";
+import { readingChallengeMutationSchema } from "@/lib/readingChallengeValidation";
 
-const campaignStatusSchema = z.enum(["draft", "active", "completed", "archived"]);
-const scoringRulesSchema = z.record(z.string(), z.unknown());
-
-const campaignMutationSchema = z.object({
-  id: z.string().min(1).max(120).optional(),
-  slug: z.string().trim().min(2).max(120),
-  name: z.string().trim().min(2).max(120),
-  description: z.string().trim().min(2).max(280),
-  status: campaignStatusSchema,
-  currencyCode: z.literal("JPY"),
-  startDatePst: z.string().refine((value) => isPstDateKey(value), {
-    message: "Invalid start date.",
-  }),
-  goalDatePst: z.string().refine((value) => isPstDateKey(value), {
-    message: "Invalid goal date.",
-  }),
-  tripDatePst: z.string().refine((value) => isPstDateKey(value), {
-    message: "Invalid trip date.",
-  }),
-  targetBaseYen: z.number().int().min(0).max(500_000),
-  scoringRules: scoringRulesSchema,
-});
+const campaignMutationSchema = readingChallengeMutationSchema;
 
 const patchBodySchema = campaignMutationSchema.extend({
   id: z.string().min(1).max(120),

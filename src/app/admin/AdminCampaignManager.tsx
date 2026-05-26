@@ -1,87 +1,19 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
-type CampaignStatus = "draft" | "active" | "completed" | "archived";
-type CampaignRecord = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  status: CampaignStatus;
-  currencyCode: "JPY";
-  startDatePst: string;
-  goalDatePst: string;
-  tripDatePst: string;
-  targetBaseYen: number;
-  scoringRules: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-};
-type CampaignForm = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  status: CampaignStatus;
-  currencyCode: "JPY";
-  startDatePst: string;
-  goalDatePst: string;
-  tripDatePst: string;
-  targetBaseYen: number;
-  scoringRulesText: string;
-};
-type CampaignsResponse = {
-  campaigns: CampaignRecord[];
-  error?: string;
-};
-type CampaignMutationResponse = {
-  campaign: CampaignRecord;
-  error?: string;
-};
-
-const STATUS_OPTIONS: CampaignStatus[] = ["draft", "active", "completed", "archived"];
-const DEFAULT_SCORING_RULES_TEXT = JSON.stringify(ACTIVE_READING_CHALLENGE.scoringRules, null, 2);
-
-function createDefaultCampaignForm(): CampaignForm {
-  return {
-    id: "",
-    slug: "",
-    name: "",
-    description: "",
-    status: "draft",
-    currencyCode: "JPY",
-    startDatePst: ACTIVE_READING_CHALLENGE.startDatePst,
-    goalDatePst: ACTIVE_READING_CHALLENGE.goalDatePst,
-    tripDatePst: ACTIVE_READING_CHALLENGE.tripDatePst,
-    targetBaseYen: ACTIVE_READING_CHALLENGE.targetBaseYen,
-    scoringRulesText: DEFAULT_SCORING_RULES_TEXT,
-  };
-}
-
-function campaignToForm(campaign: CampaignRecord): CampaignForm {
-  return {
-    id: campaign.id,
-    slug: campaign.slug,
-    name: campaign.name,
-    description: campaign.description,
-    status: campaign.status,
-    currencyCode: campaign.currencyCode,
-    startDatePst: campaign.startDatePst,
-    goalDatePst: campaign.goalDatePst,
-    tripDatePst: campaign.tripDatePst,
-    targetBaseYen: campaign.targetBaseYen,
-    scoringRulesText: JSON.stringify(campaign.scoringRules, null, 2),
-  };
-}
-
-function parseScoringRules(scoringRulesText: string): Record<string, unknown> {
-  const parsed = JSON.parse(scoringRulesText) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Scoring rules JSON must be an object.");
-  }
-
-  return parsed as Record<string, unknown>;
-}
+import {
+  CAMPAIGN_STATUS_OPTIONS,
+  campaignToForm,
+  createDefaultCampaignForm,
+  parseScoringRules,
+  shouldConfirmActivation,
+} from "./AdminCampaignManager.lib";
+import type {
+  CampaignForm,
+  CampaignMutationResponse,
+  CampaignRecord,
+  CampaignStatus,
+  CampaignsResponse,
+} from "./AdminCampaignManager.types";
 
 async function fetchCampaigns(): Promise<CampaignRecord[]> {
   const response = await fetch("/api/admin/reading-campaigns", { cache: "no-store" });
@@ -180,6 +112,19 @@ export default function AdminCampaignManager() {
     setSavingEdit(true);
     setStatus({ type: "idle", message: "" });
     try {
+      if (shouldConfirmActivation({
+        nextStatus: editForm.status,
+        currentCampaignId: selectedCampaign.id,
+        campaigns,
+      })) {
+        const accepted = window.confirm(
+          "Set this campaign as active and mark other active campaigns as completed?",
+        );
+        if (!accepted) {
+          return;
+        }
+      }
+
       const response = await fetch("/api/admin/reading-campaigns", {
         method: "PATCH",
         headers: {
@@ -221,6 +166,15 @@ export default function AdminCampaignManager() {
     setSavingCreate(true);
     setStatus({ type: "idle", message: "" });
     try {
+      if (shouldConfirmActivation({ nextStatus: createForm.status, campaigns })) {
+        const accepted = window.confirm(
+          "Set this campaign as active and mark other active campaigns as completed?",
+        );
+        if (!accepted) {
+          return;
+        }
+      }
+
       const response = await fetch("/api/admin/reading-campaigns", {
         method: "POST",
         headers: {
@@ -397,7 +351,7 @@ function CampaignEditorForm({ form, onChange, disabled, includeIdInput = false }
             className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
             disabled={disabled}
           >
-            {STATUS_OPTIONS.map((status) => (
+            {CAMPAIGN_STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>
