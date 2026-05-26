@@ -164,6 +164,134 @@ export default function AdminScoringRulesBuilder({ value, disabled, onChange }: 
           />
         </label>
       </div>
+
+      <div className="grid gap-3 rounded-lg border border-line bg-surface p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <p className="sm:col-span-2 lg:col-span-4 text-xs font-bold uppercase tracking-widest text-foreground/65">Bonus rules</p>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Pages bonus threshold
+          <input
+            type="number"
+            min={0}
+            value={rules?.bonuses.pages.threshold ?? ""}
+            onChange={(event) => apply((next) => { next.bonuses.pages.threshold = Number(event.target.value || 0); })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Pages bonus yen
+          <input
+            type="number"
+            min={0}
+            value={rules?.bonuses.pages.yen ?? ""}
+            onChange={(event) => apply((next) => { next.bonuses.pages.yen = Number(event.target.value || 0); })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Minutes bonus threshold
+          <input
+            type="number"
+            min={0}
+            value={rules?.bonuses.minutes.threshold ?? ""}
+            onChange={(event) => apply((next) => { next.bonuses.minutes.threshold = Number(event.target.value || 0); })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Minutes bonus yen
+          <input
+            type="number"
+            min={0}
+            value={rules?.bonuses.minutes.yen ?? ""}
+            onChange={(event) => apply((next) => { next.bonuses.minutes.yen = Number(event.target.value || 0); })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+
+        <label className="flex items-center gap-2 text-xs font-semibold text-foreground/75">
+          <input
+            type="checkbox"
+            checked={rules?.bonuses.zeroReviews.enabled ?? false}
+            onChange={(event) => apply((next) => { next.bonuses.zeroReviews.enabled = event.target.checked; })}
+            className="size-4 rounded border-line"
+            disabled={disabled || !rules}
+          />
+          Enable zero reviews bonus
+        </label>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Zero reviews bonus yen
+          <input
+            type="number"
+            min={0}
+            value={rules?.bonuses.zeroReviews.yen ?? ""}
+            onChange={(event) => apply((next) => { next.bonuses.zeroReviews.yen = Number(event.target.value || 0); })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+
+        <label className="flex items-center gap-2 text-xs font-semibold text-foreground/75">
+          <input
+            type="checkbox"
+            checked={rules?.bonuses.catchupStrongFinish.enabled ?? false}
+            onChange={(event) => apply((next) => { next.bonuses.catchupStrongFinish.enabled = event.target.checked; })}
+            className="size-4 rounded border-line"
+            disabled={disabled || !rules}
+          />
+          Enable catch-up strong finish bonus
+        </label>
+
+        <label className="flex items-center gap-2 text-xs font-semibold text-foreground/75">
+          <input
+            type="checkbox"
+            checked={rules?.bonuses.catchupStrongFinish.requiresEarlierFailureInWeek ?? false}
+            onChange={(event) => apply((next) => {
+              next.bonuses.catchupStrongFinish.requiresEarlierFailureInWeek = event.target.checked;
+            })}
+            className="size-4 rounded border-line"
+            disabled={disabled || !rules}
+          />
+          Require earlier failure in week
+        </label>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Strong finish perfect days
+          <input
+            type="number"
+            min={0}
+            max={7}
+            value={rules?.bonuses.catchupStrongFinish.strongFinishPerfectDays ?? ""}
+            onChange={(event) => apply((next) => {
+              next.bonuses.catchupStrongFinish.strongFinishPerfectDays = Number(event.target.value || 0);
+            })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+
+        <label className="text-xs font-semibold text-foreground/75">
+          Yen per strong finish day
+          <input
+            type="number"
+            min={0}
+            value={rules?.bonuses.catchupStrongFinish.yenPerStrongFinishDay ?? ""}
+            onChange={(event) => apply((next) => {
+              next.bonuses.catchupStrongFinish.yenPerStrongFinishDay = Number(event.target.value || 0);
+            })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+      </div>
     </div>
   );
 }
