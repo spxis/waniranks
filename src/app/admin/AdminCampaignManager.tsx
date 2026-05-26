@@ -338,29 +338,28 @@ export default function AdminCampaignManager({
       ) : null}
 
       <div className="mt-4 rounded-xl border border-line bg-surface-muted/60 p-4">
-        <label className="block text-xs font-bold uppercase tracking-widest text-foreground/70" htmlFor="campaign-picker">
-          Campaign
-        </label>
-        <select
-          id="campaign-picker"
-          value={editorMode === "create" ? CAMPAIGN_CREATE_PICKER_VALUE : selectedCampaignId}
-          onChange={(event) => handleCampaignPick(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-          disabled={formDisabled}
-        >
-          <option value={CAMPAIGN_CREATE_PICKER_VALUE}>Create a new draft campaign</option>
-          {campaigns.map((campaign) => (
-            <option key={campaign.id} value={campaign.id}>
-              {campaign.name} ({campaign.status})
-            </option>
-          ))}
-        </select>
-
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+          <label className="block text-xs font-bold uppercase tracking-widest text-foreground/70" htmlFor="campaign-picker">
+            Campaign
+            <select
+              id="campaign-picker"
+              value={editorMode === "create" ? CAMPAIGN_CREATE_PICKER_VALUE : selectedCampaignId}
+              onChange={(event) => handleCampaignPick(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+              disabled={formDisabled}
+            >
+              <option value={CAMPAIGN_CREATE_PICKER_VALUE}>Create a new draft campaign</option>
+              {campaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>
+                  {campaign.name} ({campaign.status})
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             onClick={beginCreateCampaign}
-            className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-3 text-xs font-bold uppercase tracking-[0.1em] text-slate-700 transition hover:bg-surface-muted disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-widest text-slate-700 transition hover:bg-surface-muted disabled:opacity-60"
             disabled={formDisabled}
           >
             New draft
@@ -368,7 +367,7 @@ export default function AdminCampaignManager({
           <button
             type="button"
             onClick={beginCloneCampaign}
-            className="inline-flex h-9 items-center justify-center rounded-full border border-line bg-surface px-3 text-xs font-bold uppercase tracking-[0.1em] text-slate-700 transition hover:bg-surface-muted disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-widest text-slate-700 transition hover:bg-surface-muted disabled:opacity-60"
             disabled={formDisabled || !selectedCampaign || editorMode === "create"}
           >
             Clone selected
@@ -376,7 +375,7 @@ export default function AdminCampaignManager({
         </div>
 
         {editorMode === "edit" ? (
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => {

@@ -32,7 +32,13 @@ export default function AdminReadingEntriesTable({
   onDeleteEntry,
 }: AdminReadingEntriesTableProps) {
   return (
-    <div className="mt-4 overflow-auto rounded-xl border border-line">
+    <div className="relative mt-4 min-h-96 overflow-auto rounded-xl border border-line">
+      {loading ? (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-end bg-white/45 p-3">
+          <p className="rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold text-foreground/75">Loading...</p>
+        </div>
+      ) : null}
+
       <table className="w-full min-w-205 text-left text-xs sm:text-sm">
         <thead className="bg-surface-muted text-[11px] uppercase tracking-[0.08em] text-foreground/70">
           <tr>
@@ -52,7 +58,7 @@ export default function AdminReadingEntriesTable({
           {entries.length === 0 ? (
             <tr>
               <td colSpan={10} className="px-3 py-6 text-center text-sm text-foreground/70">
-                No check-ins found for the selected filters.
+                {loading ? "Loading check-ins..." : "No check-ins found for the selected filters."}
               </td>
             </tr>
           ) : null}

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { Status } from "@/app/admin/AdminPage.types";
 
+import AdminPaginationControls from "@/app/admin/AdminPaginationControls";
+
 import AdminReadingEntriesTable from "./AdminReadingEntriesTable";
 import type {
   AdminReadingEntry,
@@ -386,8 +388,6 @@ export default function AdminReadingEntriesClient({
                 </span>
               </div>
 
-              {loading ? <p className="mt-4 text-sm text-foreground/70">Loading...</p> : null}
-
               <AdminReadingEntriesTable
                 entries={entries}
                 editingEntryId={editingEntryId}
@@ -406,24 +406,15 @@ export default function AdminReadingEntriesClient({
                 }}
               />
 
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={page <= 1 || loading || saving}
-                  className="h-9 rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPage((prev) => Math.min(pagination.pageCount, prev + 1))}
-                  disabled={page >= pagination.pageCount || loading || saving}
-                  className="h-9 rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Next
-                </button>
-              </div>
+              <AdminPaginationControls
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                itemLabel="check-ins"
+                total={pagination.total}
+                onPrevious={() => setPage((prev) => Math.max(1, prev - 1))}
+                onNext={() => setPage((prev) => Math.min(pagination.pageCount, prev + 1))}
+                disabled={loading || saving}
+              />
         </>
       ) : null}
     </section>

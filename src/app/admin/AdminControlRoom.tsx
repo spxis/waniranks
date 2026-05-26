@@ -35,10 +35,10 @@ export default function AdminControlRoom({
   onEnrichJlptKanji,
 }: AdminControlRoomProps) {
   return (
-    <section className="animate-enter rounded-[2rem] border border-line bg-surface/90 p-6 shadow-[0_24px_80px_rgba(15,111,255,0.15)] backdrop-blur sm:p-8">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Control room</p>
+    <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-widest text-accent">Control room</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <h1 className="text-4xl leading-[0.95] text-foreground sm:text-5xl">Admin Panel</h1>
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Admin Panel</h1>
         <AdminStatusBadge
           checkingSession={checkingSession}
           sessionAuthorized={sessionAuthorized}
@@ -46,7 +46,7 @@ export default function AdminControlRoom({
           emailAllowed={emailAllowed}
         />
       </div>
-      <p className="mt-3 text-sm text-slate-700 sm:text-base">
+      <p className="mt-3 text-sm text-foreground/75">
         Manage family accounts, rotate tokens, and push fresh stats to the leaderboard.
         Admin access requires Google OAuth and allowlisted emails.
       </p>
@@ -58,21 +58,21 @@ export default function AdminControlRoom({
             onClick={() => {
               void startGoogleSignIn("/admin", "select_account");
             }}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-widest text-slate-800 transition hover:bg-surface-muted"
           >
             Sign in with Google
           </button>
           <button
             type="button"
             onClick={onCompleteGoogleSignOut}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-widest text-slate-800 transition hover:bg-surface-muted"
           >
             Sign out completely
           </button>
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-2xl border border-line bg-surface-muted px-4 py-3 text-sm text-slate-700">
+      <div className="mt-4 rounded-2xl border border-line bg-surface-muted px-4 py-3 text-sm text-foreground/75">
         <p className="font-semibold">{signedIn ? `Signed in: ${userName ?? "Google user"}` : "Not signed in"}</p>
         <p className="mt-1 text-xs">{userEmail ?? "No Google account in session."}</p>
         {!checkingSession && signedIn && !emailAllowed ? (
@@ -91,7 +91,7 @@ export default function AdminControlRoom({
           </p>
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-foreground/65">
               Family nickname
             </span>
             <input
@@ -101,13 +101,13 @@ export default function AdminControlRoom({
               maxLength={32}
               value={nickname}
               onChange={(event) => onSetNickname(event.target.value)}
-              className="w-full rounded-2xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+              className="w-full rounded-xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
               placeholder="e.g. John"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-foreground/65">
               WaniKani API token
             </span>
             <input
@@ -115,7 +115,7 @@ export default function AdminControlRoom({
               required
               value={token}
               onChange={(event) => onSetToken(event.target.value)}
-              className="w-full rounded-2xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+              className="w-full rounded-xl border border-line bg-surface-muted px-4 py-3 text-base text-slate-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
               placeholder="Paste personal token"
             />
           </label>
@@ -124,7 +124,7 @@ export default function AdminControlRoom({
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-5 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Save account
             </button>
@@ -132,7 +132,7 @@ export default function AdminControlRoom({
               type="button"
               disabled={loading}
               onClick={onRefreshAll}
-              className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-bold uppercase tracking-widest text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               Refresh all stats
             </button>
@@ -143,7 +143,7 @@ export default function AdminControlRoom({
               type="button"
               disabled={loading || jlptRefreshing || jlptEnriching}
               onClick={onRefreshJlptList}
-              className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-bold uppercase tracking-widest text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               {jlptRefreshing ? "Refreshing JLPT..." : "Refresh JLPT List"}
             </button>
@@ -151,7 +151,7 @@ export default function AdminControlRoom({
               type="button"
               disabled={loading || jlptRefreshing || jlptEnriching}
               onClick={onEnrichJlptKanji}
-              className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-black uppercase tracking-[0.12em] text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-bold uppercase tracking-widest text-slate-800 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               {jlptEnriching ? "Enriching JLPT..." : "Enrich JLPT Data"}
             </button>

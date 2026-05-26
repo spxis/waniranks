@@ -1,4 +1,5 @@
 import { CAMPAIGN_STATUS_OPTIONS } from "./AdminCampaignManager.lib";
+import AdminScoringRulesBuilder from "./AdminScoringRulesBuilder";
 import type { CampaignForm, CampaignStatus } from "./AdminCampaignManager.types";
 
 type Props = {
@@ -138,16 +139,29 @@ export default function AdminCampaignEditorForm({
         </label>
       </div>
 
-      <label className="block text-xs font-bold uppercase tracking-widest text-foreground/70" htmlFor={`campaign-rules-${includeIdInput ? "create" : "edit"}`}>
-        Scoring rules (JSON)
-        <textarea
-          id={`campaign-rules-${includeIdInput ? "create" : "edit"}`}
+      <div className="space-y-2">
+        <AdminScoringRulesBuilder
           value={form.scoringRulesText}
-          onChange={(event) => onChange("scoringRulesText", event.target.value)}
-          className="mt-1 min-h-57.5 w-full rounded-lg border border-line bg-surface px-3 py-2 font-mono text-xs"
           disabled={disabled}
+          onChange={(nextValue) => onChange("scoringRulesText", nextValue)}
         />
-      </label>
+
+        <details className="rounded-lg border border-line bg-surface p-3">
+          <summary className="cursor-pointer text-xs font-bold uppercase tracking-widest text-foreground/70">
+            Advanced JSON editor
+          </summary>
+          <label className="mt-2 block text-xs font-bold uppercase tracking-widest text-foreground/70" htmlFor={`campaign-rules-${includeIdInput ? "create" : "edit"}`}>
+            Scoring rules JSON
+            <textarea
+              id={`campaign-rules-${includeIdInput ? "create" : "edit"}`}
+              value={form.scoringRulesText}
+              onChange={(event) => onChange("scoringRulesText", event.target.value)}
+              className="mt-1 min-h-57.5 w-full rounded-lg border border-line bg-surface px-3 py-2 font-mono text-xs"
+              disabled={disabled}
+            />
+          </label>
+        </details>
+      </div>
     </div>
   );
 }
