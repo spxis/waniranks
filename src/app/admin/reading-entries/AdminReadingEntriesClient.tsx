@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AdminSessionStatus, Status } from "@/app/admin/AdminPage.types";
-import type { ViewerMenuInfo } from "@/app/users/[nickname]/UserDashboardTabs.types";
-import UserHeaderMenu from "@/app/users/[nickname]/UserHeaderMenu";
 
 import AdminReadingEntriesTable from "./AdminReadingEntriesTable";
 import type {
@@ -52,10 +49,13 @@ function fromDateTimeLocalInputValue(input: string): string | null {
   return parsed.toISOString();
 }
 
-export default function AdminReadingEntriesClient() {
+type AdminReadingEntriesClientProps = {
+  embedded?: boolean;
+};
+
+export default function AdminReadingEntriesClient({ embedded = false }: AdminReadingEntriesClientProps) {
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ type: "idle", message: "" });
 
   const [monthFilter, setMonthFilter] = useState("");
@@ -70,15 +70,6 @@ export default function AdminReadingEntriesClient() {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EntryEditDraft | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const viewerMenuInfo: ViewerMenuInfo | null = viewerEmail
-    ? {
-        provider: "google",
-        name: viewerEmail.split("@")[0] || "Google user",
-        email: viewerEmail,
-        wkUsername: null,
-      }
-    : null;
 
   const entries = data?.entries ?? [];
   const members = data?.members ?? [];
@@ -138,7 +129,6 @@ export default function AdminReadingEntriesClient() {
         const payload = (await response.json()) as AdminSessionStatus;
 
         setSessionAuthorized(Boolean(payload.authorized));
-        setViewerEmail(payload.user?.email?.trim().toLowerCase() ?? null);
       } finally {
         setCheckingSession(false);
       }
@@ -265,65 +255,43 @@ export default function AdminReadingEntriesClient() {
   }
 
   return (
-    <div className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
-      <main className="relative mx-auto w-full max-w-7xl space-y-5">
-        <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/admin"
-              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-            >
-              Back to admin
-            </Link>
-            <Link
-              href="/admin/users"
-              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-            >
-              Manage users
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
-            >
-              Leaderboard
-            </Link>
-            <div className="ml-auto">
-              <UserHeaderMenu viewerMenuInfo={viewerMenuInfo} />
-            </div>
-          </div>
-
-          <h1 className="mt-4 text-xl font-bold text-foreground sm:text-2xl">All reading check-ins</h1>
+    <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
+      {!embedded ? (
+        <>
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">All reading check-ins</h1>
           <p className="mt-2 text-sm text-foreground/75">
             Browse daily reading check-ins across all members. Edit or remove incorrect submissions.
           </p>
+        </>
+      ) : null}
 
-          {checkingSession ? (
-            <p className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">
-              Checking admin session...
-            </p>
-          ) : null}
+      {checkingSession ? (
+        <p className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">
+          Checking admin session...
+        </p>
+      ) : null}
 
-          {!checkingSession && !sessionAuthorized ? (
-            <p className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">
-              Admin tools are hidden. Sign in with an allowlisted Google account.
-            </p>
-          ) : null}
+      {!checkingSession && !sessionAuthorized ? (
+        <p className="mt-4 rounded-2xl border border-line bg-surface-muted p-4 text-sm font-semibold text-slate-700">
+          Admin tools are hidden. Sign in with an allowlisted Google account.
+        </p>
+      ) : null}
 
-          {status.message ? (
-            <p
-              className={`mt-4 rounded-2xl px-4 py-3 text-sm font-semibold ${
-                status.type === "error"
-                  ? "border border-red-200 bg-red-50 text-red-800"
-                  : "border border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              {status.message}
-            </p>
-          ) : null}
+      {status.message ? (
+        <p
+          className={`mt-4 rounded-2xl px-4 py-3 text-sm font-semibold ${
+            status.type === "error"
+              ? "border border-red-200 bg-red-50 text-red-800"
+              : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {status.message}
+        </p>
+      ) : null}
 
-          {sessionAuthorized ? (
-            <>
-              <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface-muted p-4 sm:grid-cols-2 lg:grid-cols-6">
+      {sessionAuthorized ? (
+        <>
+          <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface-muted p-4 sm:grid-cols-2 lg:grid-cols-6">
                 <label className="flex flex-col gap-1 lg:col-span-1">
                   <span className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Month</span>
                   <input
@@ -415,9 +383,9 @@ export default function AdminReadingEntriesClient() {
                 </div>
               </div>
 
-              <p className="mt-2 text-xs text-foreground/65">
-                Times use your local timezone ({localTimezoneLabel}) and are stored in UTC.
-              </p>
+          <p className="mt-2 text-xs text-foreground/65">
+            Times use your local timezone ({localTimezoneLabel}) and are stored in UTC.
+          </p>
 
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-foreground/75">
                 <span>
@@ -466,10 +434,8 @@ export default function AdminReadingEntriesClient() {
                   Next
                 </button>
               </div>
-            </>
-          ) : null}
-        </section>
-      </main>
-    </div>
+        </>
+      ) : null}
+    </section>
   );
 }

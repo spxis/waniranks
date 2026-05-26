@@ -10,6 +10,8 @@ import AdminChallengeSimulator from "./AdminChallengeSimulator";
 import AdminControlRoom from "./AdminControlRoom";
 import type { AdminSessionStatus, Status } from "./AdminPage.types";
 import AdminStudyHistory from "./AdminStudyHistory";
+import AdminUsersPanel from "./AdminUsersPanel";
+import AdminReadingEntriesClient from "./reading-entries/AdminReadingEntriesClient";
 import {
   ADMIN_WORKSPACE_COOKIE_KEY,
   ADMIN_WORKSPACE_COOKIE_MAX_AGE_SECONDS,
@@ -239,20 +241,10 @@ export default function AdminWorkspacePage({ activeTab }: AdminWorkspacePageProp
             <Link href={routeForAdminWorkspaceTab("history")} className={tabClassName(activeTab === "history")}>
               Submission history
             </Link>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/60">Additional admin pages</p>
-            <Link
-              href="/admin/users"
-              className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
-            >
+            <Link href={routeForAdminWorkspaceTab("users")} className={tabClassName(activeTab === "users")}>
               Users
             </Link>
-            <Link
-              href="/admin/reading-entries"
-              className="inline-flex h-8 items-center justify-center rounded-full border border-line bg-surface px-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700 transition hover:bg-surface-muted"
-            >
+            <Link href={routeForAdminWorkspaceTab("readingEntries")} className={tabClassName(activeTab === "readingEntries")}>
               Reading check-ins
             </Link>
           </div>
@@ -315,6 +307,26 @@ export default function AdminWorkspacePage({ activeTab }: AdminWorkspacePageProp
               <p className="mt-1 text-sm text-foreground/70">Review, edit, or remove study submissions in one place.</p>
             </div>
             <AdminStudyHistory sessionAuthorized={sessionAuthorized} />
+          </section>
+        ) : null}
+
+        {activeTab === "users" ? (
+          <section id="admin-users" className="space-y-3">
+            <div className="rounded-xl border border-line bg-surface/70 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/60">Users</p>
+              <p className="mt-1 text-sm text-foreground/70">Manage accounts, refreshes, invite codes, and user history.</p>
+            </div>
+            <AdminUsersPanel />
+          </section>
+        ) : null}
+
+        {activeTab === "readingEntries" ? (
+          <section id="admin-reading-entries" className="space-y-3">
+            <div className="rounded-xl border border-line bg-surface/70 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground/60">Reading check-ins</p>
+              <p className="mt-1 text-sm text-foreground/70">Browse and edit reading submissions across all members.</p>
+            </div>
+            <AdminReadingEntriesClient embedded />
           </section>
         ) : null}
       </main>

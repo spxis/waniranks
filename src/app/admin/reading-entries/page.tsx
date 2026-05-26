@@ -1,5 +1,5 @@
-import AdminReadingEntriesClient from "./AdminReadingEntriesClient";
+import AdminWorkspacePage from "../AdminWorkspacePage";
 
 export default function AdminReadingEntriesPage() {
-  return <AdminReadingEntriesClient />;
+  return <AdminWorkspacePage activeTab="readingEntries" />;
 }

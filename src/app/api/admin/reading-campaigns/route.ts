@@ -5,6 +5,7 @@ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { isAuthorizedAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { ensureActiveReadingChallengeId } from "@/lib/readingChallengeStore";
+import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
 import { readingChallengeMutationSchema } from "@/lib/readingChallengeValidation";
 
 const campaignMutationSchema = readingChallengeMutationSchema;
@@ -12,6 +13,29 @@ const campaignMutationSchema = readingChallengeMutationSchema;
 const patchBodySchema = campaignMutationSchema.safeExtend({
   id: z.string().min(1).max(120),
 });
+
+const DELEGATE_UNAVAILABLE_MESSAGE = "Campaign storage is unavailable in the current Prisma client. Run pnpm prisma generate and restart the server.";
+
+type ReadingChallengeDelegate = {
+  findMany: typeof prisma.readingChallenge.findMany;
+  create: typeof prisma.readingChallenge.create;
+  update: typeof prisma.readingChallenge.update;
+  updateMany: typeof prisma.readingChallenge.updateMany;
+};
+
+function getReadingChallengeDelegate(): ReadingChallengeDelegate | null {
+  return (prisma as unknown as { readingChallenge?: ReadingChallengeDelegate }).readingChallenge ?? null;
+}
+
+function buildFallbackCampaign() {
+  const nowIso = new Date().toISOString();
+
+  return {
+    ...ACTIVE_READING_CHALLENGE,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
 
 function isUniqueConstraintError(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -38,11 +62,12 @@ function isSchemaMismatchError(error: unknown): boolean {
 
   return error.message.includes("Unknown argument")
     || error.message.includes("Unknown field")
+    || error.message.includes("Cannot read properties of undefined")
     || error.message.includes("PrismaClientValidationError");
 }
 
-async function deactivateOtherActiveCampaigns(campaignId: string): Promise<void> {
-  await prisma.readingChallenge.updateMany({
+async function deactivateOtherActiveCampaigns(readingChallenge: ReadingChallengeDelegate, campaignId: string): Promise<void> {
+  await readingChallenge.updateMany({
     where: {
       id: { not: campaignId },
       status: "active",
@@ -64,9 +89,14 @@ export async function GET(request: Request) {
           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
         }
 
+        const readingChallenge = getReadingChallengeDelegate();
+        if (!readingChallenge) {
+          return NextResponse.json({ campaigns: [buildFallbackCampaign()] }, { status: 200 });
+        }
+
         await ensureActiveReadingChallengeId();
 
-        const campaigns = await prisma.readingChallenge.findMany({
+        const campaigns = await readingChallenge.findMany({
           orderBy: [{ startDatePst: "desc" }, { createdAt: "desc" }],
           select: {
             id: true,
@@ -121,7 +151,12 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
         }
 
-        const created = await prisma.readingChallenge.create({
+        const readingChallenge = getReadingChallengeDelegate();
+        if (!readingChallenge) {
+          return NextResponse.json({ error: DELEGATE_UNAVAILABLE_MESSAGE }, { status: 503 });
+        }
+
+        const created = await readingChallenge.create({
           data: {
             ...(parsed.data.id ? { id: parsed.data.id } : {}),
             slug: parsed.data.slug,
@@ -153,7 +188,7 @@ export async function POST(request: Request) {
         });
 
         if (created.status === "active") {
-          await deactivateOtherActiveCampaigns(created.id);
+          await deactivateOtherActiveCampaigns(readingChallenge, created.id);
         }
 
         return NextResponse.json({ campaign: created }, { status: 201 });
@@ -196,7 +231,12 @@ export async function PATCH(request: Request) {
           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
         }
 
-        const updated = await prisma.readingChallenge.update({
+        const readingChallenge = getReadingChallengeDelegate();
+        if (!readingChallenge) {
+          return NextResponse.json({ error: DELEGATE_UNAVAILABLE_MESSAGE }, { status: 503 });
+        }
+
+        const updated = await readingChallenge.update({
           where: { id: parsed.data.id },
           data: {
             slug: parsed.data.slug,
@@ -228,7 +268,7 @@ export async function PATCH(request: Request) {
         });
 
         if (updated.status === "active") {
-          await deactivateOtherActiveCampaigns(updated.id);
+          await deactivateOtherActiveCampaigns(readingChallenge, updated.id);
         }
 
         return NextResponse.json({ campaign: updated }, { status: 200 });
