@@ -24,6 +24,7 @@ export default function AdminTrackedPlayersManager({
   onToggleTrackedMember,
 }: AdminTrackedPlayersManagerProps) {
   const controlsDisabled = trackingLoading || loading || saving || Boolean(trackingUpdatingAccountId);
+  const challengeMember = members.find((member) => trackedMemberSet.has(member.id)) ?? members[0] ?? null;
 
   return (
     <div className="mt-4 rounded-2xl border border-line bg-surface-muted p-4">
@@ -32,14 +33,25 @@ export default function AdminTrackedPlayersManager({
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-foreground/65">Tracked players</p>
           <p className="mt-1 text-sm text-foreground/75">Choose who appears in the reading challenge leaderboard.</p>
         </div>
-        <button
-          type="button"
-          onClick={onRefreshRoster}
-          className="h-9 rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80"
-          disabled={controlsDisabled}
-        >
-          {trackingLoading ? "Refreshing..." : "Refresh roster"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {challengeMember ? (
+            <Link
+              href={`/users/${encodeURIComponent(challengeMember.wkUsername)}?dashboard=read`}
+              className="h-9 rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80 hover:bg-surface"
+            >
+              Open challenge page
+            </Link>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={onRefreshRoster}
+            className="h-9 rounded-full border border-line bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80"
+            disabled={controlsDisabled}
+          >
+            {trackingLoading ? "Refreshing..." : "Refresh roster"}
+          </button>
+        </div>
       </div>
 
       {members.length === 0 ? (
@@ -53,29 +65,21 @@ export default function AdminTrackedPlayersManager({
             const updating = trackingUpdatingAccountId === member.id;
 
             return (
-              <div key={member.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onToggleTrackedMember(member.id, !tracked);
-                  }}
-                  className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${
-                    tracked
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                      : "border-line bg-surface text-foreground/70"
-                  }`}
-                  disabled={controlsDisabled}
-                >
-                  {member.nickname}: {updating ? "Saving..." : tracked ? "On" : "Off"}
-                </button>
-
-                <Link
-                  href={`/users/${encodeURIComponent(member.wkUsername)}?dashboard=read`}
-                  className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-foreground/80 hover:bg-surface"
-                >
-                  Open challenge
-                </Link>
-              </div>
+              <button
+                key={member.id}
+                type="button"
+                onClick={() => {
+                  onToggleTrackedMember(member.id, !tracked);
+                }}
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${
+                  tracked
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                    : "border-line bg-surface text-foreground/70"
+                }`}
+                disabled={controlsDisabled}
+              >
+                {member.nickname}: {updating ? "Saving..." : tracked ? "On" : "Off"}
+              </button>
             );
           })}
         </div>
