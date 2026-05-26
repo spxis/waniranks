@@ -6,6 +6,7 @@ import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
 import { getReadingDailyEarningsForecast } from "@/lib/readingEarnings";
 import { buildCalendarCells, computeReadingLeaderboard, getTodayDateInputValue, parseDateKeyAsUtc, type ReadingChallengeBookRecord, type ReadingSignoffEntryRecord, type ReadingSignoffRecord } from "@/lib/readingSignoff";
 import UserReadingCampaignHeader from "./UserReadingCampaignHeader";
+import UserReadingDashboardBooksSection from "./UserReadingDashboardBooksSection";
 import UserReadingCalendar from "./UserReadingCalendar";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
 import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
@@ -415,6 +416,20 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
         campaigns={campaigns}
         selectedCampaignId={selectedCampaignId}
         onCampaignChange={setSelectedCampaignId}
+      />
+
+      <UserReadingDashboardBooksSection
+        viewerCanChooseMember={viewerCanChooseMember}
+        members={members}
+        selectedMemberId={selectedMemberId}
+        memberBooks={booksForMember(selectedMemberId)}
+        addIsbn={addIsbn}
+        bookActionMessage={bookActionMessage}
+        bookActionState={bookActionState}
+        onSelectedMemberChange={setSelectedMemberId}
+        onAddIsbnChange={setAddIsbn}
+        onAddBook={addBookByIsbn}
+        onDeleteBook={deleteBook}
       />
 
       <UserReadingCalendar
