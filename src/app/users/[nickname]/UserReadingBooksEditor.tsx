@@ -7,6 +7,7 @@ import { useBookStripAutoScroll } from "./UserReadingCheckinModal.bookStrip";
 
 type UserReadingBooksEditorProps = {
   memberBooks: ReadingChallengeBookRecord[];
+  showBookPicker?: boolean;
   selectedBookTitle?: string;
   onBookChange?: (nextBookTitle: string) => void;
   addIsbn: string;
@@ -19,6 +20,7 @@ type UserReadingBooksEditorProps = {
 
 export default function UserReadingBooksEditor({
   memberBooks,
+  showBookPicker = false,
   selectedBookTitle,
   onBookChange,
   addIsbn,
@@ -61,6 +63,25 @@ export default function UserReadingBooksEditor({
           </button>
         </div>
       </div>
+
+      {showBookPicker && canSelectBook ? (
+        <label className="mt-2 flex flex-col gap-1">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/65">Selected book</span>
+          <select
+            className="h-10 rounded-lg border border-line bg-surface px-3 text-sm"
+            value={selectedBookTitle ?? ""}
+            onChange={(event) => onBookChange(event.target.value)}
+            disabled={memberBooks.length === 0 || isBookActionLoading}
+          >
+            <option value="">Pick a challenge book</option>
+            {memberBooks.map((book) => (
+              <option key={`picker-${book.id}`} value={book.title}>
+                {book.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <div className="mt-2 overflow-x-auto pb-1">
         <div className="flex min-w-max gap-1.5">
