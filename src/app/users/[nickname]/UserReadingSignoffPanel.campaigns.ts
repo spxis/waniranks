@@ -41,3 +41,28 @@ export function resolveSelectedReadingCampaignId({
 
   return campaigns[0]?.id ?? currentCampaignId;
 }
+
+export function resolveCampaignMonthBounds(args: {
+  campaigns?: ReadingCampaignOption[];
+  selectedCampaignId: string;
+}): { startMonthKey: string; goalMonthKey: string } {
+  const selectedCampaign = args.campaigns?.find((campaign) => campaign.id === args.selectedCampaignId) ?? null;
+  const startDatePst = selectedCampaign?.startDatePst ?? READING_CAMPAIGN.startDatePst;
+  const goalDatePst = selectedCampaign?.goalDatePst ?? READING_CAMPAIGN.goalDatePst;
+
+  return {
+    startMonthKey: startDatePst.slice(0, 7),
+    goalMonthKey: goalDatePst.slice(0, 7),
+  };
+}
+
+export function clampMonthKeyToBounds(
+  monthKey: string,
+  bounds: { startMonthKey: string; goalMonthKey: string },
+): string {
+  return monthKey < bounds.startMonthKey
+    ? bounds.startMonthKey
+    : monthKey > bounds.goalMonthKey
+      ? bounds.goalMonthKey
+      : monthKey;
+}
