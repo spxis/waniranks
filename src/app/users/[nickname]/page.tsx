@@ -431,6 +431,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               maxLevel={account.wkLevel}
               accountPendingReviews={account.pendingReviews}
               levelItemCountsByLevel={levelItemCountsByLevel}
+              initialTab={initialTab}
               initialQueueMode={initialQueueMode}
               initialStudyMode={initialStudyMode}
               initialStudyFilters={{

@@ -15,6 +15,7 @@ type Props = {
   maxLevel: number;
   accountPendingReviews: number;
   levelItemCountsByLevel: Record<number, number>;
+  initialTab?: "study" | "level" | "jlpt";
   initialQueueMode?: QueueType | null;
   initialStudyMode?: boolean | null;
   initialSnapshot: Snapshot;
@@ -43,70 +44,65 @@ export default function ExplorerTabs({
   jlptItems,
   userKanjiItems,
   initialStudyFilters,
+  initialTab = "study",
 }: Props) {
   const previousPageKeyRef = useRef<string | null>(null);
   const countsStorageKey = `wr:study-queue-counts:${accountId}`;
   const showEnglishStorageKey = `wr:explorer-show-english:${accountId}`;
   const isHydrated = typeof window !== "undefined";
   const [dashboardTab, setDashboardTab] = useState<string>("learn");
-  const [studyMode, setStudyMode] = useState(() => {
-    if (typeof initialStudyMode === "boolean") {
-      return initialStudyMode;
-    }
-
-    if (typeof window === "undefined") {
-      return true;
-    }
-
-    const stored = window.localStorage.getItem("wr:study-mode");
-    if (stored === null) {
-      return true;
-    }
-
-    return stored === "1";
-  });
-  const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">(() => {
-    if (typeof window === "undefined") {
-      return "study";
-    }
-    const rawTab = new URLSearchParams(window.location.search).get("tab");
-    return rawTab === "jlpt" ? "jlpt" : rawTab === "level" ? "level" : "study";
-  });
-  const [showEnglish, setShowEnglish] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.localStorage.getItem(showEnglishStorageKey) === "1";
-  });
+  const [studyMode, setStudyMode] = useState(() => (typeof initialStudyMode === "boolean" ? initialStudyMode : true));
+  const [activeTab, setActiveTab] = useState<"study" | "level" | "jlpt">(initialTab);
+  const [showEnglish, setShowEnglish] = useState(false);
   const [studyCounts, setStudyCounts] = useState<{ reviews: number; lessons: number } | null>(null);
-  const [queueMode, setQueueMode] = useState<QueueType>(() => {
-    if (initialQueueMode === QUEUE_TYPES.review || initialQueueMode === QUEUE_TYPES.lesson) {
-      return initialQueueMode;
-    }
+  const [queueMode, setQueueMode] = useState<QueueType>(
+    initialQueueMode === QUEUE_TYPES.review || initialQueueMode === QUEUE_TYPES.lesson
+      ? initialQueueMode
+      : QUEUE_TYPES.review,
+  );
+  const [initialViewerMode, setInitialViewerMode] = useState<"detail" | "flash" | null>(null);
 
+  useEffect(() => {
     if (typeof window === "undefined") {
-      return QUEUE_TYPES.review;
+      return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const urlMode = params.get("mode");
-    if (urlMode === QUEUE_TYPES.review || urlMode === QUEUE_TYPES.lesson) {
-      return urlMode;
-    }
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab") === "jlpt" ? "jlpt" : params.get("tab") === "level" ? "level" : "study";
+      setActiveTab(urlTab);
 
-    return window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === QUEUE_TYPES.lesson
-      ? QUEUE_TYPES.lesson
-      : QUEUE_TYPES.review;
-  });
-  const [initialViewerMode] = useState<"detail" | "flash" | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
+      const urlMode = params.get("mode");
+      if (urlMode === QUEUE_TYPES.review || urlMode === QUEUE_TYPES.lesson) {
+        setQueueMode(urlMode);
+      } else if (initialQueueMode !== QUEUE_TYPES.review && initialQueueMode !== QUEUE_TYPES.lesson) {
+        setQueueMode(window.localStorage.getItem(`wr:study-queue-mode:${accountId}`) === QUEUE_TYPES.lesson
+          ? QUEUE_TYPES.lesson
+          : QUEUE_TYPES.review);
+      }
 
-    const viewer = new URLSearchParams(window.location.search).get("viewer");
-    return viewer === "detail" || viewer === "flash" ? viewer : null;
-  });
+      const urlStudyMode = params.get("studyMode");
+      if (urlStudyMode === "on" || urlStudyMode === "1") {
+        setStudyMode(true);
+      } else if (urlStudyMode === "off" || urlStudyMode === "0") {
+        setStudyMode(false);
+      } else if (typeof initialStudyMode !== "boolean") {
+        const storedStudyMode = window.localStorage.getItem("wr:study-mode");
+        if (storedStudyMode !== null) {
+          setStudyMode(storedStudyMode === "1");
+        }
+      }
+
+      setShowEnglish(window.localStorage.getItem(showEnglishStorageKey) === "1");
+
+      const viewer = params.get("viewer");
+      setInitialViewerMode(viewer === "detail" || viewer === "flash" ? viewer : null);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [accountId, initialQueueMode, initialStudyMode, showEnglishStorageKey]);
 
   useSWR<{ reviews: number; lessons: number }>(
     `/api/study/${accountId}/counts`,
@@ -410,7 +406,7 @@ export default function ExplorerTabs({
             <button
               type="button"
               onClick={() => setStudyMode((prev) => !prev)}
-              className={`inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 text-xs font-bold uppercase tracking-[0.1em] transition ${
+              className={`inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 text-xs font-bold uppercase tracking-widest transition ${
                 studyMode
                   ? "border-hot bg-hot text-white"
                   : "border-line bg-surface text-foreground hover:bg-surface-muted"

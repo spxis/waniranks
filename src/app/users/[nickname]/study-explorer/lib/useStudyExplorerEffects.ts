@@ -321,7 +321,7 @@ export function useStudyExplorerEffects({
   useEffect(() => {
     if (!dataCounts) return;
     if (hiddenSubmittedCountRef.current > 0) return;
-    setPersistedCounts(dataCounts);
+    setPersistedCounts((prev) => (sameCounts(prev, dataCounts) ? prev : dataCounts));
     window.localStorage.setItem(countsStorageKey, JSON.stringify(dataCounts));
   }, [countsStorageKey, dataCounts, setPersistedCounts]);
 
