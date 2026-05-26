@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-
 import { formatRelativeFromNow } from "@/lib/timeFormat";
 import { isSubjectType } from "@/lib/domainConstants";
 import HistoryItemDetailModal from "@/app/shared/HistoryItemDetailModal";
@@ -24,11 +23,7 @@ type Props = {
 };
 
 function sortIcon(activeSortBy: SortBy, sortBy: SortBy, sortDir: SortDir): string {
-  if (activeSortBy !== sortBy) {
-    return "<>";
-  }
-
-  return sortDir === "desc" ? "v" : "^";
+  return activeSortBy === sortBy ? (sortDir === "desc" ? "v" : "^") : "<>";
 }
 
 function formatHistoryDateCompact(value: string): string {
@@ -193,33 +188,32 @@ export default function StudyHistoryTable({
 
       {!expanded ? null : (
         <>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm sm:text-base">
+            <span>Total: <strong>{totalAttempts}</strong></span>
+            <span>Correct: <strong className="text-emerald-600">{totals.correct ?? 0}</strong></span>
+            <span>Wrong: <strong className="text-red-500">{totals.wrong ?? 0}</strong></span>
+            {(totals.skipped ?? 0) > 0 ? <span>Skipped: <strong className="text-amber-500">{totals.skipped}</strong></span> : null}
+            {showUserColumn ? <span>Accounts: <strong>{data?.accountCount ?? 0}</strong></span> : null}
+          </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-sm sm:text-base">
-        <span>Total: <strong>{totalAttempts}</strong></span>
-        <span>Correct: <strong className="text-emerald-600">{totals.correct ?? 0}</strong></span>
-        <span>Wrong: <strong className="text-red-500">{totals.wrong ?? 0}</strong></span>
-        {(totals.skipped ?? 0) > 0 ? <span>Skipped: <strong className="text-amber-500">{totals.skipped}</strong></span> : null}
-        {showUserColumn ? <span>Accounts: <strong>{data?.accountCount ?? 0}</strong></span> : null}
-      </div>
+          <StudyHistoryFilters
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            setPage={setPage}
+            resultFilter={resultFilter}
+            setResultFilter={handleSetResultFilter}
+            levelFilter={levelFilter}
+            setLevelFilter={handleSetLevelFilter}
+            availableLevels={data?.availableLevels ?? []}
+            srsBucketFilter={srsBucketFilter}
+            setSrsBucketFilter={handleSetSrsBucketFilter}
+            availableSrsBuckets={data?.availableSrsBuckets ?? []}
+          />
 
-      <StudyHistoryFilters
-        pageSize={pageSize}
-        setPageSize={setPageSize}
-        setPage={setPage}
-        resultFilter={resultFilter}
-        setResultFilter={handleSetResultFilter}
-        levelFilter={levelFilter}
-        setLevelFilter={handleSetLevelFilter}
-        availableLevels={data?.availableLevels ?? []}
-        srsBucketFilter={srsBucketFilter}
-        setSrsBucketFilter={handleSetSrsBucketFilter}
-        availableSrsBuckets={data?.availableSrsBuckets ?? []}
-      />
+          {isLoading ? <p className="mt-4 text-base text-foreground/70">Loading...</p> : null}
+          {error ? <p className="mt-4 text-base text-red-600">{error.message}</p> : null}
 
-      {isLoading ? <p className="mt-4 text-base text-foreground/70">Loading...</p> : null}
-      {error ? <p className="mt-4 text-base text-red-600">{error.message}</p> : null}
-
-      {data ? (
+          {data ? (
         <div className="mt-3 space-y-3">
           <div className="sm:hidden overflow-hidden rounded-lg border border-line bg-surface">
             <div className="grid grid-cols-[52%_48%] bg-surface-muted px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/65">
@@ -401,6 +395,14 @@ export default function StudyHistoryTable({
             <button
               type="button"
               disabled={!data.pagination.hasPrevious}
+              onClick={() => setPage(1)}
+              className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              First
+            </button>
+            <button
+              type="button"
+              disabled={!data.pagination.hasPrevious}
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               className="rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -414,6 +416,47 @@ export default function StudyHistoryTable({
             >
               Next
             </button>
+            <button
+              type="button"
+              disabled={!data.pagination.hasNext}
+              onClick={() => setPage(data.pagination.totalPages)}
+              className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Last
+            </button>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const formData = new FormData(event.currentTarget);
+                const parsed = Number(formData.get("page"));
+                if (!Number.isFinite(parsed)) {
+                  return;
+                }
+
+                const nextPage = Math.min(data.pagination.totalPages, Math.max(1, Math.trunc(parsed)));
+                if (nextPage !== data.pagination.page) {
+                  setPage(nextPage);
+                }
+              }}
+              className="flex items-center gap-1"
+            >
+              <input
+                key={data.pagination.page}
+                name="page"
+                type="number"
+                min={1}
+                max={data.pagination.totalPages}
+                defaultValue={String(data.pagination.page)}
+                className="h-9 w-16 rounded-md border border-line bg-surface px-2 text-sm"
+                aria-label="Page number"
+              />
+              <button
+                type="submit"
+                className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-bold uppercase tracking-[0.08em]"
+              >
+                Go
+              </button>
+            </form>
           </div>
         </div>
       ) : null}

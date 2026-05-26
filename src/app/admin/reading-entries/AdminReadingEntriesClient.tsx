@@ -481,8 +481,11 @@ export default function AdminReadingEntriesClient({
                 pageCount={pagination.pageCount}
                 itemLabel="check-ins"
                 total={pagination.total}
+                onFirst={() => setPage(1)}
                 onPrevious={() => setPage((prev) => Math.max(1, prev - 1))}
                 onNext={() => setPage((prev) => Math.min(pagination.pageCount, prev + 1))}
+                onLast={() => setPage(pagination.pageCount)}
+                onPageChange={(nextPage) => setPage(nextPage)}
                 disabled={loading || saving}
               />
         </>

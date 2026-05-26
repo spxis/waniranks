@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getStoredPositiveInt, setLocalStorageItem } from "@/lib/clientStorage";
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
@@ -39,6 +39,17 @@ const HISTORY_PAGE_STORAGE_KEY = "admin-study-history:page";
 const HISTORY_PAGE_SIZE_STORAGE_KEY = "admin-study-history:page-size";
 const HISTORY_PAGE_SIZE_OPTIONS = [20, 30, 50] as const;
 
+type SortBy = "submittedAt" | "nickname" | "result" | "subjectType" | "subjectId" | "assignmentId";
+type SortDir = "asc" | "desc";
+
+function sortIndicator(activeSortBy: SortBy, sortBy: SortBy, sortDir: SortDir): string {
+  if (activeSortBy !== sortBy) {
+    return "<>";
+  }
+
+  return sortDir === "asc" ? "^" : "v";
+}
+
 function toLocalDateTimeInput(isoValue: string): string {
   const date = new Date(isoValue);
   if (Number.isNaN(date.getTime())) {
@@ -56,6 +67,8 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
+  const [sortBy, setSortBy] = useState<SortBy>("submittedAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [paginationReady, setPaginationReady] = useState(false);
 
   const [editingAttemptId, setEditingAttemptId] = useState<string | null>(null);
@@ -193,10 +206,6 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
     }
   }
 
-  if (!sessionAuthorized) {
-    return null;
-  }
-
   const resultColor: Record<string, string> = {
     correct: "text-emerald-600",
     wrong: "text-red-500",
@@ -213,6 +222,50 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
   const totalAttempts = Object.values(totals).reduce((sum, value) => sum + value, 0);
   const pageCount = data?.pagination.totalPages ?? 1;
   const hasNext = data?.pagination.hasNext ?? false;
+  const sortedAttempts = useMemo(() => {
+    if (!data) {
+      return [] as Attempt[];
+    }
+
+    const direction = sortDir === "asc" ? 1 : -1;
+    return [...data.attempts].sort((left, right) => {
+      let comparison = 0;
+
+      if (sortBy === "submittedAt") {
+        comparison = left.submittedAt.localeCompare(right.submittedAt);
+      } else if (sortBy === "nickname") {
+        comparison = left.nickname.localeCompare(right.nickname);
+      } else if (sortBy === "result") {
+        comparison = left.result.localeCompare(right.result);
+      } else if (sortBy === "subjectType") {
+        comparison = left.subjectType.localeCompare(right.subjectType);
+      } else if (sortBy === "subjectId") {
+        comparison = left.subjectId - right.subjectId;
+      } else if (sortBy === "assignmentId") {
+        comparison = left.assignmentId - right.assignmentId;
+      }
+
+      if (comparison === 0) {
+        comparison = left.id.localeCompare(right.id);
+      }
+
+      return comparison * direction;
+    });
+  }, [data, sortBy, sortDir]);
+
+  function toggleSort(nextSortBy: SortBy) {
+    if (sortBy !== nextSortBy) {
+      setSortBy(nextSortBy);
+      setSortDir(nextSortBy === "submittedAt" ? "desc" : "asc");
+      return;
+    }
+
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  }
+
+  if (!sessionAuthorized) {
+    return null;
+  }
 
   return (
     <section className="rounded-2xl border border-line bg-surface/90 p-5 shadow-sm">
@@ -275,12 +328,12 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="sticky top-0 bg-surface-muted text-[11px] uppercase tracking-[0.08em] text-foreground/70">
               <tr>
-                <th className="px-3 py-2">Time</th>
-                <th className="px-3 py-2">User</th>
-                <th className="px-3 py-2">Result</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Subject</th>
-                <th className="px-3 py-2">Assignment</th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("submittedAt")} className="font-bold">Time {sortIndicator(sortBy, "submittedAt", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("nickname")} className="font-bold">User {sortIndicator(sortBy, "nickname", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("result")} className="font-bold">Result {sortIndicator(sortBy, "result", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("subjectType")} className="font-bold">Type {sortIndicator(sortBy, "subjectType", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("subjectId")} className="font-bold">Subject {sortIndicator(sortBy, "subjectId", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("assignmentId")} className="font-bold">Assignment {sortIndicator(sortBy, "assignmentId", sortDir)}</button></th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
@@ -293,7 +346,7 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
                 </tr>
               ) : null}
 
-              {data?.attempts.map((attempt) => (
+              {sortedAttempts.map((attempt) => (
                 <tr key={attempt.id} className="hover:bg-surface-muted/40">
                   <td className="whitespace-nowrap px-3 py-2 text-foreground/65">
                     {editingAttemptId === attempt.id ? (
@@ -411,12 +464,15 @@ export default function AdminStudyHistory({ sessionAuthorized }: { sessionAuthor
           pageCount={pageCount}
           itemLabel="attempts"
           total={data?.pagination.total ?? 0}
+          onFirst={() => setPage(1)}
           onPrevious={() => setPage((prev) => Math.max(1, prev - 1))}
           onNext={() => {
             if (hasNext) {
               setPage((prev) => prev + 1);
             }
           }}
+          onLast={() => setPage(pageCount)}
+          onPageChange={(nextPage) => setPage(nextPage)}
           disabled={loading || saving}
         />
       </div>

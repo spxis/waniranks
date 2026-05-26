@@ -1,10 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import { formatDateTimeShort, formatRelativeFromNow } from "@/lib/timeFormat";
 
 import type { AdminReadingEntry, EntryEditDraft } from "./AdminReadingEntries.types";
+
+type SortBy = "createdAt" | "member" | "source" | "signoffDatePst" | "pagesRead" | "minutesRead" | "didWanikaniReviews" | "reviewsLeft";
+type SortDir = "asc" | "desc";
+
+function sortIndicator(activeSortBy: SortBy, sortBy: SortBy, sortDir: SortDir): string {
+  if (activeSortBy !== sortBy) {
+    return "<>";
+  }
+
+  return sortDir === "asc" ? "^" : "v";
+}
 
 type AdminReadingEntriesTableProps = {
   entries: AdminReadingEntry[];
@@ -33,6 +45,50 @@ export default function AdminReadingEntriesTable({
   onSaveEdit,
   onDeleteEntry,
 }: AdminReadingEntriesTableProps) {
+  const [sortBy, setSortBy] = useState<SortBy>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function toggleSort(nextSortBy: SortBy) {
+    if (sortBy !== nextSortBy) {
+      setSortBy(nextSortBy);
+      setSortDir(nextSortBy === "createdAt" || nextSortBy === "signoffDatePst" ? "desc" : "asc");
+      return;
+    }
+
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  }
+
+  const sortedEntries = useMemo(() => {
+    const direction = sortDir === "asc" ? 1 : -1;
+    return [...entries].sort((left, right) => {
+      let comparison = 0;
+
+      if (sortBy === "createdAt") {
+        comparison = left.createdAt.localeCompare(right.createdAt);
+      } else if (sortBy === "member") {
+        comparison = left.nickname.localeCompare(right.nickname) || left.wkUsername.localeCompare(right.wkUsername);
+      } else if (sortBy === "source") {
+        comparison = left.source.localeCompare(right.source);
+      } else if (sortBy === "signoffDatePst") {
+        comparison = left.signoffDatePst.localeCompare(right.signoffDatePst);
+      } else if (sortBy === "pagesRead") {
+        comparison = left.pagesRead - right.pagesRead;
+      } else if (sortBy === "minutesRead") {
+        comparison = left.minutesRead - right.minutesRead;
+      } else if (sortBy === "didWanikaniReviews") {
+        comparison = Number(left.didWanikaniReviews) - Number(right.didWanikaniReviews);
+      } else if (sortBy === "reviewsLeft") {
+        comparison = left.reviewsLeft - right.reviewsLeft;
+      }
+
+      if (comparison === 0) {
+        comparison = left.id.localeCompare(right.id);
+      }
+
+      return comparison * direction;
+    });
+  }, [entries, sortBy, sortDir]);
+
   return (
     <div className="relative mt-4 min-h-96 overflow-auto rounded-xl border border-line">
       {loading ? (
@@ -44,15 +100,15 @@ export default function AdminReadingEntriesTable({
       <table className="w-full min-w-205 text-left text-xs sm:text-sm">
         <thead className="bg-surface-muted text-[11px] uppercase tracking-[0.08em] text-foreground/70">
           <tr>
-            <th className="px-3 py-2">Created / Updated</th>
-            <th className="px-3 py-2">Member</th>
-            <th className="px-3 py-2">Source</th>
-            <th className="px-3 py-2">Date</th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("createdAt")} className="font-bold">Created / Updated {sortIndicator(sortBy, "createdAt", sortDir)}</button></th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("member")} className="font-bold">Member {sortIndicator(sortBy, "member", sortDir)}</button></th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("source")} className="font-bold">Source {sortIndicator(sortBy, "source", sortDir)}</button></th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("signoffDatePst")} className="font-bold">Date {sortIndicator(sortBy, "signoffDatePst", sortDir)}</button></th>
             <th className="px-3 py-2">Book</th>
-            <th className="px-3 py-2">Pages</th>
-            <th className="px-3 py-2">Minutes</th>
-            <th className="px-3 py-2">WK done</th>
-            <th className="px-3 py-2">Reviews left</th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("pagesRead")} className="font-bold">Pages {sortIndicator(sortBy, "pagesRead", sortDir)}</button></th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("minutesRead")} className="font-bold">Minutes {sortIndicator(sortBy, "minutesRead", sortDir)}</button></th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("didWanikaniReviews")} className="font-bold">WK done {sortIndicator(sortBy, "didWanikaniReviews", sortDir)}</button></th>
+            <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("reviewsLeft")} className="font-bold">Reviews left {sortIndicator(sortBy, "reviewsLeft", sortDir)}</button></th>
             <th className="px-3 py-2">Actions</th>
           </tr>
         </thead>
@@ -65,7 +121,7 @@ export default function AdminReadingEntriesTable({
             </tr>
           ) : null}
 
-          {entries.map((entry) => {
+          {sortedEntries.map((entry) => {
             const isEditing = editingEntryId === entry.id && draft !== null;
 
             return (

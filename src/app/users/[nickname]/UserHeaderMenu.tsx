@@ -232,6 +232,40 @@ export default function UserHeaderMenu({
                       Leaderboard
                     </Link>
                   ) : null}
+                  {viewerMenuInfo ? (
+                    <>
+                      <Link
+                        href="/news"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                      >
+                        News
+                      </Link>
+                      <Link
+                        href="/news/stats"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                      >
+                        News stats
+                      </Link>
+                      <Link
+                        href="/news/history"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                      >
+                        News history
+                      </Link>
+                      <Link
+                        href="/join"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                      >
+                        Join
+                      </Link>
+                      <Link
+                        href="/invite"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-line bg-surface-muted px-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground transition hover:bg-surface"
+                      >
+                        Invite
+                      </Link>
+                    </>
+                  ) : null}
                   {showAdminActions ? (
                     <>
                       <Link

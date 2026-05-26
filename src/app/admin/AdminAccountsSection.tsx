@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import { formatDateShort, formatDateTimeShort } from "@/lib/timeFormat";
 
 import AdminPanelHeader from "./AdminPanelHeader";
+import AdminPaginationControls from "./AdminPaginationControls";
 
 export type AdminAccount = {
   id: string;
@@ -30,6 +34,17 @@ type AdminAccountsSectionProps = {
   onAssignInviteCode: (accountId: string) => Promise<string | null>;
   onResetInviteCode: (accountId: string) => Promise<void>;
 };
+
+type SortBy = "nickname" | "wkLevel" | "pendingReviews" | "lastSyncedAt" | "createdAt";
+type SortDir = "asc" | "desc";
+
+function sortIndicator(activeSortBy: SortBy, sortBy: SortBy, sortDir: SortDir): string {
+  if (activeSortBy !== sortBy) {
+    return "<>";
+  }
+
+  return sortDir === "asc" ? "^" : "v";
+}
 
 function isManualRefreshOnCooldown(lastSyncedAt: string): boolean {
   const last = new Date(lastSyncedAt).getTime();
@@ -65,6 +80,54 @@ export default function AdminAccountsSection({
   onAssignInviteCode,
   onResetInviteCode,
 }: AdminAccountsSectionProps) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<SortBy>("nickname");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+
+  function toggleSort(nextSortBy: SortBy) {
+    if (sortBy !== nextSortBy) {
+      setSortBy(nextSortBy);
+      setSortDir(nextSortBy === "lastSyncedAt" || nextSortBy === "createdAt" ? "desc" : "asc");
+      return;
+    }
+
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  }
+
+  const sortedAccounts = useMemo(() => {
+    const direction = sortDir === "asc" ? 1 : -1;
+    return [...accounts].sort((left, right) => {
+      let comparison = 0;
+
+      if (sortBy === "nickname") {
+        comparison = left.nickname.localeCompare(right.nickname);
+      } else if (sortBy === "wkLevel") {
+        comparison = left.wkLevel - right.wkLevel;
+      } else if (sortBy === "pendingReviews") {
+        comparison = left.pendingReviews - right.pendingReviews;
+      } else if (sortBy === "lastSyncedAt") {
+        comparison = left.lastSyncedAt.localeCompare(right.lastSyncedAt);
+      } else if (sortBy === "createdAt") {
+        comparison = left.createdAt.localeCompare(right.createdAt);
+      }
+
+      if (comparison === 0) {
+        comparison = left.id.localeCompare(right.id);
+      }
+
+      return comparison * direction;
+    });
+  }, [accounts, sortBy, sortDir]);
+
+  const pageCount = Math.max(1, Math.ceil(sortedAccounts.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pagedAccounts = useMemo(() => {
+    const offset = (safePage - 1) * pageSize;
+    return sortedAccounts.slice(offset, offset + pageSize);
+  }, [pageSize, safePage, sortedAccounts]);
+
   if (!sessionAuthorized) {
     return null;
   }
@@ -83,15 +146,17 @@ export default function AdminAccountsSection({
           <table className="min-w-245 w-full border-collapse text-sm">
             <thead className="bg-surface-muted text-[11px] uppercase tracking-[0.08em] text-foreground/70">
               <tr className="border-b border-line">
-                <th className="px-3 py-2">User</th>
-                <th className="px-3 py-2">Joined</th>
-                <th className="px-3 py-2">Sync</th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("nickname")} className="font-bold">User {sortIndicator(sortBy, "nickname", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("wkLevel")} className="font-bold">Level {sortIndicator(sortBy, "wkLevel", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("pendingReviews")} className="font-bold">Due {sortIndicator(sortBy, "pendingReviews", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("createdAt")} className="font-bold">Joined {sortIndicator(sortBy, "createdAt", sortDir)}</button></th>
+                <th className="px-3 py-2"><button type="button" onClick={() => toggleSort("lastSyncedAt")} className="font-bold">Sync {sortIndicator(sortBy, "lastSyncedAt", sortDir)}</button></th>
                 <th className="px-3 py-2">Invite Code</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account) => {
+              {pagedAccounts.map((account) => {
                 const syncLockLabel = lockLabel(account);
                 const linkedEmail = account.joinedByEmail?.trim().toLowerCase() ?? null;
                 const isMe = Boolean(viewerEmail && linkedEmail && linkedEmail === viewerEmail.trim().toLowerCase());
@@ -109,9 +174,11 @@ export default function AdminAccountsSection({
                         ) : null}
                       </div>
                       <p className="text-xs text-foreground/65">
-                        @{account.wkUsername} · Lv {account.wkLevel} · Due {account.pendingReviews}
+                        @{account.wkUsername}
                       </p>
                     </td>
+                    <td className="px-3 py-3 text-xs font-semibold text-foreground/80">Lv {account.wkLevel}</td>
+                    <td className="px-3 py-3 text-xs font-semibold text-foreground/80">{account.pendingReviews}</td>
                     <td className="px-3 py-3 text-xs text-foreground/65">
                       <p>{formatDateShort(account.createdAt)}</p>
                       <p>{account.joinedByName ? `by ${account.joinedByName}` : ""}</p>
@@ -203,6 +270,40 @@ export default function AdminAccountsSection({
           </table>
         )}
       </div>
+
+      {accounts.length > 0 ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <label className="flex items-center gap-2 text-xs font-semibold text-foreground/75">
+            Page size
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
+                setPage(1);
+              }}
+              className="h-8 rounded border border-line bg-surface px-2"
+              disabled={loading}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
+
+          <AdminPaginationControls
+            page={safePage}
+            pageCount={pageCount}
+            itemLabel="accounts"
+            total={sortedAccounts.length}
+            onFirst={() => setPage(1)}
+            onPrevious={() => setPage((prev) => Math.max(1, prev - 1))}
+            onNext={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+            onLast={() => setPage(pageCount)}
+            onPageChange={(nextPage) => setPage(nextPage)}
+            disabled={loading}
+          />
+        </div>
+      ) : null}
     </section>
   );
 }
