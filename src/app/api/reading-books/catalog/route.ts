@@ -39,8 +39,16 @@ function getReadingChallengeBookDelegate(): ReadingChallengeBookDelegate | null 
   return delegate ?? null;
 }
 
+function normalizeCatalogTitle(title: string): string {
+  return title.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function isFallbackCatalogTitle(title: string): boolean {
+  return /^isbn[:\s]/i.test(title.trim());
+}
+
 function buildCatalogOptions(rows: ReadingBookRow[]): BookCatalogOption[] {
-  const uniqueByIsbn = new Map<string, BookCatalogOption>();
+  const uniqueByTitle = new Map<string, BookCatalogOption>();
 
   for (const row of rows) {
     const isbn = row.isbn.trim();
@@ -49,15 +57,29 @@ function buildCatalogOptions(rows: ReadingBookRow[]): BookCatalogOption[] {
       continue;
     }
 
-    if (!uniqueByIsbn.has(isbn)) {
-      uniqueByIsbn.set(isbn, {
+    const normalizedTitle = normalizeCatalogTitle(title);
+    if (!normalizedTitle) {
+      continue;
+    }
+
+    const existing = uniqueByTitle.get(normalizedTitle);
+    if (!existing) {
+      uniqueByTitle.set(normalizedTitle, {
+        isbn,
+        title,
+      });
+      continue;
+    }
+
+    if (isFallbackCatalogTitle(existing.title) && !isFallbackCatalogTitle(title)) {
+      uniqueByTitle.set(normalizedTitle, {
         isbn,
         title,
       });
     }
   }
 
-  return [...uniqueByIsbn.values()].sort((left, right) => left.title.localeCompare(right.title, "en"));
+  return [...uniqueByTitle.values()].sort((left, right) => left.title.localeCompare(right.title, "en"));
 }
 
 export async function GET(request: Request) {
