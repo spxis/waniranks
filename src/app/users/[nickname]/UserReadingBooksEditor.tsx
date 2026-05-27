@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { ReadingChallengeBookRecord } from "@/lib/readingSignoff";
 
@@ -44,6 +44,27 @@ export default function UserReadingBooksEditor({
   function toggleBookPreview(book: ReadingChallengeBookRecord) {
     setPreviewBook((prev) => (prev?.id === book.id ? null : book));
   }
+
+  useEffect(() => {
+    if (!previewBook) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+      // Capture phase + stopImmediatePropagation so the parent editor's
+      // window-level Escape handler doesn't also close the books modal.
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      setPreviewBook(null);
+    }
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [previewBook]);
 
   async function handleSetCoverUrl(book: ReadingChallengeBookRecord) {
     const current = book.manualCoverUrl ?? "";

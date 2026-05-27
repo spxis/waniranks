@@ -133,20 +133,20 @@ export async function GET(request: Request) {
           });
         }
 
-        const challengeBookQuery = {
+        const challengeBookQuery: Parameters<typeof readingChallengeBook.findMany>[0] = {
           where: {
             accountId: { in: targetAccountIds },
             ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
           },
-          orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: {
-            id: true as const,
-            accountId: true as const,
-            isbn: true as const,
-            title: true as const,
-            thumbnailUrl: true as const,
-            manualCoverUrl: true as const,
-            infoUrl: true as const,
+            id: true,
+            accountId: true,
+            isbn: true,
+            title: true,
+            thumbnailUrl: true,
+            manualCoverUrl: true,
+            infoUrl: true,
           },
         };
 

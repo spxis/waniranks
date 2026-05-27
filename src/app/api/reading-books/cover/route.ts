@@ -12,21 +12,24 @@ const querySchema = z.object({
 
 type CoverSize = "small" | "large";
 
-function toOpenLibraryCoverUrlSized(isbn: string, size: CoverSize): string {
-  const suffix = size === "large" ? "L" : "M";
-  return `https://covers.openlibrary.org/b/isbn/${isbn}-${suffix}.jpg?default=false`;
+function openLibraryCoverUrlsForSize(isbn: string, size: CoverSize): string[] {
+  const large = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+  const medium = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+  return size === "large" ? [large, medium] : [medium];
 }
 
-function upgradeGoogleBooksUrlForSize(url: string, size: CoverSize): string {
+function googleBooksCoverUrlsForSize(url: string, size: CoverSize): string[] {
   if (size !== "large") {
-    return url;
+    return [url];
   }
-  // Drop edge=curl artifact and bump zoom for a sharper crop.
+  // Try a sharper crop first; fall back to the original thumbnail if zoom=3 404s.
   const withoutEdge = url.replace(/&edge=curl/gi, "");
-  if (/[?&]zoom=\d+/i.test(withoutEdge)) {
-    return withoutEdge.replace(/([?&]zoom=)\d+/i, "$13");
-  }
-  return withoutEdge.includes("?") ? `${withoutEdge}&zoom=3` : `${withoutEdge}?zoom=3`;
+  const sharp = /[?&]zoom=\d+/i.test(withoutEdge)
+    ? withoutEdge.replace(/([?&]zoom=)\d+/i, "$13")
+    : withoutEdge.includes("?")
+      ? `${withoutEdge}&zoom=3`
+      : `${withoutEdge}?zoom=3`;
+  return sharp === url ? [url] : [sharp, url];
 }
 
 function toIsbn13FromIsbn10(isbn10: string): string | null {
@@ -239,17 +242,21 @@ export async function GET(request: Request) {
         for (const candidateIsbn of lookupIsbns) {
           const googleCoverUrl = await fetchGoogleBooksCoverUrlByIsbn(candidateIsbn);
           if (googleCoverUrl) {
-            const googleImage = await fetchImageFromUrl(upgradeGoogleBooksUrlForSize(googleCoverUrl, size));
-            if (googleImage) {
-              return googleImage;
+            for (const variant of googleBooksCoverUrlsForSize(googleCoverUrl, size)) {
+              const googleImage = await fetchImageFromUrl(variant);
+              if (googleImage) {
+                return googleImage;
+              }
             }
           }
         }
 
         for (const candidateIsbn of lookupIsbns) {
-          const openLibraryImage = await fetchImageFromUrl(toOpenLibraryCoverUrlSized(candidateIsbn, size));
-          if (openLibraryImage) {
-            return openLibraryImage;
+          for (const openLibraryUrl of openLibraryCoverUrlsForSize(candidateIsbn, size)) {
+            const openLibraryImage = await fetchImageFromUrl(openLibraryUrl);
+            if (openLibraryImage) {
+              return openLibraryImage;
+            }
           }
         }
 
