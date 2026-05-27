@@ -234,6 +234,15 @@ async function fetchOpenLibraryTitleByIsbn(isbn: string): Promise<string | null>
   }
 }
 
+// NDL (National Diet Library) Japan thumbnail URL — works for most Japanese
+// ISBNs (4xxx ISBN10, 9784xxx ISBN13) when openBD/Google have no real cover.
+function ndlCoverUrlForIsbn(isbn: string): string | null {
+  if (!/^(978|979)4\d{9}$/.test(isbn) && !/^4\d{9}$/.test(isbn)) {
+    return null;
+  }
+  return `https://ndlsearch.ndl.go.jp/thumbnail/${isbn}.jpg`;
+}
+
 async function fetchGoogleBooksMetadataByIsbn(isbn: string): Promise<{
   title: string | null;
   thumbnailUrl: string | null;
@@ -284,11 +293,12 @@ async function fetchBookMetadataByIsbn(isbn: string): Promise<{
   const openBd = await fetchOpenBdMetadataByIsbn(isbn);
   const openLibraryTitle = await fetchOpenLibraryTitleByIsbn(isbn);
   const google = await fetchGoogleBooksMetadataByIsbn(isbn);
+  const ndlThumbnail = ndlCoverUrlForIsbn(isbn);
 
   const title = openBd.title ?? openLibraryTitle ?? google.title;
   return {
     title,
-    thumbnailUrl: openBd.thumbnailUrl ?? google.thumbnailUrl ?? toOpenLibraryCoverUrl(isbn),
+    thumbnailUrl: openBd.thumbnailUrl ?? ndlThumbnail ?? google.thumbnailUrl ?? toOpenLibraryCoverUrl(isbn),
     infoUrl: google.infoUrl ?? toOpenLibraryBookUrl(isbn),
   };
 }

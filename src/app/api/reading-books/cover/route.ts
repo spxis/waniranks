@@ -146,6 +146,17 @@ async function fetchImageFromUrl(url: string, minBytes: number = MIN_VALID_COVER
   }
 }
 
+// NDL (National Diet Library) Japan publishes cover thumbnails for most
+// Japanese-published ISBNs. Returns the image when a cover exists or 404s
+// cleanly when it does not.
+function ndlCoverUrlForIsbn(isbn: string): string | null {
+  // Heuristic: Japanese ISBNs start with 978-4 / 979-4 (ISBN13) or 4 (ISBN10).
+  if (!/^(978|979)4\d{9}$/.test(isbn) && !/^4\d{9}$/.test(isbn)) {
+    return null;
+  }
+  return `https://ndlsearch.ndl.go.jp/thumbnail/${isbn}.jpg`;
+}
+
 async function fetchOpenBdCoverUrlByIsbn(isbn: string): Promise<string | null> {
   try {
     const response = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`, { cache: "no-store" });
@@ -239,6 +250,16 @@ export async function GET(request: Request) {
             const openBdImage = await fetchImageFromUrl(openBdUrl);
             if (openBdImage) {
               return openBdImage;
+            }
+          }
+        }
+
+        for (const candidateIsbn of lookupIsbns) {
+          const ndlUrl = ndlCoverUrlForIsbn(candidateIsbn);
+          if (ndlUrl) {
+            const ndlImage = await fetchImageFromUrl(ndlUrl);
+            if (ndlImage) {
+              return ndlImage;
             }
           }
         }

@@ -32,7 +32,7 @@ export default function UserReadingBookCoverImage({
   size = "large",
 }: UserReadingBookCoverImageProps) {
   const coverProxyUrl = useMemo(
-    () => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}&size=${size}&v=4` : null),
+    () => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}&size=${size}&v=5` : null),
     [isbn, size],
   );
   const openLibraryUrl = useMemo(

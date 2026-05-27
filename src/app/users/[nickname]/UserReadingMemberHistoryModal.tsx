@@ -269,6 +269,7 @@ export default function UserReadingMemberHistoryModal({
                     minutesRead={day.signoff.minutesRead}
                     didWanikaniReviews={day.signoff.didWanikaniReviews}
                     book={bookByTitle.get(normalizeTitleKey(day.signoff.bookTitle)) ?? null}
+                    bookOptions={memberBooks}
                     isAdmin={isAdmin}
                     isEditing={editingId === day.signoff.id}
                     draft={editingId === day.signoff.id ? draft : null}
@@ -291,6 +292,7 @@ export default function UserReadingMemberHistoryModal({
                     minutesRead={entry.minutesRead}
                     didWanikaniReviews={entry.didWanikaniReviews}
                     book={bookByTitle.get(normalizeTitleKey(entry.bookTitle)) ?? null}
+                    bookOptions={memberBooks}
                     isAdmin={isAdmin}
                     isEditing={editingId === entry.id}
                     draft={editingId === entry.id ? draft : null}
@@ -320,6 +322,7 @@ type RowDisplayProps = {
   minutesRead: number;
   didWanikaniReviews: boolean;
   book: BookLookup;
+  bookOptions: ReadingChallengeBookRecord[];
   isAdmin: boolean;
   isEditing: boolean;
   draft: EditDraft | null;
@@ -339,6 +342,7 @@ function RowDisplay({
   minutesRead,
   didWanikaniReviews,
   book,
+  bookOptions,
   isAdmin,
   isEditing,
   draft,
@@ -355,13 +359,21 @@ function RowDisplay({
     return (
       <li className="rounded border border-accent/40 bg-surface p-2">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
-          <input
-            type="text"
+          <select
             value={draft.bookTitle}
             onChange={(event) => onDraftChange({ ...draft, bookTitle: event.target.value })}
             className="rounded border border-line bg-surface px-2 py-1 text-xs"
-            placeholder="Book title"
-          />
+            aria-label="Book"
+          >
+            {bookOptions.findIndex((option) => option.title === draft.bookTitle) === -1 ? (
+              <option value={draft.bookTitle}>{draft.bookTitle || "(unknown book)"}</option>
+            ) : null}
+            {bookOptions.map((option) => (
+              <option key={option.id} value={option.title}>
+                {option.title}
+              </option>
+            ))}
+          </select>
           <input
             type="number"
             min={0}
