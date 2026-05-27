@@ -4,6 +4,7 @@ export type ReadingChallengeScoringRules = {
   weeklyCaps: number[];
   weeklyPerfectScore: number;
   baseHalfCreditScore: number;
+  minimalCheckinScore?: number;
   streak: {
     incrementPerPerfectDay: number;
     maxMultiplier: number;
@@ -65,6 +66,7 @@ export const FIRST_READING_CHALLENGE: ReadingChallengeDefinition = {
     weeklyCaps: [3500, 4000, 4500, 4750, 5000, 5250, 6000, 7000],
     weeklyPerfectScore: 9.1,
     baseHalfCreditScore: 0.5,
+    minimalCheckinScore: 0.25,
     streak: {
       incrementPerPerfectDay: 0.1,
       maxMultiplier: 1.6,

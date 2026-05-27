@@ -83,10 +83,11 @@ function computeDayOutcome(
   }
 
   const { thresholds, bonuses, baseHalfCreditScore } = challenge.scoringRules;
+  const minimalCheckinScore = challenge.scoringRules.minimalCheckinScore ?? 0;
   const readingDone = record.pagesRead >= thresholds.pages || record.minutesRead >= thresholds.minutes;
   const waniDone = record.didWanikaniReviews;
   const perfect = readingDone && waniDone;
-  const score = perfect ? 1 : readingDone || waniDone ? baseHalfCreditScore : 0;
+  const score = perfect ? 1 : readingDone || waniDone ? baseHalfCreditScore : minimalCheckinScore;
 
   const pagesBonusYen = record.pagesRead >= bonuses.pages.threshold ? bonuses.pages.yen : 0;
   const minutesBonusYen = record.minutesRead >= bonuses.minutes.threshold ? bonuses.minutes.yen : 0;

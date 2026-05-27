@@ -114,6 +114,17 @@ export default function AdminScoringRulesBuilder({ value, disabled, onChange }: 
           />
         </label>
         <label className="text-xs font-semibold text-foreground/75">
+          Minimal check-in score
+          <input
+            type="number"
+            step="0.01"
+            value={rules?.minimalCheckinScore ?? ""}
+            onChange={(event) => apply((next) => { next.minimalCheckinScore = Number(event.target.value || 0); })}
+            className="mt-1 h-9 w-full rounded-md border border-line bg-white px-2 text-xs"
+            disabled={disabled || !rules}
+          />
+        </label>
+        <label className="text-xs font-semibold text-foreground/75">
           Reading pages threshold
           <input
             type="number"

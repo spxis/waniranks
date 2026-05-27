@@ -8,6 +8,7 @@ export const readingChallengeScoringRulesSchema = z.object({
   weeklyCaps: z.array(z.number().int().min(0).max(100_000)).min(1).max(24),
   weeklyPerfectScore: z.number().min(0).max(100),
   baseHalfCreditScore: z.number().min(0).max(100),
+  minimalCheckinScore: z.number().min(0).max(100).optional(),
   streak: z.object({
     incrementPerPerfectDay: z.number().min(0).max(10),
     maxMultiplier: z.number().min(1).max(10),
