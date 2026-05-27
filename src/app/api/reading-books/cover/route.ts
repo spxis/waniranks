@@ -8,6 +8,31 @@ const querySchema = z.object({
   isbn: z.string().min(1).max(32),
 });
 
+function toIsbn13FromIsbn10(isbn10: string): string | null {
+  if (!/^\d{9}[\dX]$/.test(isbn10)) {
+    return null;
+  }
+
+  const body = `978${isbn10.slice(0, 9)}`;
+  let sum = 0;
+  for (let index = 0; index < body.length; index += 1) {
+    const digit = Number(body[index]);
+    sum += digit * (index % 2 === 0 ? 1 : 3);
+  }
+
+  const checkDigit = (10 - (sum % 10)) % 10;
+  return `${body}${checkDigit}`;
+}
+
+function expandLookupIsbns(isbn: string): string[] {
+  if (isbn.length !== 10) {
+    return [isbn];
+  }
+
+  const isbn13 = toIsbn13FromIsbn10(isbn);
+  return isbn13 ? [isbn13, isbn] : [isbn];
+}
+
 function noCoverResponse(): NextResponse {
   return new NextResponse(null, {
     status: 404,
@@ -116,25 +141,33 @@ export async function GET(request: Request) {
           return noCoverResponse();
         }
 
-        const openBdUrl = await fetchOpenBdCoverUrlByIsbn(isbn);
-        if (openBdUrl) {
-          const openBdImage = await fetchImageFromUrl(openBdUrl);
-          if (openBdImage) {
-            return openBdImage;
+        const lookupIsbns = expandLookupIsbns(isbn);
+
+        for (const candidateIsbn of lookupIsbns) {
+          const openBdUrl = await fetchOpenBdCoverUrlByIsbn(candidateIsbn);
+          if (openBdUrl) {
+            const openBdImage = await fetchImageFromUrl(openBdUrl);
+            if (openBdImage) {
+              return openBdImage;
+            }
           }
         }
 
-        const googleCoverUrl = await fetchGoogleBooksCoverUrlByIsbn(isbn);
-        if (googleCoverUrl) {
-          const googleImage = await fetchImageFromUrl(googleCoverUrl);
-          if (googleImage) {
-            return googleImage;
+        for (const candidateIsbn of lookupIsbns) {
+          const googleCoverUrl = await fetchGoogleBooksCoverUrlByIsbn(candidateIsbn);
+          if (googleCoverUrl) {
+            const googleImage = await fetchImageFromUrl(googleCoverUrl);
+            if (googleImage) {
+              return googleImage;
+            }
           }
         }
 
-        const openLibraryImage = await fetchImageFromUrl(toOpenLibraryCoverUrl(isbn));
-        if (openLibraryImage) {
-          return openLibraryImage;
+        for (const candidateIsbn of lookupIsbns) {
+          const openLibraryImage = await fetchImageFromUrl(toOpenLibraryCoverUrl(candidateIsbn));
+          if (openLibraryImage) {
+            return openLibraryImage;
+          }
         }
 
         return noCoverResponse();

@@ -31,7 +31,10 @@ export default function UserReadingBookCoverImage({
   className,
   alt,
 }: UserReadingBookCoverImageProps) {
-  const coverProxyUrl = useMemo(() => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}` : null), [isbn]);
+  const coverProxyUrl = useMemo(
+    () => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}&v=2` : null),
+    [isbn],
+  );
   const openLibraryUrl = useMemo(() => (isbn ? toOpenLibraryCoverUrl(isbn) : null), [isbn]);
   const fallbackCandidates = useMemo(() => {
     const primary = normalizeCoverUrl(thumbnailUrl);
