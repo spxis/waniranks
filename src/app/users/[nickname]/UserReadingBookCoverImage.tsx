@@ -29,7 +29,7 @@ export default function UserReadingBookCoverImage({
   height,
   className,
   alt,
-  size = "small",
+  size = "large",
 }: UserReadingBookCoverImageProps) {
   const coverProxyUrl = useMemo(
     () => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}&size=${size}&v=4` : null),

@@ -9,12 +9,13 @@ import UserReadingCampaignHeader from "./UserReadingCampaignHeader";
 import UserReadingDashboardBooksSection from "./UserReadingDashboardBooksSection";
 import UserReadingCalendar from "./UserReadingCalendar";
 import UserReadingCheckinModal from "./UserReadingCheckinModal";
+import UserReadingMemberHistoryModal from "./UserReadingMemberHistoryModal";
 import UserReadingRewardsSummary from "./UserReadingRewardsSummary";
 import { clampMonthKeyToBounds, resolveCampaignMonthBounds, resolveReadingCampaignOptions, resolveSelectedReadingCampaignId } from "./UserReadingSignoffPanel.campaigns";
 import { applyReadingCheckinMode, getRememberedReadingCheckinMode, rememberReadingCheckinMode, type ReadingCheckinMode } from "./UserReadingSignoffPanel.mode";
 import { addReadingBookByIsbn, deleteReadingBookById, getRememberedBook, rememberSelectedBook } from "./UserReadingSignoffPanel.books";
 import { buildCheckinSavedMessage, type ReadingSignoffSubmitResponse } from "./UserReadingSignoffPanel.submit";
-import { createFormState, type FormState, type ReadingCampaignOption, type ReadingSignoffResponse, type TodayStats, type UserReadingSignoffPanelProps } from "./UserReadingSignoffPanel.types";
+import { createFormState, type FormState, type Member, type ReadingCampaignOption, type ReadingSignoffResponse, type TodayStats, type UserReadingSignoffPanelProps } from "./UserReadingSignoffPanel.types";
 export default function UserReadingSignoffPanel({ accountId, initialMonthKey, initialData }: UserReadingSignoffPanelProps) {
   const today = getTodayDateInputValue();
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>(initialData?.selectedChallengeId ?? ACTIVE_READING_CHALLENGE.id);
@@ -30,6 +31,7 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
   const [bookActionMessage, setBookActionMessage] = useState("");
   const [bookActionState, setBookActionState] = useState<"idle" | "adding" | "deleting">("idle");
   const [modalDirty, setModalDirty] = useState(false);
+  const [historyMember, setHistoryMember] = useState<Member | null>(null);
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState<string>("");
   const swrKey = `/api/reading-signoffs?month=${encodeURIComponent(monthKey)}&challengeId=${encodeURIComponent(selectedCampaignId)}`;
@@ -413,13 +415,11 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
         isLoading={isLoading}
         leaderboard={leaderboard}
       />
-
       <UserReadingCampaignHeader
         campaigns={campaigns}
         selectedCampaignId={selectedCampaignId}
         onCampaignChange={setSelectedCampaignId}
       />
-
       <UserReadingDashboardBooksSection
         viewerCanChooseMember={viewerCanChooseMember}
         members={members}
@@ -434,7 +434,6 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
         onAddBookByIsbn={addBookByIsbn}
         onDeleteBook={deleteBook}
       />
-
       <UserReadingCalendar
         monthKey={monthKey}
         today={today}
@@ -448,8 +447,12 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
         viewerCanChooseMember={viewerCanChooseMember}
         onMonthChange={setBoundedMonthKey}
         onOpenCheckinModal={openCheckinModal}
+        onOpenMemberHistory={setHistoryMember}
       />
-
+      <UserReadingMemberHistoryModal open={historyMember !== null} member={historyMember}
+        signoffs={historyMember ? signoffs.filter((row) => row.accountId === historyMember.id) : []}
+        entries={historyMember ? signoffEntries.filter((row) => row.accountId === historyMember.id) : []}
+        isAdmin={viewerCanChooseMember} onClose={() => setHistoryMember(null)} onMutate={mutate} />
       <UserReadingCheckinModal
         open={modalOpen}
         form={form}

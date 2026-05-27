@@ -28,6 +28,7 @@ type UserReadingCalendarProps = {
   viewerCanChooseMember: boolean;
   onMonthChange: Dispatch<SetStateAction<string>>;
   onOpenCheckinModal: (dateKey: string) => void;
+  onOpenMemberHistory: (member: Member) => void;
 };
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -45,6 +46,7 @@ export default function UserReadingCalendar({
   viewerCanChooseMember,
   onMonthChange,
   onOpenCheckinModal,
+  onOpenMemberHistory,
 }: UserReadingCalendarProps) {
   const thumbnailByMemberAndTitle = useMemo(() => {
     const map = new Map<string, string>();
@@ -197,9 +199,12 @@ export default function UserReadingCalendar({
                       : null;
 
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={`${key}-${member.id}`}
-                        className="rounded border border-emerald-300 bg-emerald-100 px-1 py-1 text-[10px] font-semibold text-emerald-800"
+                        onClick={() => onOpenMemberHistory(member)}
+                        className="w-full rounded border border-emerald-300 bg-emerald-100 px-1 py-1 text-left text-[10px] font-semibold text-emerald-800 transition hover:border-emerald-500 hover:bg-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        title={`See ${member.nickname}'s check-in history`}
                       >
                         <div className="flex items-center justify-between gap-1">
                           <span className="truncate">{member.nickname}</span>
@@ -244,7 +249,7 @@ export default function UserReadingCalendar({
                             <div className="truncate text-emerald-800/80">Detailed logs unavailable for this day.</div>
                           </div>
                         ) : null}
-                      </div>
+                      </button>
                     );
                   })}
                   {activeMembers.length === 0 && !isLoading ? (
