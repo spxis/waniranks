@@ -69,7 +69,7 @@ export default function UserReadingBooksEditor({
   async function handleSetCoverUrl(book: ReadingChallengeBookRecord) {
     const current = book.manualCoverUrl ?? "";
     const next = window.prompt(
-      "Paste an https image URL for this cover (leave blank to clear and use auto-detected covers).",
+      "Paste a high-res https image URL for this cover. It will be used everywhere (card + preview), downscaled by the browser. Leave blank to clear.",
       current,
     );
     if (next === null) {

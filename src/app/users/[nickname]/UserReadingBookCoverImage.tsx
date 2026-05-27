@@ -41,14 +41,13 @@ export default function UserReadingBookCoverImage({
   );
   const fallbackCandidates = useMemo(() => {
     const small = normalizeCoverUrl(thumbnailUrl);
-    // For the large preview, prefer the proxy/OpenLibrary large variants first;
-    // fall back to the stored small thumbnail so we never render an empty modal.
-    const ordered = size === "large"
-      ? [coverProxyUrl, openLibraryUrl, small, PLACEHOLDER_COVER_URL]
-      : [small, coverProxyUrl, openLibraryUrl, PLACEHOLDER_COVER_URL];
+    // Proxy is the canonical source at both sizes — it honours any manual
+    // cover URL override. Stored thumbnailUrl and direct OpenLibrary act as
+    // fallbacks if the proxy can't resolve a usable image.
+    const ordered = [coverProxyUrl, openLibraryUrl, small, PLACEHOLDER_COVER_URL];
     const candidates = ordered.filter((value): value is string => Boolean(value));
     return [...new Set(candidates)];
-  }, [thumbnailUrl, coverProxyUrl, openLibraryUrl, size]);
+  }, [thumbnailUrl, coverProxyUrl, openLibraryUrl]);
   const [failedSources, setFailedSources] = useState<Record<string, true>>({});
   const currentSrc = useMemo(
     () => fallbackCandidates.find((candidate) => !failedSources[candidate]) ?? PLACEHOLDER_COVER_URL,
