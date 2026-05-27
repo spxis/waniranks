@@ -135,7 +135,7 @@ export function normalizeIsbn(input: string): string | null {
 }
 
 export function toOpenLibraryCoverUrl(isbn: string): string {
-  return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
+  return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
 }
 
 export function toOpenLibraryBookUrl(isbn: string): string {

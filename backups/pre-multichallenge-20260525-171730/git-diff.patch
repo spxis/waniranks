@@ -1,0 +1,1089 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index d6990b4..17b7743 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -140,6 +140,37 @@ enum SubjectReviewSnapshotSource {
+   submit
+ }
+ 
++enum ReadingChallengeStatus {
++  draft
++  active
++  completed
++  archived
++}
++
++model ReadingChallenge {
++  id            String                @id @default(cuid())
++  slug          String                @unique
++  name          String
++  description   String
++  status        ReadingChallengeStatus @default(draft)
++  currencyCode  String                @default("JPY")
++  startDatePst  String
++  goalDatePst   String
++  tripDatePst   String
++  targetBaseYen Int
++  scoringRules  Json
++  createdAt     DateTime              @default(now())
++  updatedAt     DateTime              @updatedAt
++
++  signoffs      ReadingSignoff[]
++  signoffEntries ReadingSignoffEntry[]
++  books         ReadingChallengeBook[]
++  members       ReadingChallengeMember[]
++
++  @@index([status])
++  @@index([startDatePst, goalDatePst])
++}
++
+ model StudyReviewAttempt {
+   id           String            @id @default(cuid())
+   accountId    String
+@@ -176,6 +207,7 @@ model SubjectReviewStatsSnapshot {
+ 
+ model ReadingSignoff {
+   id                 String   @id @default(cuid())
++  challengeId        String?
+   accountId          String
+   signoffDatePst     String
+   bookTitle          String
+@@ -188,13 +220,17 @@ model ReadingSignoff {
+   createdAt          DateTime @default(now())
+   updatedAt          DateTime @updatedAt
+ 
++  challenge          ReadingChallenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
++
+   @@unique([accountId, signoffDatePst])
++  @@index([challengeId, accountId])
+   @@index([signoffDatePst])
+   @@index([accountId])
+ }
+ 
+ model ReadingSignoffEntry {
+   id                   String   @id @default(cuid())
++  challengeId          String?
+   accountId            String
+   signoffDatePst       String
+   bookTitle            String
+@@ -207,6 +243,9 @@ model ReadingSignoffEntry {
+   reviewSuccessPercent Int?
+   createdAt            DateTime @default(now())
+ 
++  challenge            ReadingChallenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
++
++  @@index([challengeId, accountId, signoffDatePst])
+   @@index([accountId, signoffDatePst])
+   @@index([accountId, createdAt])
+   @@index([signoffDatePst])
+@@ -214,6 +253,7 @@ model ReadingSignoffEntry {
+ 
+ model ReadingChallengeBook {
+   id           String   @id @default(cuid())
++  challengeId  String?
+   accountId    String
+   isbn         String
+   title        String
+@@ -222,16 +262,24 @@ model ReadingChallengeBook {
+   createdAt    DateTime @default(now())
+   updatedAt    DateTime @updatedAt
+ 
+-  @@unique([accountId, isbn])
++  challenge    ReadingChallenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
++
++  @@unique([accountId, isbn, challengeId])
++  @@index([challengeId, accountId])
+   @@index([accountId])
+ }
+ 
+ model ReadingChallengeMember {
+   id        String   @id @default(cuid())
+-  accountId String   @unique
++  challengeId String?
++  accountId String
+   tracked   Boolean  @default(true)
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
+ 
++  challenge ReadingChallenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
++
++  @@unique([challengeId, accountId])
++  @@index([challengeId, accountId])
+   @@index([accountId])
+ }
+diff --git a/src/app/admin/page.tsx b/src/app/admin/page.tsx
+index 04ad273..aa1bec1 100644
+--- a/src/app/admin/page.tsx
++++ b/src/app/admin/page.tsx
+@@ -3,6 +3,7 @@
+ import Link from "next/link";
+ import { FormEvent, useEffect, useState } from "react";
+ 
++import AdminChallengeSimulator from "./AdminChallengeSimulator";
+ import AdminControlRoom from "./AdminControlRoom";
+ import AdminStudyHistory from "./AdminStudyHistory";
+ import type { AdminSessionStatus, Status } from "./AdminPage.types";
+@@ -196,7 +197,7 @@ export default function AdminPage() {
+             </div>
+           </div>
+ 
+-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
++          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+             <Link
+               href="/"
+               className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
+@@ -215,6 +216,12 @@ export default function AdminPage() {
+             >
+               Reading check-ins
+             </Link>
++            <Link
++              href="#challenge-simulator"
++              className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-surface-muted"
++            >
++              Challenge simulator
++            </Link>
+           </div>
+         </section>
+ 
+@@ -249,6 +256,8 @@ export default function AdminPage() {
+           }}
+         />
+ 
++        <AdminChallengeSimulator />
++
+         <AdminStudyHistory sessionAuthorized={sessionAuthorized} />
+       </main>
+     </div>
+diff --git a/src/app/api/reading-books/route.ts b/src/app/api/reading-books/route.ts
+index 139cf5f..e0500fb 100644
+--- a/src/app/api/reading-books/route.ts
++++ b/src/app/api/reading-books/route.ts
+@@ -3,6 +3,7 @@ import { z } from "zod";
+ import { canAccessAccount } from "@/lib/accountAccess";
+ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
+ import { prisma } from "@/lib/prisma";
++import { ensureActiveReadingChallengeId } from "@/lib/readingChallengeStore";
+ import { normalizeIsbn, toOpenLibraryCoverUrl, toOpenLibraryBookUrl } from "@/lib/readingSignoff";
+ 
+ const postBodySchema = z.object({
+@@ -17,6 +18,7 @@ const deleteBodySchema = z.object({
+ 
+ type ReadingBookRow = {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   isbn: string;
+   title: string;
+@@ -25,20 +27,20 @@ type ReadingBookRow = {
+ };
+ 
+ type ReadingChallengeBookDelegate = {
+-  create: (args: { data: { accountId: string; isbn: string; title: string; thumbnailUrl: string | null; infoUrl: string | null } }) => Promise<ReadingBookRow>;
++  create: (args: { data: { challengeId?: string | null; accountId: string; isbn: string; title: string; thumbnailUrl: string | null; infoUrl: string | null } }) => Promise<ReadingBookRow>;
+   findFirst: (args: { where: Record<string, unknown>; select: Record<string, true> }) => Promise<ReadingBookRow | null>;
+   findMany: (args: { where: Record<string, unknown>; orderBy?: Record<string, "asc" | "desc">; select: Record<string, true> }) => Promise<Array<ReadingBookRow & { updatedAt?: Date }>>;
+   findUnique: (args: {
+     where: { id: string };
+-    select: { id: true; accountId: true; title: true };
+-  }) => Promise<{ id: string; accountId: string; title: string } | null>;
++    select: { id: true; challengeId?: true; accountId: true; title: true };
++  }) => Promise<{ id: string; challengeId?: string | null; accountId: string; title: string } | null>;
+   update: (args: { where: { id: string }; data: { title?: string; thumbnailUrl?: string | null; infoUrl?: string | null } }) => Promise<ReadingBookRow>;
+   updateMany: (args: { where: Record<string, unknown>; data: { title?: string; thumbnailUrl?: string; infoUrl?: string } }) => Promise<{ count: number }>;
+   delete: (args: { where: { id: string } }) => Promise<void>;
+ };
+ 
+ type ReadingSignoffDelegate = {
+-  findFirst: (args: { where: { accountId: string; bookTitle: string }; select: { id: true } }) => Promise<{ id: string } | null>;
++  findFirst: (args: { where: Record<string, unknown>; select: { id: true } }) => Promise<{ id: string } | null>;
+ };
+ 
+ function getReadingChallengeBookDelegate(): ReadingChallengeBookDelegate | null {
+@@ -307,6 +309,8 @@ export async function POST(request: Request) {
+           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+         }
+ 
++        const activeChallengeId = await ensureActiveReadingChallengeId();
++
+         const readingChallengeBook = getReadingChallengeBookDelegate();
+         if (!readingChallengeBook) {
+           return NextResponse.json(
+@@ -324,6 +328,7 @@ export async function POST(request: Request) {
+           where: {
+             accountId: parsed.data.accountId,
+             isbn,
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+           },
+           select: {
+             id: true,
+@@ -383,6 +388,7 @@ export async function POST(request: Request) {
+ 
+         const created = await readingChallengeBook.create({
+           data: {
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+             accountId: parsed.data.accountId,
+             isbn,
+             title: resolvedTitle,
+@@ -426,6 +432,8 @@ export async function DELETE(request: Request) {
+           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+         }
+ 
++        const activeChallengeId = await ensureActiveReadingChallengeId();
++
+         const readingChallengeBook = getReadingChallengeBookDelegate();
+         const readingSignoff = getReadingSignoffDelegate();
+         if (!readingChallengeBook || !readingSignoff) {
+@@ -439,6 +447,7 @@ export async function DELETE(request: Request) {
+           where: { id: parsed.data.bookId },
+           select: {
+             id: true,
++            challengeId: true,
+             accountId: true,
+             title: true,
+           },
+@@ -448,10 +457,15 @@ export async function DELETE(request: Request) {
+           return NextResponse.json({ error: "Book not found." }, { status: 404 });
+         }
+ 
++        if (activeChallengeId && book.challengeId && book.challengeId !== activeChallengeId) {
++          return NextResponse.json({ error: "Book belongs to a different challenge." }, { status: 409 });
++        }
++
+         const startedCheck = await readingSignoff.findFirst({
+           where: {
+             accountId: parsed.data.accountId,
+             bookTitle: book.title,
++            ...(activeChallengeId ? { OR: [{ challengeId: activeChallengeId }, { challengeId: null }] } : {}),
+           },
+           select: { id: true },
+         });
+diff --git a/src/app/api/reading-signoffs/readingSignoffsRoute.lib.ts b/src/app/api/reading-signoffs/readingSignoffsRoute.lib.ts
+index 7714533..03480b5 100644
+--- a/src/app/api/reading-signoffs/readingSignoffsRoute.lib.ts
++++ b/src/app/api/reading-signoffs/readingSignoffsRoute.lib.ts
+@@ -1,5 +1,4 @@
+ import { getServerSession } from "next-auth";
+-
+ import { isAuthorizedAdmin } from "@/lib/admin";
+ import { authOptions } from "@/lib/auth";
+ import {
+@@ -18,7 +17,6 @@ import {
+   type ReadingSignoffEntryRecord,
+   type ReadingSignoffRecord,
+ } from "@/lib/readingSignoff";
+-
+ export type ViewerAccountSummary = {
+   id: string;
+   nickname: string;
+@@ -28,26 +26,76 @@ export type ViewerAccountSummary = {
+   learnedRadicals: number;
+   learnedVocabulary: number;
+ };
+-
+ export type LatestSignoffSummary = {
+   accountId: string;
+   bookTitle: string;
+   pagesRead: number;
+   signoffDatePst: string;
+ };
+-
+ export type ReadingSignoffDelegate = {
+-  findMany: typeof prisma.readingSignoff.findMany;
+-  findUnique: typeof prisma.readingSignoff.findUnique;
+-  upsert: typeof prisma.readingSignoff.upsert;
++  findMany: (args: {
++    where: Record<string, unknown>;
++    orderBy?: Array<Record<string, "asc" | "desc">>;
++  }) => Promise<Array<{
++    id: string;
++    challengeId?: string | null;
++    accountId: string;
++    signoffDatePst: string;
++    bookTitle: string;
++    pagesRead: number;
++    minutesRead: number;
++    didWanikaniReviews: boolean;
++    reviewsLeft: number;
++    apprenticeCount: number;
++    currentWkLevel: number;
++    createdAt: Date;
++    updatedAt: Date;
++  }>>;
++  findUnique: (args: {
++    where: { accountId_signoffDatePst: { accountId: string; signoffDatePst: string } };
++  }) => Promise<{
++    id: string;
++    challengeId?: string | null;
++    accountId: string;
++    signoffDatePst: string;
++    bookTitle: string;
++    pagesRead: number;
++    minutesRead: number;
++    didWanikaniReviews: boolean;
++    reviewsLeft: number;
++    apprenticeCount: number;
++    currentWkLevel: number;
++    createdAt: Date;
++    updatedAt: Date;
++  } | null>;
++  upsert: (args: {
++    where: { accountId_signoffDatePst: { accountId: string; signoffDatePst: string } };
++    update: Record<string, unknown>;
++    create: Record<string, unknown>;
++  }) => Promise<{
++    id: string;
++    challengeId?: string | null;
++    accountId: string;
++    signoffDatePst: string;
++    bookTitle: string;
++    pagesRead: number;
++    minutesRead: number;
++    didWanikaniReviews: boolean;
++    reviewsLeft: number;
++    apprenticeCount: number;
++    currentWkLevel: number;
++    createdAt: Date;
++    updatedAt: Date;
++  }>;
+ };
+ 
+ export type ReadingChallengeBookDelegate = {
+   findMany: (args: {
+-    where: { accountId: { in: string[] } };
++    where: { accountId: { in: string[] }; challengeId?: string | null };
+     orderBy: [{ createdAt: "asc" | "desc" }, { id: "asc" | "desc" }];
+     select: {
+       id: true;
++      challengeId?: true;
+       accountId: true;
+       isbn: true;
+       title: true;
+@@ -56,6 +104,7 @@ export type ReadingChallengeBookDelegate = {
+     };
+   }) => Promise<Array<{
+     id: string;
++    challengeId?: string | null;
+     accountId: string;
+     isbn: string;
+     title: string;
+@@ -64,6 +113,7 @@ export type ReadingChallengeBookDelegate = {
+   }>>;
+   createMany: (args: {
+     data: Array<{
++      challengeId?: string | null;
+       accountId: string;
+       isbn: string;
+       title: string;
+@@ -76,13 +126,19 @@ export type ReadingChallengeBookDelegate = {
+ 
+ export type ReadingChallengeMemberDelegate = {
+   findMany: (args: {
+-    where: { accountId: { in: string[] } };
++    where: { accountId: { in: string[] }; challengeId?: string | null };
+     select: { accountId: true; tracked: true };
+   }) => Promise<Array<{ accountId: string; tracked: boolean }>>;
+-  upsert: (args: {
+-    where: { accountId: string };
+-    update: { tracked: boolean };
+-    create: { accountId: string; tracked: boolean };
++  findFirst: (args: {
++    where: { accountId: string; challengeId?: string | null };
++    select: { id: true; accountId: true; tracked: true };
++  }) => Promise<{ id: string; accountId: string; tracked: boolean } | null>;
++  update: (args: {
++    where: { id: string };
++    data: { tracked: boolean };
++  }) => Promise<{ accountId: string; tracked: boolean }>;
++  create: (args: {
++    data: { challengeId?: string | null; accountId: string; tracked: boolean };
+   }) => Promise<{ accountId: string; tracked: boolean }>;
+ };
+ 
+@@ -123,6 +179,7 @@ function learnedCountsFromItemSpread(input: unknown): {
+ 
+ export function toReadingSignoffRecord(row: {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   signoffDatePst: string;
+   bookTitle: string;
+@@ -137,6 +194,7 @@ export function toReadingSignoffRecord(row: {
+ }): ReadingSignoffRecord {
+   return {
+     id: row.id,
++    challengeId: row.challengeId ?? null,
+     accountId: row.accountId,
+     signoffDatePst: row.signoffDatePst,
+     bookTitle: row.bookTitle,
+@@ -153,6 +211,7 @@ export function toReadingSignoffRecord(row: {
+ 
+ export function toReadingSignoffEntryRecord(row: {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   signoffDatePst: string;
+   bookTitle: string;
+@@ -167,6 +226,7 @@ export function toReadingSignoffEntryRecord(row: {
+ }): ReadingSignoffEntryRecord {
+   return {
+     id: row.id,
++    challengeId: row.challengeId ?? null,
+     accountId: row.accountId,
+     signoffDatePst: row.signoffDatePst,
+     bookTitle: row.bookTitle,
+@@ -183,6 +243,7 @@ export function toReadingSignoffEntryRecord(row: {
+ 
+ export function toChallengeBookRecord(row: {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   isbn: string;
+   title: string;
+@@ -191,6 +252,7 @@ export function toChallengeBookRecord(row: {
+ }): ReadingChallengeBookRecord {
+   return {
+     id: row.id,
++    challengeId: row.challengeId ?? null,
+     accountId: row.accountId,
+     isbn: row.isbn,
+     title: row.title,
+@@ -272,9 +334,11 @@ export async function ensureSeedBooks(
+   accounts: ViewerAccountSummary[],
+   challengeBooks: ReadingChallengeBookRecord[],
+   readingChallengeBook: ReadingChallengeBookDelegate,
++  challengeId: string | null,
+ ): Promise<void> {
+   const accountIdsWithBooks = new Set(challengeBooks.map((book) => book.accountId));
+   const seedsToInsert: Array<{
++    challengeId?: string | null;
+     accountId: string;
+     isbn: string;
+     title: string;
+@@ -299,6 +363,7 @@ export async function ensureSeedBooks(
+       }
+ 
+       seedsToInsert.push({
++        challengeId,
+         accountId: account.id,
+         isbn: normalizedIsbn,
+         title: seedBook.title,
+diff --git a/src/app/api/reading-signoffs/route.ts b/src/app/api/reading-signoffs/route.ts
+index f9c9a99..441373b 100644
+--- a/src/app/api/reading-signoffs/route.ts
++++ b/src/app/api/reading-signoffs/route.ts
+@@ -5,6 +5,7 @@ import { canAccessAccount } from "@/lib/accountAccess";
+ import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
+ import { isAuthorizedAdmin } from "@/lib/admin";
+ import { prisma } from "@/lib/prisma";
++import { ensureActiveReadingChallengeId } from "@/lib/readingChallengeStore";
+ import {
+   currentReviewQueueFromAssignmentCache,
+   isMonthKey,
+@@ -22,6 +23,7 @@ import {
+   toReadingSignoffRecord,
+   type LatestSignoffSummary,
+ } from "./readingSignoffsRoute.lib";
++import type { ReadingSignoffEntryDelegate } from "./readingSignoffsRoute.types";
+ 
+ const getQuerySchema = z.object({
+   month: z.string().refine((value) => isMonthKey(value), {
+@@ -47,17 +49,21 @@ const patchBodySchema = z.object({
+   tracked: z.boolean(),
+ });
+ 
+-type ReadingSignoffEntryDelegate = {
+-  findMany: typeof prisma.readingSignoffEntry.findMany;
+-  findFirst: typeof prisma.readingSignoffEntry.findFirst;
+-  create: typeof prisma.readingSignoffEntry.create;
+-};
+-
+ function getReadingSignoffEntryDelegate(): ReadingSignoffEntryDelegate | null {
+   const delegate = (prisma as unknown as { readingSignoffEntry?: ReadingSignoffEntryDelegate }).readingSignoffEntry;
+   return delegate ?? null;
+ }
+ 
++function challengeReadScope(challengeId: string | null): Record<string, unknown> {
++  if (!challengeId) {
++    return {};
++  }
++
++  return {
++    OR: [{ challengeId }, { challengeId: null }],
++  };
++}
++
+ export async function GET(request: Request) {
+   return withApiRouteTelemetry({
+     route: "/api/reading-signoffs",
+@@ -80,6 +86,8 @@ export async function GET(request: Request) {
+           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+         }
+ 
++        const activeChallengeId = await ensureActiveReadingChallengeId();
++
+         const viewerAccountIds = new Set(viewerAccounts.map((account) => account.id));
+         const requestedAccountId = parsed.data.accountId ?? null;
+         if (requestedAccountId && !viewerAccountIds.has(requestedAccountId)) {
+@@ -113,6 +121,7 @@ export async function GET(request: Request) {
+             signoffDatePst: {
+               startsWith: `${parsed.data.month}-`,
+             },
++            ...challengeReadScope(activeChallengeId),
+           },
+           orderBy: [{ signoffDatePst: "asc" }, { updatedAt: "desc" }],
+         });
+@@ -125,6 +134,7 @@ export async function GET(request: Request) {
+                 signoffDatePst: {
+                   startsWith: `${parsed.data.month}-`,
+                 },
++                ...challengeReadScope(activeChallengeId),
+               },
+               orderBy: [{ signoffDatePst: "asc" }, { createdAt: "asc" }],
+             })
+@@ -133,6 +143,7 @@ export async function GET(request: Request) {
+         const latestSignoffs = await readingSignoff.findMany({
+           where: {
+             accountId: { in: targetAccountIds },
++            ...challengeReadScope(activeChallengeId),
+           },
+           orderBy: [{ updatedAt: "desc" }],
+         });
+@@ -154,6 +165,7 @@ export async function GET(request: Request) {
+         const challengeBooksRaw = await readingChallengeBook.findMany({
+           where: {
+             accountId: { in: targetAccountIds },
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+           },
+           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+           select: {
+@@ -167,12 +179,13 @@ export async function GET(request: Request) {
+         });
+ 
+         const challengeBooks = challengeBooksRaw.map(toChallengeBookRecord);
+-        await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook);
++        await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook, activeChallengeId);
+         await backfillStaleCoverUrls(challengeBooks);
+ 
+         const challengeBooksAfterSeed = await readingChallengeBook.findMany({
+           where: {
+             accountId: { in: targetAccountIds },
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+           },
+           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+           select: {
+@@ -211,6 +224,7 @@ export async function GET(request: Request) {
+               return readingChallengeMember.findMany({
+                 where: {
+                   accountId: { in: targetAccountIds },
++                  ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+                 },
+                 select: {
+                   accountId: true,
+@@ -263,6 +277,8 @@ export async function POST(request: Request) {
+           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+         }
+ 
++        const activeChallengeId = await ensureActiveReadingChallengeId();
++
+         if (parsed.data.submittedAt && !viewerIsAdmin) {
+           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+         }
+@@ -283,9 +299,28 @@ export async function POST(request: Request) {
+           return NextResponse.json({ error: "Account not found." }, { status: 404 });
+         }
+ 
+-        const challengeBooks = await prisma.readingChallengeBook.findMany({
+-          where: { accountId: account.id },
+-          select: { title: true },
++        const readingChallengeBook = getReadingChallengeBookDelegate();
++        if (!readingChallengeBook) {
++          return NextResponse.json(
++            { error: "Reading challenge setup is not ready yet. Restart the dev server and try again." },
++            { status: 503 },
++          );
++        }
++
++        const challengeBooks = await readingChallengeBook.findMany({
++          where: {
++            accountId: { in: [account.id] },
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
++          },
++          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
++          select: {
++            id: true,
++            accountId: true,
++            isbn: true,
++            title: true,
++            thumbnailUrl: true,
++            infoUrl: true,
++          },
+         });
+ 
+         const hasReadingActivity = parsed.data.pagesRead > 0 || parsed.data.minutesRead > 0;
+@@ -318,6 +353,13 @@ export async function POST(request: Request) {
+           },
+         });
+ 
++        const existingChallengeId =
++          ((existing as { challengeId?: string | null } | null)?.challengeId ?? null);
++
++        if (existing && activeChallengeId && existingChallengeId && existingChallengeId !== activeChallengeId) {
++          return NextResponse.json({ error: "Signoff belongs to a different challenge." }, { status: 409 });
++        }
++
+         const nextPagesRead = (existing?.pagesRead ?? 0) + parsed.data.pagesRead;
+         const nextMinutesRead = (existing?.minutesRead ?? 0) + parsed.data.minutesRead;
+         const normalizedBookTitle = isWaniKaniOnlyCheckin
+@@ -335,6 +377,7 @@ export async function POST(request: Request) {
+         if (readingSignoffEntry) {
+           await readingSignoffEntry.create({
+             data: {
++              ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+               accountId: account.id,
+               signoffDatePst: parsed.data.signoffDatePst,
+               createdAt: submittedAt ?? undefined,
+@@ -360,6 +403,9 @@ export async function POST(request: Request) {
+             },
+           },
+           update: {
++            ...(existingChallengeId ?? activeChallengeId
++              ? { challengeId: existingChallengeId ?? activeChallengeId }
++              : {}),
+             bookTitle: normalizedBookTitle,
+             pagesRead: nextPagesRead,
+             minutesRead: nextMinutesRead,
+@@ -369,6 +415,7 @@ export async function POST(request: Request) {
+             currentWkLevel: account.wkLevel,
+           },
+           create: {
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+             accountId: account.id,
+             signoffDatePst: parsed.data.signoffDatePst,
+             createdAt: submittedAt ?? undefined,
+@@ -407,6 +454,8 @@ export async function PATCH(request: Request) {
+           return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+         }
+ 
++        const activeChallengeId = await ensureActiveReadingChallengeId();
++
+         const readingChallengeMember = getReadingChallengeMemberDelegate();
+         if (!readingChallengeMember) {
+           return NextResponse.json(
+@@ -415,15 +464,27 @@ export async function PATCH(request: Request) {
+           );
+         }
+ 
+-        const saved = await readingChallengeMember.upsert({
+-          where: { accountId: parsed.data.accountId },
+-          update: { tracked: parsed.data.tracked },
+-          create: {
++        const existing = await readingChallengeMember.findFirst({
++          where: {
+             accountId: parsed.data.accountId,
+-            tracked: parsed.data.tracked,
++            ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
+           },
++          select: { id: true, accountId: true, tracked: true },
+         });
+ 
++        const saved = existing
++          ? await readingChallengeMember.update({
++              where: { id: existing.id },
++              data: { tracked: parsed.data.tracked },
++            })
++          : await readingChallengeMember.create({
++              data: {
++                ...(activeChallengeId ? { challengeId: activeChallengeId } : {}),
++                accountId: parsed.data.accountId,
++                tracked: parsed.data.tracked,
++              },
++            });
++
+         return NextResponse.json({ trackedMember: saved }, { status: 200 });
+       } catch (error) {
+         console.error(error);
+diff --git a/src/app/page.tsx b/src/app/page.tsx
+index 01283a2..38d6add 100644
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -1,4 +1,5 @@
+ import { prisma } from "@/lib/prisma";
++import { ensureActiveReadingChallengeId } from "@/lib/readingChallengeStore";
+ import { getServerSession } from "next-auth";
+ import Link from "next/link";
+ import { authOptions, isAdminEmail } from "@/lib/auth";
+@@ -17,6 +18,19 @@ import LeaderboardTable from "./leaderboard/components/LeaderboardTable";
+ 
+ export const dynamic = "force-dynamic";
+ 
++type ReadingChallengeMemberDelegate = {
++  findMany: (args: {
++    where?: Record<string, unknown>;
++    select: { accountId: true; tracked: true };
++  }) => Promise<Array<{ accountId: string; tracked: boolean }>>;
++};
++
++function getReadingChallengeMemberDelegate(): ReadingChallengeMemberDelegate | null {
++  const delegate = (prisma as unknown as { readingChallengeMember?: ReadingChallengeMemberDelegate })
++    .readingChallengeMember;
++  return delegate ?? null;
++}
++
+ type LeaderboardRow = {
+   id: string;
+   nickname: string;
+@@ -213,12 +227,27 @@ export default async function Home() {
+         },
+       });
+ 
+-      const trackedRows = await prisma.readingChallengeMember.findMany({
++      const activeChallengeId = await ensureActiveReadingChallengeId();
++      const readingChallengeMember = getReadingChallengeMemberDelegate();
++
++      const trackedRows = readingChallengeMember
++        ? await readingChallengeMember.findMany({
++            where: activeChallengeId
++              ? {
++                  OR: [{ challengeId: activeChallengeId }, { challengeId: null }],
++                }
++              : undefined,
++            select: {
++              accountId: true,
++              tracked: true,
++            },
++          })
++        : await prisma.readingChallengeMember.findMany({
+         select: {
+           accountId: true,
+           tracked: true,
+         },
+-      });
++          });
+ 
+       const trackedByAccountId = new Map(trackedRows.map((row) => [row.accountId, row.tracked]));
+       const trackedChallengeAccountIds = leaderboard
+diff --git a/src/app/users/[nickname]/UserReadingRewardsSummary.tsx b/src/app/users/[nickname]/UserReadingRewardsSummary.tsx
+index 87d6653..2f870d7 100644
+--- a/src/app/users/[nickname]/UserReadingRewardsSummary.tsx
++++ b/src/app/users/[nickname]/UserReadingRewardsSummary.tsx
+@@ -130,7 +130,7 @@ export default function UserReadingRewardsSummary({
+ 
+       <section className="rounded-xl border border-line bg-surface p-3">
+         <div className="flex flex-wrap items-center justify-between gap-2">
+-          <h3 className="text-base font-black text-foreground">Money leaderboard</h3>
++          <h3 className="text-base font-black text-foreground">Rewards leaderboard</h3>
+           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground/60">Goal by {formatCampaignDateLabel(READING_CAMPAIGN.goalDatePst)}</p>
+         </div>
+         <p className="mt-2 text-xs text-foreground/65">
+diff --git a/src/lib/readingEarnings.ts b/src/lib/readingEarnings.ts
+index afa1cfd..6309e2e 100644
+--- a/src/lib/readingEarnings.ts
++++ b/src/lib/readingEarnings.ts
+@@ -1,37 +1,12 @@
+ import {
+-  READING_CAMPAIGN,
+   getTodayDateInputValue,
+-  parseDateKeyAsUtc,
+-  toDateKeyUtc,
+   type ReadingSignoffRecord,
+ } from "@/lib/readingSignoff";
+-
+-export type ReadingDailyEarningsForecast = {
+-  weekIndex: number;
+-  weekCapYen: number;
+-  streakInWeek: number;
+-  todayMaxNormalYen: number;
+-  todayMinimumNormalYen: number;
+-  nextDayMaxNormalYenIfPerfectToday: number;
+-  nextDayMaxNormalYenIfMissToday: number;
+-};
+-
+-function weekIndexFromDate(date: Date): number {
+-  const startDate = parseDateKeyAsUtc(READING_CAMPAIGN.startDatePst);
+-  return Math.floor((date.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+-}
+-
+-function dayMultiplierFromStreak(streakBeforeToday: number): number {
+-  return Math.min(1 + 0.1 * streakBeforeToday, 1.6);
+-}
+-
+-function isPerfectDay(record: ReadingSignoffRecord | null): boolean {
+-  if (!record) {
+-    return false;
+-  }
+-
+-  return (record.pagesRead >= 15 || record.minutesRead >= 15) && record.didWanikaniReviews;
+-}
++import {
++  getChallengeDailyEarningsForecast,
++  type ReadingDailyEarningsForecast,
++} from "@/lib/readingChallengeEngine";
++import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
+ 
+ export function getReadingDailyEarningsForecast(input: {
+   accountId: string;
+@@ -39,73 +14,10 @@ export function getReadingDailyEarningsForecast(input: {
+   todayDateKey?: string;
+ }): ReadingDailyEarningsForecast {
+   const todayDateKey = input.todayDateKey ?? getTodayDateInputValue();
+-  if (todayDateKey < READING_CAMPAIGN.startDatePst || todayDateKey > READING_CAMPAIGN.goalDatePst) {
+-    return {
+-      weekIndex: -1,
+-      weekCapYen: 0,
+-      streakInWeek: 0,
+-      todayMaxNormalYen: 0,
+-      todayMinimumNormalYen: 0,
+-      nextDayMaxNormalYenIfPerfectToday: 0,
+-      nextDayMaxNormalYenIfMissToday: 0,
+-    };
+-  }
+-
+-  const byDate = new Map<string, ReadingSignoffRecord>();
+-  for (const signoff of input.signoffs) {
+-    if (signoff.accountId === input.accountId) {
+-      byDate.set(signoff.signoffDatePst, signoff);
+-    }
+-  }
+-
+-  const today = parseDateKeyAsUtc(todayDateKey);
+-  const currentWeekIndex = weekIndexFromDate(today);
+-  const currentWeekCap = READING_CAMPAIGN.weeklyCaps[currentWeekIndex] ?? 0;
+-  const weekStart = new Date(parseDateKeyAsUtc(READING_CAMPAIGN.startDatePst));
+-  weekStart.setUTCDate(weekStart.getUTCDate() + currentWeekIndex * 7);
+-
+-  let streakInWeek = 0;
+-  for (const cursor = new Date(weekStart); cursor < today; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+-    if (!isPerfectDay(byDate.get(toDateKeyUtc(cursor)) ?? null)) {
+-      streakInWeek = 0;
+-      continue;
+-    }
+-
+-    streakInWeek += 1;
+-  }
+-
+-  const todayMaxNormalYen = Math.round(
+-    currentWeekCap * (dayMultiplierFromStreak(streakInWeek) / READING_CAMPAIGN.weeklyPerfectScore),
+-  );
+-  const todayMinimumNormalYen = Math.round(currentWeekCap * (0.5 / READING_CAMPAIGN.weeklyPerfectScore));
+-
+-  const tomorrow = new Date(today);
+-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+-  const tomorrowKey = toDateKeyUtc(tomorrow);
+-  const tomorrowWeekIndex = weekIndexFromDate(tomorrow);
+-  const tomorrowWeekCap = READING_CAMPAIGN.weeklyCaps[tomorrowWeekIndex] ?? 0;
+-
+-  let nextDayMaxNormalYenIfPerfectToday = 0;
+-  let nextDayMaxNormalYenIfMissToday = 0;
+-
+-  if (tomorrowKey >= READING_CAMPAIGN.startDatePst && tomorrowKey <= READING_CAMPAIGN.goalDatePst) {
+-    const sameWeek = tomorrowWeekIndex === currentWeekIndex;
+-    const nextStreakAfterPerfectToday = sameWeek ? streakInWeek + 1 : 0;
+-    nextDayMaxNormalYenIfPerfectToday = Math.round(
+-      tomorrowWeekCap * (dayMultiplierFromStreak(nextStreakAfterPerfectToday) / READING_CAMPAIGN.weeklyPerfectScore),
+-    );
+-    nextDayMaxNormalYenIfMissToday = Math.round(
+-      tomorrowWeekCap * (dayMultiplierFromStreak(0) / READING_CAMPAIGN.weeklyPerfectScore),
+-    );
+-  }
+-
+-  return {
+-    weekIndex: currentWeekIndex,
+-    weekCapYen: currentWeekCap,
+-    streakInWeek,
+-    todayMaxNormalYen,
+-    todayMinimumNormalYen,
+-    nextDayMaxNormalYenIfPerfectToday,
+-    nextDayMaxNormalYenIfMissToday,
+-  };
++  return getChallengeDailyEarningsForecast({
++    challenge: ACTIVE_READING_CHALLENGE,
++    accountId: input.accountId,
++    signoffs: input.signoffs,
++    todayDateKey,
++  });
+ }
+diff --git a/src/lib/readingSignoff.ts b/src/lib/readingSignoff.ts
+index d358550..b76379e 100644
+--- a/src/lib/readingSignoff.ts
++++ b/src/lib/readingSignoff.ts
+@@ -1,3 +1,6 @@
++import { computeChallengeLeaderboard } from "@/lib/readingChallengeEngine";
++import { ACTIVE_READING_CHALLENGE } from "@/lib/readingChallengeRules";
++
+ export const READING_BOOK_OPTIONS = [
+   "Kumon Reading",
+   "NHK Easy News",
+@@ -9,18 +12,18 @@ export const READING_BOOK_OPTIONS = [
+ ] as const;
+ 
+ export const READING_CAMPAIGN = {
+-  startDatePst: "2026-05-24",
+-  goalDatePst: "2026-07-20",
+-  tripDatePst: "2026-07-21",
+-  maxYen: 40_000,
+-  weeklyCaps: [3500, 4000, 4500, 4750, 5000, 5250, 6000, 7000] as const,
+-  weeklyPerfectScore: 9.1,
+-  pagesBonusThreshold: 15,
+-  pagesBonusYen: 250,
+-  minutesBonusThreshold: 30,
+-  minutesBonusYen: 500,
+-  zeroReviewsBonusYen: 150,
+-} as const;
++  startDatePst: ACTIVE_READING_CHALLENGE.startDatePst,
++  goalDatePst: ACTIVE_READING_CHALLENGE.goalDatePst,
++  tripDatePst: ACTIVE_READING_CHALLENGE.tripDatePst,
++  maxYen: ACTIVE_READING_CHALLENGE.targetBaseYen,
++  weeklyCaps: ACTIVE_READING_CHALLENGE.scoringRules.weeklyCaps,
++  weeklyPerfectScore: ACTIVE_READING_CHALLENGE.scoringRules.weeklyPerfectScore,
++  pagesBonusThreshold: ACTIVE_READING_CHALLENGE.scoringRules.bonuses.pages.threshold,
++  pagesBonusYen: ACTIVE_READING_CHALLENGE.scoringRules.bonuses.pages.yen,
++  minutesBonusThreshold: ACTIVE_READING_CHALLENGE.scoringRules.bonuses.minutes.threshold,
++  minutesBonusYen: ACTIVE_READING_CHALLENGE.scoringRules.bonuses.minutes.yen,
++  zeroReviewsBonusYen: ACTIVE_READING_CHALLENGE.scoringRules.bonuses.zeroReviews.yen,
++};
+ 
+ export type ReadingBookOption = (typeof READING_BOOK_OPTIONS)[number];
+ 
+@@ -32,6 +35,7 @@ export type ReadingSignoffSnapshot = {
+ 
+ export type ReadingSignoffRecord = {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   signoffDatePst: string;
+   bookTitle: string;
+@@ -47,6 +51,7 @@ export type ReadingSignoffRecord = {
+ 
+ export type ReadingSignoffEntryRecord = {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   signoffDatePst: string;
+   bookTitle: string;
+@@ -70,6 +75,7 @@ export type ReadingReviewQueueSnapshot = {
+ 
+ export type ReadingChallengeBookRecord = {
+   id: string;
++  challengeId?: string | null;
+   accountId: string;
+   isbn: string;
+   title: string;
+@@ -328,105 +334,23 @@ export function currentReviewQueueFromAssignmentCache(
+   return output;
+ }
+ 
+-function computeDayScore(input: ReadingSignoffRecord | null): { perfect: boolean; score: number } {
+-  if (!input) {
+-    return { perfect: false, score: 0 };
+-  }
+-
+-  const readingDone = input.pagesRead >= 15 || input.minutesRead >= 15;
+-  const waniDone = input.didWanikaniReviews;
+-  const completion = (Number(readingDone) + Number(waniDone)) / 2;
+-  return {
+-    perfect: readingDone && waniDone,
+-    score: completion,
+-  };
+-}
+-
+-function dayMultiplierFromStreak(streakBeforeToday: number): number {
+-  return Math.min(1 + 0.1 * streakBeforeToday, 1.6);
+-}
+-
+ export function computeReadingLeaderboard(
+   members: ReadingLeaderboardInputMember[],
+   signoffs: ReadingSignoffRecord[],
+   asOfDateKey: string = getTodayDateInputValue(),
+ ): ReadingLeaderboardRow[] {
+-  const signoffByMemberByDate = new Map<string, Map<string, ReadingSignoffRecord>>();
+-
+-  for (const row of signoffs) {
+-    const memberMap = signoffByMemberByDate.get(row.accountId) ?? new Map<string, ReadingSignoffRecord>();
+-    memberMap.set(row.signoffDatePst, row);
+-    signoffByMemberByDate.set(row.accountId, memberMap);
+-  }
+-
+-  const startDate = parseDateKeyAsUtc(READING_CAMPAIGN.startDatePst);
+-  const endDate = parseDateKeyAsUtc(
+-    asOfDateKey <= READING_CAMPAIGN.goalDatePst ? asOfDateKey : READING_CAMPAIGN.goalDatePst,
+-  );
+-
+-  return members.map((member) => {
+-    const byDate = signoffByMemberByDate.get(member.id) ?? new Map<string, ReadingSignoffRecord>();
+-    const weeklyScores = READING_CAMPAIGN.weeklyCaps.map(() => 0);
+-    let streak = 0;
+-    let perfectDays = 0;
+-    let pagesBonusTotal = 0;
+-    let minutesBonusTotal = 0;
+-    let zeroReviewsBonusTotal = 0;
+-    let weekStreak = 0;
+-    let previousWeekIndex = -1;
+-
+-    for (let cursor = new Date(startDate); cursor <= endDate; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+-      const dateKey = toDateKeyUtc(cursor);
+-      const record = byDate.get(dateKey) ?? null;
+-      const { perfect, score } = computeDayScore(record);
+-      const weekIndex = Math.floor((cursor.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+-
+-      if (weekIndex !== previousWeekIndex) {
+-        weekStreak = 0;
+-        previousWeekIndex = weekIndex;
+-      }
+-
+-      if (record && record.pagesRead >= READING_CAMPAIGN.pagesBonusThreshold) {
+-        pagesBonusTotal += READING_CAMPAIGN.pagesBonusYen;
+-      }
+-
+-      if (record && record.minutesRead > READING_CAMPAIGN.minutesBonusThreshold) {
+-        minutesBonusTotal += READING_CAMPAIGN.minutesBonusYen;
+-      }
+-
+-      if (record && record.didWanikaniReviews && record.reviewsLeft === 0) {
+-        zeroReviewsBonusTotal += READING_CAMPAIGN.zeroReviewsBonusYen;
+-      }
+-
+-      if (perfect) {
+-        streak += 1;
+-        weekStreak += 1;
+-        perfectDays += 1;
+-      } else {
+-        streak = 0;
+-        weekStreak = 0;
+-      }
+-
+-      const multiplier = perfect ? dayMultiplierFromStreak(Math.max(0, weekStreak - 1)) : 1;
+-      const weightedScore = score * multiplier;
+-
+-      if (weekIndex >= 0 && weekIndex < weeklyScores.length) {
+-        weeklyScores[weekIndex] += weightedScore;
+-      }
+-    }
+-
+-    const weeklyYen = weeklyScores.map((score, index) => {
+-      const cap = READING_CAMPAIGN.weeklyCaps[index] ?? 0;
+-      const payout = cap * (score / READING_CAMPAIGN.weeklyPerfectScore);
+-      return Math.max(0, Math.min(cap, Math.round(payout)));
+-    });
+-
+-    return {
+-      accountId: member.id,
+-      totalYen: weeklyYen.reduce((sum, value) => sum + value, 0) + pagesBonusTotal + minutesBonusTotal + zeroReviewsBonusTotal,
+-      currentStreak: streak,
+-      perfectDays,
+-      weeklyYen,
+-    };
++  const rows = computeChallengeLeaderboard({
++    challenge: ACTIVE_READING_CHALLENGE,
++    members,
++    signoffs,
++    asOfDateKey,
+   });
++
++  return rows.map((row) => ({
++    accountId: row.accountId,
++    totalYen: row.totalYen,
++    currentStreak: row.currentStreak,
++    perfectDays: row.perfectDays,
++    weeklyYen: row.weeklyYen,
++  }));
+ }

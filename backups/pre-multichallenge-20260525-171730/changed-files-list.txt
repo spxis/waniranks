@@ -1,0 +1,16 @@
+prisma/schema.prisma
+src/app/admin/page.tsx
+src/app/api/reading-books/route.ts
+src/app/api/reading-signoffs/readingSignoffsRoute.lib.ts
+src/app/api/reading-signoffs/route.ts
+src/app/page.tsx
+src/app/users/[nickname]/UserReadingRewardsSummary.tsx
+src/lib/readingEarnings.ts
+src/lib/readingSignoff.ts
+src/app/admin/AdminChallengeSimulator.tsx
+src/app/api/reading-signoffs/readingSignoffsRoute.types.ts
+src/lib/readingChallengeEngine.ts
+src/lib/readingChallengeRules.ts
+src/lib/readingChallengeSimulation.test.ts
+src/lib/readingChallengeSimulation.ts
+src/lib/readingChallengeStore.ts

@@ -42,6 +42,8 @@ function noCoverResponse(): NextResponse {
   });
 }
 
+const MIN_VALID_COVER_BYTES = 1024;
+
 async function fetchImageFromUrl(url: string): Promise<NextResponse | null> {
   try {
     const response = await fetch(url, { cache: "no-store" });
@@ -55,6 +57,10 @@ async function fetchImageFromUrl(url: string): Promise<NextResponse | null> {
     }
 
     const body = await response.arrayBuffer();
+    if (body.byteLength < MIN_VALID_COVER_BYTES) {
+      return null;
+    }
+
     return new NextResponse(body, {
       status: 200,
       headers: {
@@ -92,9 +98,11 @@ async function fetchOpenBdCoverUrlByIsbn(isbn: string): Promise<string | null> {
 }
 
 async function fetchGoogleBooksCoverUrlByIsbn(isbn: string): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_BOOKS_API_KEY?.trim();
+  const keyParam = apiKey ? `&key=${encodeURIComponent(apiKey)}` : "";
   try {
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`,
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1${keyParam}`,
       { cache: "no-store" },
     );
 

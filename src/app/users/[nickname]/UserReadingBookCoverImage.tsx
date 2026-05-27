@@ -32,7 +32,7 @@ export default function UserReadingBookCoverImage({
   alt,
 }: UserReadingBookCoverImageProps) {
   const coverProxyUrl = useMemo(
-    () => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}&v=2` : null),
+    () => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}&v=3` : null),
     [isbn],
   );
   const openLibraryUrl = useMemo(() => (isbn ? toOpenLibraryCoverUrl(isbn) : null), [isbn]);
@@ -68,6 +68,7 @@ export default function UserReadingBookCoverImage({
       height={height}
       className={className}
       onError={handleError}
+      unoptimized={currentSrc === PLACEHOLDER_COVER_URL}
     />
   );
 }

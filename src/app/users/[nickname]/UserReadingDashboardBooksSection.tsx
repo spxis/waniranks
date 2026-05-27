@@ -206,7 +206,6 @@ export default function UserReadingDashboardBooksSection({
             <div className="mt-4">
               <UserReadingBooksEditor
                 memberBooks={memberBooks}
-                showBookPicker
                 selectedBookTitle={selectedBookTitle}
                 onBookChange={handleSelectedBookChange}
                 addIsbn={addIsbn}

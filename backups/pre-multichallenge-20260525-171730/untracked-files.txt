@@ -1,0 +1,11 @@
+backups/pre-multichallenge-20260525-171730/git-diff-staged.patch
+backups/pre-multichallenge-20260525-171730/git-diff.patch
+backups/pre-multichallenge-20260525-171730/git-status.txt
+backups/pre-multichallenge-20260525-171730/untracked-files.txt
+src/app/admin/AdminChallengeSimulator.tsx
+src/app/api/reading-signoffs/readingSignoffsRoute.types.ts
+src/lib/readingChallengeEngine.ts
+src/lib/readingChallengeRules.ts
+src/lib/readingChallengeSimulation.test.ts
+src/lib/readingChallengeSimulation.ts
+src/lib/readingChallengeStore.ts
