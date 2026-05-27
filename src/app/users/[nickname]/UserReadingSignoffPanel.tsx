@@ -194,7 +194,8 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
       const member = trackedMembers.find((candidate) => candidate.id === row.accountId);
       const latestSignoff = latestSignoffByAccountId.get(row.accountId);
       const forecast = dailyForecastByAccountId.get(row.accountId);
-      const currentBookThumbnailUrl = (booksByAccountId.get(row.accountId) ?? []).find((book) => book.title === (latestSignoff?.bookTitle ?? ""))?.thumbnailUrl ?? null;
+      const currentBook = (booksByAccountId.get(row.accountId) ?? []).find((book) => book.title === (latestSignoff?.bookTitle ?? ""));
+      const currentBookThumbnailUrl = currentBook?.thumbnailUrl ?? null;
       return {
         ...row,
         nickname: member?.nickname ?? row.accountId,
@@ -203,6 +204,7 @@ export default function UserReadingSignoffPanel({ accountId, initialMonthKey, in
         learnedRadicals: member?.learnedRadicals ?? 0,
         learnedVocabulary: member?.learnedVocabulary ?? 0,
         currentBookTitle: latestSignoff?.bookTitle ?? "-",
+        currentBookIsbn: currentBook?.isbn ?? null,
         currentBookThumbnailUrl,
         currentBookPage: latestSignoff?.pagesRead ?? null,
         pagesRemainingForReadingPass: Math.max(0, 15 - (todayStatsByAccountId.get(row.accountId)?.pagesRead ?? 0)),

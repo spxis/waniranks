@@ -31,12 +31,13 @@ export default function UserReadingBookCoverImage({
   className,
   alt,
 }: UserReadingBookCoverImageProps) {
+  const coverProxyUrl = useMemo(() => (isbn ? `/api/reading-books/cover?isbn=${encodeURIComponent(isbn)}` : null), [isbn]);
   const openLibraryUrl = useMemo(() => (isbn ? toOpenLibraryCoverUrl(isbn) : null), [isbn]);
   const fallbackCandidates = useMemo(() => {
     const primary = normalizeCoverUrl(thumbnailUrl);
-    const candidates = [primary, openLibraryUrl, PLACEHOLDER_COVER_URL].filter((value): value is string => Boolean(value));
+    const candidates = [primary, coverProxyUrl, openLibraryUrl, PLACEHOLDER_COVER_URL].filter((value): value is string => Boolean(value));
     return [...new Set(candidates)];
-  }, [thumbnailUrl, openLibraryUrl]);
+  }, [thumbnailUrl, coverProxyUrl, openLibraryUrl]);
   const [failedSources, setFailedSources] = useState<Record<string, true>>({});
   const currentSrc = useMemo(
     () => fallbackCandidates.find((candidate) => !failedSources[candidate]) ?? PLACEHOLDER_COVER_URL,

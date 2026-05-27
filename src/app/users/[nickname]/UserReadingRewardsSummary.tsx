@@ -13,6 +13,7 @@ type LeaderboardRow = {
   learnedRadicals: number;
   learnedVocabulary: number;
   currentBookTitle: string;
+  currentBookIsbn: string | null;
   currentBookThumbnailUrl: string | null;
   currentBookPage: number | null;
   pagesRemainingForReadingPass: number;
@@ -166,6 +167,7 @@ export default function UserReadingRewardsSummary({
                         <div className="flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
                           {showBook ? (
                             <UserReadingBookCoverImage
+                              isbn={row.currentBookIsbn ?? undefined}
                               title={row.currentBookTitle}
                               thumbnailUrl={row.currentBookThumbnailUrl}
                               alt=""
@@ -241,6 +243,7 @@ export default function UserReadingRewardsSummary({
                             <div className="flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
                               {showBook ? (
                                 <UserReadingBookCoverImage
+                                  isbn={row.currentBookIsbn ?? undefined}
                                   title={row.currentBookTitle}
                                   thumbnailUrl={row.currentBookThumbnailUrl}
                                   alt=""
