@@ -133,41 +133,29 @@ export async function GET(request: Request) {
           });
         }
 
-        const challengeBooksRaw = await readingChallengeBook.findMany({
+        const challengeBookQuery = {
           where: {
             accountId: { in: targetAccountIds },
             ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
           },
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
           select: {
-            id: true,
-            accountId: true,
-            isbn: true,
-            title: true,
-            thumbnailUrl: true,
-            infoUrl: true,
+            id: true as const,
+            accountId: true as const,
+            isbn: true as const,
+            title: true as const,
+            thumbnailUrl: true as const,
+            manualCoverUrl: true as const,
+            infoUrl: true as const,
           },
-        });
+        };
 
+        const challengeBooksRaw = await readingChallengeBook.findMany(challengeBookQuery);
         const challengeBooks = challengeBooksRaw.map(toChallengeBookRecord);
         await ensureSeedBooks(viewerAccounts, challengeBooks, readingChallengeBook, selectedChallengeId);
         await backfillStaleCoverUrls(challengeBooks);
 
-        const challengeBooksAfterSeed = await readingChallengeBook.findMany({
-          where: {
-            accountId: { in: targetAccountIds },
-            ...(selectedChallengeId ? { challengeId: selectedChallengeId } : {}),
-          },
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          select: {
-            id: true,
-            accountId: true,
-            isbn: true,
-            title: true,
-            thumbnailUrl: true,
-            infoUrl: true,
-          },
-        });
+        const challengeBooksAfterSeed = await readingChallengeBook.findMany(challengeBookQuery);
 
         const accountReviewQueues = await prisma.account.findMany({
           where: {
@@ -290,6 +278,7 @@ export async function POST(request: Request) {
             isbn: true,
             title: true,
             thumbnailUrl: true,
+            manualCoverUrl: true,
             infoUrl: true,
           },
         });

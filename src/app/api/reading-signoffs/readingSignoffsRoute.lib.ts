@@ -100,6 +100,7 @@ export type ReadingChallengeBookDelegate = {
       isbn: true;
       title: true;
       thumbnailUrl: true;
+      manualCoverUrl: true;
       infoUrl: true;
     };
   }) => Promise<Array<{
@@ -109,6 +110,7 @@ export type ReadingChallengeBookDelegate = {
     isbn: string;
     title: string;
     thumbnailUrl: string | null;
+    manualCoverUrl: string | null;
     infoUrl: string | null;
   }>>;
   createMany: (args: {
@@ -163,11 +165,7 @@ function learnedCountsFromItemSpread(input: unknown): {
   learnedVocabulary: number;
 } {
   if (!isItemSpread(input)) {
-    return {
-      learnedKanji: 0,
-      learnedRadicals: 0,
-      learnedVocabulary: 0,
-    };
+    return { learnedKanji: 0, learnedRadicals: 0, learnedVocabulary: 0 };
   }
 
   return {
@@ -248,6 +246,7 @@ export function toChallengeBookRecord(row: {
   isbn: string;
   title: string;
   thumbnailUrl: string | null;
+  manualCoverUrl: string | null;
   infoUrl: string | null;
 }): ReadingChallengeBookRecord {
   return {
@@ -257,6 +256,7 @@ export function toChallengeBookRecord(row: {
     isbn: row.isbn,
     title: row.title,
     thumbnailUrl: row.thumbnailUrl,
+    manualCoverUrl: row.manualCoverUrl,
     infoUrl: row.infoUrl,
   };
 }

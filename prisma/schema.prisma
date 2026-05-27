@@ -252,15 +252,16 @@ model ReadingSignoffEntry {
 }
 
 model ReadingChallengeBook {
-  id           String   @id @default(cuid())
-  challengeId  String?
-  accountId    String
-  isbn         String
-  title        String
-  thumbnailUrl String?
-  infoUrl      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  challengeId     String?
+  accountId       String
+  isbn            String
+  title           String
+  thumbnailUrl    String?
+  manualCoverUrl  String?
+  infoUrl         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   challenge    ReadingChallenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
 

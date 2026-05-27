@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
+import { prisma } from "@/lib/prisma";
 import { normalizeIsbn, toOpenLibraryCoverUrl } from "@/lib/readingSignoff";
 
 const querySchema = z.object({
@@ -52,6 +53,30 @@ function expandLookupIsbns(isbn: string): string[] {
   }
 
   return [isbn];
+}
+
+type ReadingChallengeBookCoverDelegate = {
+  findFirst: (args: {
+    where: { isbn: { in: string[] }; manualCoverUrl: { not: null } };
+    select: { manualCoverUrl: true };
+  }) => Promise<{ manualCoverUrl: string | null } | null>;
+};
+
+async function fetchManualCoverUrl(lookupIsbns: string[]): Promise<string | null> {
+  const delegate = (prisma as unknown as { readingChallengeBook?: ReadingChallengeBookCoverDelegate }).readingChallengeBook;
+  if (!delegate) {
+    return null;
+  }
+
+  try {
+    const row = await delegate.findFirst({
+      where: { isbn: { in: lookupIsbns }, manualCoverUrl: { not: null } },
+      select: { manualCoverUrl: true },
+    });
+    return row?.manualCoverUrl?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 function noCoverResponse(): NextResponse {
@@ -171,6 +196,14 @@ export async function GET(request: Request) {
         }
 
         const lookupIsbns = expandLookupIsbns(isbn);
+
+        const manualOverrideUrl = await fetchManualCoverUrl(lookupIsbns);
+        if (manualOverrideUrl) {
+          const manualImage = await fetchImageFromUrl(manualOverrideUrl);
+          if (manualImage) {
+            return manualImage;
+          }
+        }
 
         for (const candidateIsbn of lookupIsbns) {
           const openBdUrl = await fetchOpenBdCoverUrlByIsbn(candidateIsbn);

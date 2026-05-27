@@ -45,6 +45,39 @@ export default function UserReadingBooksEditor({
     setPreviewBook((prev) => (prev?.id === book.id ? null : book));
   }
 
+  async function handleSetCoverUrl(book: ReadingChallengeBookRecord) {
+    const current = book.manualCoverUrl ?? "";
+    const next = window.prompt(
+      "Paste an https image URL for this cover (leave blank to clear and use auto-detected covers).",
+      current,
+    );
+    if (next === null) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/reading-books/cover-override", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          accountId: book.accountId,
+          bookId: book.id,
+          manualCoverUrl: next.trim() === "" ? null : next.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        window.alert(payload?.error ?? "Could not save cover URL.");
+        return;
+      }
+
+      window.location.reload();
+    } catch {
+      window.alert("Could not save cover URL.");
+    }
+  }
+
   return (
     <section className="relative rounded-xl border border-line bg-surface-muted p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -133,28 +166,40 @@ export default function UserReadingBooksEditor({
                     )}
 
                     {showAddBookForm ? (
-                      <div className="mt-auto flex items-center justify-between gap-1 pt-1">
-                        {book.infoUrl ? (
-                          <a
-                            href={book.infoUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[10px] font-bold uppercase tracking-[0.08em] text-accent"
+                      <div className="mt-auto flex flex-col gap-1 pt-1">
+                        <div className="flex items-center justify-between gap-1">
+                          {book.infoUrl ? (
+                            <a
+                              href={book.infoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] font-bold uppercase tracking-[0.08em] text-accent"
+                            >
+                              Open
+                            </a>
+                          ) : (
+                            <span />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void onDeleteBook(book.id);
+                            }}
+                            disabled={isBookActionLoading}
+                            className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700"
                           >
-                            Open
-                          </a>
-                        ) : (
-                          <span />
-                        )}
+                            Delete
+                          </button>
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
-                            void onDeleteBook(book.id);
+                            void handleSetCoverUrl(book);
                           }}
                           disabled={isBookActionLoading}
-                          className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700"
+                          className="text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/70"
                         >
-                          Delete
+                          {book.manualCoverUrl ? "Edit cover URL" : "Set cover URL"}
                         </button>
                       </div>
                     ) : null}

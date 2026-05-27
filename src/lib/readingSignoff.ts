@@ -80,6 +80,7 @@ export type ReadingChallengeBookRecord = {
   isbn: string;
   title: string;
   thumbnailUrl: string | null;
+  manualCoverUrl: string | null;
   infoUrl: string | null;
 };
 
