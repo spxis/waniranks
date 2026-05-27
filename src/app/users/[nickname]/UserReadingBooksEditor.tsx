@@ -1,9 +1,9 @@
-import Image from "next/image";
 import { useState } from "react";
 
 import type { ReadingChallengeBookRecord } from "@/lib/readingSignoff";
 
 import { useBookStripAutoScroll } from "./UserReadingCheckinModal.bookStrip";
+import UserReadingBookCoverImage from "./UserReadingBookCoverImage";
 
 type UserReadingBooksEditorProps = {
   memberBooks: ReadingChallengeBookRecord[];
@@ -104,17 +104,14 @@ export default function UserReadingBooksEditor({
                       aria-label={`Preview ${book.title}`}
                     >
                       <div className="aspect-3/4 overflow-hidden rounded border border-line bg-surface-muted">
-                        {book.thumbnailUrl ? (
-                          <Image
-                            src={book.thumbnailUrl}
-                            alt={book.title}
-                            width={120}
-                            height={160}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground/60">No cover</div>
-                        )}
+                        <UserReadingBookCoverImage
+                          isbn={book.isbn}
+                          title={book.title}
+                          thumbnailUrl={book.thumbnailUrl}
+                          width={120}
+                          height={160}
+                          className="h-full w-full object-cover"
+                        />
                       </div>
                     </button>
 
@@ -224,17 +221,14 @@ export default function UserReadingBooksEditor({
             </button>
             <button type="button" className="w-full" onClick={() => setPreviewBook(null)}>
               <div className="overflow-hidden rounded-xl border border-white/30 bg-black/20">
-                {previewBook.thumbnailUrl ? (
-                  <Image
-                    src={previewBook.thumbnailUrl}
-                    alt={previewBook.title}
-                    width={640}
-                    height={900}
-                    className="h-auto w-full object-contain"
-                  />
-                ) : (
-                  <div className="flex min-h-96 items-center justify-center text-sm font-semibold text-white/80">No cover available</div>
-                )}
+                <UserReadingBookCoverImage
+                  isbn={previewBook.isbn}
+                  title={previewBook.title}
+                  thumbnailUrl={previewBook.thumbnailUrl}
+                  width={640}
+                  height={900}
+                  className="h-auto w-full object-contain"
+                />
               </div>
             </button>
           </div>

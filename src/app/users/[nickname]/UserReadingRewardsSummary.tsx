@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { SUBJECT_TYPE_DISPLAY, SUBJECT_TYPES } from "@/lib/domainConstants";
 import { formatCampaignDateLabel } from "@/lib/readingSignoff";
+import UserReadingBookCoverImage from "./UserReadingBookCoverImage";
 
 type LeaderboardRow = {
   accountId: string;
@@ -164,9 +164,10 @@ export default function UserReadingRewardsSummary({
                     <div className="mt-2">
                       {checkedInToday ? (
                         <div className="flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
-                          {showBook && row.currentBookThumbnailUrl ? (
-                            <Image
-                              src={row.currentBookThumbnailUrl}
+                          {showBook ? (
+                            <UserReadingBookCoverImage
+                              title={row.currentBookTitle}
+                              thumbnailUrl={row.currentBookThumbnailUrl}
                               alt=""
                               width={14}
                               height={20}
@@ -238,9 +239,10 @@ export default function UserReadingRewardsSummary({
                         <td className="px-2.5 py-2">
                           {checkedInToday ? (
                             <div className="flex min-w-0 items-center gap-1.5" title={row.currentBookTitle}>
-                              {showBook && row.currentBookThumbnailUrl ? (
-                                <Image
-                                  src={row.currentBookThumbnailUrl}
+                              {showBook ? (
+                                <UserReadingBookCoverImage
+                                  title={row.currentBookTitle}
+                                  thumbnailUrl={row.currentBookThumbnailUrl}
                                   alt=""
                                   width={14}
                                   height={20}
