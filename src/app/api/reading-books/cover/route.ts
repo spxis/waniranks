@@ -80,13 +80,17 @@ function expandLookupIsbns(isbn: string): string[] {
 
 type ReadingChallengeBookCoverDelegate = {
   findFirst: (args: {
-    where: { isbn: { in: string[] }; manualCoverUrl: { not: null } };
-    select: { manualCoverUrl: true };
-  }) => Promise<{ manualCoverUrl: string | null } | null>;
+    where: { isbn: { in: string[] }; manualCoverUrl?: { not: null } };
+    select: { manualCoverUrl?: true; thumbnailUrl?: true };
+  }) => Promise<{ manualCoverUrl?: string | null; thumbnailUrl?: string | null } | null>;
 };
 
+function readingBookDelegate(): ReadingChallengeBookCoverDelegate | null {
+  return (prisma as unknown as { readingChallengeBook?: ReadingChallengeBookCoverDelegate }).readingChallengeBook ?? null;
+}
+
 async function fetchManualCoverUrl(lookupIsbns: string[]): Promise<string | null> {
-  const delegate = (prisma as unknown as { readingChallengeBook?: ReadingChallengeBookCoverDelegate }).readingChallengeBook;
+  const delegate = readingBookDelegate();
   if (!delegate) {
     return null;
   }
@@ -102,6 +106,23 @@ async function fetchManualCoverUrl(lookupIsbns: string[]): Promise<string | null
   }
 }
 
+async function fetchStoredThumbnailUrl(lookupIsbns: string[]): Promise<string | null> {
+  const delegate = readingBookDelegate();
+  if (!delegate) {
+    return null;
+  }
+
+  try {
+    const row = await delegate.findFirst({
+      where: { isbn: { in: lookupIsbns } },
+      select: { thumbnailUrl: true },
+    });
+    return row?.thumbnailUrl?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 function noCoverResponse(): NextResponse {
   return new NextResponse(null, {
     status: 404,
@@ -112,12 +133,21 @@ function noCoverResponse(): NextResponse {
 }
 
 const MIN_VALID_COVER_BYTES = 1024;
-// Google Books returns a grey "image not available" placeholder (~2KB at any
-// zoom) when a volume has no cover. A higher floor lets us reject it without
-// dropping real Google covers (which are typically 8KB+).
-const MIN_VALID_GOOGLE_COVER_BYTES = 4096;
 
-async function fetchImageFromUrl(url: string, minBytes: number = MIN_VALID_COVER_BYTES): Promise<NextResponse | null> {
+type FetchImageOptions = {
+  minBytes?: number;
+  // When true, reject PNG responses. Google Books' "image not available"
+  // placeholder is a grayscale PNG (~9KB at zoom=3, ~2KB at zoom=1); real
+  // Google covers are always JPEG. This lets us reject the placeholder by
+  // content-type without false positives on real covers.
+  rejectPng?: boolean;
+};
+
+async function fetchImageFromUrl(
+  url: string,
+  options: FetchImageOptions = {},
+): Promise<NextResponse | null> {
+  const { minBytes = MIN_VALID_COVER_BYTES, rejectPng = false } = options;
   try {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
@@ -126,6 +156,9 @@ async function fetchImageFromUrl(url: string, minBytes: number = MIN_VALID_COVER
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.startsWith("image/")) {
+      return null;
+    }
+    if (rejectPng && /^image\/png/i.test(contentType)) {
       return null;
     }
 
@@ -146,16 +179,9 @@ async function fetchImageFromUrl(url: string, minBytes: number = MIN_VALID_COVER
   }
 }
 
-// NDL (National Diet Library) Japan publishes cover thumbnails for most
-// Japanese-published ISBNs. Returns the image when a cover exists or 404s
-// cleanly when it does not.
-function ndlCoverUrlForIsbn(isbn: string): string | null {
-  // Heuristic: Japanese ISBNs start with 978-4 / 979-4 (ISBN13) or 4 (ISBN10).
-  if (!/^(978|979)4\d{9}$/.test(isbn) && !/^4\d{9}$/.test(isbn)) {
-    return null;
-  }
-  return `https://ndlsearch.ndl.go.jp/thumbnail/${isbn}.jpg`;
-}
+// NDL (National Diet Library) Japan no longer serves anonymous thumbnail
+// requests (the /thumbnail/{isbn} endpoint returns 403 from CloudFront), so
+// we rely on Amazon + openBD + Google for Japanese covers instead.
 
 async function fetchOpenBdCoverUrlByIsbn(isbn: string): Promise<string | null> {
   try {
@@ -244,34 +270,38 @@ export async function GET(request: Request) {
           }
         }
 
+        // Source order honours user spec: try the largest known-real cover
+        // first, then progressively smaller fallbacks, ending on the stored
+        // thumbnailUrl from the DB so we (almost) always have an image.
+
+        const amazonIsbn10 = lookupIsbns.find((value) => value.length === 10);
+        const amazonUrls = amazonIsbn10
+          ? [
+              `https://images-na.ssl-images-amazon.com/images/P/${amazonIsbn10}.09.LZZZZZZZ.jpg`,
+              `https://images-fe.ssl-images-amazon.com/images/P/${amazonIsbn10}.09.LZZZZZZZ.jpg`,
+              `https://m.media-amazon.com/images/P/${amazonIsbn10}.09.LZZZZZZZ.jpg`,
+              `https://images-na.ssl-images-amazon.com/images/P/${amazonIsbn10}.01.LZZZZZZZ.jpg`,
+            ]
+          : [];
+
+        // At "large" we want the biggest real cover first. Amazon's LZZZZZZZ
+        // hosts the publisher-supplied art (typically 500px+ wide JPEG) and is
+        // the most reliable source for Japanese-published books.
+        if (size === "large") {
+          for (const amazonUrl of amazonUrls) {
+            const amazonImage = await fetchImageFromUrl(amazonUrl);
+            if (amazonImage) {
+              return amazonImage;
+            }
+          }
+        }
+
         for (const candidateIsbn of lookupIsbns) {
           const openBdUrl = await fetchOpenBdCoverUrlByIsbn(candidateIsbn);
           if (openBdUrl) {
             const openBdImage = await fetchImageFromUrl(openBdUrl);
             if (openBdImage) {
               return openBdImage;
-            }
-          }
-        }
-
-        for (const candidateIsbn of lookupIsbns) {
-          const ndlUrl = ndlCoverUrlForIsbn(candidateIsbn);
-          if (ndlUrl) {
-            const ndlImage = await fetchImageFromUrl(ndlUrl);
-            if (ndlImage) {
-              return ndlImage;
-            }
-          }
-        }
-
-        for (const candidateIsbn of lookupIsbns) {
-          const googleCoverUrl = await fetchGoogleBooksCoverUrlByIsbn(candidateIsbn);
-          if (googleCoverUrl) {
-            for (const variant of googleBooksCoverUrlsForSize(googleCoverUrl, size)) {
-              const googleImage = await fetchImageFromUrl(variant, MIN_VALID_GOOGLE_COVER_BYTES);
-              if (googleImage) {
-                return googleImage;
-              }
             }
           }
         }
@@ -285,19 +315,38 @@ export async function GET(request: Request) {
           }
         }
 
-        const amazonIsbn10 = lookupIsbns.find((value) => value.length === 10);
-        if (amazonIsbn10) {
-          const amazonUrls = [
-            `https://images-na.ssl-images-amazon.com/images/P/${amazonIsbn10}.09.LZZZZZZZ.jpg`,
-            `https://images-fe.ssl-images-amazon.com/images/P/${amazonIsbn10}.09.LZZZZZZZ.jpg`,
-            `https://images-na.ssl-images-amazon.com/images/P/${amazonIsbn10}.01.LZZZZZZZ.jpg`,
-            `https://m.media-amazon.com/images/P/${amazonIsbn10}.01._SCLZZZZZZZ_.jpg`,
-          ];
+        for (const candidateIsbn of lookupIsbns) {
+          const googleCoverUrl = await fetchGoogleBooksCoverUrlByIsbn(candidateIsbn);
+          if (googleCoverUrl) {
+            for (const variant of googleBooksCoverUrlsForSize(googleCoverUrl, size)) {
+              // Reject PNG: Google's "image not available" placeholder is a
+              // grayscale PNG; real Google Books covers are always JPEG.
+              const googleImage = await fetchImageFromUrl(variant, { rejectPng: true });
+              if (googleImage) {
+                return googleImage;
+              }
+            }
+          }
+        }
+
+        // At "small" Amazon is still a valid (if oversized) real cover.
+        if (size !== "large") {
           for (const amazonUrl of amazonUrls) {
             const amazonImage = await fetchImageFromUrl(amazonUrl);
             if (amazonImage) {
               return amazonImage;
             }
+          }
+        }
+
+        // Final fallback: the thumbnail URL persisted at book-add time. This
+        // may itself be a Google placeholder for some rows, but per user spec
+        // we'd rather render *something* than the local SVG.
+        const storedThumbnailUrl = await fetchStoredThumbnailUrl(lookupIsbns);
+        if (storedThumbnailUrl) {
+          const storedImage = await fetchImageFromUrl(storedThumbnailUrl);
+          if (storedImage) {
+            return storedImage;
           }
         }
 
