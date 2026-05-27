@@ -3,11 +3,31 @@ import { z } from "zod";
 
 import { withApiRouteTelemetry } from "@/lib/apiRouteTelemetry";
 import { prisma } from "@/lib/prisma";
-import { normalizeIsbn, toOpenLibraryCoverUrl } from "@/lib/readingSignoff";
+import { normalizeIsbn } from "@/lib/readingSignoff";
 
 const querySchema = z.object({
   isbn: z.string().min(1).max(32),
+  size: z.enum(["small", "large"]).optional(),
 });
+
+type CoverSize = "small" | "large";
+
+function toOpenLibraryCoverUrlSized(isbn: string, size: CoverSize): string {
+  const suffix = size === "large" ? "L" : "M";
+  return `https://covers.openlibrary.org/b/isbn/${isbn}-${suffix}.jpg?default=false`;
+}
+
+function upgradeGoogleBooksUrlForSize(url: string, size: CoverSize): string {
+  if (size !== "large") {
+    return url;
+  }
+  // Drop edge=curl artifact and bump zoom for a sharper crop.
+  const withoutEdge = url.replace(/&edge=curl/gi, "");
+  if (/[?&]zoom=\d+/i.test(withoutEdge)) {
+    return withoutEdge.replace(/([?&]zoom=)\d+/i, "$13");
+  }
+  return withoutEdge.includes("?") ? `${withoutEdge}&zoom=3` : `${withoutEdge}?zoom=3`;
+}
 
 function toIsbn13FromIsbn10(isbn10: string): string | null {
   if (!/^\d{9}[\dX]$/.test(isbn10)) {
@@ -195,6 +215,7 @@ export async function GET(request: Request) {
           return noCoverResponse();
         }
 
+        const size: CoverSize = parsed.data.size ?? "small";
         const lookupIsbns = expandLookupIsbns(isbn);
 
         const manualOverrideUrl = await fetchManualCoverUrl(lookupIsbns);
@@ -218,7 +239,7 @@ export async function GET(request: Request) {
         for (const candidateIsbn of lookupIsbns) {
           const googleCoverUrl = await fetchGoogleBooksCoverUrlByIsbn(candidateIsbn);
           if (googleCoverUrl) {
-            const googleImage = await fetchImageFromUrl(googleCoverUrl);
+            const googleImage = await fetchImageFromUrl(upgradeGoogleBooksUrlForSize(googleCoverUrl, size));
             if (googleImage) {
               return googleImage;
             }
@@ -226,7 +247,7 @@ export async function GET(request: Request) {
         }
 
         for (const candidateIsbn of lookupIsbns) {
-          const openLibraryImage = await fetchImageFromUrl(toOpenLibraryCoverUrl(candidateIsbn));
+          const openLibraryImage = await fetchImageFromUrl(toOpenLibraryCoverUrlSized(candidateIsbn, size));
           if (openLibraryImage) {
             return openLibraryImage;
           }

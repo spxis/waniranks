@@ -272,6 +272,7 @@ export default function UserReadingBooksEditor({
                   thumbnailUrl={previewBook.thumbnailUrl}
                   width={640}
                   height={900}
+                  size="large"
                   className="h-auto w-full object-contain"
                 />
               </div>
