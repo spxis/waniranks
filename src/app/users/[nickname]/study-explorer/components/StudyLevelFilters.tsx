@@ -94,6 +94,7 @@ export default function StudyLevelFilters({
 
   const mobileVisibilityClass = (selected: boolean) =>
     mobileShowAllOptions || selected ? "" : "hidden sm:inline-flex";
+  const isCollapsedOnMobile = !mobileShowAllOptions;
 
   return (
     <div className="flex w-full max-w-full items-start gap-1 rounded-xl border border-line bg-surface px-1.5 py-1" role="tablist" aria-label="Level filters">
@@ -105,6 +106,7 @@ export default function StudyLevelFilters({
         title={mobileShowAllOptions ? "Compact Level" : "Expand Level"}
       >
         Level
+        <span className={`ml-1 text-[11px] leading-none ${isCollapsedOnMobile ? "opacity-70" : "opacity-0"}`}>+</span>
       </button>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
         <button
@@ -193,6 +195,12 @@ export default function StudyLevelFilters({
                 </button>
               );
             })}
+        <span
+          aria-hidden="true"
+          className={`${isCollapsedOnMobile ? "inline-flex" : "hidden"} ml-auto px-1 text-[12px] font-semibold tracking-[0.2em] text-foreground/35 sm:hidden`}
+        >
+          ...
+        </span>
       </div>
     </div>
   );
