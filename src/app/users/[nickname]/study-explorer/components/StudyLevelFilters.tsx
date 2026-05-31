@@ -195,12 +195,16 @@ export default function StudyLevelFilters({
                 </button>
               );
             })}
-        <span
-          aria-hidden="true"
-          className={`${isCollapsedOnMobile ? "inline-flex" : "hidden"} ml-auto px-1 text-[12px] font-semibold tracking-[0.2em] text-foreground/35 sm:hidden`}
-        >
-          ...
-        </span>
+        {isCollapsedOnMobile ? (
+          <button
+            type="button"
+            onClick={onToggleMobileShowAllOptions}
+            aria-label="Expand level filters"
+            className="ml-auto inline-flex h-7 items-center px-1 text-[12px] font-semibold tracking-[0.2em] text-foreground/35 sm:hidden"
+          >
+            ...
+          </button>
+        ) : null}
       </div>
     </div>
   );

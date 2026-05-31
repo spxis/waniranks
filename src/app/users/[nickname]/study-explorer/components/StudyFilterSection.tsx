@@ -35,12 +35,16 @@ export default function StudyFilterSection({
         aria-label={ariaLabel}
       >
         {children}
-        <span
-          aria-hidden="true"
-          className={`${isCollapsedOnMobile ? "inline-flex" : "hidden"} ml-auto px-1 text-[12px] font-semibold tracking-[0.2em] text-foreground/35 sm:hidden`}
-        >
-          ...
-        </span>
+        {isCollapsedOnMobile ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={`Expand ${title} filters`}
+            className="ml-auto inline-flex h-7 items-center px-1 text-[12px] font-semibold tracking-[0.2em] text-foreground/35 sm:hidden"
+          >
+            ...
+          </button>
+        ) : null}
       </div>
     </div>
   );
