@@ -18,6 +18,7 @@ type Props<TValue extends string> = {
   ariaLabel: string;
   className?: string;
   asTabs?: boolean;
+  mobileFill?: boolean;
 };
 
 const sizeClass: Record<SegmentSize, string> = {
@@ -33,6 +34,7 @@ export default function SegmentedControl<TValue extends string>({
   ariaLabel,
   className,
   asTabs = false,
+  mobileFill = false,
 }: Props<TValue>) {
   const containerClassName = className ?? "inline-flex items-center rounded-full border border-line bg-surface p-1";
   const role = asTabs ? "tablist" : "group";
@@ -51,7 +53,7 @@ export default function SegmentedControl<TValue extends string>({
             aria-selected={asTabs ? selected : undefined}
             onClick={() => onChange(option.value)}
             title={option.title}
-            className={`inline-flex shrink-0 select-none items-center justify-center rounded-full font-bold uppercase tracking-[0.1em] transition ${sizeClass[size]} ${selected ? activeClass : inactiveClass}`}
+            className={`inline-flex ${mobileFill ? "min-w-0 flex-1 sm:flex-none sm:shrink-0" : "shrink-0"} select-none items-center justify-center rounded-full font-bold uppercase tracking-[0.1em] transition ${sizeClass[size]} ${selected ? activeClass : inactiveClass}`}
           >
             {option.label}
           </button>

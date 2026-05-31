@@ -254,6 +254,8 @@ export default function UserDashboardTabs({
             onChange={switchTab}
             size="md"
             asTabs
+            mobileFill
+            className="flex w-full items-center rounded-full border border-line bg-surface p-1 sm:inline-flex sm:w-auto"
             options={[
               { value: "learn", label: "Learn" },
               { value: "stats", label: "Stats" },
