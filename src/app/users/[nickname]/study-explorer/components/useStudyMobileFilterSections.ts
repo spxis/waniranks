@@ -59,5 +59,17 @@ export function useStudyMobileFilterSections() {
     }));
   };
 
-  return { sectionsOpen, toggleSection };
+  const setSectionOpen = (section: StudyMobileFilterSectionKey, isOpen: boolean) => {
+    setSectionsOpen((previous) => {
+      if (previous[section] === isOpen) {
+        return previous;
+      }
+      return {
+        ...previous,
+        [section]: isOpen,
+      };
+    });
+  };
+
+  return { sectionsOpen, toggleSection, setSectionOpen };
 }

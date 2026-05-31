@@ -153,7 +153,7 @@ export default function StudyExplorerPanel({
       // Ignore storage access errors in restricted modes.
     }
   }, [mobileFiltersOpen]);
-  const { sectionsOpen: mobileFilterSectionsOpen, toggleSection: toggleMobileFilterSection } = useStudyMobileFilterSections();
+  const { sectionsOpen: mobileFilterSectionsOpen, toggleSection: toggleMobileFilterSection, setSectionOpen: setMobileFilterSectionOpen } = useStudyMobileFilterSections();
 
   const filtersLoading = !hasData;
   const showLoadingIndicator = (isLoading || isValidating || !hasData) && filteredItems.length === 0 && !errorMessage;
@@ -212,7 +212,7 @@ export default function StudyExplorerPanel({
             totalReviewsInVisibleLevels={totalReviewsInVisibleLevels}
             mobileShowAllOptions={mobileFilterSectionsOpen.level}
             onToggleMobileShowAllOptions={() => toggleMobileFilterSection("level")}
-            onSetViewedLevel={onSetViewedLevel}
+            onSetViewedLevel={(level) => { setMobileFilterSectionOpen("level", false); onSetViewedLevel(level); }}
           />
           <StudyFilterSection
             title="Grouping"
@@ -222,7 +222,7 @@ export default function StudyExplorerPanel({
           >
               <button
                 type="button"
-                onClick={() => onSetTypeFilter(STUDY_TYPE_FILTERS.all)}
+                onClick={() => { setMobileFilterSectionOpen("grouping", false); onSetTypeFilter(STUDY_TYPE_FILTERS.all); }}
                 disabled={filtersLoading}
                 role="tab"
                 aria-selected={allTypesSelected}
@@ -242,7 +242,7 @@ export default function StudyExplorerPanel({
                   <button
                     key={type}
                     type="button"
-                    onClick={() => onSetTypeFilter(type)}
+                    onClick={() => { setMobileFilterSectionOpen("grouping", false); onSetTypeFilter(type); }}
                     disabled={disabled}
                     role="tab"
                     aria-selected={isSelected}
@@ -269,7 +269,7 @@ export default function StudyExplorerPanel({
                   const statusLabel = status === STUDY_SRS_FILTERS.all ? "All" : srsFilterButtonLabel(status);
                   const stageOptions = status === STUDY_SRS_FILTERS.all ? [] : getSrsStageOptions(status);
                   const showStageButtons = isSelected && stageOptions.length > 1;
-                  const onClickStatus = () => { onSetSrsFilter(status); if (stageOptions.length > 1) onSetSrsStageFilter(null); };
+                  const onClickStatus = () => { setMobileFilterSectionOpen("status", false); onSetSrsFilter(status); if (stageOptions.length > 1) onSetSrsStageFilter(null); };
                   if (unavailable || hiddenInCompactMode) return null;
                   return (
                     <div key={status} className="inline-flex items-center gap-1">
@@ -283,7 +283,7 @@ export default function StudyExplorerPanel({
                         const stageDisabled = (filtersLoading && !stageSelected) || stageUnavailable;
                         if (stageUnavailable) return null;
                         return (
-                          <button key={`${status}-${stage}`} type="button" onClick={() => onSetSrsStageFilter(stage)} disabled={stageDisabled} role="tab" aria-selected={stageSelected} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] whitespace-nowrap ${mobileFilterSectionsOpen.status || stageSelected ? "" : "hidden sm:inline-flex"} ${stageDisabled && !stageSelected ? disabledBadgeClass() : studySrsToneClass(status as Exclude<StudySrsFilter, "all">, stageSelected)}`}>
+                          <button key={`${status}-${stage}`} type="button" onClick={() => { setMobileFilterSectionOpen("status", false); onSetSrsStageFilter(stage); }} disabled={stageDisabled} role="tab" aria-selected={stageSelected} className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] whitespace-nowrap ${mobileFilterSectionsOpen.status || stageSelected ? "" : "hidden sm:inline-flex"} ${stageDisabled && !stageSelected ? disabledBadgeClass() : studySrsToneClass(status as Exclude<StudySrsFilter, "all">, stageSelected)}`}>
                             {stage} <span className="ml-0 -mr-px align-baseline text-[10px] font-semibold tracking-normal opacity-70">({formatNumber(stageCount)})</span>
                           </button>
                         );
